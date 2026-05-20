@@ -6,6 +6,7 @@ import type {
   ApiUploadUrl,
   ApiClassification,
   ApiDiff,
+  ApiTimeline,
   DocType,
   Status,
   RiskLevel,
@@ -112,14 +113,58 @@ export async function updateDocument(
   return data.document
 }
 
-// Get the classification (clauses) for a document — only available once READY
+// Get the classification (clauses) for a document — only available once READY.
+// Normalizes the response so older documents (processed before riskLevel/
+// summary/keyFindings existed) never crash the UI with missing fields.
 export async function getClassification(docId: string): Promise<ApiClassification> {
-  return request<ApiClassification>(`/documents/${docId}/classification`)
+  const data = await request<Partial<ApiClassification>>(`/documents/${docId}/classification`)
+  return {
+    docType: data.docType ?? "OTHER",
+    title: data.title ?? "",
+    parties: data.parties ?? [],
+    effectiveDate: data.effectiveDate ?? null,
+    lifecycle: data.lifecycle ?? "draft",
+    summary: data.summary ?? "",
+    keyFindings: data.keyFindings ?? [],
+    structuralHash: data.structuralHash ?? "",
+    clauses: (data.clauses ?? []).map((c) => ({
+      number: c.number ?? "",
+      title: c.title ?? "",
+      body: c.body ?? "",
+      category: c.category ?? "Other",
+      riskLevel: c.riskLevel ?? "low",
+      summary: c.summary ?? "",
+    })),
+  }
 }
 
 // Get the diff (change list) vs the parent document — only available for amendments
 export async function getDiff(docId: string): Promise<ApiDiff> {
-  return request<ApiDiff>(`/documents/${docId}/diff`)
+  const data = await request<Partial<ApiDiff>>(`/documents/${docId}/diff`)
+  return {
+    changes: (data.changes ?? []).map((c) => ({
+      changeId: c.changeId ?? "",
+      clauseNumber: c.clauseNumber ?? "",
+      field: c.field ?? "body",
+      before: c.before ?? "",
+      after: c.after ?? "",
+      impactScore: c.impactScore ?? 0,
+      impactRationale: c.impactRationale ?? "",
+    })),
+    impactSummary: data.impactSummary ?? "",
+  }
+}
+
+// Get the timeline (initial → current → expected clause states across the
+// amendment chain). Normalizes so missing fields never crash the UI.
+export async function getTimeline(docId: string): Promise<ApiTimeline> {
+  const data = await request<Partial<ApiTimeline>>(`/documents/${docId}/timeline`)
+  return {
+    initialState: data.initialState ?? {},
+    currentState: data.currentState ?? {},
+    amendmentChain: data.amendmentChain ?? [],
+    futureState: data.futureState ?? null,
+  }
 }
 
 // Delete a specific version (rolls back to previous)

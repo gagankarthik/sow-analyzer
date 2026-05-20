@@ -173,6 +173,31 @@ export interface ApiClassification {
   structuralHash: string
 }
 
+// Timeline / amendment-replay shapes (fetched from /timeline)
+export interface ApiTimelineClause {
+  number: string
+  title: string
+  body: string
+  category: string
+}
+
+export type ApiTimelineState = Record<string, ApiTimelineClause>
+
+export interface ApiAmendmentChainItem {
+  docId: string
+  docType: string | null
+  lifecycle: string | null
+  effectiveDate: string | null
+  title: string | null
+}
+
+export interface ApiTimeline {
+  initialState: ApiTimelineState
+  currentState: ApiTimelineState
+  amendmentChain: ApiAmendmentChainItem[]
+  futureState: ApiTimelineState | null
+}
+
 export interface ApiDiffChange {
   changeId: string
   clauseNumber: string

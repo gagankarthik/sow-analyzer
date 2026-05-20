@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ProcessingState } from "@/components/ProcessingState";
 import { BluelyMark } from "@/components/ui/BluelyMark";
+import { ContractEvolution } from "@/components/ContractEvolution";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -23,10 +24,10 @@ import {
   Loader2, Pencil, Trash2, Building2, FileText, Hash, ShieldAlert, AlertTriangle, Info,
 } from "@/components/ui/icons";
 import {
-  getDocument, deleteDocument, updateDocument, apiDocToProject, getClassification, errorStatus,
+  getDocument, deleteDocument, updateDocument, apiDocToProject, getClassification, getTimeline, errorStatus,
 } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import type { ApiDocumentDetail, ApiClassification, ApiClause, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
+import type { ApiDocumentDetail, ApiClassification, ApiClause, ApiTimeline, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
 
@@ -64,6 +65,7 @@ export default function ProjectOverviewPage() {
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [classification, setClassification] = useState<ApiClassification | null>(null);
+  const [timeline, setTimeline] = useState<ApiTimeline | null>(null);
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -105,6 +107,7 @@ export default function ProjectOverviewPage() {
   useEffect(() => {
     if (!detail || detail.document.status !== "READY") return;
     getClassification(id).then(setClassification).catch(() => {});
+    getTimeline(id).then(setTimeline).catch(() => {});
   }, [id, detail?.document.status]);
 
   const clauses = useMemo<ApiClause[]>(() => classification?.clauses ?? [], [classification]);
@@ -355,6 +358,11 @@ export default function ProjectOverviewPage() {
               })}
             </div>
           </section>
+        )}
+
+        {/* ── Contract evolution (initial → current → expected) ─ */}
+        {isReady && timeline && (Object.keys(timeline.currentState).length > 0 || Object.keys(timeline.initialState).length > 0) && (
+          <ContractEvolution timeline={timeline} />
         )}
 
         {/* ── Document details + parties ────────────────────── */}
