@@ -67,6 +67,15 @@ export default function Landing() {
     const ctx = gsap.context(() => {
       gsap.registerPlugin(ScrollTrigger, SplitText);
 
+      // Reduced motion: reveal everything immediately, just fill the counters.
+      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        gsap.utils.toArray<HTMLElement>("[data-count]").forEach((el) => {
+          const end = parseFloat(el.dataset.count || "0");
+          el.textContent = `${el.dataset.prefix || ""}${end.toFixed(parseInt(el.dataset.decimals || "0", 10))}${el.dataset.suffix || ""}`;
+        });
+        return;
+      }
+
       // Hero line-by-line mask reveal
       const split = new SplitText(".hero-title", { type: "lines", linesClass: "split-line" });
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
@@ -106,6 +115,13 @@ export default function Landing() {
       // Continuous clause marquee
       if (marquee.current) {
         gsap.to(marquee.current, { xPercent: -50, repeat: -1, duration: 26, ease: "none" });
+      }
+
+      // Recompute trigger positions once layout + fonts settle, so no reveal
+      // element gets stranded hidden (the usual cause of "content not showing").
+      requestAnimationFrame(() => ScrollTrigger.refresh());
+      if (typeof document !== "undefined" && document.fonts?.ready) {
+        document.fonts.ready.then(() => ScrollTrigger.refresh());
       }
 
       // Subtle 3D tilt on hero visual
