@@ -7,12 +7,15 @@ import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
 import { CopilotPanel } from "./CopilotPanel";
 import { recordRecentDoc } from "@/lib/recent";
+import { useUIStore } from "@/lib/stores/ui";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [copilotOpen, setCopilotOpen] = useState(false);
+  const copilotOpen = useUIStore((s) => s.copilotOpen);
+  const toggleCopilot = useUIStore((s) => s.toggleCopilot);
+  const setCopilotOpen = useUIStore((s) => s.setCopilotOpen);
   const [mobileNav, setMobileNav] = useState(false);
 
   // Global keyboard shortcuts: ⌘K palette, ⌘/ copilot, and the "go to"
@@ -35,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
       if (mod && e.key === "/") {
         e.preventDefault();
-        setCopilotOpen((v) => !v);
+        toggleCopilot();
         return;
       }
       if (mod || e.altKey || isTyping()) return;
@@ -58,7 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [router]);
+  }, [router, toggleCopilot]);
 
   // Record opened documents for the palette's "Recent" group.
   useEffect(() => {
@@ -79,12 +82,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         mobileOpen={mobileNav}
         onMobileClose={() => setMobileNav(false)}
         onOpenSearch={() => setPaletteOpen(true)}
-        onOpenCopilot={() => setCopilotOpen((v) => !v)}
+        onOpenCopilot={toggleCopilot}
       />
       <div className="flex-1 min-w-0 flex flex-col">
         <TopBar
           onCommandOpen={() => setPaletteOpen(true)}
-          onCopilotToggle={() => setCopilotOpen((v) => !v)}
+          onCopilotToggle={toggleCopilot}
           onMenuClick={() => setMobileNav(true)}
         />
         <main className="flex-1 min-w-0">{children}</main>
