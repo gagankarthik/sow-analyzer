@@ -9,11 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BluelyMark } from "@/components/ui/BluelyMark";
 import {
-  FileText, CheckCircle2, Clock, AlertCircle, ArrowRight, Plus, Loader2,
-  XCircle, Building2, Files,
+  FileText, CheckCircle2, Clock, ArrowRight, Plus, Loader2,
+  XCircle, Building2, Files, ShieldAlert, ShieldCheck, Layers,
 } from "@/components/ui/icons";
 import { listDocuments } from "@/lib/api";
-import type { ApiDocument, DocType } from "@/lib/types";
+import type { ApiDocument, DocType, RiskLevel } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 
 const PROCESSING_STATUSES = new Set([
@@ -40,6 +40,28 @@ const STAGE_LABELS: Record<string, string> = {
   EMBEDDING: "Embedding", GRAPHING: "Graphing", DIFFING: "Diffing",
   TIMELINING: "Timelining", PERSISTING: "Persisting",
 };
+
+// ── Risk visual language ─────────────────────────────────────
+const RISK_ORDER: RiskLevel[] = ["critical", "high", "medium", "low"];
+const RISK_LABELS: Record<RiskLevel, string> = {
+  critical: "Critical", high: "High", medium: "Medium", low: "Low",
+};
+// Solid fill color for stacked-bar segments / dots.
+const RISK_FILL: Record<RiskLevel, string> = {
+  critical: "bg-[var(--danger)]",
+  high:     "bg-[var(--warning)]",
+  medium:   "bg-[var(--ink-400)]",
+  low:      "bg-[var(--success)]",
+};
+// Soft pill className per risk level (background + text).
+function riskPillClass(risk: RiskLevel): string {
+  switch (risk) {
+    case "critical": return "bg-[var(--danger-soft)] text-[var(--danger)]";
+    case "high":     return "bg-[var(--warning-soft)] text-[var(--warning)]";
+    case "medium":   return "bg-[var(--ink-100)] text-[var(--ink-600)]";
+    case "low":      return "bg-[var(--success-soft)] text-[var(--success)]";
+  }
+}
 
 export default function DashboardPage() {
   const [docs, setDocs] = useState<ApiDocument[]>([]);
@@ -79,6 +101,37 @@ export default function DashboardPage() {
   const allParties = new Set<string>();
   for (const d of docs) d.parties?.forEach((p) => allParties.add(p));
 
+  // ── Portfolio risk aggregates (only meaningful for READY docs) ──
+  const riskTotals: Record<RiskLevel, number> = { low: 0, medium: 0, high: 0, critical: 0 };
+  let totalClauses = 0;
+  let totalHighRisk = 0;
+  for (const d of readyDocs) {
+    const rc = d.riskCounts;
+    if (rc) {
+      riskTotals.low      += rc.low ?? 0;
+      riskTotals.medium   += rc.medium ?? 0;
+      riskTotals.high     += rc.high ?? 0;
+      riskTotals.critical += rc.critical ?? 0;
+    }
+    totalClauses  += d.clauseCount ?? 0;
+    totalHighRisk += d.highRiskCount ?? 0;
+  }
+  const totalRiskClauses = riskTotals.low + riskTotals.medium + riskTotals.high + riskTotals.critical;
+
+  // Portfolio-level risk posture: worst level that has any clauses.
+  const portfolioRisk: RiskLevel | null =
+    riskTotals.critical > 0 ? "critical"
+    : riskTotals.high   > 0 ? "high"
+    : riskTotals.medium > 0 ? "medium"
+    : riskTotals.low    > 0 ? "low"
+    : null;
+
+  // Risk-ranked watchlist — docs with the most high+critical clauses.
+  const watchlist = [...readyDocs]
+    .filter((d) => (d.highRiskCount ?? 0) > 0)
+    .sort((a, b) => (b.highRiskCount ?? 0) - (a.highRiskCount ?? 0))
+    .slice(0, 5);
+
   return (
     <>
       <PageHeader
@@ -116,14 +169,147 @@ export default function DashboardPage() {
                 tone={processingDocs.length > 0 ? "warning" : "neutral"}
               />
               <MetricCard
-                label="Need attention"
-                value={failedDocs.length}
-                hint={failedDocs.length > 0 ? "Re-upload required" : "No errors"}
-                icon={<AlertCircle size={14} strokeWidth={1.75} />}
-                tone={failedDocs.length > 0 ? "danger" : "neutral"}
+                label="Portfolio risk"
+                value={
+                  portfolioRisk
+                    ? <span className="capitalize">{RISK_LABELS[portfolioRisk]}</span>
+                    : readyDocs.length > 0 ? "Clear" : "—"
+                }
+                hint={
+                  totalHighRisk > 0
+                    ? `${totalHighRisk} high-risk clause${totalHighRisk === 1 ? "" : "s"}`
+                    : failedDocs.length > 0
+                      ? `${failedDocs.length} need re-processing`
+                      : readyDocs.length > 0 ? "No high-risk exposure" : "Awaiting analysis"
+                }
+                icon={
+                  portfolioRisk === "critical" || portfolioRisk === "high"
+                    ? <ShieldAlert size={14} strokeWidth={1.75} />
+                    : <ShieldCheck size={14} strokeWidth={1.75} />
+                }
+                tone={
+                  portfolioRisk === "critical" ? "danger"
+                  : portfolioRisk === "high" || portfolioRisk === "medium" ? "warning"
+                  : "success"
+                }
               />
             </>
           )}
+        </section>
+
+        {/* ── Portfolio risk distribution ──────────────────── */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Stacked risk bar */}
+          <div className="lg:col-span-8 rounded-lg border border-border bg-card p-6 shadow-xs">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Portfolio · risk distribution
+                </div>
+                <div className="mt-1.5 numeric text-foreground" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 28, letterSpacing: "-0.025em" }}>
+                  {loading ? (
+                    <Skeleton className="h-7 w-20 inline-block" />
+                  ) : (
+                    <>{totalRiskClauses}<span className="text-[13px] font-medium text-muted-foreground ml-1.5">clauses scored</span></>
+                  )}
+                </div>
+              </div>
+              {!loading && portfolioRisk && (
+                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full capitalize shrink-0 ${riskPillClass(portfolioRisk)}`}>
+                  {RISK_LABELS[portfolioRisk]} posture
+                </span>
+              )}
+            </div>
+
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-3 rounded-full" />
+                <Skeleton className="h-5 w-2/3 rounded" />
+              </div>
+            ) : totalRiskClauses === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--success-soft)] text-[var(--success)] mb-3">
+                  <ShieldCheck size={20} strokeWidth={1.5} />
+                </span>
+                <p className="text-[13px] font-medium text-foreground mb-1">No risk-scored clauses yet</p>
+                <p className="text-[12px] text-muted-foreground">Risk insights appear once documents finish analysis.</p>
+              </div>
+            ) : (
+              <>
+                {/* Stacked bar */}
+                <div className="flex h-3 w-full rounded-full overflow-hidden bg-muted">
+                  {RISK_ORDER.map((level) => {
+                    const n = riskTotals[level];
+                    if (n === 0) return null;
+                    return (
+                      <div
+                        key={level}
+                        className={`h-full ${RISK_FILL[level]} transition-all`}
+                        style={{ width: `${(n / totalRiskClauses) * 100}%` }}
+                        title={`${RISK_LABELS[level]}: ${n}`}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                <ul className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {RISK_ORDER.map((level) => {
+                    const n = riskTotals[level];
+                    const pct = totalRiskClauses > 0 ? Math.round((n / totalRiskClauses) * 100) : 0;
+                    return (
+                      <li key={level} className="flex items-center gap-2.5">
+                        <span className={`inline-block h-2.5 w-2.5 rounded-full shrink-0 ${RISK_FILL[level]}`} aria-hidden />
+                        <div className="min-w-0">
+                          <div className="text-[12px] font-semibold text-foreground leading-none">
+                            <span className="numeric tabular-nums">{n}</span>
+                            <span className="text-[11px] font-medium text-muted-foreground ml-1.5">{pct}%</span>
+                          </div>
+                          <div className="text-[10.5px] text-muted-foreground mt-1">{RISK_LABELS[level]}</div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+          </div>
+
+          {/* Clauses analyzed insight */}
+          <div className="lg:col-span-4 rounded-lg border border-border bg-card p-6 shadow-xs flex flex-col">
+            <div className="flex items-center gap-2 mb-5">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
+                <Layers size={14} strokeWidth={1.75} />
+              </span>
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Analysis depth
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="space-y-4 flex-1">
+                <Skeleton className="h-9 w-24 rounded" />
+                <Skeleton className="h-9 w-20 rounded" />
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col justify-center gap-5">
+                <div>
+                  <div className="numeric text-foreground leading-none" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 32, letterSpacing: "-0.025em" }}>
+                    {totalClauses}
+                  </div>
+                  <div className="text-[12px] text-muted-foreground mt-1.5">Clauses analyzed</div>
+                </div>
+                <div className="h-px bg-border" />
+                <div>
+                  <div className="numeric leading-none flex items-baseline gap-2" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 32, letterSpacing: "-0.025em" }}>
+                    <span className={totalHighRisk > 0 ? "text-[var(--danger)]" : "text-foreground"}>{totalHighRisk}</span>
+                    {totalHighRisk > 0 && <ShieldAlert size={16} className="text-[var(--danger)]" strokeWidth={1.75} />}
+                  </div>
+                  <div className="text-[12px] text-muted-foreground mt-1.5">High-risk clauses</div>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* ── Main 2-col grid ──────────────────────────────── */}
@@ -283,6 +469,69 @@ export default function DashboardPage() {
             )}
           </div>
         </section>
+
+        {/* ── Risk-ranked watchlist ────────────────────────── */}
+        {!loading && readyDocs.length > 0 && (
+          <section className="rounded-lg border border-border bg-card p-6 shadow-xs">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <ShieldAlert size={14} className="text-muted-foreground" />
+                <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Risk watchlist · highest exposure
+                </span>
+              </div>
+              {watchlist.length > 0 && (
+                <Link href="/library" className="text-[12px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] inline-flex items-center gap-1 transition-colors">
+                  View all <ArrowRight size={11} strokeWidth={2.25} />
+                </Link>
+              )}
+            </div>
+
+            {watchlist.length === 0 ? (
+              <div className="flex items-center gap-3 rounded-md bg-[var(--success-soft)] px-4 py-3.5">
+                <ShieldCheck size={16} className="text-[var(--success)] shrink-0" />
+                <p className="text-[12.5px] font-medium text-[var(--success)]">
+                  No high-risk exposure across the portfolio.
+                </p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-border">
+                {watchlist.map((doc) => {
+                  const risk = doc.overallRisk ?? "low";
+                  const highRisk = doc.highRiskCount ?? 0;
+                  const clauses = doc.clauseCount ?? 0;
+                  return (
+                    <li key={doc.docId}>
+                      <Link
+                        href={`/projects/${doc.docId}`}
+                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 group"
+                      >
+                        <span className={`inline-flex h-8 w-8 items-center justify-center rounded-md shrink-0 ${DOC_TYPE_SOFT[doc.docType]}`}>
+                          <FileText size={13} strokeWidth={1.75} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-semibold text-foreground truncate group-hover:text-[var(--brand-primary-700)] transition-colors">
+                            {doc.title || "Untitled"}
+                          </div>
+                          <div className="text-[11.5px] text-muted-foreground mt-0.5 tabular-nums">
+                            {highRisk} high-risk · {clauses} clause{clauses === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${DOC_TYPE_SOFT[doc.docType]}`}>
+                          {doc.docType}
+                        </span>
+                        <span className={`text-[10.5px] font-semibold px-2 py-0.5 rounded-full capitalize shrink-0 ${riskPillClass(risk)}`}>
+                          {RISK_LABELS[risk]}
+                        </span>
+                        <ArrowRight size={13} className="text-muted-foreground/50 shrink-0 group-hover:text-[var(--brand-primary-600)] group-hover:translate-x-0.5 transition-all" />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
 
         {/* ── Unique parties strip ──────────────────────────── */}
         {!loading && allParties.size > 0 && (

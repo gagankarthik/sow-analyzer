@@ -127,6 +127,21 @@ export async function deleteVersion(docId: string, version: number): Promise<voi
   await request<{ deleted: boolean }>(`/documents/${docId}/versions/${version}`, { method: "DELETE" })
 }
 
+// Derive a 0-100 health score from processing status and assessed risk.
+// READY docs start at 100 and lose points for high/critical clauses.
+function healthFromDoc(doc: ApiDocument): number {
+  if (doc.status === "FAILED") return 10
+  if (doc.status !== "READY") return 50
+  const rc = doc.riskCounts
+  if (!rc) {
+    return doc.overallRisk === "critical" ? 45
+      : doc.overallRisk === "high" ? 65
+      : doc.overallRisk === "medium" ? 82 : 92
+  }
+  const penalty = rc.critical * 18 + rc.high * 8 + rc.medium * 2
+  return Math.max(20, Math.min(100, 100 - penalty))
+}
+
 // Helper: map ApiDocument → the Project shape used by existing UI components
 // Fields not in the backend default gracefully
 export function apiDocToProject(doc: ApiDocument) {
@@ -140,7 +155,7 @@ export function apiDocToProject(doc: ApiDocument) {
     arr: 0,
     margin: 0,
     status: doc.lifecycle as Status,
-    health: doc.status === "READY" ? 85 : doc.status === "FAILED" ? 10 : 50,
+    health: healthFromDoc(doc),
     owner: { name: "You", initials: "YO", role: "Legal" as Persona },
     team: [],
     signed: doc.createdAt ?? null,
@@ -148,7 +163,7 @@ export function apiDocToProject(doc: ApiDocument) {
     ends: "",
     renewalDate: "",
     daysInStage: 0,
-    riskScore: "low" as RiskLevel,
+    riskScore: (doc.overallRisk ?? "low") as RiskLevel,
     amendments: doc.latestVersion,
     trend: [],
     region: "—",

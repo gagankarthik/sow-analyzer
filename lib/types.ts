@@ -22,6 +22,13 @@ export interface ApiDocument {
   createdAt: string
   updatedAt: string
   errorMessage?: string
+  // Analysis aggregates (written by the persist stage; present once READY)
+  summary?: string
+  clauseCount?: number
+  highRiskCount?: number
+  findingsCount?: number
+  overallRisk?: RiskLevel
+  riskCounts?: { low: number; medium: number; high: number; critical: number }
 }
 
 export interface ApiVersion {
@@ -59,6 +66,7 @@ export interface ApiError {
 export type Status = Lifecycle
 
 export type RiskLevel = "low" | "medium" | "high" | "critical"
+export type FindingSeverity = "info" | "low" | "medium" | "high" | "critical"
 export type Confidence = 1 | 2 | 3 | 4
 export type Persona = "Legal" | "Sales" | "Finance" | "Procurement" | "PM"
 
@@ -143,6 +151,14 @@ export interface ApiClause {
   title: string
   body: string
   category: string
+  riskLevel: RiskLevel
+  summary: string
+}
+
+export interface ApiKeyFinding {
+  label: string
+  detail: string
+  severity: FindingSeverity
 }
 
 export interface ApiClassification {
@@ -151,6 +167,8 @@ export interface ApiClassification {
   parties: string[]
   effectiveDate: string | null
   lifecycle: string
+  summary: string
+  keyFindings: ApiKeyFinding[]
   clauses: ApiClause[]
   structuralHash: string
 }
