@@ -198,6 +198,18 @@ export interface ApiTimeline {
   futureState: ApiTimelineState | null
 }
 
+// RAG / Bluely chat
+export interface ChatCitation {
+  clauseNumber: string
+  docId: string
+  category: string
+}
+
+export interface ChatResponse {
+  answer: string
+  citations: ChatCitation[]
+}
+
 export interface ApiDiffChange {
   changeId: string
   clauseNumber: string

@@ -7,6 +7,7 @@ import type {
   ApiClassification,
   ApiDiff,
   ApiTimeline,
+  ChatResponse,
   DocType,
   Status,
   RiskLevel,
@@ -188,6 +189,15 @@ export async function getTimeline(docId: string): Promise<ApiTimeline> {
     amendmentChain: data.amendmentChain ?? [],
     futureState: data.futureState ?? null,
   }
+}
+
+// Ask Bluely (RAG) about a document — embed → hybrid vector+BM25 search over
+// the document's clauses → grounded GPT answer with clause citations.
+export async function askBluely(docId: string, question: string, topK?: number): Promise<ChatResponse> {
+  return request<ChatResponse>(`/documents/${docId}/chat`, {
+    method: "POST",
+    body: JSON.stringify(topK ? { question, topK } : { question }),
+  })
 }
 
 // Delete a specific version (rolls back to previous)
