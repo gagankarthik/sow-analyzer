@@ -18,6 +18,9 @@ import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument, useClassification } from "@/lib/queries/documents";
 import { useUIStore } from "@/lib/stores/ui";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
+import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
+import { CategoryRadar } from "@/components/charts/CategoryRadar";
+import { MotionReveal } from "@/components/MotionReveal";
 import type { ApiClause, RiskLevel, FindingSeverity } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
@@ -166,7 +169,31 @@ export default function SowPage() {
             )}
 
             {/* Risk intelligence (visual) */}
-            {allClauses.length > 0 && <RiskIntelligence counts={riskCounts} categories={catData} />}
+            {allClauses.length > 0 && (
+              <MotionReveal><RiskIntelligence counts={riskCounts} categories={catData} /></MotionReveal>
+            )}
+
+            {/* Risk analysis: heatmap + radar */}
+            {allClauses.length > 0 && (
+              <MotionReveal delay={0.05}>
+                <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                  <div className="lg:col-span-7 rounded-2xl border border-border bg-card p-5 md:p-6 shadow-xs">
+                    <div className="flex items-baseline justify-between gap-2 mb-4">
+                      <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Risk by category</h3>
+                      <span className="text-[11px] font-mono text-muted-foreground">category × severity</span>
+                    </div>
+                    <ClauseHeatmap clauses={allClauses} />
+                  </div>
+                  <div className="lg:col-span-5 rounded-2xl border border-border bg-card p-5 md:p-6 shadow-xs">
+                    <div className="flex items-baseline justify-between gap-2 mb-2">
+                      <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Category coverage</h3>
+                      <span className="text-[11px] font-mono text-muted-foreground">{catData.length}</span>
+                    </div>
+                    <CategoryRadar data={catData} />
+                  </div>
+                </section>
+              </MotionReveal>
+            )}
 
             {/* Two-column: clause list (70%) + sticky copilot (30%) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
