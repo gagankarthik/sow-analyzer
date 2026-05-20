@@ -1,136 +1,100 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { ProcessingState } from "@/components/ProcessingState";
 import { BluelyMark } from "@/components/ui/BluelyMark";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Files, XCircle, ChevronDown, ChevronUp, Search, ShieldAlert,
-  AlertTriangle, Info, FileText, Building2, CalendarClock,
+  AlertTriangle, Info, Building2, CalendarClock, Sparkles, FileText,
 } from "@/components/ui/icons";
-import { apiDocToProject, getClassification } from "@/lib/api";
-import { useDocumentDetail } from "@/lib/use-document";
-import type { ApiClassification, ApiClause, RiskLevel, FindingSeverity } from "@/lib/types";
+import { apiDocToProject, errorStatus } from "@/lib/api";
+import { useDocument, useClassification } from "@/lib/queries/documents";
+import { useUIStore } from "@/lib/stores/ui";
+import type { ApiClause, RiskLevel, FindingSeverity } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
 
 const RISK_ORDER: RiskLevel[] = ["critical", "high", "medium", "low"];
 const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-
-const RISK_META: Record<RiskLevel, { label: string; bg: string; text: string; dot: string; ring: string }> = {
-  critical: { label: "Critical", bg: "bg-[var(--danger-soft)]",  text: "text-[var(--danger)]",  dot: "bg-[var(--danger)]",  ring: "ring-[var(--danger)]/30" },
-  high:     { label: "High",     bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", dot: "bg-[var(--warning)]", ring: "ring-[var(--warning)]/30" },
-  medium:   { label: "Medium",   bg: "bg-[var(--ink-100)]",      text: "text-[var(--ink-600)]", dot: "bg-[var(--ink-400)]", ring: "ring-[var(--ink-300)]" },
-  low:      { label: "Low",      bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", dot: "bg-[var(--success)]", ring: "ring-[var(--success)]/30" },
+const RISK_META: Record<RiskLevel, { label: string; bg: string; text: string; dot: string }> = {
+  critical: { label: "Critical", bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", dot: "bg-[var(--danger)]" },
+  high: { label: "High", bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", dot: "bg-[var(--warning)]" },
+  medium: { label: "Medium", bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-600)]", dot: "bg-[var(--ink-400)]" },
+  low: { label: "Low", bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", dot: "bg-[var(--success)]" },
 };
-
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode }> = {
-  critical: { bg: "bg-[var(--danger-soft)]",  text: "text-[var(--danger)]",  icon: <ShieldAlert size={13} /> },
-  high:     { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
-  medium:   { bg: "bg-[var(--ink-100)]",      text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
-  low:      { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
-  info:     { bg: "bg-[var(--info-soft)]",    text: "text-[var(--info)]",    icon: <Info size={13} /> },
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={13} /> },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
+  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
+  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
+  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
 };
 
 export default function SowPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
   const router = useRouter();
+  const toggleCopilot = useUIStore((s) => s.toggleCopilot);
 
-  const { detail, loading, notFound: isNotFound, error } = useDocumentDetail(id);
-  const [classification, setClassification] = useState<ApiClassification | null>(null);
-  const [classLoading, setClassLoading] = useState(false);
-  const [classError, setClassError] = useState(false);
+  const { data: detail, isLoading, isError, error } = useDocument(id);
+  const isReady = detail?.document.status === "READY";
+  const { data: classification, isLoading: classLoading, isError: classError } = useClassification(id, !!isReady);
+
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeRisk, setActiveRisk] = useState<RiskLevel | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("ALL");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    if (!detail || detail.document.status !== "READY") return;
-    setClassLoading(true);
-    setClassError(false);
-    getClassification(id)
-      .then(setClassification)
-      .catch(() => setClassError(true))
-      .finally(() => setClassLoading(false));
-  }, [id, detail?.document.status]);
-
-  const allClauses: ApiClause[] = useMemo(() => classification?.clauses ?? [], [classification]);
-
+  const allClauses = useMemo<ApiClause[]>(() => classification?.clauses ?? [], [classification]);
   const riskCounts = useMemo(() => {
     const c = { critical: 0, high: 0, medium: 0, low: 0 };
     for (const cl of allClauses) c[cl.riskLevel ?? "low"]++;
     return c;
   }, [allClauses]);
-
-  const catCounts = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const c of allClauses) m[c.category] = (m[c.category] ?? 0) + 1;
-    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of allClauses) set.add(c.category);
+    return Array.from(set).sort();
   }, [allClauses]);
-
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allClauses
       .filter((c) => {
-        if (activeCategory && c.category !== activeCategory) return false;
         if (activeRisk && c.riskLevel !== activeRisk) return false;
+        if (activeCategory !== "ALL" && c.category !== activeCategory) return false;
         if (q && !c.title.toLowerCase().includes(q) && !c.body.toLowerCase().includes(q) &&
-            !c.number.toLowerCase().includes(q) && !(c.summary ?? "").toLowerCase().includes(q)) return false;
+          !c.number.toLowerCase().includes(q) && !(c.summary ?? "").toLowerCase().includes(q)) return false;
         return true;
       })
       .sort((a, b) => RISK_RANK[a.riskLevel ?? "low"] - RISK_RANK[b.riskLevel ?? "low"]);
-  }, [allClauses, search, activeCategory, activeRisk]);
+  }, [allClauses, search, activeRisk, activeCategory]);
 
-  if (loading) return <SowSkeleton />;
-
-  if (isNotFound) {
+  if (isLoading) return <SowSkeleton />;
+  if (isError && errorStatus(error) === 404) return <NotFound />;
+  if (isError) {
     return (
       <div className="app-container py-20 flex flex-col items-center text-center">
-        <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5">
-          <Files size={24} strokeWidth={1.5} />
-        </span>
-        <h1 className="text-foreground" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 28, letterSpacing: "-0.025em" }}>
-          Project not found
-        </h1>
-        <p className="mt-2 text-[14px] text-muted-foreground max-w-sm">This engagement may have been archived or the link is out of date.</p>
-        <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-md bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors">
-          Back to projects
-        </Link>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="app-container py-20 flex flex-col items-center text-center">
-        <p className="text-[14px] text-[var(--danger)]">{error}</p>
+        <p className="text-[14px] text-[var(--danger)]">{error instanceof Error ? error.message : "Failed to load document"}</p>
         <Button variant="outline" size="md" className="mt-4" onClick={() => router.refresh()}>Try again</Button>
       </div>
     );
   }
-
   if (!detail) return null;
 
   const project: Project = apiDocToProject(detail.document);
   const rawStatus = detail.document.status;
   const isProcessing = rawStatus !== "READY" && rawStatus !== "FAILED";
   const isFailed = rawStatus === "FAILED";
-  const isReady = rawStatus === "READY";
 
   const toggleExpand = (n: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(n)) next.delete(n); else next.add(n);
-      return next;
-    });
+    setExpanded((prev) => { const next = new Set(prev); if (next.has(n)) next.delete(n); else next.add(n); return next; });
 
   return (
     <>
@@ -141,27 +105,19 @@ export default function SowPage() {
         {isFailed && (
           <div className="flex items-start gap-3 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-4">
             <XCircle size={18} strokeWidth={1.75} className="text-[var(--danger)] shrink-0 mt-0.5" />
-            <p className="text-[13.5px] text-[var(--danger)] leading-relaxed">
-              <span className="font-semibold">Processing failed.</span>{" "}
-              Delete this document and try uploading again.
-            </p>
+            <p className="text-[13.5px] text-[var(--danger)] leading-relaxed"><span className="font-semibold">Processing failed.</span> Delete this document and try uploading again.</p>
           </div>
         )}
-
-        {isProcessing && (
-          <ProcessingState status={rawStatus} title="Bluely is analyzing this document" subtitle="Clause extraction and risk analysis appear automatically as each stage completes." />
-        )}
+        {isProcessing && <ProcessingState status={rawStatus} title="Bluely is analyzing this document" subtitle="Clause extraction and risk analysis appear automatically as each stage completes." />}
 
         {isReady && (
           <>
-            {/* ── Executive summary ─────────────────────────── */}
+            {/* Executive summary */}
             <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
               <div className="flex items-start gap-3.5">
                 <BluelyMark size="md" tile pulse />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">
-                    Bluely · executive summary
-                  </div>
+                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluely · executive summary</div>
                   {classLoading ? (
                     <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
                   ) : classification?.summary ? (
@@ -171,143 +127,64 @@ export default function SowPage() {
                   )}
                   {classification && (
                     <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[12px]">
-                      <Badge variant="neutral" size="sm">{classification.docType}</Badge>
-                      {classification.effectiveDate && (
-                        <span className="inline-flex items-center gap-1 text-muted-foreground">
-                          <CalendarClock size={12} /> {classification.effectiveDate}
-                        </span>
-                      )}
-                      {classification.parties.slice(0, 2).map((p) => (
-                        <span key={p} className="inline-flex items-center gap-1 text-muted-foreground">
-                          <Building2 size={12} /> {p}
-                        </span>
-                      ))}
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <FileText size={12} /> {allClauses.length} clauses
-                      </span>
+                      <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{classification.docType}</span>
+                      {classification.effectiveDate && <span className="inline-flex items-center gap-1 text-muted-foreground"><CalendarClock size={12} />{classification.effectiveDate}</span>}
+                      {classification.parties.slice(0, 2).map((p) => <span key={p} className="inline-flex items-center gap-1 text-muted-foreground"><Building2 size={12} />{p}</span>)}
+                      <span className="inline-flex items-center gap-1 text-muted-foreground"><FileText size={12} />{allClauses.length} clauses</span>
                     </div>
                   )}
                 </div>
               </div>
             </section>
 
-            {/* ── Key findings ──────────────────────────────── */}
+            {/* Key findings */}
             {classification && classification.keyFindings.length > 0 && (
               <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <h2 className="text-[14px] font-semibold tracking-tight text-foreground">Key findings</h2>
-                  <span className="text-[11px] font-mono text-muted-foreground">{classification.keyFindings.length}</span>
-                </div>
+                <div className="flex items-center gap-2 mb-3"><h2 className="text-[14px] font-semibold tracking-tight text-foreground">Key findings</h2><span className="text-[11px] font-mono text-muted-foreground">{classification.keyFindings.length}</span></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[...classification.keyFindings]
-                    .sort((a, b) => severityRank(b.severity) - severityRank(a.severity))
-                    .map((f, i) => {
-                      const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
-                      return (
-                        <div key={i} className="rounded-lg border border-border bg-card p-4 shadow-xs">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${s.bg} ${s.text} shrink-0`}>{s.icon}</span>
-                            <span className="text-[13px] font-semibold text-foreground leading-tight">{f.label}</span>
-                          </div>
-                          <p className="text-[12.5px] text-muted-foreground leading-relaxed">{f.detail}</p>
-                        </div>
-                      );
-                    })}
+                  {[...classification.keyFindings].sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).map((f, i) => {
+                    const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
+                    return (
+                      <div key={i} className="rounded-lg border border-border bg-card p-4 shadow-xs">
+                        <div className="flex items-center gap-2 mb-1.5"><span className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${s.bg} ${s.text} shrink-0`}>{s.icon}</span><span className="text-[13px] font-semibold text-foreground leading-tight">{f.label}</span></div>
+                        <p className="text-[12.5px] text-muted-foreground leading-relaxed">{f.detail}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
 
-            {/* ── Clause workspace ──────────────────────────── */}
+            {/* Two-column: clause list (70%) + sticky copilot (30%) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* LEFT — risk + categories */}
-              <aside className="lg:col-span-3 space-y-4">
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-3">Risk profile</div>
-                  {classLoading ? (
-                    <div className="space-y-2.5">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-6 rounded" />)}</div>
-                  ) : allClauses.length > 0 ? (
-                    <div className="space-y-2.5">
-                      {RISK_ORDER.map((r) => {
-                        const n = riskCounts[r];
-                        if (n === 0) return null;
-                        const m = RISK_META[r];
-                        const pct = Math.round((n / allClauses.length) * 100);
-                        const isActive = activeRisk === r;
-                        return (
-                          <button
-                            key={r}
-                            onClick={() => setActiveRisk(isActive ? null : r)}
-                            className={`w-full text-left rounded-md px-2 py-1.5 transition-colors ${isActive ? `${m.bg} ring-1 ${m.ring}` : "hover:bg-muted"}`}
-                          >
-                            <div className="flex items-center justify-between text-[11.5px] mb-1">
-                              <span className={`font-medium ${m.text}`}>{m.label}</span>
-                              <span className="tabular-nums text-muted-foreground">{n}</span>
-                            </div>
-                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                              <div className={`h-full rounded-full ${m.dot}`} style={{ width: `${pct}%` }} />
-                            </div>
-                          </button>
-                        );
-                      })}
-                      {activeRisk && (
-                        <button onClick={() => setActiveRisk(null)} className="text-[10.5px] text-[var(--brand-primary-600)] hover:underline pt-1">
-                          Clear risk filter
-                        </button>
-                      )}
+              <main className="lg:col-span-8 space-y-4">
+                {/* Toolbar */}
+                <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                      <Search size={13} className="text-muted-foreground shrink-0" />
+                      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search clauses…" className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground" />
                     </div>
-                  ) : (
-                    <p className="text-[11.5px] text-muted-foreground">No clause data.</p>
-                  )}
-                </div>
-
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Categories</div>
-                    {activeCategory && (
-                      <button onClick={() => setActiveCategory(null)} className="text-[10.5px] text-[var(--brand-primary-600)] hover:underline">Clear</button>
+                    {categories.length > 0 && (
+                      <Select value={activeCategory} onValueChange={setActiveCategory}>
+                        <SelectTrigger className="h-8 text-[12.5px] w-[150px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All categories</SelectItem>
+                          {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     )}
                   </div>
-                  {classLoading ? (
-                    <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-7 rounded" />)}</div>
-                  ) : catCounts.length > 0 ? (
-                    <ul className="space-y-1">
-                      {catCounts.map(([cat, count]) => {
-                        const isActive = activeCategory === cat;
-                        return (
-                          <li key={cat}>
-                            <button
-                              onClick={() => setActiveCategory(isActive ? null : cat)}
-                              className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[12px] transition-colors ${isActive ? "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] font-medium" : "text-foreground hover:bg-muted"}`}
-                            >
-                              <span className="truncate">{cat}</span>
-                              <span className="tabular-nums text-[11px] text-muted-foreground shrink-0">{count}</span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="text-[11.5px] text-muted-foreground">No categories.</p>
-                  )}
-                </div>
-              </aside>
-
-              {/* CENTER — clauses */}
-              <main className="lg:col-span-6 space-y-4">
-                <div className="rounded-lg border border-border bg-card p-3 flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-2 flex-1 min-w-[160px]">
-                    <Search size={13} className="text-muted-foreground shrink-0" />
-                    <input
-                      type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search clauses…"
-                      className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
-                    />
+                  {/* Risk filter chips */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <RiskChip label="All" count={allClauses.length} active={activeRisk === null} onClick={() => setActiveRisk(null)} />
+                    {RISK_ORDER.map((r) => riskCounts[r] > 0 && (
+                      <RiskChip key={r} label={RISK_META[r].label} count={riskCounts[r]} active={activeRisk === r} onClick={() => setActiveRisk(activeRisk === r ? null : r)} risk={r} />
+                    ))}
                   </div>
-                  {classification && (
-                    <Badge variant="neutral" size="sm">{filtered.length} / {allClauses.length}</Badge>
-                  )}
                 </div>
 
+                {/* Clauses */}
                 {classLoading ? (
                   <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
                 ) : classError ? (
@@ -322,50 +199,44 @@ export default function SowPage() {
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {filtered.map((c) => (
-                      <ClauseCard key={c.number} clause={c} isExpanded={expanded.has(c.number)} onToggle={() => toggleExpand(c.number)} />
-                    ))}
+                    {filtered.map((c) => <ClauseCard key={c.number} clause={c} isExpanded={expanded.has(c.number)} onToggle={() => toggleExpand(c.number)} />)}
                   </div>
                 )}
               </main>
 
-              {/* RIGHT — Bluely + metadata */}
-              <aside className="lg:col-span-3 space-y-4">
-                <div className="rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <BluelyMark size="sm" />
-                    <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Ask Bluely</span>
-                  </div>
-                  <p className="text-[12.5px] leading-relaxed text-foreground">
-                    {riskCounts.critical + riskCounts.high > 0
-                      ? `${riskCounts.critical + riskCounts.high} clause(s) flagged high or critical. Ask Bluely how to negotiate them.`
-                      : "Ask Bluely about obligations, deadlines, or playbook deviations in this document."}
-                  </p>
-                  <Button variant="ai" size="sm" className="mt-4 w-full">Ask a question</Button>
-                </div>
-
-                {classification && classification.parties.length > 0 && (
-                  <div className="rounded-lg border border-border bg-card p-4">
-                    <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-3">Parties</div>
-                    <ul className="space-y-2">
-                      {classification.parties.map((p) => (
-                        <li key={p} className="flex items-center gap-2.5">
-                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] shrink-0">
-                            <Building2 size={13} strokeWidth={1.75} />
-                          </span>
-                          <span className="text-[12.5px] font-medium text-foreground truncate">{p}</span>
-                        </li>
+              {/* Sticky AI Co-pilot rail */}
+              <aside className="lg:col-span-4">
+                <div className="lg:sticky lg:top-[76px] space-y-4">
+                  <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 shadow-[var(--shadow-ai)]">
+                    <div className="flex items-center gap-2 mb-3"><BluelyMark size="sm" /><span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Bluely Co-pilot</span></div>
+                    <p className="text-[12.5px] leading-relaxed text-foreground">
+                      {riskCounts.critical + riskCounts.high > 0
+                        ? `${riskCounts.critical + riskCounts.high} clause(s) flagged high or critical. Ask how to negotiate them.`
+                        : "Ask about obligations, deadlines, or playbook deviations in this document."}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {["Summarize", "Find risks", "Compare to playbook"].map((q) => (
+                        <button key={q} onClick={toggleCopilot} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full border border-[var(--ai-border)] bg-card text-[var(--ai-ink)] hover:bg-[var(--ai-surface)] transition-colors">
+                          <Sparkles size={10} />{q}
+                        </button>
                       ))}
-                    </ul>
+                    </div>
+                    <Button variant="ai" size="sm" className="mt-3 w-full" onClick={toggleCopilot}>Ask a question</Button>
                   </div>
-                )}
 
-                <div className="rounded-lg border border-border bg-card p-4">
-                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">Compare to playbook</div>
-                  <p className="text-[11.5px] text-muted-foreground leading-relaxed mb-3">Score every clause against your firm&apos;s standard positions.</p>
-                  <Button variant="outline" size="sm" className="w-full" disabled={!classification}>
-                    {classification ? "Open playbook view" : "Available once clauses load"}
-                  </Button>
+                  {classification && classification.parties.length > 0 && (
+                    <div className="rounded-xl border border-border bg-card p-4">
+                      <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-3">Parties</div>
+                      <ul className="space-y-2">
+                        {classification.parties.map((p) => (
+                          <li key={p} className="flex items-center gap-2.5">
+                            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] shrink-0"><Building2 size={13} strokeWidth={1.75} /></span>
+                            <span className="text-[12.5px] font-medium text-foreground truncate">{p}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </aside>
             </div>
@@ -376,13 +247,30 @@ export default function SowPage() {
   );
 }
 
-/* ─── Clause card ─── */
+/* ── components ──────────────────────────────────────────── */
+
+function RiskChip({ label, count, active, onClick, risk }: { label: string; count: number; active: boolean; onClick: () => void; risk?: RiskLevel }) {
+  const m = risk ? RISK_META[risk] : null;
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[12px] font-medium border transition-colors ${
+        active
+          ? m ? `${m.bg} ${m.text} border-transparent` : "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] border-[var(--brand-primary-200)]"
+          : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted"
+      }`}
+    >
+      {m && <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />}
+      {label}
+      <span className="tabular-nums text-[11px] opacity-70">{count}</span>
+    </button>
+  );
+}
 
 function ClauseCard({ clause, isExpanded, onToggle }: { clause: ApiClause; isExpanded: boolean; onToggle: () => void }) {
   const m = RISK_META[clause.riskLevel ?? "low"];
   const longBody = clause.body.length > 240;
   const preview = longBody ? clause.body.slice(0, 240) + "…" : clause.body;
-
   return (
     <div className={`rounded-lg border bg-card shadow-xs hover:shadow-sm transition-shadow ${clause.riskLevel === "critical" ? "border-[var(--danger)]/30" : "border-border"}`}>
       <div className="px-4 py-3.5">
@@ -391,68 +279,50 @@ function ClauseCard({ clause, isExpanded, onToggle }: { clause: ApiClause; isExp
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
               <span className="text-[13.5px] font-semibold text-foreground leading-snug">{clause.title || clause.number}</span>
-              <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${m.bg} ${m.text}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />{m.label}
-              </span>
+              <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${m.bg} ${m.text}`}><span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />{m.label}</span>
               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{clause.category}</span>
             </div>
-            {clause.summary && (
-              <p className="text-[12.5px] text-foreground/80 leading-relaxed mb-2 italic">{clause.summary}</p>
-            )}
-            <p className="text-[12.5px] text-muted-foreground leading-relaxed whitespace-pre-line">
-              {isExpanded ? clause.body : preview}
-            </p>
+            {clause.summary && <p className="text-[12.5px] text-foreground/80 leading-relaxed mb-2 italic">{clause.summary}</p>}
+            <p className="text-[12.5px] text-muted-foreground leading-relaxed whitespace-pre-line">{isExpanded ? clause.body : preview}</p>
           </div>
         </div>
       </div>
       {longBody && (
         <button onClick={onToggle} className="w-full flex items-center justify-center gap-1 border-t border-border py-2 text-[11.5px] text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors">
-          {isExpanded ? <><ChevronUp size={12} /> Show less</> : <><ChevronDown size={12} /> Show full clause</>}
+          {isExpanded ? <><ChevronUp size={12} />Show less</> : <><ChevronDown size={12} />Show original text</>}
         </button>
       )}
     </div>
   );
 }
 
-function severityRank(s: FindingSeverity): number {
+function sevRank(s: FindingSeverity): number {
   return { info: 0, low: 1, medium: 2, high: 3, critical: 4 }[s] ?? 0;
 }
 
-/* ─── Skeleton ─── */
+function NotFound() {
+  return (
+    <div className="app-container py-20 flex flex-col items-center text-center">
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
+      <h1 className="text-foreground" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 28, letterSpacing: "-0.025em" }}>Project not found</h1>
+      <p className="mt-2 text-[14px] text-muted-foreground max-w-sm">This engagement may have been archived or the link is out of date.</p>
+      <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-md bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors">Back to projects</Link>
+    </div>
+  );
+}
 
 function SowSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card">
-        <div className="app-container pt-6 md:pt-8 pb-5 md:pb-6 space-y-4">
-          <div className="flex items-center gap-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-16" /></div>
-          <Skeleton className="h-9 w-2/3" /><Skeleton className="h-4 w-1/3" />
-        </div>
-      </div>
-      <div className="border-b border-border bg-card">
-        <div className="app-container"><div className="flex items-center gap-6 h-9">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-4 w-16" />)}</div></div>
-      </div>
+      <div className="border-b border-border bg-card"><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
+      <div className="border-b border-border bg-card"><div className="app-container"><div className="flex items-center gap-6 h-9">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-4 w-16" />)}</div></div></div>
       <div className="app-container py-6 md:py-8 space-y-6">
         <Skeleton className="h-28 rounded-xl" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-3 space-y-4"><Skeleton className="h-40 rounded-lg" /><Skeleton className="h-56 rounded-lg" /></div>
-          <div className="lg:col-span-6 space-y-3"><Skeleton className="h-12 rounded-lg" />{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
-          <div className="lg:col-span-3 space-y-4"><Skeleton className="h-36 rounded-lg" /><Skeleton className="h-32 rounded-lg" /></div>
+          <div className="lg:col-span-8 space-y-3"><Skeleton className="h-16 rounded-lg" />{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
+          <div className="lg:col-span-4 space-y-4"><Skeleton className="h-44 rounded-xl" /><Skeleton className="h-32 rounded-xl" /></div>
         </div>
       </div>
     </>
   );
-}
-
-/* ─── Risk color helpers (used by other views) ─── */
-
-export function riskBg(risk: string): string {
-  return ({ low: "bg-[var(--success)]", medium: "bg-[var(--ink-400)]", high: "bg-[var(--warning)]", critical: "bg-[var(--danger)]" } as Record<string, string>)[risk] ?? "bg-[var(--ink-200)]";
-}
-export function riskText(risk: string): string {
-  return ({ low: "text-[var(--success)]", medium: "text-[var(--ink-600)]", high: "text-[var(--warning)]", critical: "text-[var(--danger)]" } as Record<string, string>)[risk] ?? "text-muted-foreground";
-}
-export function riskPill(risk: string): string {
-  return ({ low: "bg-[var(--success-soft)] text-[var(--success)]", medium: "bg-[var(--ink-100)] text-[var(--ink-600)]", high: "bg-[var(--warning-soft)] text-[var(--warning)]", critical: "bg-[var(--danger-soft)] text-[var(--danger)] ring-1 ring-[var(--danger)]/30" } as Record<string, string>)[risk] ?? "bg-[var(--ink-100)] text-[var(--ink-600)]";
 }
