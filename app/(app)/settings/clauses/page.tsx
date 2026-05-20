@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BluelyMark } from "@/components/ui/BluelyMark";
+import { MotionReveal } from "@/components/MotionReveal";
 import {
   Search,
   Plus,
@@ -88,18 +89,19 @@ export default function ClauseLibraryPage() {
 
       <div className="app-container py-6 md:py-8 space-y-6">
         {/* Search */}
+        <MotionReveal>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[240px] max-w-[480px]">
             <Search
-              size={13}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+              size={14}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
             />
             <Input
               type="text"
               placeholder="Search by title or category…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="pl-8 h-9"
+              className="h-10 rounded-full border border-border bg-card pl-9 pr-4 focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)]"
               disabled
             />
           </div>
@@ -111,59 +113,65 @@ export default function ClauseLibraryPage() {
         </div>
 
         {/* Category chips */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           <button
             data-active="true"
-            className="text-[11px] px-2.5 py-1 rounded-full border border-border text-muted-foreground data-[active=true]:bg-[var(--brand-primary-600)] data-[active=true]:border-[var(--brand-primary-600)] data-[active=true]:text-white transition-colors"
+            className="text-[11.5px] px-3.5 py-1.5 rounded-full border border-border text-muted-foreground transition-all duration-200 data-[active=true]:bg-[var(--brand-primary-600)] data-[active=true]:border-[var(--brand-primary-600)] data-[active=true]:text-white"
           >
             All <span className="opacity-70 ml-0.5">0</span>
           </button>
           {CLAUSE_CATEGORIES.map((cat) => (
             <button
               key={cat.id}
-              className="text-[11px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-[var(--border-strong)] transition-colors"
+              className="text-[11.5px] px-3.5 py-1.5 rounded-full border border-border text-muted-foreground transition-all duration-200 hover:text-foreground hover:border-[var(--border-strong)]"
             >
               {cat.title} <span className="opacity-70 ml-0.5">0</span>
             </button>
           ))}
         </div>
+        </MotionReveal>
 
         {/* Status banner */}
         {totalCount !== null && totalCount > 0 && (
-          <div className="rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 p-4 flex items-start gap-3">
-            <BluelyMark size="sm" />
-            <div>
-              <div className="text-[13px] font-medium text-foreground">
-                {readyCount} document{readyCount === 1 ? "" : "s"} ready for clause extraction
+          <MotionReveal>
+            <div className="rounded-2xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 shadow-xs p-5 md:p-6 flex items-start gap-3">
+              <BluelyMark size="sm" />
+              <div>
+                <div className="text-[13px] font-medium text-foreground">
+                  {readyCount} document{readyCount === 1 ? "" : "s"} ready for clause extraction
+                </div>
+                <p className="mt-0.5 text-[12px] text-muted-foreground">
+                  Bluely will extract and categorize clauses as your documents are processed. Clauses will appear here automatically.
+                </p>
               </div>
-              <p className="mt-0.5 text-[12px] text-muted-foreground">
-                Bluely will extract and categorize clauses as your documents are processed. Clauses will appear here automatically.
-              </p>
             </div>
-          </div>
+          </MotionReveal>
         )}
 
         {/* Empty state hero */}
-        <div className="flex flex-col items-center justify-center py-12 text-center bg-card border border-border rounded-lg">
-          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
-            <FileText size={20} className="text-muted-foreground" />
+        <MotionReveal>
+          <div className="flex flex-col items-center justify-center py-14 px-6 text-center bg-card border border-border shadow-xs rounded-2xl">
+            <div className="h-12 w-12 rounded-2xl bg-[var(--brand-primary-100)] flex items-center justify-center mb-4">
+              <FileText size={20} className="text-[var(--brand-primary-600)]" />
+            </div>
+            <h3 className="text-[15px] font-semibold text-foreground mb-2">
+              Your clause library is empty
+            </h3>
+            <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed mb-5">
+              {totalCount === 0
+                ? "Upload documents in Projects and Bluely will extract and categorize clauses automatically."
+                : "Bluely is indexing your documents. Clauses will appear here as processing completes."}
+            </p>
+            {totalCount === 0 && (
+              <Button variant="primary" size="md" asChild>
+                <Link href="/projects">Go to Projects</Link>
+              </Button>
+            )}
           </div>
-          <h3 className="text-[15px] font-semibold text-foreground mb-2">
-            Your clause library is empty
-          </h3>
-          <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed mb-5">
-            {totalCount === 0
-              ? "Upload documents in Projects and Bluely will extract and categorize clauses automatically."
-              : "Bluely is indexing your documents. Clauses will appear here as processing completes."}
-          </p>
-          {totalCount === 0 && (
-            <Button variant="primary" size="md" asChild>
-              <Link href="/projects">Go to Projects</Link>
-            </Button>
-          )}
-        </div>
+        </MotionReveal>
 
         {/* Browse templates */}
+        <MotionReveal>
         <section>
           <div className="mb-4">
             <h2 className="text-[16px] font-semibold text-foreground tracking-tight">
@@ -175,31 +183,34 @@ export default function ClauseLibraryPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {CLAUSE_CATEGORIES.map((cat) => (
-              <Card key={cat.id} inset="lg" className="group opacity-75">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-muted border border-border">
-                    <Briefcase size={13} className="text-muted-foreground" />
-                  </span>
-                  <Badge variant="neutral" size="sm">
+            {CLAUSE_CATEGORIES.map((cat, i) => (
+              <MotionReveal key={cat.id} delay={Math.min(i * 0.04, 0.2)}>
+                <Card inset="lg" className="group h-full rounded-2xl opacity-75 hover:opacity-100 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-muted border border-border">
+                      <Briefcase size={14} className="text-muted-foreground" />
+                    </span>
+                    <Badge variant="neutral" size="sm">
+                      {cat.title}
+                    </Badge>
+                  </div>
+                  <h3 className="text-[14.5px] font-semibold tracking-tight text-foreground leading-snug">
                     {cat.title}
-                  </Badge>
-                </div>
-                <h3 className="text-[14.5px] font-semibold tracking-tight text-foreground leading-snug">
-                  {cat.title}
-                </h3>
-                <p className="mt-2 text-[12px] text-muted-foreground leading-relaxed">
-                  {cat.description}
-                </p>
-                <div className="mt-4 pt-3 border-t border-border">
-                  <span className="text-[11.5px] text-muted-foreground italic">
-                    No clauses extracted yet
-                  </span>
-                </div>
-              </Card>
+                  </h3>
+                  <p className="mt-2 text-[12px] text-muted-foreground leading-relaxed">
+                    {cat.description}
+                  </p>
+                  <div className="mt-4 pt-3 border-t border-border">
+                    <span className="text-[11.5px] text-muted-foreground italic">
+                      No clauses extracted yet
+                    </span>
+                  </div>
+                </Card>
+              </MotionReveal>
             ))}
           </div>
         </section>
+        </MotionReveal>
       </div>
     </>
   );

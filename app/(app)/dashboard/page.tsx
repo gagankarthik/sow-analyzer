@@ -12,6 +12,7 @@ import {
   Files, CheckCircle2, ShieldAlert, Clock, ArrowRight, Plus, Loader2,
   XCircle, Sparkles, Building2,
 } from "@/components/ui/icons";
+import { MotionReveal } from "@/components/MotionReveal";
 import { useDocuments } from "@/lib/queries/documents";
 import { formatRelativeDays } from "@/lib/format";
 import type { ApiDocument, DocType, RiskLevel } from "@/lib/types";
@@ -111,7 +112,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── ROW 2: Risk distribution + pipeline status ───── */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <MotionReveal><section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card title="Risk distribution" hint={`${ready.length} processed`}>
             {isLoading ? <Skeleton className="h-[180px] rounded-lg" /> : <RiskDonut counts={risk} />}
           </Card>
@@ -139,11 +140,11 @@ export default function DashboardPage() {
               </ul>
             )}
           </Card>
-        </section>
+        </section></MotionReveal>
 
         {/* ── ROW 3: AI insights ───────────────────────────── */}
         {!isLoading && (
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <MotionReveal delay={0.05}><section className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <AIInsight
               body={highRiskTotal > 0
                 ? `${highRiskTotal} clause${highRiskTotal === 1 ? "" : "s"} across ${watchlist.length} contract${watchlist.length === 1 ? "" : "s"} are flagged high or critical risk.`
@@ -167,11 +168,11 @@ export default function DashboardPage() {
               href="/projects"
               tone={failed.length > 0 ? "danger" : "default"}
             />
-          </section>
+          </section></MotionReveal>
         )}
 
         {/* ── ROW 4: Watchlist + recent ────────────────────── */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <MotionReveal delay={0.1}><section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card title="Risk watchlist" hint={watchlist.length > 0 ? `top ${watchlist.length}` : undefined}>
             {isLoading ? (
               <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}</div>
@@ -227,7 +228,7 @@ export default function DashboardPage() {
               </ol>
             )}
           </Card>
-        </section>
+        </section></MotionReveal>
       </div>
     </>
   );
@@ -237,7 +238,7 @@ export default function DashboardPage() {
 
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs flex flex-col">
+    <div className="rounded-2xl border border-border bg-card p-5 md:p-6 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col">
       <div className="flex items-baseline justify-between gap-2 mb-5">
         <h2 className="text-[14px] font-semibold tracking-tight text-foreground">{title}</h2>
         {hint && <span className="text-[11px] font-mono text-muted-foreground">{hint}</span>}
@@ -257,7 +258,7 @@ function FooterLink({ href, label }: { href: string; label: string }) {
 
 function AIInsight({ body, confidence, href, tone = "default" }: { body: string; confidence: number; href: string; tone?: "default" | "danger" }) {
   return (
-    <div className="relative rounded-xl border border-border bg-card p-5 shadow-xs overflow-hidden">
+    <div className="relative rounded-2xl border border-border bg-card p-5 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden">
       <span className="absolute inset-x-0 top-0 h-1" style={{ background: tone === "danger" ? "var(--danger)" : "var(--ai-gradient)" }} aria-hidden />
       <div className="flex items-center gap-1.5 mb-2.5 mt-1">
         <Sparkles size={13} className="text-[var(--ai-ink)]" />
