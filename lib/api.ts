@@ -96,6 +96,29 @@ export async function uploadToS3(uploadUrl: string, file: File): Promise<void> {
   if (!res.ok) throw new Error(`S3 upload failed: HTTP ${res.status}`)
 }
 
+// Same as uploadToS3 but reports byte-level progress (0-100) via XHR, which
+// fetch can't expose. Used by the upload queue to render a real progress bar.
+export function uploadToS3WithProgress(
+  uploadUrl: string,
+  file: File,
+  onProgress: (pct: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("PUT", uploadUrl, true)
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream")
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+    }
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new Error(`S3 upload failed: HTTP ${xhr.status}`))
+    xhr.onerror = () => reject(new Error("S3 upload failed (network error)"))
+    xhr.send(file)
+  })
+}
+
 // Delete a document entirely
 export async function deleteDocument(docId: string): Promise<void> {
   await request<{ deleted: boolean }>(`/documents/${docId}`, { method: "DELETE" })
