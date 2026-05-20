@@ -2,19 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   LayoutDashboard, FileText, Kanban, BarChart3, Briefcase, Sparkles, Search,
-  Settings, User, ArrowRight, ChevronsLeft, ChevronsRight, ChevronDown, ChevronUp,
+  ChevronsLeft, ChevronsRight, ChevronDown,
 } from "@/components/ui/icons";
-import { useAuth, initialsOf } from "@/components/auth/AuthProvider";
 
 type NavItem = {
   label: string;
@@ -209,9 +204,6 @@ export function Sidebar({
           ))}
         </nav>
 
-        {/* User menu — pinned bottom */}
-        <SidebarUser collapsed={collapsed} mounted={mounted} />
-
         {/* Collapse toggle */}
         <div className={cn("border-t border-sidebar-border hidden lg:flex", collapsed ? "p-2 items-center justify-center" : "p-2")}>
           {mounted && (
@@ -336,62 +328,3 @@ function NavRow({
   return <li>{node}</li>;
 }
 
-function SidebarUser({ collapsed, mounted }: { collapsed: boolean; mounted: boolean }) {
-  const router = useRouter();
-  const { user, status, signOut } = useAuth();
-  if (!mounted) return null;
-
-  const initials = initialsOf(user);
-  const name = user?.name || user?.email?.split("@")[0] || "Account";
-  const role = user?.groups?.[0] || "Member";
-
-  const avatar = (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] text-[11px] font-semibold uppercase shrink-0">
-      {initials}
-    </span>
-  );
-
-  return (
-    <div className={cn("border-t border-sidebar-border", collapsed ? "p-2 flex justify-center" : "p-2")}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label="Account menu"
-            className={cn(
-              "inline-flex items-center rounded-md transition-colors hover:bg-sidebar-accent",
-              collapsed ? "h-9 w-9 justify-center" : "h-11 w-full gap-2.5 px-2",
-            )}
-          >
-            {avatar}
-            {!collapsed && (
-              <>
-                <span className="flex-1 min-w-0 text-left leading-tight">
-                  <span className="block text-[12.5px] font-semibold text-foreground truncate">{name}</span>
-                  <span className="block text-[10.5px] text-muted-foreground capitalize truncate">{role}</span>
-                </span>
-                <ChevronUp size={13} className="text-muted-foreground shrink-0" />
-              </>
-            )}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="start" className="w-[220px]">
-          <DropdownMenuItem onClick={() => router.push("/settings")} className="gap-2.5 cursor-pointer">
-            <User size={14} /> Profile &amp; settings
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/settings/playbook")} className="gap-2.5 cursor-pointer">
-            <Settings size={14} /> Playbook
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={signOut}
-            disabled={status !== "authenticated"}
-            className="gap-2.5 cursor-pointer text-[var(--danger)] focus:text-[var(--danger)] focus:bg-[var(--danger-soft)]"
-          >
-            <ArrowRight size={14} /> Sign out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-}
