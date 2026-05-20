@@ -145,44 +145,54 @@ function UploadItem({ item, onRemove }: { item: QueueItem; onRemove: () => void 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
+  // Refs survive React Strict Mode's mount→unmount→mount cycle. getUploadUrl
+  // creates a document row server-side, so it must fire EXACTLY ONCE per
+  // attempt — otherwise Strict Mode's double-invoke leaves an orphaned PENDING
+  // document (the duplicate-row bug).
+  const startedAttempt = useRef(-1);
+  const mountedRef = useRef(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    let alive = true;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  useEffect(() => {
+    if (startedAttempt.current === attempt) return; // ignore Strict Mode's 2nd invoke
+    startedAttempt.current = attempt;
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+
+    const safe = (fn: () => void) => { if (mountedRef.current) fn(); };
     let notFound = 0;
 
-    async function run() {
-      setPhase("uploading"); setProgress(0); setErrorMsg(null);
+    (async () => {
+      safe(() => { setPhase("uploading"); setProgress(0); setErrorMsg(null); });
       try {
         const { uploadUrl, docId: id } = await getUploadUrl(item.file.name, item.docType);
-        if (!alive) return;
-        setDocId(id);
-        await uploadToS3WithProgress(uploadUrl, item.file, (p) => alive && setProgress(p));
-        if (!alive) return;
-        setPhase("processing");
+        safe(() => setDocId(id));
+        await uploadToS3WithProgress(uploadUrl, item.file, (p) => safe(() => setProgress(p)));
+        safe(() => setPhase("processing"));
         const poll = () => {
           getDocument(id)
             .then((d) => {
-              if (!alive) return;
               notFound = 0;
-              setDocStatus(d.document.status);
-              if (d.document.status === "READY") setPhase("ready");
-              else if (d.document.status === "FAILED") { setPhase("failed"); setErrorMsg(d.document.errorMessage || "Processing failed."); }
-              else timer = setTimeout(poll, 4000);
+              safe(() => setDocStatus(d.document.status));
+              if (d.document.status === "READY") safe(() => setPhase("ready"));
+              else if (d.document.status === "FAILED") safe(() => { setPhase("failed"); setErrorMsg(d.document.errorMessage || "Processing failed."); });
+              else timerRef.current = setTimeout(poll, 4000);
             })
             .catch((e: unknown) => {
-              if (!alive) return;
               // Freshly-created row may briefly 404 — retry a few times.
-              if (notFound++ < 8) timer = setTimeout(poll, 4000);
-              else { setPhase("failed"); setErrorMsg(e instanceof Error ? e.message : "Could not read processing status."); }
+              if (notFound++ < 8) timerRef.current = setTimeout(poll, 4000);
+              else safe(() => { setPhase("failed"); setErrorMsg(e instanceof Error ? e.message : "Could not read processing status."); });
             });
         };
         poll();
       } catch (e) {
-        if (alive) { setPhase("failed"); setErrorMsg(e instanceof Error ? e.message : "Upload failed."); }
+        safe(() => { setPhase("failed"); setErrorMsg(e instanceof Error ? e.message : "Upload failed."); });
       }
-    }
-    run();
-    return () => { alive = false; if (timer) clearTimeout(timer); };
+    })();
   }, [item, attempt]);
 
   return (
