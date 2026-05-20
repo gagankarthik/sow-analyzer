@@ -782,6 +782,9 @@ html, body {
   .holo-text, .holo-ring::before, .holo-blob { animation: none; }
 }
 
+/* GSAP SplitText line masking — lines clip their words for a slide-up reveal */
+.split-line { overflow: hidden; padding-bottom: 0.04em; }
+
 /* Indeterminate progress + processing-stage pulse */
 @keyframes indeterminate {
   0%   { transform: translateX(-120%); }
