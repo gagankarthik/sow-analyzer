@@ -17,6 +17,7 @@ import {
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument, useClassification } from "@/lib/queries/documents";
 import { useUIStore } from "@/lib/stores/ui";
+import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import type { ApiClause, RiskLevel, FindingSeverity } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
@@ -62,6 +63,15 @@ export default function SowPage() {
     const set = new Set<string>();
     for (const c of allClauses) set.add(c.category);
     return Array.from(set).sort();
+  }, [allClauses]);
+  const catData = useMemo<CatDatum[]>(() => {
+    const m: Record<string, { count: number; risk: RiskLevel }> = {};
+    for (const c of allClauses) {
+      const e = (m[c.category] ??= { count: 0, risk: "low" });
+      e.count++;
+      if (RISK_RANK[c.riskLevel ?? "low"] < RISK_RANK[e.risk]) e.risk = c.riskLevel ?? "low";
+    }
+    return Object.entries(m).map(([name, v]) => ({ name, count: v.count, risk: v.risk })).sort((a, b) => b.count - a.count);
   }, [allClauses]);
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -154,6 +164,9 @@ export default function SowPage() {
                 </div>
               </section>
             )}
+
+            {/* Risk intelligence (visual) */}
+            {allClauses.length > 0 && <RiskIntelligence counts={riskCounts} categories={catData} />}
 
             {/* Two-column: clause list (70%) + sticky copilot (30%) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

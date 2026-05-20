@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProcessingState } from "@/components/ProcessingState";
 import { BluelyMark } from "@/components/ui/BluelyMark";
 import { ContractEvolution } from "@/components/ContractEvolution";
+import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -22,7 +23,7 @@ import {
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument, useClassification, useTimeline, useUpdateDocument } from "@/lib/queries/documents";
 import { formatDate } from "@/lib/format";
-import type { ApiClause, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
+import type { ApiClause, ApiKeyFinding, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
 
@@ -33,7 +34,6 @@ const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
   signed: "Signed", active: "Active", renewal: "Renewal", expired: "Expired",
 };
 
-const RISK_ORDER: RiskLevel[] = ["critical", "high", "medium", "low"];
 const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const RISK_META: Record<RiskLevel, { label: string; bg: string; text: string; bar: string }> = {
   critical: { label: "Critical", bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", bar: "bg-[var(--danger)]" },
@@ -48,6 +48,10 @@ const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: R
   low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
   info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
 };
+const SEV_FILL: Record<FindingSeverity, string> = {
+  critical: "bg-[var(--danger)]", high: "bg-[var(--warning)]", medium: "bg-[var(--ink-400)]", low: "bg-[var(--success)]", info: "bg-[var(--info)]",
+};
+const SEV_ORDER: FindingSeverity[] = ["critical", "high", "medium", "low", "info"];
 
 export default function ProjectOverviewPage() {
   const params = useParams<{ id: string }>();
@@ -76,10 +80,14 @@ export default function ProjectOverviewPage() {
     [...clauses].sort((a, b) => RISK_RANK[a.riskLevel ?? "low"] - RISK_RANK[b.riskLevel ?? "low"])
       .filter((c) => c.riskLevel === "critical" || c.riskLevel === "high").slice(0, 4),
     [clauses]);
-  const catCounts = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const c of clauses) m[c.category] = (m[c.category] ?? 0) + 1;
-    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const catData = useMemo<CatDatum[]>(() => {
+    const m: Record<string, { count: number; risk: RiskLevel }> = {};
+    for (const c of clauses) {
+      const e = (m[c.category] ??= { count: 0, risk: "low" });
+      e.count++;
+      if (RISK_RANK[c.riskLevel ?? "low"] < RISK_RANK[e.risk]) e.risk = c.riskLevel ?? "low";
+    }
+    return Object.entries(m).map(([name, v]) => ({ name, count: v.count, risk: v.risk })).sort((a, b) => b.count - a.count);
   }, [clauses]);
 
   if (isLoading) return <OverviewSkeleton />;
@@ -151,113 +159,58 @@ export default function ProjectOverviewPage() {
         )}
         {isProcessing && <ProcessingState status={rawStatus} />}
 
-        {/* ── Row A: Executive summary + Risk profile ───────── */}
-        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-3 rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
-            <div className="flex items-start gap-3.5">
-              <BluelyMark size="md" tile pulse />
-              <div className="flex-1 min-w-0">
-                <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluely · executive summary</div>
-                {!isReady ? (
-                  <p className="text-[13.5px] text-muted-foreground">The summary appears once processing completes.</p>
-                ) : summary ? (
-                  <p className="text-[14px] leading-relaxed text-foreground max-w-[68ch]">{summary}</p>
-                ) : !classification ? (
-                  <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
-                ) : (
-                  <p className="text-[13.5px] text-muted-foreground">No summary was extracted. Open the SOW analyzer for the full clause breakdown.</p>
-                )}
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/projects/${project.id}/sow`}><FileText size={12} />View all clauses<ArrowRight size={11} strokeWidth={2.25} /></Link>
-                  </Button>
-                </div>
+        {/* ── Executive summary ─────────────────────────────── */}
+        <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
+          <div className="flex items-start gap-3.5">
+            <BluelyMark size="md" tile pulse />
+            <div className="flex-1 min-w-0">
+              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluely · executive summary</div>
+              {!isReady ? (
+                <p className="text-[13.5px] text-muted-foreground">The summary appears once processing completes.</p>
+              ) : summary ? (
+                <p className="text-[14px] leading-relaxed text-foreground max-w-[78ch]">{summary}</p>
+              ) : !classification ? (
+                <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
+              ) : (
+                <p className="text-[13.5px] text-muted-foreground">No summary was extracted. Open the SOW analyzer for the full clause breakdown.</p>
+              )}
+              <div className="mt-4">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/projects/${project.id}/sow`}><FileText size={12} />View all clauses<ArrowRight size={11} strokeWidth={2.25} /></Link>
+                </Button>
               </div>
             </div>
           </div>
-
-          <Panel className="lg:col-span-2" title="Risk profile" hint={isReady && totalRiskClauses > 0 ? `${totalRiskClauses} clauses` : undefined}>
-            {!isReady ? (
-              <p className="text-[12.5px] text-muted-foreground">Risk analysis appears once processing completes.</p>
-            ) : totalRiskClauses === 0 ? (
-              <p className="text-[12.5px] text-muted-foreground">No clause data yet.</p>
-            ) : (
-              <div className="space-y-2.5">
-                {RISK_ORDER.map((r) => {
-                  const n = riskCounts[r];
-                  if (n === 0) return null;
-                  const m = RISK_META[r];
-                  const pct = Math.round((n / totalRiskClauses) * 100);
-                  return (
-                    <div key={r}>
-                      <div className="flex items-center justify-between text-[11.5px] mb-1">
-                        <span className={`font-medium ${m.text}`}>{m.label}</span>
-                        <span className="tabular-nums text-muted-foreground">{n} clause{n !== 1 ? "s" : ""}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className={`h-full rounded-full ${m.bar} transition-all`} style={{ width: `${pct}%` }} /></div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <FooterLink href={`/projects/${project.id}/sow`} label="Open SOW analyzer" />
-          </Panel>
         </section>
 
-        {/* ── Row B: Contract evolution (hero) ──────────────── */}
+        {/* ── Risk intelligence (visual) ────────────────────── */}
+        {isReady && totalRiskClauses > 0 && <RiskIntelligence counts={riskCounts} categories={catData} />}
+
+        {/* ── Contract evolution (hero) ─────────────────────── */}
         {isReady && timeline && (Object.keys(timeline.currentState).length > 0 || Object.keys(timeline.initialState).length > 0) && (
           <ContractEvolution timeline={timeline} />
         )}
 
-        {/* ── Row C: Key findings + Top categories ──────────── */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Panel title="Key findings" hint={classification && classification.keyFindings.length > 0 ? String(classification.keyFindings.length) : undefined}>
-            {!isReady ? (
-              <p className="text-[12.5px] text-muted-foreground">Findings appear after analysis completes.</p>
-            ) : !classification ? (
-              <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 rounded" />)}</div>
-            ) : classification.keyFindings.length === 0 ? (
-              <p className="text-[12.5px] text-muted-foreground">No notable findings flagged.</p>
-            ) : (
-              <ul className="space-y-2.5">
-                {[...classification.keyFindings].sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).map((f, i) => {
-                  const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
-                  return (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${s.bg} ${s.text} shrink-0 mt-0.5`}>{s.icon}</span>
-                      <div className="min-w-0">
-                        <div className="text-[12.5px] font-semibold text-foreground leading-tight">{f.label}</div>
-                        <div className="text-[11.5px] text-muted-foreground leading-snug mt-0.5">{f.detail}</div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Panel>
-
-          <Panel title="Top categories" hint={catCounts.length > 0 ? `${catCounts.length}` : undefined}>
-            {!isReady ? (
-              <p className="text-[12.5px] text-muted-foreground">Categories appear after processing.</p>
-            ) : catCounts.length === 0 ? (
-              <p className="text-[12.5px] text-muted-foreground">No category data yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {catCounts.map(([cat, count]) => {
-                  const pct = Math.round((count / clauses.length) * 100);
-                  return (
-                    <div key={cat} className="flex items-center gap-2.5">
-                      <span className="text-[11px] font-medium w-28 truncate text-foreground">{cat}</span>
-                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-[var(--brand-primary-500)]" style={{ width: `${pct}%` }} /></div>
-                      <span className="tabular-nums text-[11px] text-muted-foreground w-6 text-right">{count}</span>
+        {/* ── Key findings (visual) ─────────────────────────── */}
+        {isReady && classification && classification.keyFindings.length > 0 && (
+          <section>
+            <FindingsStrip findings={classification.keyFindings} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+              {[...classification.keyFindings].sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).map((f, i) => {
+                const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
+                return (
+                  <div key={i} className="rounded-xl border border-border bg-card p-4 shadow-xs hover:shadow-sm transition-shadow">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${s.bg} ${s.text} shrink-0`}>{s.icon}</span>
+                      <span className="text-[13px] font-semibold text-foreground leading-tight flex-1">{f.label}</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-            <FooterLink href={`/projects/${project.id}/sow`} label="View all clauses" />
-          </Panel>
-        </section>
+                    <p className="text-[12px] text-muted-foreground leading-relaxed">{f.detail}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ── Attention clauses ─────────────────────────────── */}
         {isReady && topRiskClauses.length > 0 && (
@@ -356,28 +309,8 @@ export default function ProjectOverviewPage() {
 
 /* ── building blocks ─────────────────────────────────────── */
 
-function Panel({ title, hint, className, children }: { title: string; hint?: string; className?: string; children: React.ReactNode }) {
-  return (
-    <div className={`rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs flex flex-col ${className ?? ""}`}>
-      <div className="flex items-baseline justify-between gap-2 mb-5">
-        <h3 className="text-[14px] font-semibold tracking-tight text-foreground">{title}</h3>
-        {hint && <span className="text-[11px] font-mono text-muted-foreground">{hint}</span>}
-      </div>
-      <div className="flex-1">{children}</div>
-    </div>
-  );
-}
-
 function DetailItem({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex items-center justify-between gap-2"><span className="text-[12px] text-muted-foreground">{label}</span><span>{children}</span></div>;
-}
-
-function FooterLink({ href, label }: { href: string; label: string }) {
-  return (
-    <div className="mt-5 pt-4 border-t border-border">
-      <Link href={href} className="text-[12.5px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] inline-flex items-center gap-1 transition-colors">{label}<ArrowRight size={12} strokeWidth={2.25} /></Link>
-    </div>
-  );
 }
 
 function DeepLink({ href, icon, title, sub }: { href: string; icon: React.ReactNode; title: string; sub: string }) {
@@ -394,6 +327,32 @@ function DeepLink({ href, icon, title, sub }: { href: string; icon: React.ReactN
 
 function sevRank(s: FindingSeverity): number {
   return { info: 0, low: 1, medium: 2, high: 3, critical: 4 }[s] ?? 0;
+}
+
+function FindingsStrip({ findings }: { findings: ApiKeyFinding[] }) {
+  const total = findings.length;
+  const counts = SEV_ORDER.map((sev) => ({ sev, n: findings.filter((f) => f.severity === sev).length })).filter((x) => x.n > 0);
+  return (
+    <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-center gap-2">
+        <ShieldAlert size={15} className="text-[var(--warning)]" />
+        <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Key findings</h3>
+        <span className="text-[11px] font-mono text-muted-foreground">{total}</span>
+      </div>
+      <div className="flex items-center gap-3 flex-1 max-w-md min-w-[220px]">
+        <div className="flex-1 h-2 rounded-full overflow-hidden flex bg-muted">
+          {counts.map(({ sev, n }) => <div key={sev} className={SEV_FILL[sev]} style={{ width: `${(n / total) * 100}%` }} />)}
+        </div>
+        <div className="flex items-center gap-2.5">
+          {counts.map(({ sev, n }) => (
+            <span key={sev} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground capitalize">
+              <span className={`h-2 w-2 rounded-full ${SEV_FILL[sev]}`} />{sev} {n}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function NotFound() {
