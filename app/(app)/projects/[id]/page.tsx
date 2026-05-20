@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -13,21 +13,16 @@ import { Badge } from "@/components/ui/badge";
 import { ProcessingState } from "@/components/ProcessingState";
 import { BluelyMark } from "@/components/ui/BluelyMark";
 import { ContractEvolution } from "@/components/ContractEvolution";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowRight, Clock, CalendarClock, Files, GitBranch, XCircle,
-  Loader2, Pencil, Trash2, Building2, FileText, Hash, ShieldAlert, AlertTriangle, Info,
+  ArrowRight, Clock, CalendarClock, Files, GitBranch, XCircle, Loader2, Pencil,
+  Building2, FileText, Hash, ShieldAlert, AlertTriangle, Info,
 } from "@/components/ui/icons";
-import {
-  getDocument, deleteDocument, updateDocument, apiDocToProject, getClassification, getTimeline, errorStatus,
-} from "@/lib/api";
+import { apiDocToProject, errorStatus } from "@/lib/api";
+import { useDocument, useClassification, useTimeline, useUpdateDocument } from "@/lib/queries/documents";
 import { formatDate } from "@/lib/format";
-import type { ApiDocumentDetail, ApiClassification, ApiClause, ApiTimeline, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
+import type { ApiClause, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
 
@@ -37,22 +32,21 @@ const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
   draft: "Draft", review: "Review", negotiation: "Negotiation", approval: "Approval",
   signed: "Signed", active: "Active", renewal: "Renewal", expired: "Expired",
 };
-const PROCESSING_STATUSES = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
 
 const RISK_ORDER: RiskLevel[] = ["critical", "high", "medium", "low"];
 const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const RISK_META: Record<RiskLevel, { label: string; bg: string; text: string; bar: string }> = {
-  critical: { label: "Critical", bg: "bg-[var(--danger-soft)]",  text: "text-[var(--danger)]",  bar: "bg-[var(--danger)]" },
-  high:     { label: "High",     bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", bar: "bg-[var(--warning)]" },
-  medium:   { label: "Medium",   bg: "bg-[var(--ink-100)]",      text: "text-[var(--ink-600)]", bar: "bg-[var(--ink-400)]" },
-  low:      { label: "Low",      bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", bar: "bg-[var(--success)]" },
+  critical: { label: "Critical", bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", bar: "bg-[var(--danger)]" },
+  high: { label: "High", bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", bar: "bg-[var(--warning)]" },
+  medium: { label: "Medium", bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-600)]", bar: "bg-[var(--ink-400)]" },
+  low: { label: "Low", bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", bar: "bg-[var(--success)]" },
 };
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode }> = {
-  critical: { bg: "bg-[var(--danger-soft)]",  text: "text-[var(--danger)]",  icon: <ShieldAlert size={13} /> },
-  high:     { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
-  medium:   { bg: "bg-[var(--ink-100)]",      text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
-  low:      { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
-  info:     { bg: "bg-[var(--info-soft)]",    text: "text-[var(--info)]",    icon: <Info size={13} /> },
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={13} /> },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
+  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
+  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
+  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
 };
 
 export default function ProjectOverviewPage() {
@@ -60,134 +54,76 @@ export default function ProjectOverviewPage() {
   const id = params?.id ?? "";
   const router = useRouter();
 
-  const [detail, setDetail] = useState<ApiDocumentDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [classification, setClassification] = useState<ApiClassification | null>(null);
-  const [timeline, setTimeline] = useState<ApiTimeline | null>(null);
+  const { data: detail, isLoading, isError, error } = useDocument(id);
+  const isReady = detail?.document.status === "READY";
+  const { data: classification } = useClassification(id, !!isReady);
+  const { data: timeline } = useTimeline(id, !!isReady);
+  const updateMut = useUpdateDocument(id);
 
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editLifecycle, setEditLifecycle] = useState<Lifecycle>("draft");
   const [editDocType, setEditDocType] = useState<DocType>("OTHER");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-    let alive = true;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let notFoundRetries = 0;
-    const MAX_404_RETRIES = 24;
-
-    setLoading(true); setNotFound(false); setError(null);
-
-    const tick = () => {
-      getDocument(id)
-        .then((d) => {
-          if (!alive) return;
-          setDetail(d); setError(null); setNotFound(false); setLoading(false);
-          notFoundRetries = 0;
-          if (PROCESSING_STATUSES.has(d.document.status)) timer = setTimeout(tick, 5000);
-        })
-        .catch((err: unknown) => {
-          if (!alive) return;
-          if (errorStatus(err) === 404) {
-            if (notFoundRetries < MAX_404_RETRIES) { notFoundRetries++; setLoading(true); timer = setTimeout(tick, 5000); }
-            else { setLoading(false); setNotFound(true); }
-          } else { setLoading(false); setError(err instanceof Error ? err.message : "Failed to load document"); }
-        });
-    };
-    tick();
-    return () => { alive = false; if (timer) clearTimeout(timer); };
-  }, [id]);
-
-  useEffect(() => {
-    if (!detail || detail.document.status !== "READY") return;
-    getClassification(id).then(setClassification).catch(() => {});
-    getTimeline(id).then(setTimeline).catch(() => {});
-  }, [id, detail?.document.status]);
 
   const clauses = useMemo<ApiClause[]>(() => classification?.clauses ?? [], [classification]);
-
-  // Risk counts: prefer the doc-meta aggregate (instant), fall back to classification.
   const riskCounts = useMemo(() => {
     if (detail?.document.riskCounts) return detail.document.riskCounts;
     const c = { low: 0, medium: 0, high: 0, critical: 0 };
     for (const cl of clauses) c[cl.riskLevel ?? "low"]++;
     return c;
   }, [detail?.document.riskCounts, clauses]);
-
-  const topRiskClauses = useMemo(
-    () => [...clauses].sort((a, b) => RISK_RANK[a.riskLevel ?? "low"] - RISK_RANK[b.riskLevel ?? "low"])
+  const topRiskClauses = useMemo(() =>
+    [...clauses].sort((a, b) => RISK_RANK[a.riskLevel ?? "low"] - RISK_RANK[b.riskLevel ?? "low"])
       .filter((c) => c.riskLevel === "critical" || c.riskLevel === "high").slice(0, 4),
-    [clauses],
-  );
-
+    [clauses]);
   const catCounts = useMemo(() => {
     const m: Record<string, number> = {};
     for (const c of clauses) m[c.category] = (m[c.category] ?? 0) + 1;
-    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 6);
   }, [clauses]);
 
-  if (loading) return <ProjectOverviewSkeleton />;
+  if (isLoading) return <OverviewSkeleton />;
 
-  if (notFound) {
-    return (
-      <div className="app-container py-20 flex flex-col items-center text-center">
-        <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
-        <h1 className="text-foreground" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 28, letterSpacing: "-0.025em" }}>Project not found</h1>
-        <p className="mt-2 text-[14px] text-muted-foreground max-w-sm">This engagement may have been archived, or the link is out of date.</p>
-        <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-md bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors">Back to projects</Link>
-      </div>
-    );
+  if (isError && errorStatus(error) === 404) {
+    return <NotFound />;
   }
-
-  if (error) {
+  if (isError) {
     return (
       <div className="app-container py-20 flex flex-col items-center text-center">
-        <p className="text-[14px] text-[var(--danger)]">{error}</p>
+        <p className="text-[14px] text-[var(--danger)]">{error instanceof Error ? error.message : "Failed to load document"}</p>
         <Button variant="outline" size="md" className="mt-4" onClick={() => router.refresh()}>Try again</Button>
       </div>
     );
   }
-
   if (!detail) return null;
 
   const project: Project = apiDocToProject(detail.document);
   const doc = detail.document;
   const rawStatus = doc.status;
-  const isProcessing = PROCESSING_STATUSES.has(rawStatus);
+  const isProcessing = rawStatus !== "READY" && rawStatus !== "FAILED";
   const isFailed = rawStatus === "FAILED";
-  const isReady = rawStatus === "READY";
   const totalRiskClauses = riskCounts.low + riskCounts.medium + riskCounts.high + riskCounts.critical;
-  const highRisk = riskCounts.high + riskCounts.critical;
-  const clauseCount = doc.clauseCount ?? clauses.length;
   const summary = classification?.summary || doc.summary || "";
 
-  async function handleDelete() {
-    setDeleting(true);
-    try { await deleteDocument(id); toast.success("Document deleted"); router.push("/projects"); }
-    catch (e) { toast.error("Delete failed", { description: e instanceof Error ? e.message : "Please try again." }); setDeleting(false); setShowDeleteDialog(false); }
-  }
   function openEdit() {
-    setEditTitle(detail!.document.title || ""); setEditLifecycle(detail!.document.lifecycle); setEditDocType(detail!.document.docType); setShowEditDialog(true);
+    setEditTitle(doc.title || "");
+    setEditLifecycle(doc.lifecycle);
+    setEditDocType(doc.docType);
+    setShowEdit(true);
   }
   async function handleSave() {
-    setSaving(true);
+    const patch: { title?: string; lifecycle?: string; docType?: string } = {};
+    if (editTitle.trim() !== doc.title) patch.title = editTitle.trim();
+    if (editLifecycle !== doc.lifecycle) patch.lifecycle = editLifecycle;
+    if (editDocType !== doc.docType) patch.docType = editDocType;
+    if (Object.keys(patch).length === 0) { setShowEdit(false); return; }
     try {
-      const patch: { title?: string; lifecycle?: string; docType?: string } = {};
-      if (editTitle.trim() !== detail!.document.title) patch.title = editTitle.trim();
-      if (editLifecycle !== detail!.document.lifecycle) patch.lifecycle = editLifecycle;
-      if (editDocType !== detail!.document.docType) patch.docType = editDocType;
-      if (Object.keys(patch).length === 0) { setShowEditDialog(false); return; }
-      const updated = await updateDocument(id, patch);
-      setDetail((prev) => prev ? { ...prev, document: { ...prev.document, ...updated } } : prev);
-      toast.success("Document updated"); setShowEditDialog(false);
-    } catch (e) { toast.error("Update failed", { description: e instanceof Error ? e.message : "Please try again." }); }
-    finally { setSaving(false); }
+      await updateMut.mutateAsync(patch);
+      toast.success("Document updated");
+      setShowEdit(false);
+    } catch (e) {
+      toast.error("Update failed", { description: e instanceof Error ? e.message : "Please try again." });
+    }
   }
 
   return (
@@ -196,13 +132,10 @@ export default function ProjectOverviewPage() {
       <ProjectTabs projectId={project.id} />
 
       <div className="app-container py-6 md:py-8 space-y-6">
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="outline" size="md" className="gap-1.5" onClick={openEdit}><Pencil size={13} />Edit</Button>
-          <Button variant="outline" size="md" className="gap-1.5 text-[var(--danger)] border-[var(--danger)]/30 hover:bg-[var(--danger-soft)] hover:border-[var(--danger)]/50" onClick={() => setShowDeleteDialog(true)}><Trash2 size={13} />Delete</Button>
+        <div className="flex items-center justify-end">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={openEdit}><Pencil size={13} />Edit details</Button>
         </div>
 
-        {/* Banners */}
         {isFailed && (
           <div className="flex items-start gap-3 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-4">
             <XCircle size={18} strokeWidth={1.75} className="text-[var(--danger)] shrink-0 mt-0.5" />
@@ -216,43 +149,34 @@ export default function ProjectOverviewPage() {
             </div>
           </div>
         )}
-
         {isProcessing && <ProcessingState status={rawStatus} />}
 
-        {/* ── Executive summary ─────────────────────────────── */}
-        {isReady && (
-          <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
+        {/* ── Row A: Executive summary + Risk profile ───────── */}
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-3 rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
             <div className="flex items-start gap-3.5">
               <BluelyMark size="md" tile pulse />
               <div className="flex-1 min-w-0">
                 <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluely · executive summary</div>
-                {summary ? (
-                  <p className="text-[14px] leading-relaxed text-foreground max-w-[78ch]">{summary}</p>
+                {!isReady ? (
+                  <p className="text-[13.5px] text-muted-foreground">The summary appears once processing completes.</p>
+                ) : summary ? (
+                  <p className="text-[14px] leading-relaxed text-foreground max-w-[68ch]">{summary}</p>
+                ) : !classification ? (
+                  <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
                 ) : (
-                  <p className="text-[13.5px] text-muted-foreground">Bluely has indexed this document. Open the SOW analyzer for the full clause breakdown.</p>
+                  <p className="text-[13.5px] text-muted-foreground">No summary was extracted. Open the SOW analyzer for the full clause breakdown.</p>
                 )}
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <Button variant="ai" size="sm">Ask Bluely</Button>
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/projects/${project.id}/sow`}><FileText size={12} /> View all clauses<ArrowRight size={11} strokeWidth={2.25} /></Link>
+                    <Link href={`/projects/${project.id}/sow`}><FileText size={12} />View all clauses<ArrowRight size={11} strokeWidth={2.25} /></Link>
                   </Button>
                 </div>
               </div>
             </div>
-          </section>
-        )}
+          </div>
 
-        {/* ── Metric tiles ──────────────────────────────────── */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricTile icon={<FileText size={16} strokeWidth={1.75} />} label="Clauses" value={isReady && clauseCount > 0 ? String(clauseCount) : "—"} sub={isReady ? `${catCounts.length || "—"} categories` : rawStatus.toLowerCase()} tone="brand" />
-          <MetricTile icon={<ShieldAlert size={16} strokeWidth={1.75} />} label="High-risk" value={isReady ? String(highRisk) : "—"} sub={highRisk > 0 ? "Needs review" : isReady ? "No high exposure" : "—"} tone={riskCounts.critical > 0 ? "danger" : highRisk > 0 ? "warning" : "success"} />
-          <MetricTile icon={<Building2 size={16} strokeWidth={1.75} />} label="Parties" value={doc.parties.length > 0 ? String(doc.parties.length) : "—"} sub={doc.parties[0] ?? "None identified"} tone="neutral" />
-          <MetricTile icon={<CalendarClock size={16} strokeWidth={1.75} />} label="Effective date" value={doc.effectiveDate ? formatDate(doc.effectiveDate) : "—"} sub={`Created ${formatDate(doc.createdAt)}`} tone="neutral" />
-        </section>
-
-        {/* ── Risk + findings + categories ──────────────────── */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Panel title="Risk profile" hint={isReady && totalRiskClauses > 0 ? `${totalRiskClauses} clauses` : undefined}>
+          <Panel className="lg:col-span-2" title="Risk profile" hint={isReady && totalRiskClauses > 0 ? `${totalRiskClauses} clauses` : undefined}>
             {!isReady ? (
               <p className="text-[12.5px] text-muted-foreground">Risk analysis appears once processing completes.</p>
             ) : totalRiskClauses === 0 ? (
@@ -278,7 +202,15 @@ export default function ProjectOverviewPage() {
             )}
             <FooterLink href={`/projects/${project.id}/sow`} label="Open SOW analyzer" />
           </Panel>
+        </section>
 
+        {/* ── Row B: Contract evolution (hero) ──────────────── */}
+        {isReady && timeline && (Object.keys(timeline.currentState).length > 0 || Object.keys(timeline.initialState).length > 0) && (
+          <ContractEvolution timeline={timeline} />
+        )}
+
+        {/* ── Row C: Key findings + Top categories ──────────── */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Panel title="Key findings" hint={classification && classification.keyFindings.length > 0 ? String(classification.keyFindings.length) : undefined}>
             {!isReady ? (
               <p className="text-[12.5px] text-muted-foreground">Findings appear after analysis completes.</p>
@@ -288,7 +220,7 @@ export default function ProjectOverviewPage() {
               <p className="text-[12.5px] text-muted-foreground">No notable findings flagged.</p>
             ) : (
               <ul className="space-y-2.5">
-                {[...classification.keyFindings].sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).slice(0, 4).map((f, i) => {
+                {[...classification.keyFindings].sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).map((f, i) => {
                   const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
                   return (
                     <li key={i} className="flex items-start gap-2.5">
@@ -327,14 +259,11 @@ export default function ProjectOverviewPage() {
           </Panel>
         </section>
 
-        {/* ── Highlighted high-risk clauses ─────────────────── */}
+        {/* ── Attention clauses ─────────────────────────────── */}
         {isReady && topRiskClauses.length > 0 && (
           <section className="rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <ShieldAlert size={15} className="text-[var(--danger)]" />
-                <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Clauses that need attention</h3>
-              </div>
+              <div className="flex items-center gap-2"><ShieldAlert size={15} className="text-[var(--danger)]" /><h3 className="text-[14px] font-semibold tracking-tight text-foreground">Clauses that need attention</h3></div>
               <Link href={`/projects/${project.id}/sow`} className="text-[12px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] inline-flex items-center gap-1 transition-colors">View all<ArrowRight size={11} strokeWidth={2.25} /></Link>
             </div>
             <div className="space-y-2.5">
@@ -360,25 +289,8 @@ export default function ProjectOverviewPage() {
           </section>
         )}
 
-        {/* ── Contract evolution (initial → current → expected) ─ */}
-        {isReady && timeline && (Object.keys(timeline.currentState).length > 0 || Object.keys(timeline.initialState).length > 0) && (
-          <ContractEvolution timeline={timeline} />
-        )}
-
-        {/* ── Document details + parties ────────────────────── */}
+        {/* ── Row D: Parties + Document details ─────────────── */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs">
-            <h3 className="text-[14px] font-semibold tracking-tight text-foreground mb-5">Document details</h3>
-            <dl className="space-y-3">
-              <DetailItem label="Type"><Badge variant="neutral" size="sm">{doc.docType}</Badge></DetailItem>
-              <DetailItem label="Lifecycle"><Badge variant="neutral" size="sm" className="capitalize">{doc.lifecycle}</Badge></DetailItem>
-              <DetailItem label="Status"><Badge variant={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"} size="sm" className="font-mono">{rawStatus}</Badge></DetailItem>
-              {doc.effectiveDate && <DetailItem label="Effective"><span className="text-[12px] font-medium text-foreground">{formatDate(doc.effectiveDate)}</span></DetailItem>}
-              {doc.parentDocId && <DetailItem label="Parent"><Link href={`/projects/${doc.parentDocId}`} className="text-[11.5px] font-mono text-[var(--brand-primary-600)] hover:underline truncate max-w-[120px] inline-block">{doc.parentDocId.slice(0, 12)}…</Link></DetailItem>}
-              <DetailItem label="Versions"><span className="text-[12px] font-semibold text-foreground tabular-nums">{doc.latestVersion}</span></DetailItem>
-            </dl>
-          </div>
-
           <div className="lg:col-span-2 rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs">
             <h3 className="text-[14px] font-semibold tracking-tight text-foreground mb-4">Contract parties {doc.parties.length > 0 && <span className="text-[11px] font-mono text-muted-foreground ml-1">{doc.parties.length}</span>}</h3>
             {doc.parties.length === 0 ? (
@@ -394,6 +306,18 @@ export default function ProjectOverviewPage() {
               </div>
             )}
           </div>
+
+          <div className="rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs">
+            <h3 className="text-[14px] font-semibold tracking-tight text-foreground mb-5">Document details</h3>
+            <dl className="space-y-3">
+              <DetailItem label="Type"><Badge variant="neutral" size="sm">{doc.docType}</Badge></DetailItem>
+              <DetailItem label="Lifecycle"><Badge variant="neutral" size="sm" className="capitalize">{doc.lifecycle}</Badge></DetailItem>
+              <DetailItem label="Status"><Badge variant={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"} size="sm" className="font-mono">{rawStatus}</Badge></DetailItem>
+              {doc.effectiveDate && <DetailItem label="Effective"><span className="text-[12px] font-medium text-foreground">{formatDate(doc.effectiveDate)}</span></DetailItem>}
+              {doc.parentDocId && <DetailItem label="Parent"><Link href={`/projects/${doc.parentDocId}`} className="text-[11.5px] font-mono text-[var(--brand-primary-600)] hover:underline truncate max-w-[120px] inline-block">{doc.parentDocId.slice(0, 12)}…</Link></DetailItem>}
+              <DetailItem label="Versions"><span className="text-[12px] font-semibold text-foreground tabular-nums">{doc.latestVersion}</span></DetailItem>
+            </dl>
+          </div>
         </section>
 
         {/* ── Quick links ───────────────────────────────────── */}
@@ -405,23 +329,8 @@ export default function ProjectOverviewPage() {
         </section>
       </div>
 
-      {/* Delete dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={(open) => !open && setShowDeleteDialog(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Delete document?</AlertDialogTitle>
-            <AlertDialogDescription><strong>{doc.title || "This document"}</strong> and all its versions, clauses, and analytics will be permanently removed. This cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white">
-              {deleting ? <><Loader2 size={13} className="animate-spin mr-1.5" />Deleting…</> : "Delete permanently"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Edit dialog */}
-      <Dialog open={showEditDialog} onOpenChange={(open) => !open && setShowEditDialog(false)}>
+      <Dialog open={showEdit} onOpenChange={(o) => !o && setShowEdit(false)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Edit document</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
@@ -434,8 +343,10 @@ export default function ProjectOverviewPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" size="md" onClick={() => setShowEditDialog(false)} disabled={saving}>Cancel</Button>
-            <Button variant="primary" size="md" onClick={handleSave} disabled={saving}>{saving ? <><Loader2 size={13} className="animate-spin mr-1.5" />Saving…</> : "Save changes"}</Button>
+            <Button variant="outline" size="md" onClick={() => setShowEdit(false)} disabled={updateMut.isPending}>Cancel</Button>
+            <Button variant="primary" size="md" onClick={handleSave} disabled={updateMut.isPending}>
+              {updateMut.isPending ? <><Loader2 size={13} className="animate-spin mr-1.5" />Saving…</> : "Save changes"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -443,31 +354,11 @@ export default function ProjectOverviewPage() {
   );
 }
 
-/* ─── Building blocks ─── */
+/* ── building blocks ─────────────────────────────────────── */
 
-function MetricTile({ icon, label, value, sub, tone }: { icon: React.ReactNode; label: string; value: string; sub: string; tone: "brand" | "success" | "warning" | "danger" | "neutral" }) {
-  const TONE = {
-    brand:   { bg: "var(--brand-primary-50)", text: "var(--brand-primary-700)" },
-    success: { bg: "var(--success-soft)",     text: "var(--success)" },
-    warning: { bg: "var(--warning-soft)",     text: "var(--warning)" },
-    danger:  { bg: "var(--danger-soft)",      text: "var(--danger)" },
-    neutral: { bg: "var(--ink-100)",          text: "var(--ink-700)" },
-  }[tone];
+function Panel({ title, hint, className, children }: { title: string; hint?: string; className?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-xs hover:shadow-sm transition-shadow">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: TONE.bg, color: TONE.text }}>{icon}</span>
-      </div>
-      <div className="text-foreground leading-none tabular-nums" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 26, letterSpacing: "-0.025em" }}>{value}</div>
-      <div className="mt-2 text-[12px] text-muted-foreground truncate">{sub}</div>
-    </div>
-  );
-}
-
-function Panel({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs flex flex-col">
+    <div className={`rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs flex flex-col ${className ?? ""}`}>
       <div className="flex items-baseline justify-between gap-2 mb-5">
         <h3 className="text-[14px] font-semibold tracking-tight text-foreground">{title}</h3>
         {hint && <span className="text-[11px] font-mono text-muted-foreground">{hint}</span>}
@@ -505,21 +396,32 @@ function sevRank(s: FindingSeverity): number {
   return { info: 0, low: 1, medium: 2, high: 3, critical: 4 }[s] ?? 0;
 }
 
-function ProjectOverviewSkeleton() {
+function NotFound() {
+  return (
+    <div className="app-container py-20 flex flex-col items-center text-center">
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
+      <h1 className="text-foreground" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 28, letterSpacing: "-0.025em" }}>Project not found</h1>
+      <p className="mt-2 text-[14px] text-muted-foreground max-w-sm">This engagement may have been archived, or the link is out of date.</p>
+      <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-md bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors">Back to projects</Link>
+    </div>
+  );
+}
+
+function OverviewSkeleton() {
   return (
     <>
       <div className="border-b border-border bg-card">
-        <div className="app-container pt-6 md:pt-8 pb-5 md:pb-6 space-y-4">
-          <div className="flex items-center gap-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-16" /></div>
-          <Skeleton className="h-9 w-2/3" /><Skeleton className="h-4 w-1/3" />
-          <div className="grid grid-cols-5 gap-6 pt-4 border-t border-border">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="space-y-2"><Skeleton className="h-3 w-16" /><Skeleton className="h-6 w-20" /></div>)}</div>
+        <div className="app-container pt-5 md:pt-6 pb-4 space-y-3">
+          <Skeleton className="h-3.5 w-28" />
+          <div className="flex items-center gap-2.5"><Skeleton className="h-9 w-9 rounded-lg" /><Skeleton className="h-7 w-1/2" /></div>
+          <Skeleton className="h-4 w-1/3 ml-[46px]" />
         </div>
       </div>
       <div className="border-b border-border bg-card"><div className="app-container"><div className="flex items-center gap-6 h-9">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-4 w-16" />)}</div></div></div>
       <div className="app-container py-6 md:py-8 space-y-6">
-        <Skeleton className="h-28 rounded-xl" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4"><Skeleton className="lg:col-span-3 h-40 rounded-xl" /><Skeleton className="lg:col-span-2 h-40 rounded-xl" /></div>
+        <Skeleton className="h-56 rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div>
       </div>
     </>
   );
