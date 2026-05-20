@@ -19,7 +19,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowRight, CheckCircle2, Clock, CalendarClock, Files, GitBranch, XCircle,
+  ArrowRight, Clock, CalendarClock, Files, GitBranch, XCircle,
   Loader2, Pencil, Trash2, Building2, FileText, Hash, ShieldAlert, AlertTriangle, Info,
 } from "@/components/ui/icons";
 import {
