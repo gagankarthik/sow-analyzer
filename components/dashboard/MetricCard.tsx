@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { ArrowUp, ArrowDown } from "@/components/ui/icons";
 
-type Tone = "neutral" | "success" | "danger" | "warning" | "ai";
+type Tone = "neutral" | "success" | "danger" | "warning" | "ai" | "brand";
 
 export type MetricCardProps = {
   label: string;
@@ -25,6 +25,7 @@ const ICON_TONE: Record<Tone, string> = {
   danger:  "bg-[var(--danger-soft)] text-[var(--danger)]",
   warning: "bg-[var(--warning-soft)] text-[var(--warning)]",
   ai:      "bg-[var(--ai-surface)] text-[var(--ai-ink)]",
+  brand:   "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]",
 };
 
 export function MetricCard({

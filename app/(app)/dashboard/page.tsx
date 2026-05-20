@@ -1,292 +1,216 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { RiskDonut } from "@/components/dashboard/RiskDonut";
-import { PipelineStepper } from "@/components/ui/PipelineStepper";
+import { RiskGauge, riskIndex } from "@/components/charts/RiskGauge";
+import { MiniRiskDonut } from "@/components/charts/MiniRiskDonut";
+import { MotionReveal } from "@/components/MotionReveal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Files, CheckCircle2, ShieldAlert, Clock, ArrowRight, Plus, Loader2,
-  XCircle, Sparkles, Building2,
+  Briefcase, FileText, ShieldAlert, Clock, ArrowRight, Plus, Building2, Layers,
 } from "@/components/ui/icons";
-import { MotionReveal } from "@/components/MotionReveal";
 import { useDocuments } from "@/lib/queries/documents";
-import { formatRelativeDays } from "@/lib/format";
-import type { ApiDocument, DocType, RiskLevel } from "@/lib/types";
+import { groupFamilies, type ContractFamily } from "@/lib/families";
+import type { ApiDocument, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
 
-const TYPE_PILL: Record<DocType, string> = {
-  SOW: "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]",
-  MSA: "bg-purple-50 text-purple-700",
-  AMENDMENT: "bg-[var(--warning-soft)] text-[var(--warning)]",
-  NDA: "bg-[var(--success-soft)] text-[var(--success)]",
-  OTHER: "bg-[var(--ink-100)] text-[var(--ink-600)]",
-};
 const RISK_PILL: Record<RiskLevel, string> = {
   critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
   high: "bg-[var(--warning-soft)] text-[#C2410C]",
   medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
   low: "bg-[var(--success-soft)] text-[var(--success)]",
 };
+const HEAT_COLS: { k: RiskLevel; label: string; color: string }[] = [
+  { k: "low", label: "Low", color: "var(--success)" },
+  { k: "medium", label: "Medium", color: "var(--ink-400)" },
+  { k: "high", label: "High", color: "var(--warning)" },
+  { k: "critical", label: "Critical", color: "var(--danger)" },
+];
 
-// ── count-up animation (respects reduced motion) ────────────────
 function useCountUp(target: number, ms = 700) {
   const [n, setN] = useState(target);
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { setN(target); return; }
-    let raf = 0;
-    const start = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / ms);
-      setN(Math.round(target * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    if (typeof window === "undefined" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { setN(target); return; }
+    let raf = 0; const start = performance.now();
+    const tick = (t: number) => { const p = Math.min(1, (t - start) / ms); setN(Math.round(target * (1 - Math.pow(1 - p, 3)))); if (p < 1) raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick); return () => cancelAnimationFrame(raf);
   }, [target, ms]);
   return n;
 }
-function CountUp({ value }: { value: number }) {
-  const n = useCountUp(value);
-  return <>{n.toLocaleString()}</>;
-}
+function CountUp({ value }: { value: number }) { return <>{useCountUp(value).toLocaleString()}</>; }
 
 export default function DashboardPage() {
-  const { data: docs = [], isLoading, isError } = useDocuments();
+  const { data: docs = [], isLoading } = useDocuments();
+  const families = useMemo(() => groupFamilies(docs), [docs]);
 
   const ready = docs.filter((d) => d.status === "READY");
   const processing = docs.filter((d) => PROCESSING.has(d.status));
   const failed = docs.filter((d) => d.status === "FAILED");
-  const readyPct = docs.length ? Math.round((ready.length / docs.length) * 100) : 0;
 
-  const risk = { low: 0, medium: 0, high: 0, critical: 0 };
-  let clauseTotal = 0;
-  let highRiskTotal = 0;
-  for (const d of ready) {
-    if (d.riskCounts) {
-      risk.low += d.riskCounts.low ?? 0; risk.medium += d.riskCounts.medium ?? 0;
-      risk.high += d.riskCounts.high ?? 0; risk.critical += d.riskCounts.critical ?? 0;
-    }
-    clauseTotal += d.clauseCount ?? 0;
-    highRiskTotal += d.highRiskCount ?? 0;
-  }
+  const risk = useMemo(() => {
+    const r = { low: 0, medium: 0, high: 0, critical: 0 };
+    for (const d of ready) if (d.riskCounts) { r.low += d.riskCounts.low ?? 0; r.medium += d.riskCounts.medium ?? 0; r.high += d.riskCounts.high ?? 0; r.critical += d.riskCounts.critical ?? 0; }
+    return r;
+  }, [ready]);
+  const totalClauses = ready.reduce((s, d) => s + (d.clauseCount ?? 0), 0);
+  const highRiskTotal = risk.high + risk.critical;
+  const parties = useMemo(() => { const s = new Set<string>(); for (const d of docs) d.parties?.forEach((p) => s.add(p)); return s; }, [docs]);
+  const portfolioIdx = riskIndex(risk);
 
-  const parties = new Set<string>();
-  for (const d of docs) d.parties?.forEach((p) => parties.add(p));
-
-  const watchlist = [...ready].filter((d) => (d.highRiskCount ?? 0) > 0).sort((a, b) => (b.highRiskCount ?? 0) - (a.highRiskCount ?? 0)).slice(0, 5);
-  const recent = [...docs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10);
+  // Riskiest projects first for the heatmap + pies.
+  const ranked = useMemo(() => [...families].sort((a, b) => b.highRiskCount - a.highRiskCount || b.clauseCount - a.clauseCount), [families]);
+  const heatMax = useMemo(() => Math.max(1, ...ranked.flatMap((f) => HEAT_COLS.map((c) => f.riskCounts[c.k]))), [ranked]);
 
   return (
     <>
-      <PageHeader
-        eyebrow="Portfolio overview"
-        title="Dashboard"
-        subtitle="Live status across every contract — risk, pipeline, and recent activity."
-      />
+      <PageHeader eyebrow="Portfolio command center" title="Dashboard" subtitle="Risk, stats, and the full picture across every contract — live." />
 
       <div className="app-container py-6 md:py-8 space-y-6">
-        {/* ── ROW 1: KPI strip ─────────────────────────────── */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[120px] rounded-xl" />)
-          ) : (
+        {/* ── KPIs ─────────────────────────────────────────── */}
+        <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {isLoading ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[118px] rounded-2xl" />) : (
             <>
-              <MetricCard label="Total contracts" value={<CountUp value={docs.length} />} hint={`${parties.size} unique part${parties.size === 1 ? "y" : "ies"}`} icon={<Files size={14} />} />
-              <MetricCard label="Ready" value={<CountUp value={ready.length} />} hint={docs.length ? `${readyPct}% of portfolio` : "No documents yet"} tone="success" icon={<CheckCircle2 size={14} />} />
-              <MetricCard label="High-risk clauses" value={<CountUp value={highRiskTotal} />} hint={`across ${clauseTotal.toLocaleString()} analyzed`} tone={risk.critical > 0 ? "danger" : highRiskTotal > 0 ? "warning" : "neutral"} icon={<ShieldAlert size={14} />} />
-              <MetricCard label="Processing" value={<CountUp value={processing.length} />} hint={failed.length > 0 ? `${failed.length} need attention` : processing.length > 0 ? "pipeline active" : "all clear"} tone={failed.length > 0 ? "danger" : processing.length > 0 ? "warning" : "neutral"} icon={<Clock size={14} />} />
+              <MetricCard label="Projects" value={<CountUp value={families.length} />} hint={`${docs.length} document${docs.length === 1 ? "" : "s"}`} tone="brand" icon={<Briefcase size={14} />} />
+              <MetricCard label="Clauses analyzed" value={<CountUp value={totalClauses} />} hint={`${ready.length} processed`} tone="neutral" icon={<FileText size={14} />} />
+              <MetricCard label="High-risk clauses" value={<CountUp value={highRiskTotal} />} hint={`${risk.critical} critical · ${risk.high} high`} tone={risk.critical > 0 ? "danger" : highRiskTotal > 0 ? "warning" : "success"} icon={<ShieldAlert size={14} />} />
+              <MetricCard label="Parties" value={<CountUp value={parties.size} />} hint="across portfolio" tone="neutral" icon={<Building2 size={14} />} />
+              <MetricCard label="Processing" value={<CountUp value={processing.length} />} hint={failed.length > 0 ? `${failed.length} need attention` : processing.length > 0 ? "pipeline active" : "all clear"} tone={failed.length > 0 ? "danger" : processing.length > 0 ? "warning" : "success"} icon={<Clock size={14} />} />
             </>
           )}
         </section>
 
-        {isError && (
-          <div className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-3 text-[13px] text-[var(--danger)]">
-            Couldn&apos;t load your portfolio. Check your connection and try again.
-          </div>
-        )}
-
-        {/* ── ROW 2: Risk distribution + pipeline status ───── */}
-        <MotionReveal><section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card title="Risk distribution" hint={`${ready.length} processed`}>
-            {isLoading ? <Skeleton className="h-[180px] rounded-lg" /> : <RiskDonut counts={risk} />}
-          </Card>
-
-          <Card title="Pipeline" hint={processing.length > 0 ? `${processing.length} active` : undefined}>
+        {/* ── Portfolio risk: gauge + donut ────────────────── */}
+        <MotionReveal>
+          <section className="rounded-3xl border border-border bg-card shadow-xs overflow-hidden">
+            <div className="px-5 md:px-6 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+              <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Portfolio risk</h2>
+              <span className="text-[11px] font-mono text-muted-foreground">{(risk.low + risk.medium + highRiskTotal).toLocaleString()} clauses scored</span>
+            </div>
             {isLoading ? (
-              <div className="space-y-4">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
-            ) : processing.length === 0 ? (
-              <div className="flex h-[180px] flex-col items-center justify-center text-center">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--success-soft)] text-[var(--success)] mb-3"><CheckCircle2 size={18} /></span>
-                <p className="text-[13px] font-medium text-foreground">Pipeline is clear</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">No contracts are processing right now.</p>
-              </div>
+              <div className="p-6"><Skeleton className="h-[180px] rounded-2xl" /></div>
             ) : (
-              <ul className="space-y-4">
-                {processing.slice(0, 4).map((d) => (
-                  <li key={d.docId}>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <Link href={`/projects/${d.docId}`} className="text-[13px] font-medium text-foreground truncate hover:text-[var(--brand-primary-700)] transition-colors">{d.title || "Untitled"}</Link>
-                      <span className="inline-flex items-center gap-1 text-[11px] text-[var(--warning)] shrink-0"><Loader2 size={11} className="animate-spin" />{d.status.toLowerCase()}</span>
-                    </div>
-                    <PipelineStepper status={d.status} showLabels={false} />
-                  </li>
-                ))}
-              </ul>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-5 md:p-6 items-center">
+                <div className="lg:col-span-4 flex flex-col items-center justify-center">
+                  <RiskGauge score={portfolioIdx} />
+                  <p className="mt-1 text-[12px] text-muted-foreground text-center">
+                    {highRiskTotal > 0 ? <><span className="font-semibold text-foreground">{highRiskTotal}</span> high/critical across the book</> : ready.length ? "No high-risk exposure" : "Awaiting analysis"}
+                  </p>
+                </div>
+                <div className="lg:col-span-8 lg:border-l border-border lg:pl-6">
+                  <RiskDonut counts={risk} />
+                </div>
+              </div>
             )}
-          </Card>
-        </section></MotionReveal>
+          </section>
+        </MotionReveal>
 
-        {/* ── ROW 3: AI insights ───────────────────────────── */}
-        {!isLoading && (
-          <MotionReveal delay={0.05}><section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <AIInsight
-              body={highRiskTotal > 0
-                ? `${highRiskTotal} clause${highRiskTotal === 1 ? "" : "s"} across ${watchlist.length} contract${watchlist.length === 1 ? "" : "s"} are flagged high or critical risk.`
-                : ready.length > 0 ? "No high or critical risk detected across processed contracts." : "Upload a contract to surface risk insights."}
-              confidence={ready.length > 2 ? 4 : ready.length > 0 ? 3 : 1}
-              href="/insights"
-              tone={risk.critical > 0 ? "danger" : "default"}
-            />
-            <AIInsight
-              body={processing.length > 0
-                ? `${processing.length} contract${processing.length === 1 ? "" : "s"} are being analyzed and will be ready shortly.`
-                : `${clauseTotal.toLocaleString()} clauses analyzed across ${parties.size} part${parties.size === 1 ? "y" : "ies"}.`}
-              confidence={3}
-              href="/projects"
-            />
-            <AIInsight
-              body={failed.length > 0
-                ? `${failed.length} contract${failed.length === 1 ? "" : "s"} failed to process and need re-uploading.`
-                : `Portfolio is healthy — ${readyPct}% of contracts fully processed.`}
-              confidence={ready.length > 0 ? 4 : 2}
-              href="/projects"
-              tone={failed.length > 0 ? "danger" : "default"}
-            />
-          </section></MotionReveal>
-        )}
-
-        {/* ── ROW 4: Watchlist + recent ────────────────────── */}
-        <MotionReveal delay={0.1}><section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card title="Risk watchlist" hint={watchlist.length > 0 ? `top ${watchlist.length}` : undefined}>
-            {isLoading ? (
-              <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}</div>
-            ) : watchlist.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--success-soft)] text-[var(--success)] mb-3"><CheckCircle2 size={18} /></span>
-                <p className="text-[13px] font-medium text-foreground">No high-risk exposure</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">Nothing needs review across the portfolio.</p>
+        {/* ── Risk by project (heatmap) ────────────────────── */}
+        {!isLoading && ranked.length > 0 && (
+          <MotionReveal delay={0.05}>
+            <section className="rounded-3xl border border-border bg-card shadow-xs p-5 md:p-6">
+              <div className="flex items-baseline justify-between gap-2 mb-4">
+                <h2 className="text-[14px] font-semibold tracking-tight text-foreground">Risk by project</h2>
+                <span className="text-[11px] font-mono text-muted-foreground">project × severity</span>
               </div>
-            ) : (
-              <table className="w-full">
-                <tbody>
-                  {watchlist.map((d) => (
-                    <tr key={d.docId} className="border-b border-border last:border-0">
-                      <td className="py-2.5 pr-2">
-                        <Link href={`/projects/${d.docId}`} className="text-[13px] font-medium text-foreground hover:text-[var(--brand-primary-700)] transition-colors line-clamp-1">{d.title || "Untitled"}</Link>
-                      </td>
-                      <td className="py-2.5 px-1 w-16"><span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${TYPE_PILL[d.docType]}`}>{d.docType}</span></td>
-                      <td className="py-2.5 px-1 w-20"><span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${RISK_PILL[d.overallRisk ?? "low"]}`}>{d.overallRisk ?? "low"}</span></td>
-                      <td className="py-2.5 pl-1 text-right w-16 text-[12px] tabular-nums text-muted-foreground">{d.highRiskCount} hi</td>
+              <div className="overflow-x-auto">
+                <table className="w-full border-separate min-w-[520px]" style={{ borderSpacing: "4px" }}>
+                  <thead>
+                    <tr>
+                      <th className="text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground pb-1 pl-1 w-[40%]">Project</th>
+                      {HEAT_COLS.map((c) => (
+                        <th key={c.k} className="pb-1">
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold" style={{ color: c.color }}><span className="h-2 w-2 rounded-full" style={{ background: c.color }} />{c.label}</span>
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            <FooterLink href="/projects" label="View all contracts" />
-          </Card>
-
-          <Card title="Recent contracts">
-            {isLoading ? (
-              <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
-            ) : recent.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <p className="text-[13px] text-muted-foreground mb-3">No contracts yet</p>
-                <Button variant="primary" size="md" asChild><Link href="/projects/new"><Plus size={13} /> Upload contract</Link></Button>
+                  </thead>
+                  <tbody>
+                    {ranked.slice(0, 8).map((f) => (
+                      <tr key={f.id} className="group">
+                        <td className="pr-2 pl-1">
+                          <Link href={`/projects/${f.root.docId}`} className="text-[12.5px] font-medium text-foreground group-hover:text-[var(--brand-primary-700)] transition-colors line-clamp-1">{f.root.title || "Untitled"}</Link>
+                        </td>
+                        {HEAT_COLS.map((c) => {
+                          const n = f.riskCounts[c.k];
+                          const intensity = n === 0 ? 0 : 0.14 + 0.72 * (n / heatMax);
+                          return (
+                            <td key={c.k} className="p-0">
+                              <Link href={`/projects/${f.root.docId}`} className="block h-10 rounded-lg flex items-center justify-center text-[12px] font-semibold tabular-nums transition-transform hover:scale-[1.04]"
+                                style={{ background: n === 0 ? "var(--ink-50)" : `color-mix(in srgb, ${c.color} ${Math.round(intensity * 100)}%, transparent)`, color: n === 0 ? "var(--ink-300)" : intensity > 0.55 ? "#fff" : "var(--ink-800)" }}
+                                title={`${f.root.title} · ${c.label}: ${n}`}>{n || "·"}</Link>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+            </section>
+          </MotionReveal>
+        )}
+
+        {/* ── Each project: risk pie ───────────────────────── */}
+        <MotionReveal delay={0.1}>
+          <section>
+            <div className="flex items-baseline justify-between gap-2 mb-4">
+              <h2 className="text-[14px] font-semibold tracking-tight text-foreground">Projects {families.length > 0 && <span className="text-[11px] font-mono text-muted-foreground ml-1">{families.length}</span>}</h2>
+              <Link href="/projects" className="text-[12.5px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] inline-flex items-center gap-1 transition-colors">All projects<ArrowRight size={12} strokeWidth={2.25} /></Link>
+            </div>
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}</div>
+            ) : families.length === 0 ? (
+              <EmptyState />
             ) : (
-              <ol className="relative">
-                {recent.map((d, i) => (
-                  <li key={d.docId} className="relative flex gap-3 pb-3 last:pb-0">
-                    {i < recent.length - 1 && <span className="absolute left-[5px] top-4 bottom-0 w-px bg-border" aria-hidden />}
-                    <StatusDot doc={d} />
-                    <div className="flex-1 min-w-0 -mt-0.5">
-                      <Link href={`/projects/${d.docId}`} className="text-[13px] font-medium text-foreground hover:text-[var(--brand-primary-700)] transition-colors line-clamp-1">{d.title || "Untitled"}</Link>
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                        <span className={`font-semibold px-1.5 py-0.5 rounded-full ${TYPE_PILL[d.docType]}`}>{d.docType}</span>
-                        {d.parties?.[0] && <span className="inline-flex items-center gap-1 truncate max-w-[120px]"><Building2 size={9} />{d.parties[0]}</span>}
-                        <span className="ml-auto font-mono shrink-0">{formatRelativeDays(d.createdAt)}</span>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {ranked.slice(0, 9).map((f, i) => <ProjectPieCard key={f.id} family={f} delay={Math.min(i * 0.03, 0.18)} />)}
+              </div>
             )}
-          </Card>
-        </section></MotionReveal>
+          </section>
+        </MotionReveal>
       </div>
     </>
   );
 }
 
-/* ── building blocks ─────────────────────────────────────── */
-
-function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function ProjectPieCard({ family, delay }: { family: ContractFamily; delay: number }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 md:p-6 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col">
-      <div className="flex items-baseline justify-between gap-2 mb-5">
-        <h2 className="text-[14px] font-semibold tracking-tight text-foreground">{title}</h2>
-        {hint && <span className="text-[11px] font-mono text-muted-foreground">{hint}</span>}
-      </div>
-      <div className="flex-1">{children}</div>
-    </div>
-  );
-}
-
-function FooterLink({ href, label }: { href: string; label: string }) {
-  return (
-    <div className="mt-4 pt-3 border-t border-border">
-      <Link href={href} className="text-[12.5px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] inline-flex items-center gap-1 transition-colors">{label}<ArrowRight size={12} strokeWidth={2.25} /></Link>
-    </div>
-  );
-}
-
-function AIInsight({ body, confidence, href, tone = "default" }: { body: string; confidence: number; href: string; tone?: "default" | "danger" }) {
-  return (
-    <div className="relative rounded-2xl border border-border bg-card p-5 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden">
-      <span className="absolute inset-x-0 top-0 h-1" style={{ background: tone === "danger" ? "var(--danger)" : "var(--ai-gradient)" }} aria-hidden />
-      <div className="flex items-center gap-1.5 mb-2.5 mt-1">
-        <Sparkles size={13} className="text-[var(--ai-ink)]" />
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">AI Insight</span>
-      </div>
-      <p className="text-[13.5px] leading-relaxed text-foreground min-h-[3.5em]">{body}</p>
-      <div className="mt-4 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1" aria-label={`Confidence ${confidence} of 4`}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <span key={i} className="h-1.5 w-1.5 rounded-full" style={{ background: i < confidence ? "var(--ai-ink)" : "var(--ink-300)" }} />
+    <MotionReveal delay={delay}>
+      <Link href={`/projects/${family.root.docId}`} className="group block rounded-2xl border border-border bg-card p-5 shadow-xs hover:shadow-md transition-all duration-200">
+        <div className="flex items-center gap-4">
+          <MiniRiskDonut counts={family.riskCounts} />
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[14px] font-semibold tracking-tight text-foreground truncate group-hover:text-[var(--brand-primary-700)] transition-colors">{family.root.title || "Untitled"}</h3>
+            <p className="text-[11.5px] text-muted-foreground mt-0.5">{family.documents.length} doc{family.documents.length === 1 ? "" : "s"} · {family.clauseCount} clauses</p>
+            <div className="mt-2 flex items-center gap-1.5">
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${RISK_PILL[family.overallRisk]}`}>{family.overallRisk} risk</span>
+              {family.highRiskCount > 0 && <span className="text-[10.5px] text-muted-foreground tabular-nums">{family.highRiskCount} high-risk</span>}
+            </div>
+          </div>
+        </div>
+        {/* legend */}
+        <div className="mt-3.5 pt-3 border-t border-border flex items-center justify-between text-[10.5px]">
+          {([["Critical", "var(--danger)", family.riskCounts.critical], ["High", "var(--warning)", family.riskCounts.high], ["Med", "var(--ink-400)", family.riskCounts.medium], ["Low", "var(--success)", family.riskCounts.low]] as const).map(([l, c, n]) => (
+            <span key={l} className="inline-flex items-center gap-1 text-muted-foreground"><span className="h-2 w-2 rounded-full" style={{ background: c }} />{n}</span>
           ))}
-        </span>
-        <Link href={href} className="text-[12px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] inline-flex items-center gap-1 transition-colors">
-          View <ArrowRight size={11} strokeWidth={2.25} />
-        </Link>
-      </div>
-    </div>
+        </div>
+      </Link>
+    </MotionReveal>
   );
 }
 
-function StatusDot({ doc }: { doc: ApiDocument }) {
-  const ready = doc.status === "READY";
-  const failed = doc.status === "FAILED";
+function EmptyState() {
   return (
-    <span className="relative z-10 mt-1 inline-flex h-3 w-3 shrink-0 items-center justify-center">
-      {ready ? <CheckCircle2 size={12} className="text-[var(--success)]" />
-        : failed ? <XCircle size={12} className="text-[var(--danger)]" />
-        : <Loader2 size={12} className="text-[var(--warning)] animate-spin" />}
-    </span>
+    <div className="rounded-3xl border border-dashed border-border bg-card/50 py-20 flex flex-col items-center text-center">
+      <span className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)] mb-5"><Layers size={28} strokeWidth={1.5} /></span>
+      <h3 className="text-[18px] font-semibold text-foreground">No projects yet</h3>
+      <p className="mt-2 text-[13px] text-muted-foreground max-w-sm">Upload a contract and Bluely will analyze it, score risk, and chart it here.</p>
+      <Button variant="primary" size="lg" className="mt-6 rounded-full" asChild><Link href="/projects/new"><Plus size={15} />Upload a contract</Link></Button>
+    </div>
   );
 }
