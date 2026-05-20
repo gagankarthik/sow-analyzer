@@ -45,7 +45,7 @@ export default function SowPage() {
 
   const { data: detail, isLoading, isError, error } = useDocument(id);
   const isReady = detail?.document.status === "READY";
-  const { data: classification, isLoading: classLoading, isError: classError } = useClassification(id, !!isReady);
+  const { data: classification, isLoading: classLoading, isError: classError, error: classErr, refetch: refetchClass } = useClassification(id, !!isReady);
 
   const [search, setSearch] = useState("");
   const [activeRisk, setActiveRisk] = useState<RiskLevel | null>(null);
@@ -189,8 +189,19 @@ export default function SowPage() {
                   <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
                 ) : classError ? (
                   <div className="rounded-lg border border-dashed border-border bg-card p-10 flex flex-col items-center text-center">
-                    <p className="text-[13.5px] font-medium text-foreground mb-1">Clause data not available.</p>
-                    <p className="text-[12.5px] text-muted-foreground">Try re-uploading this document.</p>
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--warning-soft)] text-[var(--warning)] mb-3"><AlertTriangle size={18} /></span>
+                    <p className="text-[13.5px] font-medium text-foreground mb-1">
+                      {errorStatus(classErr) === 404 ? "No clause analysis for this document yet" : "Couldn't load clause analysis"}
+                    </p>
+                    <p className="text-[12.5px] text-muted-foreground max-w-sm">
+                      {errorStatus(classErr) === 404
+                        ? "This document was processed before clause extraction was available, or extraction didn't complete. Re-upload it to generate the analysis."
+                        : (classErr instanceof Error ? classErr.message : "A network error occurred.")}
+                    </p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => refetchClass()}>Retry</Button>
+                      <Button variant="primary" size="sm" asChild><Link href="/projects/new">Re-upload</Link></Button>
+                    </div>
                   </div>
                 ) : filtered.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border bg-card p-10 flex flex-col items-center text-center">
