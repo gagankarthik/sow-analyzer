@@ -56,8 +56,8 @@ export default function NewProjectPage() {
     <>
       <PageHeader
         eyebrow="New document"
-        title="Upload contracts"
-        subtitle="Drop one or more files. Bluely extracts every clause, scores risk, and prepares the workspace — usually within 90 seconds."
+        title="New project"
+        subtitle="Drop a SOW or MSA to start a project — or an amendment to add to an existing one. Bluely extracts every clause, scores risk, and files amendments under the right contract automatically."
         actions={
           <Link href="/projects" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-card hover:bg-muted text-foreground text-[13px] font-medium transition-colors">
             <ChevronLeft size={14} />Back to projects

@@ -2,37 +2,20 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
-import { type ColumnDef } from "@tanstack/react-table";
-import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DataTable } from "@/components/ui/data-table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { MotionReveal } from "@/components/MotionReveal";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Plus, FileText, Loader2, MoreHorizontal, Pencil, Trash2, Download, Building2,
+  Plus, Search, Briefcase, FileText, GitBranch, ArrowRight,
+  CheckCircle2, Loader2, XCircle, Layers,
 } from "@/components/ui/icons";
-import { formatDate, formatRelativeDays } from "@/lib/format";
-import { useDocuments, documentKeys } from "@/lib/queries/documents";
-import { deleteDocument, updateDocument } from "@/lib/api";
-import type { ApiDocument, DocType, Lifecycle, RiskLevel } from "@/lib/types";
+import { useDocuments } from "@/lib/queries/documents";
+import { groupFamilies, type ContractFamily } from "@/lib/families";
+import { formatRelativeDays } from "@/lib/format";
+import type { ApiDocument, DocType, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
-const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "OTHER"];
-const LIFECYCLE_OPTIONS: Lifecycle[] = ["draft", "review", "negotiation", "approval", "signed", "active", "renewal", "expired"];
-const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
-  draft: "Draft", review: "Review", negotiation: "Negotiation", approval: "Approval",
-  signed: "Signed", active: "Active", renewal: "Renewal", expired: "Expired",
-};
 
 const TYPE_PILL: Record<DocType, string> = {
   SOW: "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]",
@@ -47,318 +30,224 @@ const RISK_PILL: Record<RiskLevel, string> = {
   medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
   low: "bg-[var(--success-soft)] text-[var(--success)]",
 };
+const RISK_FILL: Record<RiskLevel, string> = {
+  critical: "bg-[var(--danger)]", high: "bg-[var(--warning)]", medium: "bg-[var(--ink-400)]", low: "bg-[var(--success)]",
+};
 
 type ViewKey = "all" | "risk" | "processing" | "failed";
 
 export default function ProjectsPage() {
-  const qc = useQueryClient();
   const { data: docs = [], isLoading } = useDocuments();
-
   const [view, setView] = useState<ViewKey>("all");
-  const [typeFilter, setTypeFilter] = useState<"ALL" | DocType>("ALL");
+  const [search, setSearch] = useState("");
 
-  // Delete (single + bulk)
-  const [deleteTargets, setDeleteTargets] = useState<ApiDocument[] | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
-  // Edit
-  const [editTarget, setEditTarget] = useState<ApiDocument | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editLifecycle, setEditLifecycle] = useState<Lifecycle>("draft");
-  const [editDocType, setEditDocType] = useState<DocType>("OTHER");
-  const [saving, setSaving] = useState(false);
+  const families = useMemo(() => groupFamilies(docs), [docs]);
 
   const counts = useMemo(() => ({
-    all: docs.length,
-    risk: docs.filter((d) => (d.highRiskCount ?? 0) > 0 || d.overallRisk === "high" || d.overallRisk === "critical").length,
-    processing: docs.filter((d) => PROCESSING.has(d.status)).length,
-    failed: docs.filter((d) => d.status === "FAILED").length,
-  }), [docs]);
+    all: families.length,
+    risk: families.filter((f) => f.overallRisk === "high" || f.overallRisk === "critical").length,
+    processing: families.filter((f) => f.processing).length,
+    failed: families.filter((f) => f.failed).length,
+  }), [families]);
 
-  const rows = useMemo(() => docs.filter((d) => {
-    if (view === "risk" && !((d.highRiskCount ?? 0) > 0 || d.overallRisk === "high" || d.overallRisk === "critical")) return false;
-    if (view === "processing" && !PROCESSING.has(d.status)) return false;
-    if (view === "failed" && d.status !== "FAILED") return false;
-    if (typeFilter !== "ALL" && d.docType !== typeFilter) return false;
-    return true;
-  }), [docs, view, typeFilter]);
-
-  function openEdit(d: ApiDocument) {
-    setEditTarget(d);
-    setEditTitle(d.title || "");
-    setEditLifecycle(d.lifecycle);
-    setEditDocType(d.docType);
-  }
-
-  async function handleDelete() {
-    if (!deleteTargets) return;
-    setDeleting(true);
-    try {
-      await Promise.all(deleteTargets.map((d) => deleteDocument(d.docId)));
-      await qc.invalidateQueries({ queryKey: documentKeys.all });
-      toast.success(deleteTargets.length === 1 ? "Document deleted" : `${deleteTargets.length} documents deleted`);
-      setDeleteTargets(null);
-    } catch (e) {
-      toast.error("Delete failed", { description: e instanceof Error ? e.message : "Please try again." });
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  async function handleSave() {
-    if (!editTarget) return;
-    setSaving(true);
-    try {
-      const patch: { title?: string; lifecycle?: string; docType?: string } = {};
-      if (editTitle.trim() !== editTarget.title) patch.title = editTitle.trim();
-      if (editLifecycle !== editTarget.lifecycle) patch.lifecycle = editLifecycle;
-      if (editDocType !== editTarget.docType) patch.docType = editDocType;
-      if (Object.keys(patch).length === 0) { setEditTarget(null); return; }
-      await updateDocument(editTarget.docId, patch);
-      await qc.invalidateQueries({ queryKey: documentKeys.all });
-      toast.success("Document updated");
-      setEditTarget(null);
-    } catch (e) {
-      toast.error("Update failed", { description: e instanceof Error ? e.message : "Please try again." });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function exportCsv() {
-    const header = ["Title", "Type", "Parties", "Clauses", "Risk", "Status", "Updated"];
-    const lines = rows.map((d) => [
-      d.title || "Untitled", d.docType, (d.parties ?? []).join("; "),
-      d.clauseCount ?? "", d.overallRisk ?? "", d.status, d.updatedAt,
-    ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
-    const blob = new Blob([[header.join(","), ...lines].join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "contracts.csv"; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  const columns = useMemo<ColumnDef<ApiDocument>[]>(() => [
-    {
-      accessorKey: "title",
-      header: "Title",
-      cell: ({ row }) => (
-        <Link href={`/projects/${row.original.docId}`} className="inline-flex items-center gap-2 font-medium text-foreground hover:text-[var(--brand-primary-700)] transition-colors max-w-[280px]">
-          <FileText size={14} className="text-muted-foreground shrink-0" />
-          <span className="truncate">{row.original.title || "Untitled"}</span>
-        </Link>
-      ),
-    },
-    {
-      accessorKey: "docType",
-      header: "Type",
-      cell: ({ row }) => <span className={`text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full ${TYPE_PILL[row.original.docType]}`}>{row.original.docType}</span>,
-    },
-    {
-      id: "parties",
-      accessorFn: (d) => (d.parties ?? []).join(", "),
-      header: "Parties",
-      enableSorting: false,
-      cell: ({ row }) => {
-        const ps = row.original.parties ?? [];
-        if (ps.length === 0) return <span className="text-muted-foreground">—</span>;
-        return (
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground max-w-[200px]" title={ps.join(", ")}>
-            <Building2 size={12} className="shrink-0" />
-            <span className="truncate">{ps[0]}{ps.length > 1 ? ` +${ps.length - 1}` : ""}</span>
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "clauseCount",
-      header: "Clauses",
-      cell: ({ row }) => <span className="tabular-nums text-muted-foreground">{row.original.clauseCount ?? "—"}</span>,
-    },
-    {
-      accessorKey: "overallRisk",
-      header: "Risk",
-      cell: ({ row }) => {
-        const r = row.original.overallRisk;
-        if (!r || row.original.status !== "READY") return <span className="text-muted-foreground">—</span>;
-        return <span className={`text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${RISK_PILL[r]}`}>{r}</span>;
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => <StatusCell status={row.original.status} lifecycle={row.original.lifecycle} />,
-    },
-    {
-      accessorKey: "updatedAt",
-      header: "Updated",
-      cell: ({ row }) => <span className="text-muted-foreground tabular-nums" title={formatDate(row.original.updatedAt)}>{formatRelativeDays(row.original.updatedAt)}</span>,
-    },
-    {
-      id: "actions",
-      header: "",
-      enableSorting: false,
-      size: 48,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Row actions"><MoreHorizontal size={15} /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem asChild className="gap-2 text-[13px] cursor-pointer">
-                <Link href={`/projects/${row.original.docId}`}><FileText size={13} className="text-muted-foreground" />Open</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2 text-[13px] cursor-pointer" onClick={() => openEdit(row.original)}>
-                <Pencil size={13} className="text-muted-foreground" />Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-[13px] text-[var(--danger)] focus:text-[var(--danger)] cursor-pointer" onClick={() => setDeleteTargets([row.original])}>
-                <Trash2 size={13} />Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
-    },
-  ], []);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return families.filter((f) => {
+      if (view === "risk" && !(f.overallRisk === "high" || f.overallRisk === "critical")) return false;
+      if (view === "processing" && !f.processing) return false;
+      if (view === "failed" && !f.failed) return false;
+      if (q) {
+        const hay = [f.root.title, ...f.documents.map((d) => d.title), ...f.parties].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [families, view, search]);
 
   return (
     <>
       <PageHeader
-        eyebrow={isLoading ? "Loading…" : `${counts.all} contract${counts.all === 1 ? "" : "s"}`}
+        eyebrow={isLoading ? "Loading…" : `${counts.all} project${counts.all === 1 ? "" : "s"} · ${docs.length} document${docs.length === 1 ? "" : "s"}`}
         title="Projects"
-        subtitle="Every contract, its risk, and its processing status — in one workspace."
+        subtitle="Each project groups a contract with its amendments. Upload an amendment and Bluely files it under the right contract automatically."
         actions={
-          <Link href="/projects/new" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors">
-            <Plus size={14} strokeWidth={2.5} />Upload contract
+          <Link href="/projects/new" className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors shadow-sm">
+            <Plus size={15} strokeWidth={2.5} />New project
           </Link>
         }
       />
 
       <div className="app-container py-6 md:py-8 space-y-5">
-        {/* Saved views */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {([
-            { key: "all", label: "All" },
-            { key: "risk", label: "High risk" },
-            { key: "processing", label: "Processing" },
-            { key: "failed", label: "Needs attention" },
-          ] as const).map((v) => (
-            <button
-              key={v.key}
-              onClick={() => setView(v.key)}
-              data-active={view === v.key}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-border bg-card hover:bg-muted text-[12.5px] font-medium text-muted-foreground data-[active=true]:bg-[var(--brand-primary-50)] data-[active=true]:text-[var(--brand-primary-700)] data-[active=true]:border-[var(--brand-primary-200)] transition-colors"
-            >
-              {v.label}
-              <span className="tabular-nums text-[11px] opacity-70">{isLoading ? "…" : counts[v.key]}</span>
-            </button>
-          ))}
+        {/* Toolbar: search + views */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex items-center flex-1 min-w-[220px] max-w-sm">
+            <Search size={15} className="absolute left-3 text-muted-foreground pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search projects, documents, parties…"
+              className="h-10 w-full rounded-full border border-border bg-card pl-9 pr-4 text-[13px] outline-none focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)] placeholder:text-muted-foreground transition-shadow"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {([
+              { key: "all", label: "All" },
+              { key: "risk", label: "High risk" },
+              { key: "processing", label: "Processing" },
+              { key: "failed", label: "Needs attention" },
+            ] as const).map((v) => (
+              <button
+                key={v.key}
+                onClick={() => setView(v.key)}
+                data-active={view === v.key}
+                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[12.5px] font-medium text-muted-foreground border border-transparent hover:bg-muted data-[active=true]:bg-[var(--brand-primary-50)] data-[active=true]:text-[var(--brand-primary-700)] transition-colors"
+              >
+                {v.label}
+                <span className="tabular-nums text-[11px] opacity-70">{isLoading ? "·" : counts[v.key]}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        <DataTable
-          columns={columns}
-          data={rows}
-          loading={isLoading}
-          enableSelection
-          searchPlaceholder="Search by title or party…"
-          getRowId={(d) => d.docId}
-          initialPageSize={25}
-          toolbar={
-            <div className="flex items-center gap-2">
-              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as "ALL" | DocType)}>
-                <SelectTrigger className="h-8 text-[12.5px] w-[120px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All types</SelectItem>
-                  {DOC_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="sm" onClick={exportCsv} disabled={rows.length === 0}><Download size={13} />Export</Button>
-            </div>
-          }
-          bulkActions={(sel) => (
-            <Button variant="outline" size="sm" className="text-[var(--danger)] border-[var(--danger)]/30 hover:bg-[var(--danger-soft)]" onClick={() => setDeleteTargets(sel)}>
-              <Trash2 size={13} />Delete {sel.length}
-            </Button>
-          )}
-          empty={{
-            title: view === "all" && typeFilter === "ALL" ? "No contracts yet" : "No contracts match these filters",
-            description: view === "all" && typeFilter === "ALL"
-              ? "Upload your first SOW and Bluely will extract clauses, score risk, and build the workspace."
-              : "Try a different view or type filter.",
-            action: view === "all" && typeFilter === "ALL"
-              ? <Button variant="primary" size="md" asChild><Link href="/projects/new"><Plus size={14} />Upload your first contract</Link></Button>
-              : <Button variant="outline" size="sm" onClick={() => { setView("all"); setTypeFilter("ALL"); }}>Clear filters</Button>,
-          }}
-        />
-      </div>
-
-      {/* Delete confirmation (single + bulk) */}
-      <AlertDialog open={!!deleteTargets} onOpenChange={(open) => !open && setDeleteTargets(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{deleteTargets && deleteTargets.length > 1 ? `Delete ${deleteTargets.length} documents?` : "Delete document?"}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTargets && deleteTargets.length === 1 ? <><strong>{deleteTargets[0].title || "This document"}</strong> and all its versions, clauses, and analytics will be permanently removed.</> : "All selected documents and their versions, clauses, and analytics will be permanently removed."} This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white">
-              {deleting ? <><Loader2 size={13} className="animate-spin mr-1.5" />Deleting…</> : "Delete permanently"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Edit dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Edit document</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-foreground">Title</label>
-              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Document title" className="h-9 text-[13px]" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-foreground">Document type</label>
-              <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}>
-                <SelectTrigger className="h-9 text-[13px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{DOC_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-foreground">Lifecycle stage</label>
-              <Select value={editLifecycle} onValueChange={(v) => setEditLifecycle(v as Lifecycle)}>
-                <SelectTrigger className="h-9 text-[13px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{LIFECYCLE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{LIFECYCLE_LABEL[l]}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+        {/* Family grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-3xl" />)}
           </div>
-          <DialogFooter>
-            <Button variant="outline" size="md" onClick={() => setEditTarget(null)} disabled={saving}>Cancel</Button>
-            <Button variant="primary" size="md" onClick={handleSave} disabled={saving}>
-              {saving ? <><Loader2 size={13} className="animate-spin mr-1.5" />Saving…</> : "Save changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        ) : filtered.length === 0 ? (
+          <EmptyState reset={() => { setView("all"); setSearch(""); }} pristine={counts.all === 0} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {filtered.map((f, i) => (
+              <MotionReveal key={f.id} delay={Math.min(i * 0.04, 0.2)}>
+                <FamilyCard family={f} />
+              </MotionReveal>
+            ))}
+          </div>
+        )}
+      </div>
     </>
   );
 }
 
-function StatusCell({ status, lifecycle }: { status: string; lifecycle: Lifecycle }) {
-  if (status === "READY") {
-    return <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-medium bg-[var(--success-soft)] text-[var(--success)] capitalize"><span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />{lifecycle}</span>;
-  }
-  if (status === "FAILED") {
-    return <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-medium bg-[var(--danger-soft)] text-[var(--danger)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--danger)]" />Failed</span>;
-  }
+function FamilyCard({ family }: { family: ContractFamily }) {
+  const total = family.riskCounts.low + family.riskCounts.medium + family.riskCounts.high + family.riskCounts.critical;
+  const segs: { k: RiskLevel; n: number }[] = [
+    { k: "critical", n: family.riskCounts.critical }, { k: "high", n: family.riskCounts.high },
+    { k: "medium", n: family.riskCounts.medium }, { k: "low", n: family.riskCounts.low },
+  ];
+  const docCount = family.documents.length;
+
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-medium bg-[var(--ink-100)] text-[var(--ink-600)]">
-      <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand-primary-400)] opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--brand-primary-500)]" /></span>
-      {status.charAt(0) + status.slice(1).toLowerCase()}…
-    </span>
+    <div className="group rounded-3xl border border-border bg-card shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="p-5 md:p-6 pb-4">
+        <div className="flex items-start gap-3.5">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] shrink-0">
+            <Briefcase size={19} strokeWidth={1.75} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <Link href={`/projects/${family.root.docId}`} className="block">
+              <h3 className="text-[16px] font-semibold tracking-tight text-foreground leading-snug truncate group-hover:text-[var(--brand-primary-700)] transition-colors">
+                {family.root.title || "Untitled contract"}
+              </h3>
+            </Link>
+            <div className="mt-1 flex items-center gap-2 flex-wrap text-[12px] text-muted-foreground">
+              <span className={`text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full ${TYPE_PILL[family.root.docType]}`}>{family.root.docType}</span>
+              <span>{docCount} document{docCount === 1 ? "" : "s"}</span>
+              <span className="text-muted-foreground/40">·</span>
+              <span>updated {formatRelativeDays(family.updatedAt)}</span>
+            </div>
+          </div>
+          <span className={`shrink-0 text-[10.5px] font-semibold px-2 py-0.5 rounded-full capitalize ${RISK_PILL[family.overallRisk]}`}>{family.overallRisk} risk</span>
+        </div>
+
+        {/* Combined stats */}
+        <div className="mt-4 flex items-center gap-5 text-[12px]">
+          <Stat label="Clauses" value={family.clauseCount || "—"} />
+          <Stat label="High-risk" value={family.highRiskCount} tone={family.highRiskCount > 0 ? "danger" : undefined} />
+          <Stat label="Parties" value={family.parties.length || "—"} />
+        </div>
+
+        {/* Combined risk bar */}
+        {total > 0 && (
+          <div className="mt-3 h-1.5 rounded-full overflow-hidden flex bg-muted" title="Combined clause risk across the project">
+            {segs.map(({ k, n }) => n > 0 && <div key={k} className={RISK_FILL[k]} style={{ width: `${(n / total) * 100}%` }} />)}
+          </div>
+        )}
+      </div>
+
+      {/* Documents */}
+      <div className="border-t border-border bg-muted/20 px-3 py-2 flex-1">
+        <ul className="divide-y divide-border/60">
+          {family.documents.map((d, i) => (
+            <li key={d.docId}>
+              <Link href={`/projects/${d.docId}`} className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl hover:bg-card transition-colors">
+                <StatusDot doc={d} />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[12.5px] font-medium text-foreground truncate">{d.title || "Untitled"}</span>
+                  <span className="text-[10.5px] text-muted-foreground inline-flex items-center gap-1.5">
+                    {i === 0 ? "Root contract" : <><GitBranch size={9} />Amendment</>}
+                    {typeof d.clauseCount === "number" && d.clauseCount > 0 && <>· {d.clauseCount} clauses</>}
+                  </span>
+                </span>
+                {d.status === "READY" && d.overallRisk && (
+                  <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${RISK_PILL[d.overallRisk]}`}>{d.overallRisk}</span>
+                )}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Footer actions */}
+      <div className="flex items-center justify-between gap-2 px-5 md:px-6 py-3 border-t border-border">
+        <Link href={`/projects/${family.root.docId}`} className="text-[12.5px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] inline-flex items-center gap-1 transition-colors">
+          Open project <ArrowRight size={12} strokeWidth={2.25} />
+        </Link>
+        <Button variant="outline" size="sm" className="rounded-full" asChild>
+          <Link href="/projects/new"><Plus size={13} />Add document</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: React.ReactNode; tone?: "danger" }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{label}</span>
+      <span className={`text-[18px] font-bold tabular-nums leading-tight ${tone === "danger" ? "text-[var(--danger)]" : "text-foreground"}`} style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}>{value}</span>
+    </div>
+  );
+}
+
+function StatusDot({ doc }: { doc: ApiDocument }) {
+  if (doc.status === "READY") return <CheckCircle2 size={14} className="text-[var(--success)] shrink-0" />;
+  if (doc.status === "FAILED") return <XCircle size={14} className="text-[var(--danger)] shrink-0" />;
+  if (PROCESSING.has(doc.status)) return <Loader2 size={14} className="text-[var(--warning)] animate-spin shrink-0" />;
+  return <FileText size={14} className="text-muted-foreground shrink-0" />;
+}
+
+function EmptyState({ reset, pristine }: { reset: () => void; pristine: boolean }) {
+  return (
+    <div className="rounded-3xl border border-dashed border-border bg-card/50 py-20 flex flex-col items-center text-center">
+      <span className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)] mb-5">
+        <Layers size={28} strokeWidth={1.5} />
+      </span>
+      <h3 className="text-[18px] font-semibold text-foreground">{pristine ? "No projects yet" : "No projects match"}</h3>
+      <p className="mt-2 text-[13px] text-muted-foreground max-w-sm">
+        {pristine
+          ? "Upload a SOW or MSA to start a project. Bluely extracts clauses, scores risk, and groups any amendments you add later."
+          : "Try a different view or clear your search."}
+      </p>
+      {pristine ? (
+        <Button variant="primary" size="lg" className="mt-6 rounded-full" asChild>
+          <Link href="/projects/new"><Plus size={15} />Create your first project</Link>
+        </Button>
+      ) : (
+        <Button variant="outline" size="md" className="mt-6 rounded-full" onClick={reset}>Clear filters</Button>
+      )}
+    </div>
   );
 }
