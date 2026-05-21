@@ -13,6 +13,7 @@ import { BlueyMark } from "@/components/ui/BlueyMark";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { CategoryRadar } from "@/components/charts/CategoryRadar";
+import { ContractValueChart } from "@/components/charts/ContractValueChart";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -282,6 +283,12 @@ function OverviewPanel({ v }: { v: View }) {
       </section>
 
       {v.valueTotal > 0 && <ValueBar segments={v.valueSegments} total={v.valueTotal} currency={v.valueCurrency} reconciled={v.reconciledAll} />}
+
+      {v.valueTotal > 0 && v.valueSegments.length >= 2 && (
+        <MotionReveal delay={0.03}>
+          <ContractValueChart segments={v.valueSegments} total={v.valueTotal} currency={v.valueCurrency} />
+        </MotionReveal>
+      )}
 
       {v.hasAnalysis && <CommercialTerms v={v} />}
 

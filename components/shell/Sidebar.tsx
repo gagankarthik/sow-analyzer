@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   LayoutDashboard, FileText, Kanban, BarChart3, Briefcase, Sparkles, Search,
-  Settings, Info, ChevronsLeft, ChevronsRight,
+  Settings, Info, ChevronsLeft, ChevronsRight, Wand2,
 } from "@/components/ui/icons";
 
 type NavItem = {
@@ -36,6 +36,7 @@ const navGroups: NavGroup[] = [
     label: "Contracts",
     items: [
       { label: "Projects", href: "/projects", icon: Briefcase },
+      { label: "Draft SOW", href: "/draft", icon: Wand2, ai: true },
       { label: "Library", href: "/library", icon: FileText },
       { label: "Workflow", href: "/workflow", icon: Kanban },
     ],

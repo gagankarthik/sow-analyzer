@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, Sparkles, FileText } from "@/components/ui/icons";
+import { ShieldCheck, Sparkles, FileText, ChevronLeft } from "@/components/ui/icons";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -74,7 +74,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </aside>
 
       {/* Form panel */}
-      <main className="flex flex-col items-center justify-center px-5 py-10 sm:px-8">
+      <main className="flex flex-col px-5 py-6 sm:px-8 sm:py-8">
+        {/* Back to home — present on every auth page */}
+        <Link
+          href="/"
+          className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-[var(--border-strong)] hover:text-foreground"
+        >
+          <ChevronLeft size={15} />
+          Back to home
+        </Link>
+
+        <div className="flex flex-1 flex-col items-center justify-center py-8">
         <div className="w-full max-w-[400px]">
           {/* Mobile brand */}
           <Link href="/" className="lg:hidden mb-8 inline-flex items-center gap-2.5">
@@ -87,6 +97,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </span>
           </Link>
           {children}
+        </div>
         </div>
       </main>
     </div>

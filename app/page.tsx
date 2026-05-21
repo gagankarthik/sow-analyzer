@@ -37,7 +37,17 @@ import {
   Laptop,
   TrendingUp,
   Repeat,
+  DollarSign,
+  Scale,
+  XCircle,
+  AlertTriangle,
+  ShieldAlert,
+  Layers,
+  Sparkles,
+  Clock,
+  type LucideIcon,
 } from "@/components/ui/icons";
+import { CLAUSE_TYPES } from "@/lib/clause-types";
 
 const META = {
   product: "Blue-IQ",
@@ -209,9 +219,12 @@ export default function LandingPage() {
         <VisualCollage />
         <Manifesto />
         <FeatureOne />
+        <ClauseIntelligenceSection />
+        <HumanVsTool />
         <ControlSection />
         <FeatureTwo />
         <AILiftSection />
+        <SavingsCalculator />
         <PersonasSection />
         <ProofSection />
         <Updates />
@@ -1800,6 +1813,245 @@ function ControlSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ──────────────────────────────────────────────── */
+/*  Clause Intelligence — the 13-type taxonomy       */
+/* ──────────────────────────────────────────────── */
+const CLAUSE_ICONS: Record<string, LucideIcon> = {
+  "payment-milestone": DollarSign,
+  "auto-renewal": Repeat,
+  "ip-ownership": FileSignature,
+  "liability-cap": Scale,
+  "termination-notice": XCircle,
+  confidentiality: Lock,
+  penalty: AlertTriangle,
+  "acceptance-criteria": CheckCircle2,
+  "governing-law": Globe2,
+  "dispute-resolution": Gavel,
+  "force-majeure": ShieldAlert,
+  "scope-change": GitBranch,
+  other: Layers,
+};
+
+function ClauseIntelligenceSection() {
+  return (
+    <section className="py-20 md:py-28 px-5 md:px-10 max-w-[1280px] mx-auto">
+      <div className="flex flex-col items-center text-center gap-4 mb-12 md:mb-16">
+        <Reveal as="span" className="eyebrow text-[var(--ai-ink)]">Clause Intelligence</Reveal>
+        <Reveal as="h2" className="landing-h2 text-[clamp(28px,3.4vw,46px)] text-foreground leading-[1.08] max-w-[18ch]" delay={1}>
+          <span className="tabular-nums">{CLAUSE_TYPES.length}</span> clause types extracted in 15 seconds
+        </Reveal>
+        <Reveal as="p" className="text-[15px] text-muted-foreground leading-[1.6] max-w-[60ch]" delay={2}>
+          Payment milestones, auto-renewals, IP transfers, liability caps, termination notices,
+          penalty clauses, force majeure — every clause that changes your exposure.
+        </Reveal>
+      </div>
+
+      <Reveal delay={2}>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {CLAUSE_TYPES.map((c, i) => {
+            const Icon = CLAUSE_ICONS[c.id] ?? Layers;
+            return (
+              <li
+                key={c.id}
+                data-reveal-stagger={((i % 3) + 1) as 1 | 2 | 3}
+                className="group flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 transition-all hover:border-[var(--brand-primary-300)] hover:shadow-sm"
+              >
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] ring-1 ring-[var(--brand-primary-100)] transition-transform group-hover:scale-105">
+                  <Icon size={16} strokeWidth={1.75} />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[13.5px] font-semibold tracking-tight text-foreground">{c.label}</h3>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground leading-[1.5]">{c.blurb}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Reveal>
+
+      <Reveal delay={3} className="mt-6 flex justify-center">
+        <Link
+          href="/draft"
+          className="inline-flex items-center gap-2 rounded-full bg-[var(--ai-surface)] text-[var(--ai-ink)] border border-[var(--ai-border)] px-5 py-2.5 text-[13px] font-semibold shadow-[var(--shadow-ai)] transition-colors hover:bg-[color-mix(in_srgb,var(--ai-surface)_70%,var(--ai-border))]"
+        >
+          <Sparkles size={14} />
+          Draft a SOW with Bluey
+          <ArrowRight size={14} strokeWidth={2.5} />
+        </Link>
+      </Reveal>
+    </section>
+  );
+}
+
+/* ──────────────────────────────────────────────── */
+/*  Human vs Blue-IQ — the difference                */
+/* ──────────────────────────────────────────────── */
+function HumanVsTool() {
+  const rows = [
+    { dim: "Time per contract", human: "3–6 hours of manual reading", tool: "~15 seconds, end to end" },
+    { dim: "Clause coverage", human: "Skims; edge-case clauses get missed", tool: "Every clause, 13 types extracted" },
+    { dim: "Consistency", human: "Varies by reviewer, mood, and fatigue", tool: "Identical rigor on every document" },
+    { dim: "Risk scoring", human: "Subjective, rarely written down", tool: "Scored, ranked, and cited to the clause" },
+    { dim: "Amendments", human: "Hand-redlined against the original", tool: "Auto-diffed; value change computed" },
+    { dim: "Cost", human: "Billable hours, every single time", tool: "A fraction of the cost, instantly" },
+  ];
+  return (
+    <section className="py-20 md:py-28 px-5 md:px-10 max-w-[1280px] mx-auto">
+      <div className="flex flex-col items-center text-center gap-4 mb-12">
+        <Reveal as="span" className="eyebrow text-muted-foreground">Human vs Blue-IQ</Reveal>
+        <Reveal as="h2" className="landing-h2 text-[clamp(28px,3.2vw,44px)] text-foreground leading-[1.1] max-w-[20ch]" delay={1}>
+          The same review, without the hours.
+        </Reveal>
+        <Reveal as="p" className="text-[15px] text-muted-foreground leading-[1.6] max-w-[58ch]" delay={2}>
+          Blue-IQ doesn&apos;t replace judgment — it removes the slow, repetitive first pass so your
+          team spends its time on the decisions that actually need a human.
+        </Reveal>
+      </div>
+
+      <Reveal delay={2}>
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
+          {/* Column headers */}
+          <div className="grid grid-cols-[1.1fr_1fr_1fr] border-b border-border bg-muted/30">
+            <div className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Dimension</div>
+            <div className="px-4 py-3 text-[12px] font-semibold text-muted-foreground border-l border-border">Manual review</div>
+            <div className="px-4 py-3 text-[12px] font-semibold text-[var(--brand-primary-700)] border-l border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] inline-flex items-center gap-1.5">
+              <Sparkles size={13} />Blue-IQ
+            </div>
+          </div>
+          {rows.map((r, i) => (
+            <div key={r.dim} className={`grid grid-cols-[1.1fr_1fr_1fr] ${i > 0 ? "border-t border-border" : ""}`}>
+              <div className="px-4 py-3.5 text-[13px] font-medium text-foreground">{r.dim}</div>
+              <div className="px-4 py-3.5 border-l border-border flex items-start gap-2">
+                <X size={14} className="mt-0.5 shrink-0 text-muted-foreground/60" />
+                <span className="text-[12.5px] text-muted-foreground leading-snug">{r.human}</span>
+              </div>
+              <div className="px-4 py-3.5 border-l border-[var(--brand-primary-100)] bg-[var(--brand-primary-50)]/40 flex items-start gap-2">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[var(--brand-primary-600)]" />
+                <span className="text-[12.5px] font-medium text-foreground leading-snug">{r.tool}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+/* ──────────────────────────────────────────────── */
+/*  Savings calculator — interactive ROI            */
+/* ──────────────────────────────────────────────── */
+function SavingsCalculator() {
+  const [contracts, setContracts] = useState(40);
+  const [hours, setHours] = useState(6);
+  const [rate, setRate] = useState(180);
+
+  // Blue-IQ does the first-pass extraction and risk read in seconds, so the
+  // bulk of manual review time collapses. We credit a conservative 80%.
+  const EFFICIENCY = 0.8;
+  const hoursSavedMonth = Math.round(contracts * hours * EFFICIENCY);
+  const savedMonth = hoursSavedMonth * rate;
+  const savedYear = savedMonth * 12;
+  const hoursYear = hoursSavedMonth * 12;
+
+  const money = (n: number) =>
+    n >= 1_000_000
+      ? `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
+      : `$${Math.round(n).toLocaleString()}`;
+
+  return (
+    <section className="py-20 md:py-28 px-5 md:px-10 max-w-[1280px] mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+        {/* Controls */}
+        <div className="lg:col-span-6 flex flex-col gap-6">
+          <div className="flex flex-col gap-3">
+            <Reveal as="span" className="eyebrow text-muted-foreground">Return on intelligence</Reveal>
+            <Reveal as="h2" className="landing-h2 text-[clamp(28px,3.2vw,44px)] text-foreground leading-[1.1]" delay={1}>
+              See what review time<br />is costing you.
+            </Reveal>
+            <Reveal as="p" className="text-[15px] text-muted-foreground leading-[1.6] max-w-prose" delay={2}>
+              Drag the sliders to your reality. Blue-IQ reads every clause in seconds —
+              the hours your team spends on first-pass review come straight back.
+            </Reveal>
+          </div>
+
+          <Reveal delay={2} className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 shadow-xs">
+            <SliderRow label="Contracts reviewed / month" value={contracts.toLocaleString()} min={5} max={500} step={5} raw={contracts} onChange={setContracts} />
+            <SliderRow label="Hours of manual review each" value={`${hours} hrs`} min={1} max={20} step={1} raw={hours} onChange={setHours} />
+            <SliderRow label="Blended hourly rate" value={`$${rate}`} min={50} max={500} step={10} raw={rate} onChange={setRate} />
+          </Reveal>
+        </div>
+
+        {/* Result */}
+        <div className="lg:col-span-6">
+          <Reveal delay={3} className="relative overflow-hidden rounded-3xl border border-[var(--brand-primary-200)] bg-gradient-to-br from-[var(--brand-primary-50)] to-card p-8 md:p-10 shadow-sm">
+            <span className="eyebrow text-[var(--brand-primary-700)]">Estimated annual saving</span>
+            <div
+              className="mt-3 font-display font-bold tracking-tight text-foreground leading-none tabular-nums text-[clamp(40px,6vw,72px)]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {money(savedYear)}
+            </div>
+            <p className="mt-2 text-[13px] text-muted-foreground">
+              {money(savedMonth)} a month back in your team&apos;s pocket.
+            </p>
+
+            <div className="mt-7 grid grid-cols-2 gap-3">
+              <StatTile icon={<Clock size={15} />} value={`${hoursYear.toLocaleString()} hrs`} label="reclaimed per year" />
+              <StatTile icon={<TrendingUp size={15} />} value={`${Math.round(EFFICIENCY * 100)}%`} label="of review time automated" />
+            </div>
+
+            <Link
+              href="/draft"
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--brand-primary-600)] px-5 py-3 text-[13.5px] font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)]"
+            >
+              Start saving — draft or analyze
+              <ArrowRight size={15} strokeWidth={2.5} />
+            </Link>
+            <p className="mt-3 text-[11px] text-muted-foreground/80 text-center">
+              Estimate only. Assumes Blue-IQ absorbs first-pass extraction and risk review.
+            </p>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SliderRow({
+  label, value, min, max, step, raw, onChange,
+}: {
+  label: string; value: string; min: number; max: number; step: number; raw: number; onChange: (n: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between">
+        <label className="text-[13px] font-medium text-foreground">{label}</label>
+        <span className="font-display font-semibold text-[15px] text-[var(--brand-primary-700)] tabular-nums" style={{ fontFamily: "var(--font-display)" }}>{value}</span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={raw}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={label}
+        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-[var(--brand-primary-100)] accent-[var(--brand-primary-600)]"
+      />
+    </div>
+  );
+}
+
+function StatTile({ icon, value, label }: { icon: ReactNode; value: string; label: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card/70 p-4">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]">{icon}</span>
+      <div className="mt-2.5 font-display font-bold text-[18px] text-foreground tabular-nums" style={{ fontFamily: "var(--font-display)" }}>{value}</div>
+      <div className="text-[11.5px] text-muted-foreground">{label}</div>
+    </div>
   );
 }
 
