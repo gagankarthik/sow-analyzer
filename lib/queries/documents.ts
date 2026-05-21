@@ -25,6 +25,7 @@ import {
   updateDocument,
   deleteDocument,
   deleteVersion,
+  reprocessDocument,
 } from "@/lib/api";
 import type {
   ApiDocument,
@@ -115,6 +116,21 @@ export function useDeleteDocument() {
   return useMutation({
     mutationFn: (id: string) => deleteDocument(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: documentKeys.all }),
+  });
+}
+
+// Re-run analysis on a document. The backend re-fires the pipeline and flips the
+// document back to PENDING, so we invalidate detail + list to resume polling and
+// drop the stale classification so the new extraction is fetched once READY.
+export function useReprocess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => reprocessDocument(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: documentKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: documentKeys.classification(id) });
+      qc.invalidateQueries({ queryKey: documentKeys.all });
+    },
   });
 }
 

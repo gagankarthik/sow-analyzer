@@ -29,6 +29,15 @@ export interface ApiDocument {
   findingsCount?: number
   overallRisk?: RiskLevel
   riskCounts?: { low: number; medium: number; high: number; critical: number }
+  // Commercial aggregates (validated; written by persist for cheap list/dashboard reads)
+  contractValue?: number | null
+  baseValue?: number | null
+  valueDelta?: number | null
+  currency?: string | null
+  pricingModel?: string | null
+  paymentTerms?: string | null
+  reconciled?: boolean | null
+  parentReference?: string | null
 }
 
 export interface ApiVersion {
@@ -161,6 +170,105 @@ export interface ApiKeyFinding {
   severity: FindingSeverity
 }
 
+// ── Structured contract anatomy (extracted by the classify stage) ──────────
+
+export interface ApiSignatory { party: string | null; name: string | null; title: string | null; date: string | null }
+export interface ApiIdentification {
+  sowNumber: string | null
+  parentReference: string | null
+  projectName: string | null
+  clientName: string | null
+  vendorName: string | null
+  signatureStatus: "signed" | "unsigned" | "unknown"
+  executionDate: string | null
+  signatories: ApiSignatory[]
+}
+
+export interface ApiScope {
+  inScope: string[]
+  outOfScope: string[]
+  assumptions: string[]
+  dependencies: string[]
+}
+
+export interface ApiDeliverable {
+  name: string
+  description: string | null
+  dueDate: string | null
+  acceptanceCriteria: string | null
+  owner: string | null
+  value: number | null
+}
+
+export interface ApiPhase { name: string; start: string | null; end: string | null }
+export interface ApiMilestone { name: string; date: string | null; payment: number | null; source: string | null }
+export interface ApiTimelineDetail {
+  startDate: string | null
+  endDate: string | null
+  phases: ApiPhase[]
+  milestones: ApiMilestone[]
+}
+
+export type PricingModel = "fixed" | "time_and_materials" | "milestone" | "retainer" | "mixed" | "unknown"
+export interface ApiRateCardItem { role: string; rate: number | null; unit: string | null }
+export interface ApiPaymentScheduleItem { label: string; percent: number | null; amount: number | null; trigger: string | null }
+export interface ApiCommercials {
+  currency: string | null
+  pricingModel: PricingModel
+  totalContractValue: number | null
+  baseValue: number | null
+  caps: number | null
+  paymentTerms: string | null
+  expenses: string | null
+  latePayment: string | null
+  valueSource: string | null
+  rateCard: ApiRateCardItem[]
+  paymentSchedule: ApiPaymentScheduleItem[]
+}
+
+export interface ApiSla { metric: string; target: string | null; window: string | null; penalty: string | null }
+export interface ApiPersonnel { name: string | null; role: string; keyPerson: boolean }
+export interface ApiGovernance { cadence: string | null; escalationPath: string | null; reporting: string | null }
+
+export type AmendmentType = "amendment" | "change_order" | "addendum" | "side_letter" | "none"
+export type ChangeType = "replacement" | "addition" | "deletion" | "modification"
+export type ChangeCategory = "scope" | "value" | "timeline" | "payment" | "personnel" | "term" | "sla" | "other"
+export interface ApiChange {
+  changeType: ChangeType
+  category: ChangeCategory
+  targetSection: string | null
+  before: string | null
+  after: string | null
+  summary: string
+}
+export interface ApiAmendmentInfo {
+  number: string | null
+  amendmentType: AmendmentType
+  parentReference: string | null
+  recitals: string | null
+  valueDelta: number | null
+  newTotalValue: number | null
+  everythingElseStays: boolean
+  changes: ApiChange[]
+}
+
+export interface ApiConfidence {
+  parentFound: boolean
+  scopeClear: boolean
+  financialsClear: boolean
+  overall: "high" | "medium" | "low"
+  issues: string[]
+}
+
+export interface ApiLineItem { label: string; amount: number | null; source: string }
+export interface ApiValidation {
+  validated: boolean
+  reconciled: boolean | null
+  lineItems: ApiLineItem[]
+  issues: string[]
+  confidence: "high" | "medium" | "low"
+}
+
 export interface ApiClassification {
   docType: string
   title: string
@@ -171,6 +279,19 @@ export interface ApiClassification {
   keyFindings: ApiKeyFinding[]
   clauses: ApiClause[]
   structuralHash: string
+  // Structured anatomy (present for documents analyzed by the new extractor;
+  // optional so documents processed before it never crash the UI)
+  identification?: ApiIdentification
+  scope?: ApiScope
+  deliverables?: ApiDeliverable[]
+  timelineDetail?: ApiTimelineDetail
+  commercials?: ApiCommercials
+  slas?: ApiSla[]
+  personnel?: ApiPersonnel[]
+  governance?: ApiGovernance
+  amendment?: ApiAmendmentInfo
+  confidence?: ApiConfidence
+  validation?: ApiValidation
 }
 
 // Timeline / amendment-replay shapes (fetched from /timeline)

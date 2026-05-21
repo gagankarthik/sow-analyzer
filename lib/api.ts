@@ -141,7 +141,11 @@ export async function updateDocument(
 // Normalizes the response so older documents (processed before riskLevel/
 // summary/keyFindings existed) never crash the UI with missing fields.
 export async function getClassification(docId: string): Promise<ApiClassification> {
-  const data = await request<Partial<ApiClassification>>(`/documents/${docId}/classification`)
+  // The raw payload nests the engagement timeline under `timeline`; we surface
+  // it as `timelineDetail` so it never collides with the diff-replay ApiTimeline.
+  const data = await request<Partial<ApiClassification> & { timeline?: ApiClassification["timelineDetail"] }>(
+    `/documents/${docId}/classification`,
+  )
   return {
     docType: data.docType ?? "OTHER",
     title: data.title ?? "",
@@ -159,7 +163,31 @@ export async function getClassification(docId: string): Promise<ApiClassificatio
       riskLevel: c.riskLevel ?? "low",
       summary: c.summary ?? "",
     })),
+    // Structured anatomy — passed through as-is; undefined for older documents.
+    identification: data.identification,
+    scope: data.scope,
+    deliverables: data.deliverables,
+    timelineDetail: data.timelineDetail ?? data.timeline,
+    commercials: data.commercials,
+    slas: data.slas,
+    personnel: data.personnel,
+    governance: data.governance,
+    amendment: data.amendment,
+    confidence: data.confidence,
+    validation: data.validation,
   }
+}
+
+export interface ApiDocFile { url: string; filename: string; contentType: string }
+
+// Get a short-lived presigned URL to the original uploaded file (for the viewer).
+export async function getDocFile(docId: string): Promise<ApiDocFile> {
+  return request<ApiDocFile>(`/documents/${docId}/file`)
+}
+
+// Re-run the analysis pipeline on the stored upload (re-extract + re-validate).
+export async function reprocessDocument(docId: string): Promise<{ reprocessing: boolean; docId: string }> {
+  return request<{ reprocessing: boolean; docId: string }>(`/documents/${docId}/reprocess`, { method: "POST" })
 }
 
 // Get the diff (change list) vs the parent document — only available for amendments

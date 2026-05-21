@@ -78,6 +78,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="sf-app flex w-full min-h-screen bg-background">
+      {/* Keyboard users can jump straight to content, bypassing the nav (WCAG 2.4.1). */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[var(--brand-primary-600)] focus:px-4 focus:py-2 focus:text-[13px] focus:font-semibold focus:text-white focus:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+      >
+        Skip to main content
+      </a>
       <Sidebar
         mobileOpen={mobileNav}
         onMobileClose={() => setMobileNav(false)}
@@ -90,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onCopilotToggle={toggleCopilot}
           onMenuClick={() => setMobileNav(true)}
         />
-        <main className="flex-1 min-w-0">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">{children}</main>
       </div>
       <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />

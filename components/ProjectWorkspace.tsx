@@ -20,13 +20,14 @@ import { cn } from "@/lib/utils";
 import {
   ChevronLeft, FileText, CheckCircle2, Loader2, XCircle, ArrowRight, Layers, Search,
   Building2, ShieldAlert, AlertTriangle, Info, Plus, GitBranch, Users, Sparkles, Trash2, DollarSign,
+  RefreshCw, Maximize2, Download, Clock, ExternalLink,
 } from "@/components/ui/icons";
-import { useDocuments, useDeleteDocument, documentKeys } from "@/lib/queries/documents";
-import { getClassification, askBluey } from "@/lib/api";
+import { useDocuments, useDeleteDocument, useReprocess, documentKeys } from "@/lib/queries/documents";
+import { getClassification, getDocFile, askBluey, type ApiDocFile } from "@/lib/api";
 import { useUIStore } from "@/lib/stores/ui";
 import { useProject, addDocToProject, removeDocFromProject, type LocalProject } from "@/lib/projects-store";
 import { formatRelativeDays, formatDate } from "@/lib/format";
-import { computeContractValue, fmtMoney, type ValueSegment } from "@/lib/contract-value";
+import { computeContractValue, fmtMoney, docValue, type ValueSegment } from "@/lib/contract-value";
 import type { ApiClause, ApiClassification, ApiDocument, RiskLevel, FindingSeverity } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
@@ -66,6 +67,8 @@ type View = {
   valueByDoc: Map<string, number>;
   valueSegments: ValueSegment[];
   valueTotal: number;
+  valueCurrency: string | null;
+  reconciledAll: boolean | null;
   classByDoc: Map<string, ApiClassification>;
   analyzingClauses: boolean;
   totalClauses: number;
@@ -136,12 +139,17 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
 
   const attention = useMemo(() => allClauses.filter((c) => c.riskLevel === "critical" || c.riskLevel === "high").sort((a, b) => RISK_SORT[a.riskLevel] - RISK_SORT[b.riskLevel]), [allClauses]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Contract value via the running-total model (SOW initial + amendment deltas).
-  const { valueSegments, valueTotal, valueByDoc } = useMemo(() => {
-    const { total, segments } = computeContractValue(readyDocs.map((d) => ({
+  // Contract value via the running-total model (SOW initial + amendment deltas),
+  // preferring the backend's validated commercials when present.
+  const { valueSegments, valueTotal, valueByDoc, valueCurrency, reconciledAll } = useMemo(() => {
+    const { total, segments, currency, reconciled } = computeContractValue(readyDocs.map((d) => ({
       docId: d.docId, title: d.title || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt, classification: classByDoc.get(d.docId),
     })));
-    return { valueSegments: segments, valueTotal: total, valueByDoc: new Map(segments.map((s) => [s.docId, s.value])) };
+    return {
+      valueSegments: segments, valueTotal: total, valueCurrency: currency,
+      valueByDoc: new Map(segments.map((s) => [s.docId, s.value])),
+      reconciledAll: reconciled,
+    };
   }, [allClauses]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalClauses = allClauses.length || readyDocs.reduce((s, d) => s + (d.clauseCount ?? 0), 0);
@@ -172,7 +180,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
 
   const v: View = {
     project, docs, readyDocs, allClauses, riskCounts, catData, keyFindings, attention, parties,
-    valueByDoc, valueSegments, valueTotal,
+    valueByDoc, valueSegments, valueTotal, valueCurrency, reconciledAll,
     classByDoc, analyzingClauses, totalClauses, highRisk, overallRisk, processingCount, hasAnalysis,
     goTo: setTab,
     onDocCreated: (docId) => { addDocToProject(projectId, docId); qc.invalidateQueries({ queryKey: documentKeys.all }); },
@@ -273,7 +281,9 @@ function OverviewPanel({ v }: { v: View }) {
         </div>
       </section>
 
-      {v.valueTotal > 0 && <ValueBar segments={v.valueSegments} total={v.valueTotal} />}
+      {v.valueTotal > 0 && <ValueBar segments={v.valueSegments} total={v.valueTotal} currency={v.valueCurrency} reconciled={v.reconciledAll} />}
+
+      {v.hasAnalysis && <CommercialTerms v={v} />}
 
       {v.hasAnalysis && <MotionReveal><RiskIntelligence counts={v.riskCounts} categories={v.catData} /></MotionReveal>}
 
@@ -309,22 +319,29 @@ function OverviewPanel({ v }: { v: View }) {
   );
 }
 
-function ValueBar({ segments, total }: { segments: ValueSegment[]; total: number }) {
+function ValueBar({ segments, total, currency, reconciled }: { segments: ValueSegment[]; total: number; currency: string | null; reconciled: boolean | null }) {
   const [hover, setHover] = useState<number | null>(null);
+  // We have an authoritative total when reconciled is known (true = parts add up
+  // to the document's stated total; false = stated total used but parts don't).
+  const authoritative = reconciled != null;
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-xs md:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground"><DollarSign size={12} className="text-[var(--success)]" />Estimated contract value</div>
-          <div className="mt-1 text-[30px] font-bold leading-none tabular-nums text-foreground" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}>{fmtMoney(total)}</div>
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground"><DollarSign size={12} className="text-[var(--success)]" />{authoritative ? "Total contract value" : "Estimated contract value"}</div>
+          <div className="mt-1 text-[30px] font-bold leading-none tabular-nums text-foreground" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}>{fmtMoney(total, currency)}</div>
         </div>
-        <span className="text-[11px] text-muted-foreground">{segments.length} document{segments.length === 1 ? "" : "s"}</span>
+        <div className="flex items-center gap-2">
+          {reconciled === true && <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--success)]" title="The document's stated total and the component amounts reconcile."><CheckCircle2 size={11} />Validated</span>}
+          {reconciled === false && <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--warning)]" title="Showing the document's stated total. The component amounts are estimates and don't fully reconcile — re-analyze for validated figures."><AlertTriangle size={11} />Stated total · review parts</span>}
+          <span className="text-[11px] text-muted-foreground">{segments.length} document{segments.length === 1 ? "" : "s"}</span>
+        </div>
       </div>
 
       <div className="mt-4 flex h-4 overflow-hidden rounded-md bg-muted">
         {segments.map((s, i) => (
           <div key={s.docId} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
-            className="h-full transition-opacity" title={`${s.label}: ${fmtMoney(s.value)}`}
+            className="h-full transition-opacity" title={`${s.label}: ${fmtMoney(s.value, currency)}${s.source ? `\n“${s.source}”` : ""}`}
             style={{ width: `${(s.value / total) * 100}%`, background: SEG_COLORS[i % SEG_COLORS.length], opacity: hover === null || hover === i ? 1 : 0.35 }} />
         ))}
       </div>
@@ -335,21 +352,154 @@ function ValueBar({ segments, total }: { segments: ValueSegment[]; total: number
             {i > 0 && <span className="font-semibold text-muted-foreground">+</span>}
             <Link href={`/projects/${s.docId}`} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 transition-all hover:border-[var(--brand-primary-300)]"
-              style={{ opacity: hover === null || hover === i ? 1 : 0.5 }}>
+              style={{ opacity: hover === null || hover === i ? 1 : 0.5 }} title={s.source ?? undefined}>
               <span className="h-2.5 w-2.5 rounded-sm" style={{ background: SEG_COLORS[i % SEG_COLORS.length] }} />
               <span className="text-muted-foreground">{s.label}</span>
-              <span className="font-semibold tabular-nums text-foreground">{fmtMoney(s.value)}</span>
+              <span className="font-semibold tabular-nums text-foreground">{fmtMoney(s.value, currency)}</span>
             </Link>
           </span>
         ))}
         <span className="font-semibold text-muted-foreground">=</span>
         <span className="inline-flex items-center gap-1.5 rounded-md bg-[var(--brand-primary-50)] px-2.5 py-1.5">
           <span className="font-semibold text-[var(--brand-primary-700)]">Total</span>
-          <span className="font-bold tabular-nums text-[var(--brand-primary-700)]">{fmtMoney(total)}</span>
+          <span className="font-bold tabular-nums text-[var(--brand-primary-700)]">{fmtMoney(total, currency)}</span>
         </span>
       </div>
-      <p className="mt-3 text-[11px] text-muted-foreground">Estimated from monetary amounts detected in the contract text. Hover a segment to highlight; click to open that document.</p>
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        {reconciled === true
+          ? "Read from the documents and reconciled by Bluey's validation agent (SOW base + each amendment add up to the stated total). Hover a segment to see the source text; click to open that document."
+          : reconciled === false
+          ? "Showing the document's stated total (e.g. “New Total Project Cost”), which is authoritative. The component amounts below are estimates that don't fully reconcile to it — re-analyze the documents for validated per-amendment figures."
+          : "Estimated from monetary amounts detected in the contract text. Re-analyze the documents for validated figures. Hover a segment to highlight; click to open that document."}
+      </p>
     </section>
+  );
+}
+
+/* ── Commercial terms (from the validated SOW extraction) ──────── */
+function CommercialTerms({ v }: { v: View }) {
+  // Prefer the primary SOW's commercials; aggregate list data across all docs.
+  const primary = v.readyDocs.find((d) => d.docType !== "AMENDMENT") ?? v.readyDocs[0];
+  const com = primary ? v.classByDoc.get(primary.docId)?.commercials : undefined;
+  const cur = v.valueCurrency;
+
+  const deliverables = v.readyDocs.flatMap((d) => v.classByDoc.get(d.docId)?.deliverables ?? []);
+  const milestones = v.readyDocs.flatMap((d) => v.classByDoc.get(d.docId)?.timelineDetail?.milestones ?? []);
+  const slas = v.readyDocs.flatMap((d) => v.classByDoc.get(d.docId)?.slas ?? []);
+  const personnel = v.readyDocs.flatMap((d) => v.classByDoc.get(d.docId)?.personnel ?? []);
+  const schedule = com?.paymentSchedule ?? [];
+  const rateCard = com?.rateCard ?? [];
+
+  const facts: { label: string; value: string }[] = [];
+  if (com?.pricingModel && com.pricingModel !== "unknown") facts.push({ label: "Pricing model", value: PRICING_LABEL[com.pricingModel] ?? com.pricingModel });
+  if (com?.paymentTerms) facts.push({ label: "Payment terms", value: com.paymentTerms });
+  if (com?.caps != null) facts.push({ label: "Not-to-exceed cap", value: fmtMoney(com.caps, cur) });
+  if (com?.expenses) facts.push({ label: "Expenses", value: com.expenses });
+  if (com?.latePayment) facts.push({ label: "Late payment", value: com.latePayment });
+
+  const hasAnything = facts.length || schedule.length || rateCard.length || deliverables.length || milestones.length || slas.length || personnel.length;
+  if (!hasAnything) return null;
+
+  return (
+    <MotionReveal delay={0.04}>
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-xs md:p-6">
+        <h3 className="mb-4 flex items-center gap-2 text-[14px] font-semibold tracking-tight text-foreground"><FileSignatureFallback />Commercial terms</h3>
+
+        {facts.length > 0 && (
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {facts.map((f) => <Detail key={f.label} label={f.label} value={f.value} />)}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {schedule.length > 0 && (
+            <TermsBlock title="Payment schedule" count={schedule.length}>
+              {schedule.map((p, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
+                  <span className="min-w-0 flex-1 truncate text-foreground">{p.label}{p.trigger ? <span className="text-muted-foreground"> · {p.trigger}</span> : null}</span>
+                  <span className="shrink-0 font-semibold tabular-nums text-foreground">{p.percent != null ? `${p.percent}%` : ""}{p.percent != null && p.amount != null ? " · " : ""}{p.amount != null ? fmtMoney(p.amount, cur) : ""}</span>
+                </li>
+              ))}
+            </TermsBlock>
+          )}
+
+          {milestones.length > 0 && (
+            <TermsBlock title="Milestones" count={milestones.length}>
+              {milestones.map((mst, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
+                  <span className="min-w-0 flex-1 truncate text-foreground"><Clock size={11} className="mr-1 inline text-muted-foreground" />{mst.name}</span>
+                  <span className="shrink-0 text-muted-foreground">{mst.date ? formatDate(mst.date) : ""}{mst.payment != null ? ` · ${fmtMoney(mst.payment, cur)}` : ""}</span>
+                </li>
+              ))}
+            </TermsBlock>
+          )}
+
+          {deliverables.length > 0 && (
+            <TermsBlock title="Deliverables" count={deliverables.length}>
+              {deliverables.slice(0, 12).map((d, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
+                  <span className="min-w-0 flex-1 truncate text-foreground">{d.name}</span>
+                  <span className="shrink-0 text-muted-foreground">{d.dueDate ? formatDate(d.dueDate) : ""}{d.value != null ? ` · ${fmtMoney(d.value, cur)}` : ""}</span>
+                </li>
+              ))}
+            </TermsBlock>
+          )}
+
+          {rateCard.length > 0 && (
+            <TermsBlock title="Rate card" count={rateCard.length}>
+              {rateCard.map((r, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
+                  <span className="min-w-0 flex-1 truncate text-foreground">{r.role}</span>
+                  <span className="shrink-0 font-semibold tabular-nums text-foreground">{r.rate != null ? fmtMoney(r.rate, cur) : "—"}{r.unit ? <span className="font-normal text-muted-foreground">/{r.unit}</span> : null}</span>
+                </li>
+              ))}
+            </TermsBlock>
+          )}
+
+          {slas.length > 0 && (
+            <TermsBlock title="Service levels" count={slas.length}>
+              {slas.map((s, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
+                  <span className="min-w-0 flex-1 truncate text-foreground">{s.metric}</span>
+                  <span className="shrink-0 text-muted-foreground">{s.target ?? ""}{s.window ? ` · ${s.window}` : ""}</span>
+                </li>
+              ))}
+            </TermsBlock>
+          )}
+
+          {personnel.length > 0 && (
+            <TermsBlock title="Key personnel" count={personnel.length}>
+              {personnel.map((p, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
+                  <span className="min-w-0 flex-1 truncate text-foreground">{p.name || p.role}{p.name ? <span className="text-muted-foreground"> · {p.role}</span> : null}</span>
+                  {p.keyPerson && <span className="shrink-0 rounded-full bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--brand-primary-700)]">Key person</span>}
+                </li>
+              ))}
+            </TermsBlock>
+          )}
+        </div>
+      </section>
+    </MotionReveal>
+  );
+}
+
+const PRICING_LABEL: Record<string, string> = {
+  fixed: "Fixed fee", time_and_materials: "Time & materials", milestone: "Milestone-based", retainer: "Retainer", mixed: "Mixed", unknown: "—",
+};
+
+function FileSignatureFallback() {
+  return <DollarSign size={15} className="text-[var(--success)]" />;
+}
+
+function TermsBlock({ title, count, children }: { title: string; count: number; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-muted/20 p-4">
+      <div className="mb-1 flex items-center justify-between">
+        <h4 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{title}</h4>
+        <span className="font-mono text-[10.5px] text-muted-foreground/70">{count}</span>
+      </div>
+      <ul className="divide-y divide-border/60">{children}</ul>
+    </div>
   );
 }
 
@@ -654,6 +804,7 @@ function buildTree(docs: ApiDocument[]) {
 
 function DocumentsPanel({ v }: { v: View }) {
   const [showUpload, setShowUpload] = useState(!v.docs.length);
+  const [reader, setReader] = useState<ApiDocument | null>(null);
   const { roots, childrenByParent } = useMemo(() => buildTree(v.docs), [v.docs]);
   return (
     <>
@@ -671,22 +822,29 @@ function DocumentsPanel({ v }: { v: View }) {
 
       {v.docs.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-          <DocTree nodes={roots} childrenByParent={childrenByParent} depth={0} v={v} />
+          <DocTree nodes={roots} childrenByParent={childrenByParent} depth={0} v={v} onView={setReader} />
         </div>
       )}
+
+      <DocumentReader
+        doc={reader}
+        classification={reader ? v.classByDoc.get(reader.docId) : undefined}
+        currency={v.valueCurrency}
+        onClose={() => setReader(null)}
+      />
     </>
   );
 }
 
-function DocTree({ nodes, childrenByParent, depth, v }: { nodes: ApiDocument[]; childrenByParent: Map<string, ApiDocument[]>; depth: number; v: View }) {
+function DocTree({ nodes, childrenByParent, depth, v, onView }: { nodes: ApiDocument[]; childrenByParent: Map<string, ApiDocument[]>; depth: number; v: View; onView: (d: ApiDocument) => void }) {
   return (
     <>
       {nodes.map((d) => {
         const kids = childrenByParent.get(d.docId) ?? [];
         return (
           <Fragment key={d.docId}>
-            <DocRow doc={d} value={v.valueByDoc.get(d.docId)} depth={depth} onDelete={() => v.onDelete(d)} />
-            {kids.length > 0 && <DocTree nodes={kids} childrenByParent={childrenByParent} depth={depth + 1} v={v} />}
+            <DocRow doc={d} value={v.valueByDoc.get(d.docId)} depth={depth} onDelete={() => v.onDelete(d)} onView={() => onView(d)} />
+            {kids.length > 0 && <DocTree nodes={kids} childrenByParent={childrenByParent} depth={depth + 1} v={v} onView={onView} />}
           </Fragment>
         );
       })}
@@ -694,11 +852,22 @@ function DocTree({ nodes, childrenByParent, depth, v }: { nodes: ApiDocument[]; 
   );
 }
 
-function DocRow({ doc, value, depth, onDelete }: { doc: ApiDocument; value?: number; depth: number; onDelete: () => void }) {
+function DocRow({ doc, value, depth, onDelete, onView }: { doc: ApiDocument; value?: number; depth: number; onDelete: () => void; onView: () => void }) {
   const processing = PROCESSING.has(doc.status);
   const indent = 20 + depth * 26;
+  const reprocess = useReprocess();
+
+  async function onReanalyze() {
+    try {
+      await reprocess.mutateAsync(doc.docId);
+      toast.success("Re-analyzing", { description: `${doc.title || "Document"} is being analyzed again.` });
+    } catch (e) {
+      toast.error("Couldn't re-analyze", { description: e instanceof Error ? e.message : "Please try again." });
+    }
+  }
+
   return (
-    <div className={cn("flex items-center gap-2 border-t border-border transition-colors first:border-t-0 hover:bg-muted/40", depth > 0 && "bg-muted/20")}>
+    <div className={cn("flex items-center gap-1 border-t border-border transition-colors first:border-t-0 hover:bg-muted/40", depth > 0 && "bg-muted/20")}>
       <Link href={`/projects/${doc.docId}`} className="group flex min-w-0 flex-1 items-center gap-2.5 py-3.5 pr-2" style={{ paddingLeft: indent }}>
         {depth > 0 && <GitBranch size={13} className="shrink-0 -scale-x-100 text-muted-foreground/50" />}
         <StatusDot doc={doc} />
@@ -712,16 +881,196 @@ function DocRow({ doc, value, depth, onDelete }: { doc: ApiDocument; value?: num
           </div>
         </div>
         {typeof value === "number" && value > 0 && (
-          <span className="hidden shrink-0 items-center gap-1 rounded-full bg-[var(--success-soft)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--success)] sm:inline-flex" title="Estimated contract value"><DollarSign size={11} />{fmtMoney(value)}</span>
+          <span className="hidden shrink-0 items-center gap-1 rounded-full bg-[var(--success-soft)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--success)] sm:inline-flex" title="Contract value for this document"><DollarSign size={11} />{fmtMoney(value)}</span>
         )}
         {doc.status === "READY" && doc.overallRisk && (
           <span className={`hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize sm:inline ${RISK_META[doc.overallRisk].bg} ${RISK_META[doc.overallRisk].text}`}>{doc.overallRisk}</span>
         )}
       </Link>
-      <button onClick={onDelete} aria-label={`Delete ${doc.title || "document"}`} className="mr-3 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]">
+      <button onClick={onView} aria-label={`Open ${doc.title || "document"} in split view`} title="Open document & analysis side by side"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+        <Maximize2 size={15} />
+      </button>
+      <button onClick={onReanalyze} disabled={reprocess.isPending || processing} aria-label={`Re-analyze ${doc.title || "document"}`} title="Re-run analysis on this document"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40">
+        <RefreshCw size={15} className={reprocess.isPending ? "animate-spin" : undefined} />
+      </button>
+      <button onClick={onDelete} aria-label={`Delete ${doc.title || "document"}`} className="mr-3 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
         <Trash2 size={15} />
       </button>
     </div>
+  );
+}
+
+/* ── Split-view reader: original file ⟷ AI analysis (with provenance) ── */
+function DocumentReader({ doc, classification, currency, onClose }: { doc: ApiDocument | null; classification?: ApiClassification; currency: string | null; onClose: () => void }) {
+  const [file, setFile] = useState<ApiDocFile | null>(null);
+  const [html, setHtml] = useState<string | null>(null);   // converted DOCX
+  const [text, setText] = useState<string | null>(null);   // plain-text files
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!doc) { setFile(null); setHtml(null); setText(null); setErr(null); return; }
+    let alive = true;
+    setLoading(true); setErr(null); setFile(null); setHtml(null); setText(null);
+
+    (async () => {
+      try {
+        const f = await getDocFile(doc.docId);
+        if (!alive) return;
+        setFile(f);
+        const name = f.filename.toLowerCase();
+        const isDocx = name.endsWith(".docx") || f.contentType.includes("wordprocessingml");
+        const isTxt = f.contentType.startsWith("text/") || name.endsWith(".txt");
+        if (isDocx) {
+          const buf = await (await fetch(f.url)).arrayBuffer();
+          const mammoth = await import("mammoth/mammoth.browser");
+          const res = await mammoth.convertToHtml({ arrayBuffer: buf });
+          if (alive) setHtml(res.value || "<p>This document has no extractable text.</p>");
+        } else if (isTxt) {
+          const t = await (await fetch(f.url)).text();
+          if (alive) setText(t);
+        }
+        // PDFs render via <iframe>; .doc / other types fall back to "open original".
+      } catch (e) {
+        if (alive) setErr(e instanceof Error ? e.message : "Could not load the document.");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+
+    return () => { alive = false; };
+  }, [doc?.docId]);
+
+  const fname = file?.filename.toLowerCase() ?? "";
+  const isPdf = file?.contentType === "application/pdf" || fname.endsWith(".pdf");
+  const lineItems = classification?.validation?.lineItems ?? [];
+  const findings = classification?.keyFindings ?? [];
+  const reconciled = classification?.validation?.reconciled;
+  const value = docValue(classification);
+
+  // GDPR data portability — export this document's record + analysis as JSON.
+  function exportJson() {
+    if (!doc) return;
+    const payload = { exportedAt: new Date().toISOString(), document: doc, analysis: classification ?? null };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(doc.title || "document").replace(/[^\w.-]+/g, "_")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <Dialog open={!!doc} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="left-0 top-0 flex h-screen w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 ring-0 sm:max-w-none">
+        <DialogHeader className="flex-row items-center justify-between gap-3 border-b border-border px-4 py-3">
+          <DialogTitle className="flex min-w-0 items-center gap-2 text-[14px]">
+            <FileText size={15} className="shrink-0 text-muted-foreground" />
+            <span className="truncate">{doc?.title || "Document"}</span>
+          </DialogTitle>
+          <div className="mr-8 flex shrink-0 items-center gap-2">
+            <button onClick={exportJson} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50" title="Export this document's data + analysis as JSON"><Download size={13} />Export</button>
+            {file && <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"><ExternalLink size={13} />Original</a>}
+          </div>
+        </DialogHeader>
+
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-2 lg:overflow-hidden">
+          {/* Left — original file (PDF inline · DOCX converted · TXT · else download).
+              On mobile the panes stack and the dialog body scrolls; give each a sensible
+              min-height so the file pane never collapses to zero. lg+ restores the
+              equal-split, independently-scrolling columns. */}
+          <div className="min-h-[55vh] overflow-hidden border-b border-border bg-muted/30 lg:min-h-0 lg:border-b-0 lg:border-r">
+            {loading ? (
+              <div className="flex h-full items-center justify-center text-[13px] text-muted-foreground"><Loader2 size={16} className="mr-2 animate-spin" />Loading document…</div>
+            ) : err ? (
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-[13px] text-muted-foreground"><XCircle size={20} className="text-[var(--danger)]" />{err}</div>
+            ) : isPdf && file ? (
+              <iframe src={file.url} title={doc?.title || "Document"} className="h-full w-full" />
+            ) : html != null ? (
+              <div className="h-full overflow-y-auto px-4 py-6">
+                <div className="docx-page mx-auto max-w-[820px] rounded-lg bg-white p-8 shadow-sm md:p-12" dangerouslySetInnerHTML={{ __html: html }} />
+              </div>
+            ) : text != null ? (
+              <div className="h-full overflow-y-auto px-4 py-6">
+                <pre className="mx-auto max-w-[820px] whitespace-pre-wrap rounded-lg bg-white p-8 font-mono text-[12.5px] leading-relaxed text-foreground shadow-sm md:p-12">{text}</pre>
+              </div>
+            ) : file ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]"><FileText size={22} /></span>
+                <p className="text-[13px] font-medium text-foreground">Preview unavailable for .{file.filename.split(".").pop()?.toUpperCase()} files</p>
+                <p className="max-w-xs text-[12px] text-muted-foreground">Open the original to view it alongside the analysis. (PDF, DOCX and TXT render here directly.)</p>
+                <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md bg-[var(--brand-primary-600)] px-3 py-2 text-[12.5px] font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)]"><ExternalLink size={13} />Open original</a>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Right — AI analysis with provenance */}
+          <div className="bg-card p-4 lg:min-h-0 lg:overflow-y-auto">
+            <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]"><Sparkles size={12} />Bluey · extracted from this document</div>
+
+            {/* Value + reconciliation */}
+            {value > 0 && (
+              <div className="mt-3 rounded-xl border border-border bg-muted/20 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Contract value</span>
+                  {reconciled != null && (reconciled
+                    ? <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[var(--success)]"><CheckCircle2 size={11} />Reconciled</span>
+                    : <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[var(--warning)]"><AlertTriangle size={11} />Needs review</span>)}
+                </div>
+                <div className="mt-1 text-[24px] font-bold tabular-nums text-foreground">{fmtMoney(value, currency)}</div>
+              </div>
+            )}
+
+            {/* Where the figures came from */}
+            {lineItems.length > 0 && (
+              <div className="mt-4">
+                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Figures &amp; where they came from</h4>
+                <ul className="space-y-2">
+                  {lineItems.map((li, i) => (
+                    <li key={i} className="rounded-lg border border-border bg-card p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[12.5px] font-medium text-foreground">{li.label}</span>
+                        {li.amount != null && <span className="shrink-0 font-semibold tabular-nums text-foreground">{fmtMoney(li.amount, currency)}</span>}
+                      </div>
+                      {li.source && <p className="mt-1 border-l-2 border-[var(--brand-primary-300)] pl-2 text-[11.5px] italic leading-relaxed text-muted-foreground">“{li.source}”</p>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {classification?.validation?.issues && classification.validation.issues.length > 0 && (
+              <div className="mt-4 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] p-3">
+                <div className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--warning)]"><AlertTriangle size={12} />Review notes</div>
+                <ul className="list-disc space-y-0.5 pl-4 text-[12px] text-foreground">{classification.validation.issues.map((iss, i) => <li key={i}>{iss}</li>)}</ul>
+              </div>
+            )}
+
+            {findings.length > 0 && (
+              <div className="mt-4">
+                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Key findings</h4>
+                <ul className="space-y-2">
+                  {findings.map((f, i) => {
+                    const meta = SEVERITY_META[f.severity];
+                    return (
+                      <li key={i} className="flex items-start gap-2.5 rounded-lg border border-border bg-card p-3">
+                        <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${meta.bg} ${meta.text}`}>{meta.icon}</span>
+                        <div className="min-w-0"><div className="text-[12.5px] font-semibold text-foreground">{f.label}</div><p className="text-[12px] leading-relaxed text-muted-foreground">{f.detail}</p></div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {!classification && <p className="mt-4 text-[12.5px] text-muted-foreground">Analysis isn&apos;t available yet for this document.</p>}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
