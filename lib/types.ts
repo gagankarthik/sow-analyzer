@@ -198,7 +198,7 @@ export interface ApiTimeline {
   futureState: ApiTimelineState | null
 }
 
-// RAG / Bluely chat
+// RAG / Bluey chat
 export interface ChatCitation {
   clauseNumber: string
   docId: string

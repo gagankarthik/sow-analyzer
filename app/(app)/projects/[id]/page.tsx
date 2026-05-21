@@ -5,13 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ProjectHeader } from "@/components/ProjectHeader";
-import { ProjectTabs } from "@/components/ProjectTabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ProcessingState } from "@/components/ProcessingState";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 import { ContractEvolution } from "@/components/ContractEvolution";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
@@ -20,10 +19,12 @@ import { MotionReveal } from "@/components/MotionReveal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowRight, Clock, CalendarClock, Files, GitBranch, XCircle, Loader2, Pencil,
-  Building2, FileText, Hash, ShieldAlert, AlertTriangle, Info,
+  ArrowRight, Files, XCircle, Loader2, Pencil,
+  Building2, FileText, ShieldAlert, AlertTriangle, Info,
 } from "@/components/ui/icons";
 import { apiDocToProject, errorStatus } from "@/lib/api";
+import { ProjectWorkspace } from "@/components/ProjectWorkspace";
+import { isProjectId } from "@/lib/projects-store";
 import { useDocument, useClassification, useTimeline, useUpdateDocument } from "@/lib/queries/documents";
 import { formatDate } from "@/lib/format";
 import type { ApiClause, ApiKeyFinding, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
@@ -56,7 +57,16 @@ const SEV_FILL: Record<FindingSeverity, string> = {
 };
 const SEV_ORDER: FindingSeverity[] = ["critical", "high", "medium", "low", "info"];
 
-export default function ProjectOverviewPage() {
+export default function ProjectRoutePage() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id ?? "";
+  // A `proj_…` id is a named project container (multiple uploaded docs);
+  // anything else is a single document's analysis workspace.
+  if (isProjectId(id)) return <ProjectWorkspace projectId={id} />;
+  return <DocumentOverview />;
+}
+
+function DocumentOverview() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
   const router = useRouter();
@@ -140,7 +150,6 @@ export default function ProjectOverviewPage() {
   return (
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
-      <ProjectTabs projectId={project.id} />
 
       <div className="app-container py-6 md:py-8 space-y-6">
         <div className="flex items-center justify-end">
@@ -165,9 +174,9 @@ export default function ProjectOverviewPage() {
         {/* ── Executive summary ─────────────────────────────── */}
         <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
           <div className="flex items-start gap-3.5">
-            <BluelyMark size="md" tile pulse />
+            <BlueyMark size="md" tile pulse />
             <div className="flex-1 min-w-0">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluely · executive summary</div>
+              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluey · executive summary</div>
               {!isReady ? (
                 <p className="text-[13.5px] text-muted-foreground">The summary appears once processing completes.</p>
               ) : summary ? (
@@ -300,13 +309,6 @@ export default function ProjectOverviewPage() {
           </div>
         </section>
 
-        {/* ── Quick links ───────────────────────────────────── */}
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <DeepLink href={`/projects/${project.id}/sow`} icon={<Files size={15} strokeWidth={1.75} />} title="SOW Analyzer" sub="Clause-level risk" />
-          <DeepLink href={`/projects/${project.id}/amendments`} icon={<GitBranch size={15} strokeWidth={1.75} />} title="Amendments" sub={`${doc.latestVersion} version${doc.latestVersion === 1 ? "" : "s"}`} />
-          <DeepLink href={`/projects/${project.id}/timeline`} icon={<Clock size={15} strokeWidth={1.75} />} title="Timeline" sub="Activity history" />
-          <DeepLink href={`/projects/${project.id}/documents`} icon={<Hash size={15} strokeWidth={1.75} />} title="Documents" sub={`${detail.versions.length} version${detail.versions.length === 1 ? "" : "s"}`} />
-        </section>
       </div>
 
       {/* Edit dialog */}
@@ -338,18 +340,6 @@ export default function ProjectOverviewPage() {
 
 function DetailItem({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex items-center justify-between gap-2"><span className="text-[12px] text-muted-foreground">{label}</span><span>{children}</span></div>;
-}
-
-function DeepLink({ href, icon, title, sub }: { href: string; icon: React.ReactNode; title: string; sub: string }) {
-  return (
-    <Link href={href} className="group rounded-xl border border-border bg-card p-4 shadow-xs hover:shadow-sm hover:border-[var(--brand-primary-300)] transition-all flex items-start gap-3">
-      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground group-hover:bg-[var(--brand-primary-50)] group-hover:text-[var(--brand-primary-700)] transition-colors shrink-0">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1 text-[13px] font-semibold text-foreground group-hover:text-[var(--brand-primary-700)] transition-colors">{title}<ArrowRight size={11} strokeWidth={2.25} className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" /></div>
-        <div className="mt-0.5 text-[11.5px] text-muted-foreground leading-snug">{sub}</div>
-      </div>
-    </Link>
-  );
 }
 
 function sevRank(s: FindingSeverity): number {

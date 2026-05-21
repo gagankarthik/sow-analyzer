@@ -56,7 +56,7 @@ import {
   Pencil,
   Loader2,
 } from "@/components/ui/icons";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 import { MotionReveal } from "@/components/MotionReveal";
 import { listDocuments, deleteDocument, updateDocument } from "@/lib/api";
 import type { ApiDocument, DocType, Lifecycle } from "@/lib/types";
@@ -288,8 +288,8 @@ export default function LibraryPage() {
             <div className="flex-1" />
 
             <Button variant="ai" size="md" className="h-10 rounded-full gap-1.5 pl-2">
-              <BluelyMark size="sm" />
-              Ask Bluely to analyze
+              <BlueyMark size="sm" />
+              Ask Bluey to analyze
             </Button>
           </div>
         </MotionReveal>

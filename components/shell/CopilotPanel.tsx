@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Send, FileText, Loader2, Sparkles } from "@/components/ui/icons";
-import { askBluely } from "@/lib/api";
+import { askBluey } from "@/lib/api";
 import type { ChatCitation } from "@/lib/types";
 
 type Props = { open: boolean; onClose: () => void };
@@ -59,7 +59,7 @@ export function CopilotPanel({ open, onClose }: Props) {
     setMessages((m) => [...m, { role: "user", content: q }]);
     setBusy(true);
     try {
-      const res = await askBluely(docId, q);
+      const res = await askBluey(docId, q);
       setMessages((m) => [...m, { role: "assistant", content: res.answer, citations: res.citations }]);
     } catch (e) {
       setMessages((m) => [...m, { role: "assistant", content: e instanceof Error ? e.message : "Something went wrong. Please try again.", error: true }]);
@@ -73,12 +73,12 @@ export function CopilotPanel({ open, onClose }: Props) {
       <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col gap-0 rounded-l-xl border-l border-border focus-visible:ring-2 focus-visible:ring-ring/50">
         <SheetHeader className="px-4 h-14 flex-row items-center justify-between border-b border-border">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="relative inline-flex h-7 w-7 items-center justify-center shrink-0" aria-label="Bluely">
+            <span className="relative inline-flex h-7 w-7 items-center justify-center shrink-0" aria-label="Bluey">
               <Image src="/logo-icon.svg" alt="" width={28} height={28} priority className="select-none pointer-events-none" style={{ display: "block", width: 28, height: 28 }} />
               <span className="absolute -bottom-0.5 -right-0.5 ai-pulse" />
             </span>
             <div className="min-w-0">
-              <SheetTitle className="text-[13px] font-semibold tracking-tight">Bluely · AI assistant</SheetTitle>
+              <SheetTitle className="text-[13px] font-semibold tracking-tight">Bluey · AI assistant</SheetTitle>
               <SheetDescription className="text-[10.5px] font-mono text-muted-foreground tracking-wide truncate">
                 {docId ? `grounded in this contract` : "open a contract to ask"}
               </SheetDescription>
@@ -90,9 +90,9 @@ export function CopilotPanel({ open, onClose }: Props) {
         {/* Thread */}
         <div ref={threadRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {!docId ? (
-            <EmptyHint title="Open a contract first" body="Bluely answers from a specific contract's clauses. Open any project, then ask away." />
+            <EmptyHint title="Open a contract first" body="Bluey answers from a specific contract's clauses. Open any project, then ask away." />
           ) : messages.length === 0 ? (
-            <EmptyHint title="Ask Bluely anything" body="Every answer is grounded in this contract's clauses, with citations. Try one:">
+            <EmptyHint title="Ask Bluey anything" body="Every answer is grounded in this contract's clauses, with citations. Try one:">
               <div className="mt-3 flex flex-col gap-1.5">
                 {SUGGESTIONS.map((s) => (
                   <button key={s} onClick={() => send(s)} className="text-left text-[12.5px] px-3 py-2 rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)]/60 text-foreground hover:bg-[var(--ai-surface)] transition-colors">
@@ -106,7 +106,7 @@ export function CopilotPanel({ open, onClose }: Props) {
           )}
           {busy && (
             <div className="flex flex-col gap-1">
-              <div className="eyebrow text-[var(--ai-ink)] flex items-center gap-1.5"><span className="ai-pulse" />Bluely · thinking</div>
+              <div className="eyebrow text-[var(--ai-ink)] flex items-center gap-1.5"><span className="ai-pulse" />Bluey · thinking</div>
               <div className="rounded-md rounded-tl-[2px] ai-surface px-3 py-2.5 inline-flex items-center gap-2 text-[13px] text-muted-foreground w-fit">
                 <Loader2 size={13} className="animate-spin" />Searching clauses…
               </div>
@@ -132,7 +132,7 @@ export function CopilotPanel({ open, onClose }: Props) {
               </Button>
             </div>
           </div>
-          <p className="mt-1.5 text-[10px] text-muted-foreground">Bluely answers only from this contract's clauses and cites them. It can be wrong — verify before acting.</p>
+          <p className="mt-1.5 text-[10px] text-muted-foreground">Bluey answers only from this contract's clauses and cites them. It can be wrong — verify before acting.</p>
         </div>
       </SheetContent>
     </Sheet>
@@ -150,7 +150,7 @@ function Message({ msg }: { msg: Msg }) {
   }
   return (
     <div className="flex flex-col gap-1">
-      <div className="eyebrow text-[var(--ai-ink)] flex items-center gap-1.5"><span className="ai-pulse" />Bluely</div>
+      <div className="eyebrow text-[var(--ai-ink)] flex items-center gap-1.5"><span className="ai-pulse" />Bluey</div>
       <div className={cn("rounded-md rounded-tl-[2px] px-3 py-2.5 text-[13px] leading-relaxed", msg.error ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "ai-surface text-foreground")}>
         <p className="whitespace-pre-line">{msg.content}</p>
         {msg.citations && msg.citations.length > 0 && (

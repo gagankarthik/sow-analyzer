@@ -1,9 +1,9 @@
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 
 export default function Loading() {
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center gap-5">
-      <BluelyMark size="lg" tile pulse />
+      <BlueyMark size="lg" tile pulse />
       <div className="h-1.5 w-48 rounded-full bg-muted overflow-hidden">
         <div
           className="h-full w-1/3 rounded-full bar-indeterminate"

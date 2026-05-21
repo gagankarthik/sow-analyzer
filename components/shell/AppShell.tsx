@@ -77,7 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [mobileNav]);
 
   return (
-    <div className="flex w-full min-h-screen bg-background">
+    <div className="sf-app flex w-full min-h-screen bg-background">
       <Sidebar
         mobileOpen={mobileNav}
         onMobileClose={() => setMobileNav(false)}

@@ -112,7 +112,7 @@ export function CommandPalette({ open, onClose }: Props) {
         <CommandGroup heading="AI actions">
           <CommandItem onSelect={() => go("/insights")} keywords={["bluely", "ai", "summary"]}>
             <Sparkles className="text-[var(--ai-ink)]" />
-            <span>Portfolio insights with Bluely</span>
+            <span>Portfolio insights with Bluey</span>
             <CommandShortcut className="ml-auto">A S</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => go("/insights")} keywords={["risk", "attention"]}>

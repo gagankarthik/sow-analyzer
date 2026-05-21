@@ -46,7 +46,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             Turn every contract into an answer.
           </h2>
           <p className="mt-4 text-[14.5px] leading-relaxed text-white/80">
-            Bluely reads your SOWs, MSAs, and amendments — extracting clauses,
+            Bluey reads your SOWs, MSAs, and amendments — extracting clauses,
             flagging deviations from your playbook, and tracing every change so
             your team moves faster with less risk.
           </p>

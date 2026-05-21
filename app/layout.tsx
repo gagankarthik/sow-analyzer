@@ -35,7 +35,7 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Blue-IQ — Contract Intelligence",
   description:
-    "The workspace where Bluely analyzes SOWs, contracts, and amendments to drive revenue, reduce risk, and accelerate deal cycles.",
+    "The workspace where Bluey analyzes SOWs, contracts, and amendments to drive revenue, reduce risk, and accelerate deal cycles.",
 };
 
 // Inline theme bootstrap — runs before paint to avoid a flash of light theme

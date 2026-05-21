@@ -39,11 +39,13 @@ import {
 } from "@/components/ui/icons";
 import { useAuth, initialsOf } from "@/components/auth/AuthProvider";
 import { listDocuments } from "@/lib/api";
+import { useDocuments } from "@/lib/queries/documents";
+import { useProjects } from "@/lib/projects-store";
 import type { ApiDocument } from "@/lib/types";
 
 type Crumb = { label: string; href?: string };
 
-function crumbsFromPath(p: string): Crumb[] {
+function crumbsFromPath(p: string, resolve: (id: string) => string): Crumb[] {
   if (p.startsWith("/dashboard")) return [{ label: "Overview" }, { label: "Dashboard" }];
   if (p.startsWith("/workflow")) return [{ label: "Contracts" }, { label: "Workflow" }];
   if (p.startsWith("/library")) return [{ label: "Contracts" }, { label: "Library" }];
@@ -75,7 +77,7 @@ function crumbsFromPath(p: string): Crumb[] {
     if (!id) return [{ label: "Projects" }];
     return [
       { label: "Projects", href: "/projects" },
-      { label: id.toUpperCase(), href: `/projects/${id}` },
+      { label: resolve(id), href: `/projects/${id}` },
       ...(tailLabel ? [{ label: tailLabel }] : []),
     ];
   }
@@ -621,7 +623,15 @@ function ProfileMenu() {
 
 export function TopBar({ onCommandOpen, onMenuClick }: Props) {
   const pathname = usePathname() ?? "";
-  const crumbs = crumbsFromPath(pathname);
+  const { data: docs = [] } = useDocuments();
+  const projects = useProjects();
+  const nameOf = useMemo(() => {
+    const m = new Map<string, string>();
+    docs.forEach((d) => m.set(d.docId, d.title || "Untitled document"));
+    projects.forEach((p) => m.set(p.id, p.name));
+    return (id: string) => m.get(id) || (id.startsWith("proj_") ? "Project" : "Document");
+  }, [docs, projects]);
+  const crumbs = crumbsFromPath(pathname, nameOf);
   const mounted = useHasMounted();
   const [dark, setDark] = useState<boolean>(readDark);
 

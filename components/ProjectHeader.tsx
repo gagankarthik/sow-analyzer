@@ -105,7 +105,7 @@ export function ProjectHeader({ project }: { project: HeaderProject }) {
           {/* Actions */}
           <div className="shrink-0 flex items-center gap-2">
             <Button variant="ai" size="md" className="gap-1.5" onClick={toggleCopilot}>
-              <Sparkles size={13} />Ask Bluely
+              <Sparkles size={13} />Ask Bluey
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -1,425 +1,205 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import Link from "next/link";
+import { useQueries } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
+import { BlueyMark } from "@/components/ui/BlueyMark";
+import { ConfidenceDots } from "@/components/ui/ConfidenceDots";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MetricCard } from "@/components/dashboard/MetricCard";
-import { ConfidenceDots } from "@/components/ui/ConfidenceDots";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MotionReveal } from "@/components/MotionReveal";
-import Link from "next/link";
 import {
-  ArrowRight,
-  CheckCircle2,
-  Clock,
-  FileText,
-  Loader2,
-  ShieldAlert,
-  XCircle,
+  ArrowRight, FileText, ShieldAlert, AlertTriangle, Info, Layers, Building2,
 } from "@/components/ui/icons";
-import { listDocuments } from "@/lib/api";
-import type { ApiDocument, DocType, Lifecycle } from "@/lib/types";
+import { useDocuments, documentKeys } from "@/lib/queries/documents";
+import { getClassification } from "@/lib/api";
+import type { ApiClassification, DocType, RiskLevel, FindingSeverity } from "@/lib/types";
+
+const RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2, critical: 3 };
+const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+const SEV_RANK: Record<FindingSeverity, number> = { info: 0, low: 1, medium: 2, high: 3, critical: 4 };
+const RISK_PILL: Record<RiskLevel, string> = {
+  critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
+  high: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
+  low: "bg-[var(--success-soft)] text-[var(--success)]",
+};
+const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode }> = {
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={13} /> },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
+  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
+  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
+  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
+};
 
 export default function InsightsPage() {
-  const [docs, setDocs] = useState<ApiDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: docs = [], isLoading } = useDocuments();
+  const readyDocs = useMemo(() => docs.filter((d) => d.status === "READY"), [docs]);
 
-  useEffect(() => {
-    listDocuments()
-      .then(setDocs)
-      .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : "Failed to load documents")
-      )
-      .finally(() => setLoading(false));
-  }, []);
+  const classQueries = useQueries({
+    queries: readyDocs.map((d) => ({ queryKey: documentKeys.classification(d.docId), queryFn: () => getClassification(d.docId), staleTime: 5 * 60_000 })),
+  });
+  const classByDoc = new Map<string, ApiClassification>();
+  readyDocs.forEach((d, i) => { const data = classQueries[i]?.data; if (data) classByDoc.set(d.docId, data); });
+  const analyzing = readyDocs.length > 0 && classQueries.some((q) => q.isLoading);
 
-  const totalCount = docs.length;
-  const readyCount = docs.filter((d) => d.status === "READY").length;
-  const failedCount = docs.filter((d) => d.status === "FAILED").length;
-  const inProgressCount = docs.filter(
-    (d) => d.status !== "READY" && d.status !== "FAILED"
-  ).length;
+  const riskCounts = useMemo(() => {
+    const r = { low: 0, medium: 0, high: 0, critical: 0 };
+    for (const d of readyDocs) if (d.riskCounts) { r.low += d.riskCounts.low; r.medium += d.riskCounts.medium; r.high += d.riskCounts.high; r.critical += d.riskCounts.critical; }
+    return r;
+  }, [readyDocs]);
+  const totalClauses = riskCounts.low + riskCounts.medium + riskCounts.high + riskCounts.critical;
+  const highRisk = riskCounts.high + riskCounts.critical;
 
-  // Docs by docType
-  const byType = docs.reduce<Partial<Record<DocType, number>>>((acc, d) => {
-    acc[d.docType] = (acc[d.docType] ?? 0) + 1;
-    return acc;
-  }, {});
+  const catData: CatDatum[] = useMemo(() => {
+    const m: Record<string, { count: number; risk: RiskLevel }> = {};
+    classByDoc.forEach((c) => c.clauses.forEach((cl) => { const e = (m[cl.category] ??= { count: 0, risk: "low" }); e.count++; if (RANK[cl.riskLevel ?? "low"] > RANK[e.risk]) e.risk = cl.riskLevel ?? "low"; }));
+    return Object.entries(m).map(([name, v]) => ({ name, count: v.count, risk: v.risk })).sort((a, b) => b.count - a.count);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyDocs, classQueries.map((q) => q.dataUpdatedAt).join(",")]);
 
-  // Docs by lifecycle
-  const byLifecycle = docs.reduce<Partial<Record<Lifecycle, number>>>(
-    (acc, d) => {
-      acc[d.lifecycle] = (acc[d.lifecycle] ?? 0) + 1;
-      return acc;
-    },
-    {}
+  const findings = useMemo(() => {
+    const out: { label: string; detail: string; severity: FindingSeverity; docId: string; docTitle: string }[] = [];
+    readyDocs.forEach((d) => (classByDoc.get(d.docId)?.keyFindings ?? []).forEach((f) => out.push({ ...f, docId: d.docId, docTitle: d.title || "Untitled" })));
+    return out.sort((a, b) => SEV_RANK[b.severity] - SEV_RANK[a.severity]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyDocs, classQueries.map((q) => q.dataUpdatedAt).join(",")]);
+
+  const attention = useMemo(
+    () => readyDocs.filter((d) => d.overallRisk === "high" || d.overallRisk === "critical").sort((a, b) => RISK_RANK[a.overallRisk ?? "low"] - RISK_RANK[b.overallRisk ?? "low"]).slice(0, 6),
+    [readyDocs],
   );
 
-  // Documents that need attention: FAILED or recently updated
-  const attentionDocs = docs
-    .filter((d) => d.status === "FAILED" || d.status !== "READY")
-    .slice(0, 3);
+  const byType = useMemo(() => {
+    const m: Partial<Record<DocType, number>> = {};
+    docs.forEach((d) => { m[d.docType] = (m[d.docType] ?? 0) + 1; });
+    return Object.entries(m) as [DocType, number][];
+  }, [docs]);
+
+  const topCat = catData[0]?.name;
+  const loading = isLoading;
 
   return (
     <>
       <PageHeader
-        eyebrow="Blue-IQ Intelligence · portfolio overview"
+        eyebrow="Bluey · contract intelligence"
         title="Portfolio insights"
-        subtitle="Processing status and document breakdown across your active portfolio."
-        actions={
-          <>
-            <Button variant="outline" size="md">
-              Configure thresholds
-            </Button>
-            <Button variant="ai" size="md" className="gap-1.5 pl-2">
-              <BluelyMark size="sm" />
-              Ask Bluely
-            </Button>
-          </>
-        }
+        subtitle="Risk, key findings, and where exposure concentrates across every analyzed contract."
       />
 
-      <div className="app-container py-6 md:py-8 space-y-6">
-        {/* Bluely brief */}
+      <div className="app-container space-y-6 py-6 md:py-8">
+        {/* Bluey brief */}
         <MotionReveal>
-        <Card ai inset="lg" className="relative overflow-hidden rounded-2xl">
-          <div className="ai-rule absolute top-0 left-0 right-0" />
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-            <div className="md:col-span-8">
-              <div className="flex items-center gap-3 mb-4">
-                <BluelyMark size="lg" tile pulse />
-                <div>
-                  <div className="eyebrow text-[var(--ai-ink)]">
-                    Portfolio read · Bluely
-                  </div>
-                  <div className="font-mono text-[10.5px] text-muted-foreground">
-                    blue-iq · contract intelligence
-                  </div>
+          <Card ai inset="lg" className="relative overflow-hidden rounded-2xl">
+            <div className="ai-rule absolute left-0 right-0 top-0" />
+            <div className="flex items-start gap-3.5">
+              <BlueyMark size="lg" tile pulse={analyzing} />
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-3">
+                  <div className="eyebrow text-[var(--ai-ink)]">Portfolio read · Bluey</div>
+                  <ConfidenceDots level={loading ? 1 : readyDocs.length > 0 ? 3 : 1} showLabel className="ml-auto" />
                 </div>
-                <ConfidenceDots level={loading ? 1 : readyCount > 0 ? 3 : 1} showLabel className="ml-auto" />
+                <p className="max-w-[74ch] text-[15px] leading-relaxed text-foreground">
+                  {loading ? "Loading your portfolio…" : readyDocs.length === 0 ? (
+                    "No analyzed contracts yet. Upload a SOW or MSA and Bluey will surface risk and key findings here."
+                  ) : (
+                    <>
+                      Across <strong>{readyDocs.length}</strong> analyzed document{readyDocs.length === 1 ? "" : "s"} and <strong>{totalClauses.toLocaleString()}</strong> clauses, the portfolio carries{" "}
+                      <span className={highRisk > 0 ? "font-semibold text-[var(--danger)]" : "font-semibold text-[var(--success)]"}>{highRisk}</span> high or critical clause{highRisk === 1 ? "" : "s"}
+                      {topCat ? <> and <strong>{findings.length}</strong> key finding{findings.length === 1 ? "" : "s"}, concentrated in <strong>{topCat}</strong>.</> : "."}
+                      {highRisk === 0 && readyDocs.length > 0 ? " No high-risk exposure detected." : ""}
+                    </>
+                  )}
+                </p>
               </div>
-              <p className="text-[15px] leading-relaxed text-foreground max-w-[68ch]">
-                {loading ? (
-                  "Loading your portfolio…"
-                ) : totalCount === 0 ? (
-                  "No documents have been uploaded yet. Upload a SOW or MSA to start generating AI-powered portfolio insights."
-                ) : (
-                  <>
-                    AI-powered portfolio insights require document processing to
-                    complete.{" "}
-                    <span className="font-semibold text-[var(--success)]">
-                      {readyCount}
-                    </span>{" "}
-                    of{" "}
-                    <span className="font-semibold">{totalCount}</span>{" "}
-                    documents are ready.{" "}
-                    {inProgressCount > 0 && (
-                      <>
-                        <span className="text-[var(--warning)] font-semibold">
-                          {inProgressCount}
-                        </span>{" "}
-                        {inProgressCount === 1 ? "document is" : "documents are"}{" "}
-                        still processing.{" "}
-                      </>
-                    )}
-                    {failedCount > 0 && (
-                      <>
-                        <span className="text-[var(--danger)] font-semibold">
-                          {failedCount}
-                        </span>{" "}
-                        {failedCount === 1 ? "document" : "documents"} failed
-                        processing.
-                      </>
-                    )}
-                  </>
-                )}
-              </p>
             </div>
-            <div className="md:col-span-4 flex items-center justify-end">
-              <Button variant="ai" size="md" className="gap-1.5 pl-2">
-                <BluelyMark size="sm" />
-                Ask Bluely
-              </Button>
-            </div>
-          </div>
-        </Card>
+          </Card>
         </MotionReveal>
 
-        {/* KPI row */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-            <Loader2 size={16} className="animate-spin" />
-            <span className="text-[13px]">Loading documents…</span>
-          </div>
-        ) : error ? (
-          <MotionReveal>
-            <div className="rounded-2xl border border-border bg-card shadow-xs flex flex-col items-center justify-center py-12 text-center gap-3">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--danger)]/10">
-                <XCircle size={20} className="text-[var(--danger)]" />
-              </span>
-              <p className="text-[13px] text-muted-foreground">{error}</p>
-            </div>
-          </MotionReveal>
-        ) : (
-          <>
-            <MotionReveal>
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <MetricCard
-                label="Total documents"
-                value={totalCount}
-                hint="across all document types"
-                icon={<FileText size={14} />}
-              />
-              <MetricCard
-                label="Ready"
-                value={readyCount}
-                hint="fully processed"
-                tone="success"
-                icon={<CheckCircle2 size={14} />}
-              />
-              <MetricCard
-                label="In progress"
-                value={inProgressCount}
-                hint="currently processing"
-                tone="warning"
-                icon={<Clock size={14} />}
-              />
-              <MetricCard
-                label="Failed"
-                value={failedCount}
-                hint="require attention"
-                tone={failedCount > 0 ? "danger" : "neutral"}
-                icon={<ShieldAlert size={14} />}
-              />
-            </section>
-            </MotionReveal>
+        {/* KPIs */}
+        <MotionReveal>
+          <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <MetricCard label="Analyzed documents" value={readyDocs.length} hint={`${docs.length} total`} icon={<FileText size={14} />} />
+            <MetricCard label="Clauses analyzed" value={totalClauses.toLocaleString()} hint="across the portfolio" icon={<Layers size={14} />} />
+            <MetricCard label="High-risk clauses" value={highRisk} tone={highRisk > 0 ? "danger" : "success"} hint={`${riskCounts.critical} critical · ${riskCounts.high} high`} icon={<ShieldAlert size={14} />} />
+            <MetricCard label="Key findings" value={findings.length} tone={findings.some((f) => f.severity === "critical") ? "danger" : "warning"} hint="surfaced by Bluey" icon={<AlertTriangle size={14} />} />
+          </section>
+        </MotionReveal>
 
-            {/* Documents needing attention */}
-            {attentionDocs.length > 0 && (
+        {loading ? (
+          <Skeleton className="h-64 rounded-2xl" />
+        ) : readyDocs.length === 0 ? null : (
+          <>
+            {totalClauses > 0 && <MotionReveal><RiskIntelligence counts={riskCounts} categories={catData} /></MotionReveal>}
+
+            {/* Key findings across portfolio */}
+            {findings.length > 0 && (
               <MotionReveal>
-              <section>
-                <div className="mb-4">
-                  <h2 className="text-[16px] font-semibold text-foreground tracking-tight">
-                    Documents needing attention
-                  </h2>
-                  <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-                    Failed or currently processing documents
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {attentionDocs.map((doc, i) => (
-                    <MotionReveal key={doc.docId} delay={Math.min(i * 0.04, 0.2)}>
-                      <DocumentAttentionCard doc={doc} />
-                    </MotionReveal>
-                  ))}
-                </div>
-              </section>
+                <section>
+                  <div className="mb-3 flex items-center gap-2">
+                    <ShieldAlert size={15} className="text-[var(--warning)]" />
+                    <h2 className="text-[16px] font-semibold tracking-tight text-foreground">Key findings across the portfolio</h2>
+                    <span className="font-mono text-[11px] text-muted-foreground">{findings.length}</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    {findings.slice(0, 9).map((f, i) => {
+                      const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
+                      return (
+                        <Link key={i} href={`/projects/${f.docId}`} className="rounded-xl border border-border bg-card p-4 shadow-xs transition-all hover:border-[var(--brand-primary-300)] hover:shadow-sm">
+                          <div className="mb-1.5 flex items-center gap-2">
+                            <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${s.bg} ${s.text}`}>{s.icon}</span>
+                            <span className="flex-1 text-[13px] font-semibold leading-tight text-foreground">{f.label}</span>
+                          </div>
+                          <p className="text-[12px] leading-relaxed text-muted-foreground">{f.detail}</p>
+                          <p className="mt-1.5 truncate text-[10.5px] text-muted-foreground/70">{f.docTitle}</p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
               </MotionReveal>
             )}
 
-            {/* Breakdown tables */}
+            {/* Contracts needing attention + by type */}
             <MotionReveal>
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* By document type */}
-              <Card inset="lg" className="rounded-2xl">
-                <CardHeader
-                  title="Documents by type"
-                  eyebrow="Breakdown across your portfolio"
-                  action={
-                    <Badge variant="neutral" size="sm">
-                      {totalCount} total
-                    </Badge>
-                  }
-                />
-                {totalCount === 0 ? (
-                  <div className="mt-5 text-[13px] text-muted-foreground">
-                    No documents uploaded yet.
-                  </div>
-                ) : (
-                  <ul className="mt-5 flex flex-col">
-                    {(Object.entries(byType) as [DocType, number][]).map(
-                      ([type, count]) => (
-                        <li
-                          key={type}
-                          className="py-3 border-b border-border last:border-0 flex items-center justify-between"
-                        >
-                          <span className="text-[13px] text-foreground font-medium">
-                            {type}
-                          </span>
-                          <span className="numeric text-[13px] font-semibold text-foreground tabular-nums">
-                            {count}
-                          </span>
+              <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                <Card inset="lg" className="rounded-2xl lg:col-span-8">
+                  <CardHeader title="Contracts needing attention" eyebrow="Highest risk first" action={<Badge variant="neutral" size="sm">{attention.length}</Badge>} />
+                  {attention.length === 0 ? (
+                    <p className="mt-5 text-[13px] text-muted-foreground">No high-risk contracts right now.</p>
+                  ) : (
+                    <ul className="mt-4 flex flex-col">
+                      {attention.map((d) => (
+                        <li key={d.docId} className="flex items-center gap-3 border-b border-border py-3 last:border-0">
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${RISK_PILL[d.overallRisk ?? "low"]}`}>{d.overallRisk}</span>
+                          <Link href={`/projects/${d.docId}`} className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground hover:text-[var(--brand-primary-700)]">{d.title || "Untitled document"}</Link>
+                          <span className="shrink-0 text-[11.5px] text-muted-foreground">{d.highRiskCount ?? 0} high-risk · {d.clauseCount ?? 0} clauses</span>
+                          <ArrowRight size={13} className="shrink-0 text-muted-foreground" />
                         </li>
-                      )
-                    )}
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+                <Card inset="lg" className="rounded-2xl lg:col-span-4">
+                  <CardHeader title="By document type" eyebrow="Portfolio composition" />
+                  <ul className="mt-4 flex flex-col">
+                    {byType.map(([type, count]) => (
+                      <li key={type} className="flex items-center justify-between gap-2 border-b border-border py-2.5 last:border-0">
+                        <span className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground"><Building2 size={13} className="text-muted-foreground" />{type}</span>
+                        <span className="font-mono text-[13px] font-semibold tabular-nums text-foreground">{count}</span>
+                      </li>
+                    ))}
                   </ul>
-                )}
-              </Card>
-
-              {/* By lifecycle */}
-              <Card inset="lg" className="rounded-2xl">
-                <CardHeader
-                  title="Documents by lifecycle"
-                  eyebrow="Current stage distribution"
-                  action={
-                    <Badge variant="neutral" size="sm">
-                      {totalCount} total
-                    </Badge>
-                  }
-                />
-                {totalCount === 0 ? (
-                  <div className="mt-5 text-[13px] text-muted-foreground">
-                    No documents uploaded yet.
-                  </div>
-                ) : (
-                  <ul className="mt-5 flex flex-col">
-                    {(Object.entries(byLifecycle) as [Lifecycle, number][]).map(
-                      ([lifecycle, count]) => (
-                        <li
-                          key={lifecycle}
-                          className="py-3 border-b border-border last:border-0 flex items-center justify-between"
-                        >
-                          <span className="text-[13px] text-foreground font-medium capitalize">
-                            {lifecycle}
-                          </span>
-                          <span className="numeric text-[13px] font-semibold text-foreground tabular-nums">
-                            {count}
-                          </span>
-                        </li>
-                      )
-                    )}
-                  </ul>
-                )}
-              </Card>
-            </section>
-            </MotionReveal>
-
-            {/* Recent updates */}
-            <MotionReveal>
-              <RecentUpdates docs={docs} />
+                </Card>
+              </section>
             </MotionReveal>
           </>
         )}
       </div>
     </>
-  );
-}
-
-function RecentUpdates({ docs }: { docs: ApiDocument[] }) {
-  const recent = [...docs]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5);
-
-  if (recent.length === 0) return null;
-
-  return (
-    <section>
-      <div className="mb-4">
-        <h2 className="text-[16px] font-semibold text-foreground tracking-tight">
-          Recent updates
-        </h2>
-        <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-          Last 5 documents by activity
-        </p>
-      </div>
-      <Card inset="none" className="rounded-2xl">
-        <ul className="flex flex-col">
-          {recent.map((doc) => (
-            <li
-              key={doc.docId}
-              className="px-6 py-3 border-b border-border last:border-0 flex items-center justify-between gap-4"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <FileText size={13} className="text-muted-foreground shrink-0" />
-                <div className="min-w-0">
-                  <Link
-                    href={`/projects/${doc.docId}`}
-                    className="text-[13px] font-medium text-foreground hover:text-[var(--brand-primary-600)] transition-colors truncate block"
-                  >
-                    {doc.title || "Untitled document"}
-                  </Link>
-                  <span className="text-[11px] text-muted-foreground">
-                    {doc.docType} · {doc.lifecycle}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <Badge
-                  variant={
-                    doc.status === "READY"
-                      ? "success"
-                      : doc.status === "FAILED"
-                      ? "danger"
-                      : "warning"
-                  }
-                  dot
-                  size="sm"
-                >
-                  {doc.status.toLowerCase()}
-                </Badge>
-                <span className="text-[11px] text-muted-foreground tabular-nums">
-                  {new Date(doc.updatedAt).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </span>
-                <Link
-                  href={`/projects/${doc.docId}`}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Open document"
-                >
-                  <ArrowRight size={12} />
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Card>
-    </section>
-  );
-}
-
-function DocumentAttentionCard({ doc }: { doc: ApiDocument }) {
-  const isFailed = doc.status === "FAILED";
-  const severity = isFailed ? "critical" : "warning";
-  const tone = isFailed ? "danger" : "warning";
-
-  return (
-    <Card inset="lg" lift className="relative h-full rounded-2xl hover:shadow-md transition-all duration-200">
-      <div className="flex items-start justify-between mb-2">
-        <Badge variant={tone} dot size="sm">
-          {doc.status.toLowerCase()}
-        </Badge>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {doc.docType}
-        </span>
-      </div>
-      <h4 className="text-[15px] font-semibold tracking-tight text-foreground leading-snug">
-        {doc.title || "Untitled document"}
-      </h4>
-      {doc.parties.length > 0 && (
-        <p className="mt-2 text-[12.5px] text-muted-foreground leading-relaxed">
-          {doc.parties.join(", ")}
-        </p>
-      )}
-      <div className="mt-2 text-[11px] text-muted-foreground">
-        Updated{" "}
-        {new Date(doc.updatedAt).toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}
-      </div>
-      <Link
-        href={`/projects/${doc.docId}`}
-        className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-foreground hover:text-[var(--brand-primary-600)] transition-colors"
-      >
-        View document
-        <ArrowRight size={11} />
-      </Link>
-    </Card>
   );
 }

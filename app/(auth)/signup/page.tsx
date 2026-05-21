@@ -67,7 +67,7 @@ export default function SignupPage() {
     <>
       <AuthHeading
         title="Create your account"
-        subtitle="Start analyzing contracts with Bluely in minutes."
+        subtitle="Start analyzing contracts with Bluey in minutes."
       />
 
       <form onSubmit={onSubmit} className="space-y-4" noValidate>

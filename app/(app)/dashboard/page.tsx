@@ -1,216 +1,357 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useQueries } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { MetricCard } from "@/components/dashboard/MetricCard";
-import { RiskDonut } from "@/components/dashboard/RiskDonut";
-import { RiskGauge, riskIndex } from "@/components/charts/RiskGauge";
-import { MiniRiskDonut } from "@/components/charts/MiniRiskDonut";
+import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
+import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { MotionReveal } from "@/components/MotionReveal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sparkline } from "@/components/ui/Sparkline";
 import {
-  Briefcase, FileText, ShieldAlert, Clock, ArrowRight, Plus, Building2, Layers,
+  Briefcase, ShieldAlert, ArrowRight, Plus, RefreshCw, Layers, FileText, DollarSign,
+  AlertTriangle, CheckCircle2, Clock, CalendarClock, BarChart3, PieChart, Users, TrendingUp,
+  Scale, Database, Tag, Kanban, LineChart, Boxes,
 } from "@/components/ui/icons";
-import { useDocuments } from "@/lib/queries/documents";
-import { groupFamilies, type ContractFamily } from "@/lib/families";
-import type { ApiDocument, RiskLevel } from "@/lib/types";
+import { useDocuments, documentKeys } from "@/lib/queries/documents";
+import { getClassification } from "@/lib/api";
+import { computeContractValue, fmtMoney, type ValuedDoc } from "@/lib/contract-value";
+import { useProjects, type LocalProject } from "@/lib/projects-store";
+import type { ApiClause, ApiClassification, ApiDocument, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
-
+const RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2, critical: 3 };
+const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const RISK_PILL: Record<RiskLevel, string> = {
   critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[#C2410C]",
+  high: "bg-[var(--warning-soft)] text-[var(--warning)]",
   medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
   low: "bg-[var(--success-soft)] text-[var(--success)]",
 };
-const HEAT_COLS: { k: RiskLevel; label: string; color: string }[] = [
-  { k: "low", label: "Low", color: "var(--success)" },
-  { k: "medium", label: "Medium", color: "var(--ink-400)" },
-  { k: "high", label: "High", color: "var(--warning)" },
-  { k: "critical", label: "Critical", color: "var(--danger)" },
-];
+const SCOPE_CATS = ["ScopeOfWork", "Deliverables", "Acceptance", "ChangeControl"];
+const DAY = 86_400_000;
 
-function useCountUp(target: number, ms = 700) {
-  const [n, setN] = useState(target);
-  useEffect(() => {
-    if (typeof window === "undefined" || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { setN(target); return; }
-    let raf = 0; const start = performance.now();
-    const tick = (t: number) => { const p = Math.min(1, (t - start) / ms); setN(Math.round(target * (1 - Math.pow(1 - p, 3)))); if (p < 1) raf = requestAnimationFrame(tick); };
-    raf = requestAnimationFrame(tick); return () => cancelAnimationFrame(raf);
-  }, [target, ms]);
-  return n;
+function fmtDuration(ms: number): string {
+  if (!ms || ms <= 0) return "—";
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
+  if (ms < DAY) return `${(ms / 3_600_000).toFixed(1)}h`;
+  return `${(ms / DAY).toFixed(1)}d`;
 }
-function CountUp({ value }: { value: number }) { return <>{useCountUp(value).toLocaleString()}</>; }
+
+type Agg = {
+  project: LocalProject;
+  docs: ApiDocument[];
+  docCount: number;
+  clauseCount: number;
+  rc: { low: number; medium: number; high: number; critical: number };
+  total: number;
+  highRisk: number;
+  overallRisk: RiskLevel;
+  value: number;
+  processing: number;
+  failed: number;
+  expired: boolean;
+  upcoming: boolean;
+  status: string;
+};
 
 export default function DashboardPage() {
-  const { data: docs = [], isLoading } = useDocuments();
-  const families = useMemo(() => groupFamilies(docs), [docs]);
+  const { data: docs = [], isLoading, isFetching, refetch } = useDocuments();
+  const projects = useProjects();
+  const [mounted, setMounted] = useState(false);
 
-  const ready = docs.filter((d) => d.status === "READY");
-  const processing = docs.filter((d) => PROCESSING.has(d.status));
-  const failed = docs.filter((d) => d.status === "FAILED");
+  useEffect(() => { setMounted(true); }, []);
 
-  const risk = useMemo(() => {
-    const r = { low: 0, medium: 0, high: 0, critical: 0 };
-    for (const d of ready) if (d.riskCounts) { r.low += d.riskCounts.low ?? 0; r.medium += d.riskCounts.medium ?? 0; r.high += d.riskCounts.high ?? 0; r.critical += d.riskCounts.critical ?? 0; }
-    return r;
-  }, [ready]);
-  const totalClauses = ready.reduce((s, d) => s + (d.clauseCount ?? 0), 0);
-  const highRiskTotal = risk.high + risk.critical;
-  const parties = useMemo(() => { const s = new Set<string>(); for (const d of docs) d.parties?.forEach((p) => s.add(p)); return s; }, [docs]);
-  const portfolioIdx = riskIndex(risk);
+  const byId = useMemo(() => new Map(docs.map((d) => [d.docId, d])), [docs]);
+  const projectDocIds = useMemo(() => new Set(projects.flatMap((p) => p.docIds)), [projects]);
+  const readyDocs = useMemo(() => docs.filter((d) => projectDocIds.has(d.docId) && d.status === "READY"), [docs, projectDocIds]);
 
-  // Riskiest projects first for the heatmap + pies.
-  const ranked = useMemo(() => [...families].sort((a, b) => b.highRiskCount - a.highRiskCount || b.clauseCount - a.clauseCount), [families]);
-  const heatMax = useMemo(() => Math.max(1, ...ranked.flatMap((f) => HEAT_COLS.map((c) => f.riskCounts[c.k]))), [ranked]);
+  const classQueries = useQueries({
+    queries: readyDocs.map((d) => ({ queryKey: documentKeys.classification(d.docId), queryFn: () => getClassification(d.docId), staleTime: 5 * 60_000 })),
+  });
+  const classByDoc = new Map<string, ApiClassification>();
+  readyDocs.forEach((d, i) => { const data = classQueries[i]?.data; if (data) classByDoc.set(d.docId, data); });
+
+  const allClauses: ApiClause[] = [];
+  classByDoc.forEach((c) => c.clauses.forEach((cl) => allClauses.push(cl)));
+
+  const now = Date.now();
+  const aggregates: Agg[] = projects.map((p) => {
+    const pdocs = p.docIds.map((id) => byId.get(id)).filter((d): d is ApiDocument => !!d);
+    const rc = { low: 0, medium: 0, high: 0, critical: 0 };
+    let clauseCount = 0, processing = 0, failed = 0, expired = false, upcoming = false;
+    for (const d of pdocs) {
+      clauseCount += d.clauseCount ?? 0;
+      if (d.riskCounts) { rc.low += d.riskCounts.low; rc.medium += d.riskCounts.medium; rc.high += d.riskCounts.high; rc.critical += d.riskCounts.critical; }
+      if (PROCESSING.has(d.status)) processing++;
+      if (d.status === "FAILED") failed++;
+      if (d.lifecycle === "expired") expired = true;
+      if (d.effectiveDate) { const t = new Date(d.effectiveDate).getTime(); if (t >= now && t <= now + 90 * DAY) upcoming = true; }
+    }
+    const valued: ValuedDoc[] = pdocs.filter((d) => d.status === "READY").map((d) => ({ docId: d.docId, title: d.title || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt, classification: classByDoc.get(d.docId) }));
+    const value = computeContractValue(valued).total;
+    const total = rc.low + rc.medium + rc.high + rc.critical;
+    const highRisk = rc.high + rc.critical;
+    const overallRisk: RiskLevel = rc.critical > 0 ? "critical" : rc.high > 0 ? "high" : rc.medium > 0 ? "medium" : "low";
+    const root = pdocs.find((d) => d.docType !== "AMENDMENT") ?? pdocs[0];
+    const status = root?.lifecycle ? root.lifecycle.charAt(0).toUpperCase() + root.lifecycle.slice(1) : "—";
+    return { project: p, docs: pdocs, docCount: pdocs.length, clauseCount, rc, total, highRisk, overallRisk, value, processing, failed, expired, upcoming, status };
+  });
+
+  const tcv = aggregates.reduce((s, a) => s + a.value, 0);
+  const valueAtRisk = aggregates.filter((a) => a.overallRisk === "high" || a.overallRisk === "critical").reduce((s, a) => s + a.value, 0);
+  const varPct = tcv > 0 ? Math.round((valueAtRisk / tcv) * 100) : 0;
+  const highCritCount = aggregates.filter((a) => a.overallRisk === "high" || a.overallRisk === "critical").length;
+  const expiredCount = aggregates.filter((a) => a.expired).length;
+  const renew = aggregates.filter((a) => a.upcoming);
+  const renewValue = renew.reduce((s, a) => s + a.value, 0);
+  const analyzingCount = aggregates.reduce((s, a) => s + a.processing, 0);
+  const rcAll = aggregates.reduce((acc, a) => { acc.low += a.rc.low; acc.medium += a.rc.medium; acc.high += a.rc.high; acc.critical += a.rc.critical; return acc; }, { low: 0, medium: 0, high: 0, critical: 0 });
+  const totalRiskClauses = rcAll.low + rcAll.medium + rcAll.high + rcAll.critical;
+
+  const catData: CatDatum[] = useMemo(() => {
+    const m: Record<string, { count: number; risk: RiskLevel }> = {};
+    classByDoc.forEach((c) => c.clauses.forEach((cl) => { const e = (m[cl.category] ??= { count: 0, risk: "low" }); e.count++; if (RANK[cl.riskLevel ?? "low"] > RANK[e.risk]) e.risk = cl.riskLevel ?? "low"; }));
+    return Object.entries(m).map(([name, val]) => ({ name, count: val.count, risk: val.risk })).sort((a, b) => b.count - a.count);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyDocs, classQueries.map((q) => q.dataUpdatedAt).join(",")]);
+
+  const tcvSeries = useMemo(() => {
+    const ordered = [...aggregates].sort((a, b) => new Date(a.project.createdAt).getTime() - new Date(b.project.createdAt).getTime());
+    let run = 0; const out: number[] = [];
+    for (const a of ordered) { run += a.value; out.push(run); }
+    return out.length > 1 ? out : out.length === 1 ? [0, out[0]] : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tcv, projects.length]);
+
+  const avgAnalyzeMs = useMemo(() => {
+    const spans = readyDocs.map((d) => new Date(d.updatedAt).getTime() - new Date(d.createdAt).getTime()).filter((n) => n > 0);
+    return spans.length ? spans.reduce((s, n) => s + n, 0) / spans.length : 0;
+  }, [readyDocs]);
+
+  const valueByYear = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const a of aggregates) {
+      const dates = a.docs.map((d) => d.effectiveDate || d.createdAt).filter(Boolean).sort();
+      const year = dates.length ? String(new Date(dates[0]!).getFullYear()) : "Undated";
+      m.set(year, (m.get(year) ?? 0) + a.value);
+    }
+    return [...m.entries()].filter(([, v]) => v > 0).sort((a, b) => a[0].localeCompare(b[0]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tcv, projects.length]);
+
+  const scopeRows = SCOPE_CATS.map((cat) => ({ cat, n: allClauses.filter((cl) => cl.category === cat).length })).filter((x) => x.n > 0);
+  const attention = aggregates.filter((a) => a.overallRisk === "high" || a.overallRisk === "critical" || a.failed > 0).sort((a, b) => RISK_RANK[a.overallRisk] - RISK_RANK[b.overallRisk] || b.value - a.value);
+  const valueRows = aggregates.filter((a) => a.value > 0).sort((a, b) => b.value - a.value).slice(0, 6);
+  const ranked = [...aggregates].sort((a, b) => RISK_RANK[a.overallRisk] - RISK_RANK[b.overallRisk] || b.value - a.value);
+  const loading = !mounted || isLoading;
 
   return (
     <>
-      <PageHeader eyebrow="Portfolio command center" title="Dashboard" subtitle="Risk, stats, and the full picture across every contract — live." />
+      <PageHeader
+        eyebrow="Portfolio command center"
+        title="Dashboard"
+        subtitle="Contract value, risk, and what needs attention across every project — live."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => refetch()}><RefreshCw size={14} className={isFetching ? "animate-spin" : undefined} />Refresh</Button>
+            <Link href="/projects/new" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--brand-primary-600)] px-4 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[var(--brand-primary-700)]"><Plus size={15} strokeWidth={2.5} />New project</Link>
+          </div>
+        }
+      />
 
-      <div className="app-container py-6 md:py-8 space-y-6">
-        {/* ── KPIs ─────────────────────────────────────────── */}
-        <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {isLoading ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[118px] rounded-2xl" />) : (
-            <>
-              <MetricCard label="Projects" value={<CountUp value={families.length} />} hint={`${docs.length} document${docs.length === 1 ? "" : "s"}`} tone="brand" icon={<Briefcase size={14} />} />
-              <MetricCard label="Clauses analyzed" value={<CountUp value={totalClauses} />} hint={`${ready.length} processed`} tone="neutral" icon={<FileText size={14} />} />
-              <MetricCard label="High-risk clauses" value={<CountUp value={highRiskTotal} />} hint={`${risk.critical} critical · ${risk.high} high`} tone={risk.critical > 0 ? "danger" : highRiskTotal > 0 ? "warning" : "success"} icon={<ShieldAlert size={14} />} />
-              <MetricCard label="Parties" value={<CountUp value={parties.size} />} hint="across portfolio" tone="neutral" icon={<Building2 size={14} />} />
-              <MetricCard label="Processing" value={<CountUp value={processing.length} />} hint={failed.length > 0 ? `${failed.length} need attention` : processing.length > 0 ? "pipeline active" : "all clear"} tone={failed.length > 0 ? "danger" : processing.length > 0 ? "warning" : "success"} icon={<Clock size={14} />} />
-            </>
-          )}
-        </section>
+      <div className="app-container space-y-6 py-6 md:py-8">
+        {loading ? (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}</div>
+        ) : projects.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <>
+            {/* Executive KPIs */}
+            <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <MetricCard label="Total contract value" value={tcv > 0 ? fmtMoney(tcv) : "—"} tone="brand" icon={<DollarSign size={14} />} hint="under management" chart={tcvSeries.length > 1 ? <Sparkline data={tcvSeries} variant="up" width={240} height={32} className="w-full" /> : undefined} />
+              <MetricCard label="Value at risk" value={valueAtRisk > 0 ? fmtMoney(valueAtRisk) : "—"} tone={valueAtRisk > 0 ? "danger" : "success"} icon={<AlertTriangle size={14} />} hint={tcv > 0 ? `${varPct}% of portfolio` : "no exposure"} />
+              <MetricCard label="Active contracts" value={projects.length} icon={<Briefcase size={14} />} hint={`${readyDocs.length} analyzed${analyzingCount ? ` · ${analyzingCount} processing` : ""}`} />
+              <MetricCard label="High & critical" value={highCritCount} tone={highCritCount > 0 ? "danger" : "success"} icon={<ShieldAlert size={14} />} hint={`${rcAll.critical} critical · ${rcAll.high} high`} />
+              <MetricCard label="Clauses analyzed" value={totalRiskClauses.toLocaleString()} icon={<FileText size={14} />} hint={`${readyDocs.length} documents`} />
+              <MetricCard label="Avg. analysis time" value={fmtDuration(avgAnalyzeMs)} tone="success" icon={<Clock size={14} />} hint="per document" />
+              <MetricCard label="Expired" value={expiredCount} tone={expiredCount > 0 ? "warning" : "neutral"} icon={<CalendarClock size={14} />} hint="contracts past term" />
+              <MetricCard label="Renewals · 90d" value={renew.length} icon={<CalendarClock size={14} />} hint={renewValue > 0 ? fmtMoney(renewValue) : "no upcoming dates"} />
+            </section>
 
-        {/* ── Portfolio risk: gauge + donut ────────────────── */}
-        <MotionReveal>
-          <section className="rounded-3xl border border-border bg-card shadow-xs overflow-hidden">
-            <div className="px-5 md:px-6 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-              <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Portfolio risk</h2>
-              <span className="text-[11px] font-mono text-muted-foreground">{(risk.low + risk.medium + highRiskTotal).toLocaleString()} clauses scored</span>
-            </div>
-            {isLoading ? (
-              <div className="p-6"><Skeleton className="h-[180px] rounded-2xl" /></div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-5 md:p-6 items-center">
-                <div className="lg:col-span-4 flex flex-col items-center justify-center">
-                  <RiskGauge score={portfolioIdx} />
-                  <p className="mt-1 text-[12px] text-muted-foreground text-center">
-                    {highRiskTotal > 0 ? <><span className="font-semibold text-foreground">{highRiskTotal}</span> high/critical across the book</> : ready.length ? "No high-risk exposure" : "Awaiting analysis"}
-                  </p>
-                </div>
-                <div className="lg:col-span-8 lg:border-l border-border lg:pl-6">
-                  <RiskDonut counts={risk} />
-                </div>
+            {/* Risk intelligence */}
+            {totalRiskClauses > 0 && <MotionReveal><RiskIntelligence counts={rcAll} categories={catData} /></MotionReveal>}
+
+            {/* Heatmap + value by year */}
+            <MotionReveal delay={0.05}>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                <Card className="lg:col-span-7" title="Risk by category" icon={<BarChart3 size={15} />} sub="category × severity">
+                  {allClauses.length === 0 ? <Empty text="The clause heatmap appears once analysis completes." /> : <ClauseHeatmap clauses={allClauses} />}
+                </Card>
+                <Card className="lg:col-span-5" title="Contract value by year" icon={<TrendingUp size={15} />} sub={tcv > 0 ? fmtMoney(tcv) : undefined}>
+                  {valueByYear.length === 0 ? <Empty text="No dated contract value yet." /> : <BarList rows={valueByYear.map(([year, v]) => ({ label: year, value: v, sub: fmtMoney(v) }))} />}
+                </Card>
               </div>
-            )}
-          </section>
-        </MotionReveal>
+            </MotionReveal>
 
-        {/* ── Risk by project (heatmap) ────────────────────── */}
-        {!isLoading && ranked.length > 0 && (
-          <MotionReveal delay={0.05}>
-            <section className="rounded-3xl border border-border bg-card shadow-xs p-5 md:p-6">
-              <div className="flex items-baseline justify-between gap-2 mb-4">
-                <h2 className="text-[14px] font-semibold tracking-tight text-foreground">Risk by project</h2>
-                <span className="text-[11px] font-mono text-muted-foreground">project × severity</span>
+            {/* Needs attention + value by project */}
+            <MotionReveal delay={0.05}>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs lg:col-span-7">
+                  <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
+                    <ShieldAlert size={15} className={attention.length ? "text-[var(--danger)]" : "text-[var(--success)]"} />
+                    <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Needs your attention</h3>
+                    {attention.length > 0 && <span className="ml-auto font-mono text-[11px] text-muted-foreground">{attention.length}</span>}
+                  </div>
+                  {attention.length === 0 ? (
+                    <div className="flex flex-col items-center px-5 py-10 text-center"><CheckCircle2 size={24} className="mb-2 text-[var(--success)]" /><p className="text-[13px] font-semibold text-foreground">All clear</p><p className="mt-0.5 text-[12px] text-muted-foreground">No contracts are high-risk or need review right now.</p></div>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {attention.slice(0, 6).map((a) => (
+                        <li key={a.project.id}>
+                          <Link href={`/projects/${a.project.id}`} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40">
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${RISK_PILL[a.overallRisk]}`}>{a.overallRisk}</span>
+                            <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-semibold text-foreground">{a.project.name}</div><div className="text-[11.5px] text-muted-foreground">{a.highRisk > 0 ? `${a.highRisk} high-risk clause${a.highRisk === 1 ? "" : "s"}` : ""}{a.failed > 0 ? `${a.highRisk > 0 ? " · " : ""}${a.failed} failed` : ""}{a.value > 0 ? ` · ${fmtMoney(a.value)}` : ""}</div></div>
+                            <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-[var(--brand-primary-600)]">Review<ArrowRight size={12} strokeWidth={2.25} /></span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+                <Card className="lg:col-span-5" title="Value by project" icon={<DollarSign size={15} />} sub={tcv > 0 ? `${fmtMoney(tcv)} total` : undefined}>
+                  {valueRows.length === 0 ? <Empty text="Estimated values appear once SOWs are analyzed." /> : <ValueByProject rows={valueRows} />}
+                </Card>
+              </div>
+            </MotionReveal>
+
+            {/* Scope coverage */}
+            {scopeRows.length > 0 && (
+              <Card title="Scope coverage" icon={<Boxes size={15} />} sub="scope & deliverable clauses">
+                <BarList rows={scopeRows.map((s) => ({ label: s.cat.replace(/([A-Z])/g, " $1").trim(), value: s.n, color: "var(--brand-primary-400)" }))} />
+              </Card>
+            )}
+
+            {/* Contracts table */}
+            <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
+              <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+                <div className="flex items-center gap-2"><Briefcase size={15} className="text-[var(--brand-primary-600)]" /><h3 className="text-[14px] font-semibold tracking-tight text-foreground">Contracts <span className="ml-1 font-mono text-[11px] text-muted-foreground">{projects.length}</span></h3></div>
+                <Link href="/projects" className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">View all<ArrowRight size={12} strokeWidth={2.25} /></Link>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full border-separate min-w-[520px]" style={{ borderSpacing: "4px" }}>
-                  <thead>
-                    <tr>
-                      <th className="text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground pb-1 pl-1 w-[40%]">Project</th>
-                      {HEAT_COLS.map((c) => (
-                        <th key={c.k} className="pb-1">
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold" style={{ color: c.color }}><span className="h-2 w-2 rounded-full" style={{ background: c.color }} />{c.label}</span>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
+                <table className="w-full min-w-[720px] border-collapse text-[13px]">
+                  <thead><tr className="border-b border-border bg-muted/40 text-left">{["Project", "Status", "Docs", "Clauses", "High-Risk", "Value", "Risk"].map((h, i) => <th key={h} className={`px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground ${i >= 2 && i <= 5 ? "text-right" : ""}`}>{h}</th>)}</tr></thead>
                   <tbody>
-                    {ranked.slice(0, 8).map((f) => (
-                      <tr key={f.id} className="group">
-                        <td className="pr-2 pl-1">
-                          <Link href={`/projects/${f.root.docId}`} className="text-[12.5px] font-medium text-foreground group-hover:text-[var(--brand-primary-700)] transition-colors line-clamp-1">{f.root.title || "Untitled"}</Link>
-                        </td>
-                        {HEAT_COLS.map((c) => {
-                          const n = f.riskCounts[c.k];
-                          const intensity = n === 0 ? 0 : 0.14 + 0.72 * (n / heatMax);
-                          return (
-                            <td key={c.k} className="p-0">
-                              <Link href={`/projects/${f.root.docId}`} className="block h-10 rounded-lg flex items-center justify-center text-[12px] font-semibold tabular-nums transition-transform hover:scale-[1.04]"
-                                style={{ background: n === 0 ? "var(--ink-50)" : `color-mix(in srgb, ${c.color} ${Math.round(intensity * 100)}%, transparent)`, color: n === 0 ? "var(--ink-300)" : intensity > 0.55 ? "#fff" : "var(--ink-800)" }}
-                                title={`${f.root.title} · ${c.label}: ${n}`}>{n || "·"}</Link>
-                            </td>
-                          );
-                        })}
+                    {ranked.map((a) => (
+                      <tr key={a.project.id} className="border-b border-border last:border-0 transition-colors hover:bg-muted/40">
+                        <td className="px-5 py-3"><Link href={`/projects/${a.project.id}`} className="font-semibold text-foreground hover:text-[var(--brand-primary-700)]">{a.project.name}</Link>{a.project.client && <div className="truncate text-[11px] text-muted-foreground">{a.project.client}</div>}</td>
+                        <td className="px-5 py-3 text-muted-foreground">{a.status}{a.expired ? " · expired" : ""}</td>
+                        <td className="px-5 py-3 text-right tabular-nums">{a.docCount}</td>
+                        <td className="px-5 py-3 text-right tabular-nums">{a.clauseCount.toLocaleString()}</td>
+                        <td className="px-5 py-3 text-right tabular-nums">{a.highRisk > 0 ? <span className="font-semibold text-[var(--danger)]">{a.highRisk}</span> : "0"}</td>
+                        <td className="px-5 py-3 text-right tabular-nums font-semibold">{a.value > 0 ? fmtMoney(a.value) : "—"}</td>
+                        <td className="px-5 py-3">{a.total > 0 ? <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${RISK_PILL[a.overallRisk]}`}>{a.overallRisk}</span> : <span className="text-[11px] text-muted-foreground">—</span>}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </section>
-          </MotionReveal>
-        )}
 
-        {/* ── Each project: risk pie ───────────────────────── */}
-        <MotionReveal delay={0.1}>
-          <section>
-            <div className="flex items-baseline justify-between gap-2 mb-4">
-              <h2 className="text-[14px] font-semibold tracking-tight text-foreground">Projects {families.length > 0 && <span className="text-[11px] font-mono text-muted-foreground ml-1">{families.length}</span>}</h2>
-              <Link href="/projects" className="text-[12.5px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] inline-flex items-center gap-1 transition-colors">All projects<ArrowRight size={12} strokeWidth={2.25} /></Link>
-            </div>
-            {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-2xl" />)}</div>
-            ) : families.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {ranked.slice(0, 9).map((f, i) => <ProjectPieCard key={f.id} family={f} delay={Math.min(i * 0.03, 0.18)} />)}
+            {/* Operations & finance — needs connected systems */}
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Operations &amp; finance</h2>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] text-muted-foreground"><Database size={11} />Connect your ERP / HRIS / PM systems to populate these</span>
               </div>
-            )}
-          </section>
-        </MotionReveal>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+                <Placeholder label="Gross margin" icon={<PieChart size={15} />} />
+                <Placeholder label="Operating P&L" icon={<LineChart size={15} />} />
+                <Placeholder label="Invoiced" icon={<DollarSign size={15} />} />
+                <Placeholder label="Billing utilisation" icon={<BarChart3 size={15} />} />
+                <Placeholder label="Budget vs payments" icon={<Scale size={15} />} />
+                <Placeholder label="Milestones" icon={<CalendarClock size={15} />} />
+                <Placeholder label="Quality score" icon={<CheckCircle2 size={15} />} />
+                <Placeholder label="Performance" icon={<TrendingUp size={15} />} />
+                <Placeholder label="Employees" icon={<Users size={15} />} />
+                <Placeholder label="Roles" icon={<Tag size={15} />} />
+                <Placeholder label="Workload" icon={<Kanban size={15} />} />
+                <Placeholder label="Utilisation" icon={<Boxes size={15} />} />
+              </div>
+            </section>
+          </>
+        )}
       </div>
     </>
   );
 }
 
-function ProjectPieCard({ family, delay }: { family: ContractFamily; delay: number }) {
+function Card({ title, icon, sub, children, className }: { title: string; icon: ReactNode; sub?: string; children: ReactNode; className?: string }) {
   return (
-    <MotionReveal delay={delay}>
-      <Link href={`/projects/${family.root.docId}`} className="group block rounded-2xl border border-border bg-card p-5 shadow-xs hover:shadow-md transition-all duration-200">
-        <div className="flex items-center gap-4">
-          <MiniRiskDonut counts={family.riskCounts} />
-          <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold tracking-tight text-foreground truncate group-hover:text-[var(--brand-primary-700)] transition-colors">{family.root.title || "Untitled"}</h3>
-            <p className="text-[11.5px] text-muted-foreground mt-0.5">{family.documents.length} doc{family.documents.length === 1 ? "" : "s"} · {family.clauseCount} clauses</p>
-            <div className="mt-2 flex items-center gap-1.5">
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${RISK_PILL[family.overallRisk]}`}>{family.overallRisk} risk</span>
-              {family.highRiskCount > 0 && <span className="text-[10.5px] text-muted-foreground tabular-nums">{family.highRiskCount} high-risk</span>}
-            </div>
-          </div>
-        </div>
-        {/* legend */}
-        <div className="mt-3.5 pt-3 border-t border-border flex items-center justify-between text-[10.5px]">
-          {([["Critical", "var(--danger)", family.riskCounts.critical], ["High", "var(--warning)", family.riskCounts.high], ["Med", "var(--ink-400)", family.riskCounts.medium], ["Low", "var(--success)", family.riskCounts.low]] as const).map(([l, c, n]) => (
-            <span key={l} className="inline-flex items-center gap-1 text-muted-foreground"><span className="h-2 w-2 rounded-full" style={{ background: c }} />{n}</span>
-          ))}
-        </div>
-      </Link>
-    </MotionReveal>
+    <section className={`rounded-2xl border border-border bg-card p-5 shadow-xs md:p-6 ${className ?? ""}`}>
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2"><span className="text-[var(--brand-primary-600)]">{icon}</span><h3 className="text-[14px] font-semibold tracking-tight text-foreground">{title}</h3></div>
+        {sub && <span className="font-mono text-[11px] text-muted-foreground">{sub}</span>}
+      </div>
+      {children}
+    </section>
   );
+}
+
+function BarList({ rows }: { rows: { label: string; value: number; sub?: string; color?: string }[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  return (
+    <div className="space-y-3">
+      {rows.map((r) => (
+        <div key={r.label}>
+          <div className="mb-1 flex items-center justify-between text-[12px]"><span className="font-medium text-foreground">{r.label}</span><span className="tabular-nums text-muted-foreground">{r.sub ?? r.value.toLocaleString()}</span></div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${(r.value / max) * 100}%`, background: r.color ?? "var(--brand-primary-600)" }} /></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ValueByProject({ rows }: { rows: Agg[] }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  return (
+    <div className="space-y-3">
+      {rows.map((r, i) => (
+        <Link key={r.project.id} href={`/projects/${r.project.id}`} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} className="block" style={{ opacity: hover === null || hover === i ? 1 : 0.5 }}>
+          <div className="mb-1 flex items-center justify-between text-[12px]"><span className="truncate font-medium text-foreground">{r.project.name}</span><span className="shrink-0 font-semibold tabular-nums text-foreground">{fmtMoney(r.value)}</span></div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${(r.value / max) * 100}%`, background: "var(--brand-primary-600)" }} /></div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function Placeholder({ label, icon }: { label: string; icon: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-card/50 p-5">
+      <div className="flex items-center justify-between"><div className="eyebrow truncate">{label}</div><span className="text-muted-foreground/50">{icon}</span></div>
+      <div className="mt-3 text-[28px] font-bold leading-none text-[var(--ink-300)]" style={{ fontFamily: "var(--font-display)" }}>—</div>
+      <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Database size={11} />Connect data source</div>
+    </div>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return <p className="py-6 text-center text-[12.5px] text-muted-foreground">{text}</p>;
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-3xl border border-dashed border-border bg-card/50 py-20 flex flex-col items-center text-center">
-      <span className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)] mb-5"><Layers size={28} strokeWidth={1.5} /></span>
-      <h3 className="text-[18px] font-semibold text-foreground">No projects yet</h3>
-      <p className="mt-2 text-[13px] text-muted-foreground max-w-sm">Upload a contract and Bluely will analyze it, score risk, and chart it here.</p>
-      <Button variant="primary" size="lg" className="mt-6 rounded-full" asChild><Link href="/projects/new"><Plus size={15} />Upload a contract</Link></Button>
+    <div className="flex flex-col items-center rounded-3xl border border-dashed border-border bg-card/50 py-20 text-center">
+      <span className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]"><Layers size={28} strokeWidth={1.5} /></span>
+      <h3 className="text-[18px] font-semibold text-foreground">No contracts yet</h3>
+      <p className="mt-2 max-w-md text-[13px] text-muted-foreground">Create a project and upload its SOW. Bluey scores risk, estimates value, and rolls it up across your whole portfolio here.</p>
+      <Button variant="primary" size="lg" className="mt-6 rounded-full" asChild><Link href="/projects/new"><Plus size={15} />New project</Link></Button>
     </div>
   );
 }

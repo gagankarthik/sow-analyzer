@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ProjectHeader } from "@/components/ProjectHeader";
-import { ProjectTabs } from "@/components/ProjectTabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -93,7 +92,6 @@ export default function DocumentsPage() {
   return (
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
-      <ProjectTabs projectId={project.id} />
 
       <div className="app-container py-6 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -102,7 +100,7 @@ export default function DocumentsPage() {
             <div className="flex items-end justify-between gap-3 flex-wrap">
               <div>
                 <h2 className="text-[18px] font-semibold tracking-tight text-foreground">Versions · {versions.length}</h2>
-                <p className="mt-1 text-[13px] text-muted-foreground">Every processed version of this document. Bluely indexes each one.</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">Every processed version of this document. Bluey indexes each one.</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="md" asChild><Link href="/projects/new"><Upload size={13} />Upload new</Link></Button>
@@ -150,7 +148,7 @@ export default function DocumentsPage() {
             <Link href="/projects/new" className="block rounded-xl border-2 border-dashed border-border bg-card/40 hover:bg-card hover:border-[var(--brand-primary-400)] transition-colors p-8 text-center group">
               <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)] mb-4 group-hover:scale-110 transition-transform"><Upload size={18} strokeWidth={1.75} /></span>
               <h3 className="text-[14px] font-semibold text-foreground">Upload a new version</h3>
-              <p className="mt-1.5 text-[12.5px] text-muted-foreground max-w-xs mx-auto">Drop an updated document — Bluely will diff it against the current version automatically.</p>
+              <p className="mt-1.5 text-[12.5px] text-muted-foreground max-w-xs mx-auto">Drop an updated document — Bluey will diff it against the current version automatically.</p>
             </Link>
           </main>
 

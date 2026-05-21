@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 import { MotionReveal } from "@/components/MotionReveal";
 import {
   DropdownMenu,
@@ -104,8 +104,8 @@ export default function WorkflowPage() {
               <Filter size={12} /> Filter
             </Button>
             <Button variant="ai" size="md" className="gap-1.5 pl-1.5">
-              <BluelyMark size="xs" />
-              Ask Bluely
+              <BlueyMark size="xs" />
+              Ask Bluey
             </Button>
             <Link
               href="/projects/new"
@@ -214,7 +214,7 @@ export default function WorkflowPage() {
                           <Plus /> Add document
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <BluelyMark size="xs" /> Ask Bluely to summarize
+                          <BlueyMark size="xs" /> Ask Bluey to summarize
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>Hide column</DropdownMenuItem>

@@ -4,9 +4,8 @@ import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
-import { ProjectTabs } from "@/components/ProjectTabs";
 import { Button } from "@/components/ui/button";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProcessingState } from "@/components/ProcessingState";
@@ -81,7 +80,6 @@ export default function ProjectInsightsPage() {
   return (
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
-      <ProjectTabs projectId={project.id} />
 
       <div className="app-container py-6 md:py-8 space-y-6">
         {isFailed && (
@@ -90,21 +88,21 @@ export default function ProjectInsightsPage() {
             <p className="text-[13.5px] text-[var(--danger)] leading-relaxed"><span className="font-semibold">Processing failed.</span> Insights are unavailable.</p>
           </div>
         )}
-        {isProcessing && <ProcessingState status={rawStatus} title="Bluely is analyzing this document" subtitle="Insights appear automatically as each stage completes." />}
+        {isProcessing && <ProcessingState status={rawStatus} title="Bluey is analyzing this document" subtitle="Insights appear automatically as each stage completes." />}
 
         {/* Strategic read */}
         <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/60 p-5 md:p-6 shadow-xs">
           <div className="flex items-start gap-3.5">
-            <BluelyMark size="md" tile pulse />
+            <BlueyMark size="md" tile pulse />
             <div className="flex-1 min-w-0">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluely · strategic read</div>
+              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluey · strategic read</div>
               {summary ? (
                 <p className="text-[14px] leading-relaxed text-foreground max-w-[72ch]">{summary}</p>
               ) : (
-                <p className="text-[14px] leading-relaxed text-foreground max-w-[72ch]">Bluely has indexed this document. Ask a question to get AI-powered insight on risk, obligations, timelines, and negotiation strategy.</p>
+                <p className="text-[14px] leading-relaxed text-foreground max-w-[72ch]">Bluey has indexed this document. Ask a question to get AI-powered insight on risk, obligations, timelines, and negotiation strategy.</p>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Button variant="ai" size="sm" onClick={toggleCopilot}><Sparkles size={12} />Ask Bluely</Button>
+                <Button variant="ai" size="sm" onClick={toggleCopilot}><Sparkles size={12} />Ask Bluey</Button>
                 <Button variant="outline" size="sm" asChild><Link href={`/projects/${project.id}/sow`}><FileText size={12} />View clauses</Link></Button>
               </div>
             </div>
@@ -115,17 +113,17 @@ export default function ProjectInsightsPage() {
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard label="Clauses analyzed" value={isReady ? clauseCount : "—"} hint={isReady ? `${classification?.keyFindings.length ?? 0} key findings` : rawStatus.toLowerCase()} icon={<FileText size={14} />} />
           <MetricCard label="High-risk clauses" value={isReady ? highRisk : "—"} hint={highRisk > 0 ? "needs review" : isReady ? "no high exposure" : "—"} tone={overallRisk === "critical" ? "danger" : highRisk > 0 ? "warning" : "success"} icon={<ShieldAlert size={14} />} />
-          <MetricCard label="Overall risk" value={isReady ? <span className={`capitalize ${RISK_TEXT[overallRisk]}`} style={{ fontSize: 24 }}>{overallRisk}</span> : "—"} hint="Bluely assessment" icon={<TrendingUp size={14} />} tone="neutral" />
+          <MetricCard label="Overall risk" value={isReady ? <span className={`capitalize ${RISK_TEXT[overallRisk]}`} style={{ fontSize: 24 }}>{overallRisk}</span> : "—"} hint="Bluey assessment" icon={<TrendingUp size={14} />} tone="neutral" />
           <MetricCard label="Portfolio context" value={readyDocs.length} hint={readyDocs.length > 1 && isReady ? `higher risk than ${higherThan}% of portfolio` : `${readyDocs.length} processed`} tone="ai" icon={<TrendingUp size={14} />} />
         </section>
 
-        {/* What Bluely is watching */}
+        {/* What Bluey is watching */}
         <section className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
           <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-border">
             <div className="flex items-center gap-2.5">
-              <BluelyMark size="sm" />
+              <BlueyMark size="sm" />
               <div>
-                <h2 className="text-[14px] font-semibold tracking-tight text-foreground">What Bluely is watching</h2>
+                <h2 className="text-[14px] font-semibold tracking-tight text-foreground">What Bluey is watching</h2>
                 <p className="text-[12px] text-muted-foreground mt-0.5">Findings that may need your attention before signing.</p>
               </div>
             </div>
@@ -136,13 +134,13 @@ export default function ProjectInsightsPage() {
             <div className="px-6 py-10 flex flex-col items-center text-center">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3"><Sparkles size={18} strokeWidth={1.5} /></span>
               <p className="text-[13.5px] font-medium text-foreground mb-1">Insights appear once processing completes.</p>
-              <p className="text-[12.5px] text-muted-foreground">Bluely is still analyzing this document.</p>
+              <p className="text-[12.5px] text-muted-foreground">Bluey is still analyzing this document.</p>
             </div>
           ) : findings.length === 0 ? (
             <div className="px-6 py-10 flex flex-col items-center text-center">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--success-soft)] text-[var(--success)] mb-3"><CheckCircle2 size={18} /></span>
               <p className="text-[13.5px] font-medium text-foreground mb-1">No flagged findings.</p>
-              <p className="text-[12.5px] text-muted-foreground max-w-sm">Bluely didn&apos;t surface notable risks in this document.</p>
+              <p className="text-[12.5px] text-muted-foreground max-w-sm">Bluey didn&apos;t surface notable risks in this document.</p>
             </div>
           ) : (
             <ul className="divide-y divide-border">

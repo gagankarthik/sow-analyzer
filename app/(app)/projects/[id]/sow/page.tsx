@@ -4,9 +4,8 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
-import { ProjectTabs } from "@/components/ProjectTabs";
 import { ProcessingState } from "@/components/ProcessingState";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -112,7 +111,6 @@ export default function SowPage() {
   return (
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
-      <ProjectTabs projectId={project.id} />
 
       <div className="app-container py-6 md:py-8 space-y-6">
         {isFailed && (
@@ -121,22 +119,22 @@ export default function SowPage() {
             <p className="text-[13.5px] text-[var(--danger)] leading-relaxed"><span className="font-semibold">Processing failed.</span> Delete this document and try uploading again.</p>
           </div>
         )}
-        {isProcessing && <ProcessingState status={rawStatus} title="Bluely is analyzing this document" subtitle="Clause extraction and risk analysis appear automatically as each stage completes." />}
+        {isProcessing && <ProcessingState status={rawStatus} title="Bluey is analyzing this document" subtitle="Clause extraction and risk analysis appear automatically as each stage completes." />}
 
         {isReady && (
           <>
             {/* Executive summary */}
             <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
               <div className="flex items-start gap-3.5">
-                <BluelyMark size="md" tile pulse />
+                <BlueyMark size="md" tile pulse />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluely · executive summary</div>
+                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluey · executive summary</div>
                   {classLoading ? (
                     <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
                   ) : classification?.summary ? (
                     <p className="text-[14px] leading-relaxed text-foreground max-w-[78ch]">{classification.summary}</p>
                   ) : (
-                    <p className="text-[13.5px] text-muted-foreground">Bluely has indexed this document. Ask a question for a deeper read.</p>
+                    <p className="text-[13.5px] text-muted-foreground">Bluey has indexed this document. Ask a question for a deeper read.</p>
                   )}
                   {classification && (
                     <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[12px]">
@@ -259,7 +257,7 @@ export default function SowPage() {
               <aside className="lg:col-span-4">
                 <div className="lg:sticky lg:top-[76px] space-y-4">
                   <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 shadow-[var(--shadow-ai)]">
-                    <div className="flex items-center gap-2 mb-3"><BluelyMark size="sm" /><span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Bluely Co-pilot</span></div>
+                    <div className="flex items-center gap-2 mb-3"><BlueyMark size="sm" /><span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Bluey Co-pilot</span></div>
                     <p className="text-[12.5px] leading-relaxed text-foreground">
                       {riskCounts.critical + riskCounts.high > 0
                         ? `${riskCounts.critical + riskCounts.high} clause(s) flagged high or critical. Ask how to negotiate them.`

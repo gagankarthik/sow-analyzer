@@ -39,7 +39,7 @@ export function RiskIntelligence({ counts, categories }: { counts: Counts; categ
         {/* Gauge */}
         <div className="lg:col-span-3 flex flex-col items-center justify-center">
           <RiskGauge score={idx} />
-          <p className="mt-1 text-[12px] text-muted-foreground text-center">
+          <p className="mt-5 text-[12px] text-muted-foreground text-center">
             {highCrit > 0
               ? <><span className="font-semibold text-foreground">{highCrit}</span> high/critical clause{highCrit === 1 ? "" : "s"}</>
               : total > 0 ? "No high-risk exposure" : "Awaiting analysis"}

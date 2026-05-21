@@ -3,10 +3,9 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
-import { ProjectTabs } from "@/components/ProjectTabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 import { Mail, Building2, Users, Files } from "@/components/ui/icons";
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument } from "@/lib/queries/documents";
@@ -42,7 +41,6 @@ export default function TeamPage() {
   return (
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
-      <ProjectTabs projectId={project.id} />
 
       <div className="app-container py-6 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -54,7 +52,7 @@ export default function TeamPage() {
                   Document parties
                 </h2>
                 <p className="mt-1 text-[13px] text-muted-foreground">
-                  Organisations and signatories Bluely identified on this engagement.
+                  Organisations and signatories Bluey identified on this engagement.
                 </p>
               </div>
             </div>
@@ -91,27 +89,27 @@ export default function TeamPage() {
                 </p>
                 <p className="text-[12.5px] text-muted-foreground max-w-sm">
                   {isReady
-                    ? "Bluely did not identify any named parties in this document. They will appear here automatically if a future version includes them."
-                    : "Parties will appear here once Bluely finishes processing and extracts them from the document."}
+                    ? "Bluey did not identify any named parties in this document. They will appear here automatically if a future version includes them."
+                    : "Parties will appear here once Bluey finishes processing and extracts them from the document."}
                 </p>
               </section>
             )}
           </main>
 
           <aside className="lg:col-span-4 space-y-5">
-            {/* Bluely team read */}
+            {/* Bluey team read */}
             <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/60 p-5 shadow-xs">
               <div className="flex items-center gap-2 mb-3">
-                <BluelyMark size="sm" />
+                <BlueyMark size="sm" />
                 <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">
-                  Bluely · team read
+                  Bluey · team read
                 </span>
               </div>
               <p className="text-[12.5px] leading-relaxed text-foreground">
-                Ask Bluely who the key stakeholders are for this engagement.
+                Ask Bluey who the key stakeholders are for this engagement.
               </p>
               <Button variant="ai" size="sm" className="mt-4 w-full">
-                Ask Bluely
+                Ask Bluey
               </Button>
             </div>
 

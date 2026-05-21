@@ -58,6 +58,8 @@ export {
   Star,
   Send,
   Reply,
+  Play,
+  Quote,
   MessageSquare,
   Paperclip,
   Upload,

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 import { Loader2, CheckCircle2 } from "@/components/ui/icons";
 
 const STAGES = [
@@ -36,10 +36,10 @@ export function ProcessingState({
   return (
     <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 p-5 md:p-6">
       <div className="flex items-center gap-3">
-        <BluelyMark size="sm" pulse />
+        <BlueyMark size="sm" pulse />
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-semibold text-foreground flex items-center gap-2">
-            {title ?? "Bluely is analyzing this document"}
+            {title ?? "Bluey is analyzing this document"}
             <Loader2 size={14} className="animate-spin text-[var(--ai-ink)]" />
           </div>
           <div className="text-[12.5px] text-muted-foreground">

@@ -3,8 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
-import { ProjectTabs } from "@/components/ProjectTabs";
-import { BluelyMark } from "@/components/ui/BluelyMark";
+import { BlueyMark } from "@/components/ui/BlueyMark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -120,7 +119,6 @@ export default function AuditPage() {
   return (
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
-      <ProjectTabs projectId={project.id} />
 
       <div className="app-container py-6 md:py-8 space-y-8">
 
@@ -281,21 +279,21 @@ export default function AuditPage() {
           )}
         </section>
 
-        {/* ── Bluely compliance read ────────────────────────── */}
+        {/* ── Bluey compliance read ────────────────────────── */}
         <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-            <BluelyMark size="lg" tile pulse />
+            <BlueyMark size="lg" tile pulse />
             <div className="flex-1">
               <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1">
-                Bluely · audit assistant
+                Bluey · audit assistant
               </p>
               <p className="text-[14px] leading-relaxed text-foreground">
-                Ask Bluely to run a compliance check on this document — identify missing clauses,
+                Ask Bluey to run a compliance check on this document — identify missing clauses,
                 flag deviations from your playbook, or summarise version-to-version changes.
               </p>
             </div>
             <Button variant="ai" size="md" className="shrink-0 self-start sm:self-center gap-1.5 pl-2">
-              <BluelyMark size="sm" />
+              <BlueyMark size="sm" />
               Run audit
             </Button>
           </div>
