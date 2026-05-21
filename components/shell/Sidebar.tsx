@@ -17,38 +17,18 @@ type NavItem = {
   href?: string;
   /** Action items open an overlay instead of navigating. */
   action?: "search" | "copilot";
-  ai?: boolean;
 };
 
-type NavGroup = { id: string; label: string; items: NavItem[] };
-
-const navGroups: NavGroup[] = [
-  {
-    id: "overview",
-    label: "Overview",
-    items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Insights", href: "/insights", icon: BarChart3 },
-    ],
-  },
-  {
-    id: "contracts",
-    label: "Contracts",
-    items: [
-      { label: "Projects", href: "/projects", icon: Briefcase },
-      { label: "Draft SOW", href: "/draft", icon: Wand2, ai: true },
-      { label: "Library", href: "/library", icon: FileText },
-      { label: "Workflow", href: "/workflow", icon: Kanban },
-    ],
-  },
-  {
-    id: "intelligence",
-    label: "Intelligence",
-    items: [
-      { label: "Bluey", action: "copilot", icon: Sparkles, ai: true },
-      { label: "Search", action: "search", icon: Search },
-    ],
-  },
+// One flat list — no categories, no headers.
+const NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Insights", href: "/insights", icon: BarChart3 },
+  { label: "Projects", href: "/projects", icon: Briefcase },
+  { label: "Draft SOW", href: "/draft", icon: Wand2 },
+  { label: "Library", href: "/library", icon: FileText },
+  { label: "Workflow", href: "/workflow", icon: Kanban },
+  { label: "Bluey", action: "copilot", icon: Sparkles },
+  { label: "Search", action: "search", icon: Search },
 ];
 
 // Pinned at the foot of the rail — always reachable, never scrolls away.
@@ -57,9 +37,7 @@ const systemItems: NavItem[] = [
   { label: "Help & docs", href: "#", icon: Info },
 ];
 
-const ALL_HREFS = navGroups.flatMap((g) =>
-  g.items.filter((i) => i.href).map((i) => i.href as string),
-);
+const ALL_HREFS = NAV_ITEMS.filter((i) => i.href).map((i) => i.href as string);
 
 function bestMatchHref(pathname: string): string | null {
   let best: string | null = null;
@@ -70,9 +48,6 @@ function bestMatchHref(pathname: string): string | null {
   }
   return best;
 }
-
-// Flat nav — no category headers.
-const NAV_ITEMS: NavItem[] = navGroups.flatMap((g) => g.items);
 
 const COLLAPSED_KEY = "sidebar:collapsed";
 
@@ -96,6 +71,9 @@ export function Sidebar({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Read the persisted state after mount (not during render) so the server and
+    // first client paint agree, then sync — avoids a hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deferred client-only read
     setCollapsed(readCollapsed());
     setMounted(true);
   }, []);
@@ -149,7 +127,7 @@ export function Sidebar({
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0 lg:shadow-none lg:sticky lg:top-0 lg:z-30 lg:shrink-0",
           "lg:transition-[width] lg:duration-200 lg:ease-out lg:will-change-[width]",
-          collapsed ? "lg:w-[68px]" : "lg:w-[248px]",
+          collapsed ? "lg:w-[72px]" : "lg:w-[248px]",
         )}
       >
         {/* Workspace identity */}
@@ -157,23 +135,23 @@ export function Sidebar({
           href="/dashboard"
           aria-label="Blue-IQ home"
           className={cn(
-            "h-14 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/50",
-            collapsed ? "px-2 justify-center" : "px-3 gap-2.5",
+            "h-16 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/40",
+            collapsed ? "px-0 justify-center" : "px-4 gap-3",
           )}
         >
-          <span className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)]" aria-hidden>
-            <Image src="/logo-icon.svg" alt="" width={22} height={22} priority className="block h-[22px] w-[22px] select-none pointer-events-none" />
+          <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-primary-600)] shadow-sm" aria-hidden>
+            <Image src="/logo-icon.svg" alt="" width={22} height={22} priority className="block h-[22px] w-[22px] select-none pointer-events-none brightness-0 invert" />
           </span>
           {!collapsed && (
             <span className="min-w-0 flex-1 leading-tight">
-              <span className="block truncate text-[14px] font-semibold tracking-tight text-foreground">Blue-IQ</span>
-              <span className="block truncate font-mono text-[10.5px] text-muted-foreground">Contract Intelligence</span>
+              <span className="block truncate text-[15px] font-semibold tracking-tight text-foreground">Blue-IQ</span>
+              <span className="block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Contract Intelligence</span>
             </span>
           )}
         </Link>
 
-        {/* Nav — flat, no category headers */}
-        <nav className={cn("flex-1 overflow-y-auto overflow-x-hidden pt-3 pb-2", collapsed ? "px-2" : "px-3")}>
+        {/* Nav — flat list */}
+        <nav className={cn("flex-1 overflow-y-auto overflow-x-hidden py-3", collapsed ? "px-2.5" : "px-3")}>
           <ul className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => (
               <NavRow key={item.label} item={item} active={isActive(item.href)} collapsed={collapsed} onAction={onAction} />
@@ -182,10 +160,9 @@ export function Sidebar({
         </nav>
 
         {/* Foot cluster — system links, collapse */}
-        <div className="mt-auto">
-          {/* System links */}
-          <div className={cn("border-t border-sidebar-border", collapsed ? "px-2 py-2" : "px-3 py-2")}>
-            <ul className="flex flex-col gap-0.5">
+        <div className="mt-auto border-t border-sidebar-border">
+          <div className={cn("py-2", collapsed ? "px-2.5" : "px-3")}>
+            <ul className="flex flex-col gap-1">
               {systemItems.map((item) => (
                 <NavRow
                   key={item.label}
@@ -198,8 +175,8 @@ export function Sidebar({
             </ul>
           </div>
 
-          {/* Collapse toggle */}
-          <div className={cn("border-t border-sidebar-border hidden lg:flex", collapsed ? "p-2 items-center justify-center" : "p-2")}>
+          {/* Collapse toggle (desktop only) */}
+          <div className={cn("border-t border-sidebar-border hidden lg:block", collapsed ? "p-2.5" : "px-3 py-2")}>
             {mounted && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -208,15 +185,15 @@ export function Sidebar({
                     aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                     aria-pressed={collapsed}
                     className={cn(
-                      "inline-flex items-center rounded-md text-muted-foreground transition-colors hover:text-foreground hover:bg-sidebar-accent",
-                      collapsed ? "h-8 w-8 justify-center" : "h-8 w-full gap-2 px-2 justify-start",
+                      "inline-flex items-center rounded-lg text-muted-foreground transition-colors hover:text-foreground hover:bg-sidebar-accent",
+                      collapsed ? "h-9 w-full justify-center" : "h-9 w-full gap-2.5 px-2.5 justify-start",
                     )}
                   >
-                    {collapsed ? <ChevronsRight size={14} /> : (
+                    {collapsed ? <ChevronsRight size={16} /> : (
                       <>
-                        <ChevronsLeft size={14} />
-                        <span className="text-[12px]">Collapse</span>
-                        <kbd className="ml-auto font-mono text-[10px] text-muted-foreground/70">[</kbd>
+                        <ChevronsLeft size={16} />
+                        <span className="text-[13px]">Collapse</span>
+                        <kbd className="ml-auto rounded border border-border bg-muted/60 px-1.5 font-mono text-[10px] text-muted-foreground/80">[</kbd>
                       </>
                     )}
                   </button>
@@ -244,23 +221,25 @@ function NavRow({
 
   const inner = (
     <>
-      {active && !collapsed && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--brand-accent)]" />}
-      <Icon size={16} strokeWidth={1.75} className={cn("shrink-0", item.ai && !active && "text-[var(--ai-ink)]")} />
-      {!collapsed && (
-        <>
-          <span className="flex-1 truncate text-left">{item.label}</span>
-          {item.ai && <span className="h-1.5 w-1.5 rounded-full bg-[var(--ai-ink)]" />}
-        </>
+      {/* Active accent bar (expanded only) */}
+      {active && !collapsed && (
+        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--brand-primary-600)]" />
       )}
+      <Icon
+        size={18}
+        strokeWidth={active ? 2 : 1.75}
+        className={cn("shrink-0 transition-colors", active && "text-[var(--brand-primary-700)]")}
+      />
+      {!collapsed && <span className="flex-1 truncate text-left">{item.label}</span>}
     </>
   );
 
   const cls = cn(
-    "group/nav relative flex items-center h-9 rounded-md text-[13px] transition-colors w-full",
+    "group/nav relative flex items-center h-9 rounded-lg text-[13.5px] transition-all duration-150 w-full",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-    collapsed ? "w-9 mx-auto justify-center" : "gap-2.5 px-2.5",
+    collapsed ? "w-9 mx-auto justify-center" : "gap-3 px-2.5",
     active
-      ? "bg-[var(--brand-subtle)] text-[var(--brand-accent)] font-medium"
+      ? "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] font-semibold"
       : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/70",
   );
 

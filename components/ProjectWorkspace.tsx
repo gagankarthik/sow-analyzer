@@ -14,6 +14,7 @@ import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelli
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { CategoryRadar } from "@/components/charts/CategoryRadar";
 import { ContractValueChart } from "@/components/charts/ContractValueChart";
+import { SowTimeline } from "@/components/SowTimeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -88,10 +89,12 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const { data: allDocs = [] } = useDocuments();
   const qc = useQueryClient();
   const del = useDeleteDocument();
+  const reprocess = useReprocess();
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<TabId>("overview");
   const [toDelete, setToDelete] = useState<ApiDocument | null>(null);
+  const [reanalyzing, setReanalyzing] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -179,6 +182,25 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
     }
   }
 
+  // Re-run the analysis pipeline on every document in the project that isn't
+  // already processing. Each re-analysis is independent, so we fire them all and
+  // report how many were re-queued even if one fails.
+  async function reanalyzeAll() {
+    const targets = docs.filter((d) => !PROCESSING.has(d.status));
+    if (reanalyzing || targets.length === 0) return;
+    setReanalyzing(true);
+    try {
+      const results = await Promise.allSettled(targets.map((d) => reprocess.mutateAsync(d.docId)));
+      const ok = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.length - ok;
+      qc.invalidateQueries({ queryKey: documentKeys.all });
+      if (ok > 0) toast.success("Re-analyzing project", { description: `${ok} document${ok === 1 ? "" : "s"} are being analyzed again.` });
+      if (failed > 0) toast.error("Some documents couldn't be re-analyzed", { description: `${failed} failed to re-queue. Try again.` });
+    } finally {
+      setReanalyzing(false);
+    }
+  }
+
   const v: View = {
     project, docs, readyDocs, allClauses, riskCounts, catData, keyFindings, attention, parties,
     valueByDoc, valueSegments, valueTotal, valueCurrency, reconciledAll,
@@ -206,6 +228,11 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
         subtitle={hasDocs ? `${docs.length} document${docs.length === 1 ? "" : "s"}${processingCount > 0 ? ` · ${processingCount} analyzing` : ""} · ${totalClauses.toLocaleString()} clauses` : "Upload your SOW to begin the analysis."}
         actions={
           <div className="flex items-center gap-2">
+            {hasDocs && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={reanalyzeAll} disabled={reanalyzing || processingCount === docs.length} title="Re-run analysis on every document in this project">
+                <RefreshCw size={14} className={reanalyzing ? "animate-spin" : undefined} />{reanalyzing ? "Re-analyzing…" : "Re-analyze"}
+              </Button>
+            )}
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setTab("documents")}><FileText size={14} />Documents</Button>
             <Button variant="ai" size="sm" className="gap-1.5" onClick={toggleCopilot}><Sparkles size={13} />Ask Bluey</Button>
             <Link href="/projects" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-muted">
@@ -291,6 +318,15 @@ function OverviewPanel({ v }: { v: View }) {
       )}
 
       {v.hasAnalysis && <CommercialTerms v={v} />}
+
+      {v.hasAnalysis && (
+        <MotionReveal delay={0.04}>
+          <SowTimeline
+            classifications={v.readyDocs.map((d) => v.classByDoc.get(d.docId)).filter((c): c is ApiClassification => !!c)}
+            currency={v.valueCurrency}
+          />
+        </MotionReveal>
+      )}
 
       {v.hasAnalysis && <MotionReveal><RiskIntelligence counts={v.riskCounts} categories={v.catData} /></MotionReveal>}
 

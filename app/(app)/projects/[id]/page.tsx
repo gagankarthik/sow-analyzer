@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProcessingState } from "@/components/ProcessingState";
 import { BlueyMark } from "@/components/ui/BlueyMark";
 import { ContractEvolution } from "@/components/ContractEvolution";
+import { SowTimeline } from "@/components/SowTimeline";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { CategoryRadar } from "@/components/charts/CategoryRadar";
@@ -19,13 +20,13 @@ import { MotionReveal } from "@/components/MotionReveal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowRight, Files, XCircle, Loader2, Pencil,
+  ArrowRight, Files, XCircle, Loader2, Pencil, RefreshCw,
   Building2, FileText, ShieldAlert, AlertTriangle, Info,
 } from "@/components/ui/icons";
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { ProjectWorkspace } from "@/components/ProjectWorkspace";
 import { isProjectId } from "@/lib/projects-store";
-import { useDocument, useClassification, useTimeline, useUpdateDocument } from "@/lib/queries/documents";
+import { useDocument, useClassification, useTimeline, useUpdateDocument, useReprocess } from "@/lib/queries/documents";
 import { formatDate } from "@/lib/format";
 import type { ApiClause, ApiKeyFinding, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
 
@@ -76,6 +77,7 @@ function DocumentOverview() {
   const { data: classification } = useClassification(id, !!isReady);
   const { data: timeline } = useTimeline(id, !!isReady);
   const updateMut = useUpdateDocument(id);
+  const reprocess = useReprocess();
 
   const [showEdit, setShowEdit] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -132,6 +134,14 @@ function DocumentOverview() {
     setEditDocType(doc.docType);
     setShowEdit(true);
   }
+  async function onReanalyze() {
+    try {
+      await reprocess.mutateAsync(id);
+      toast.success("Re-analyzing", { description: "This document is being analyzed again." });
+    } catch (e) {
+      toast.error("Couldn't re-analyze", { description: e instanceof Error ? e.message : "Please try again." });
+    }
+  }
   async function handleSave() {
     const patch: { title?: string; lifecycle?: string; docType?: string } = {};
     if (editTitle.trim() !== doc.title) patch.title = editTitle.trim();
@@ -152,7 +162,10 @@ function DocumentOverview() {
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
       <div className="app-container py-6 md:py-8 space-y-6">
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={onReanalyze} disabled={reprocess.isPending || isProcessing} title="Re-run the analysis pipeline on this document">
+            <RefreshCw size={13} className={reprocess.isPending ? "animate-spin" : undefined} />{reprocess.isPending ? "Re-analyzing…" : "Re-analyze"}
+          </Button>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={openEdit}><Pencil size={13} />Edit details</Button>
         </div>
 
@@ -220,6 +233,11 @@ function DocumentOverview() {
               </div>
             </section>
           </MotionReveal>
+        )}
+
+        {/* ── SOW timeline (extracted dates) ────────────────── */}
+        {isReady && classification && (
+          <SowTimeline classifications={[classification]} currency={classification.commercials?.currency} />
         )}
 
         {/* ── Contract evolution (hero) ─────────────────────── */}
