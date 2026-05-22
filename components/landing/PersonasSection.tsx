@@ -24,9 +24,9 @@ export function PersonasSection() {
     { title: "General Counsel", body: "See the risky clauses without reading all of them.", icon: Gavel },
     { title: "Procurement", body: "Catch slow payment terms and renewal traps early.", icon: ShoppingCart },
     { title: "IT", body: "Deploy quickly. SOC 2, GDPR, and HIPAA aligned.", icon: Laptop },
-    { title: "Sales", body: "Send redlines back to the customer the same day.", icon: TrendingUp },
+    { title: "Business Development", body: "Send redlines back to the customer the same day.", icon: TrendingUp },
     { title: "Legal Ops", body: "One version of every contract, fully searchable.", icon: Repeat },
-    { title: "Compliance", body: "A clause-level audit trail that holds up.", icon: ShieldCheck },
+    { title: "HR &Compliance", body: "A clause-level audit trail that holds up.", icon: ShieldCheck },
   ];
 
   return (
