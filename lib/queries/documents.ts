@@ -27,6 +27,7 @@ import {
   deleteVersion,
   reprocessDocument,
 } from "@/lib/api";
+import { removeDocFromAllProjects } from "@/lib/projects-store";
 import type {
   ApiDocument,
   ApiDocumentDetail,
@@ -115,7 +116,12 @@ export function useDeleteDocument() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteDocument(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: documentKeys.all }),
+    onSuccess: (_data, id) => {
+      // Backend row is gone — drop the docId from any project that referenced it
+      // so the frontend doesn't keep a dangling reference.
+      removeDocFromAllProjects(id);
+      qc.invalidateQueries({ queryKey: documentKeys.all });
+    },
   });
 }
 

@@ -113,6 +113,46 @@ export function deleteProject(projectId: string): void {
   write(getProjects().filter((p) => p.id !== projectId));
 }
 
+/** Strip a docId from every project that references it. Call after a document is
+ *  deleted from the backend so no project keeps a dangling reference. Empty
+ *  projects are kept (the user may add documents back). */
+export function removeDocFromAllProjects(docId: string): void {
+  const list = getProjects();
+  let changed = false;
+  const next = list.map((p) => {
+    if (!p.docIds.includes(docId)) return p;
+    changed = true;
+    return { ...p, docIds: p.docIds.filter((d) => d !== docId) };
+  });
+  if (changed) write(next);
+}
+
+/**
+ * In-memory only: return the real projects plus a synthetic single-doc project
+ * for every document not already in one. Used by the **Dashboard** so its
+ * portfolio rollup reflects ALL uploaded documents — not just those manually
+ * organized into a project. Nothing is persisted, so the Projects page stays a
+ * clean manual organizer (it reads `useProjects()` directly).
+ */
+export function withUngroupedDocs(
+  projects: LocalProject[],
+  docs: { docId: string; title?: string; createdAt?: string; parties?: string[] }[],
+): LocalProject[] {
+  const grouped = new Set(projects.flatMap((p) => p.docIds));
+  const synthetic: LocalProject[] = [];
+  for (const d of docs) {
+    if (grouped.has(d.docId)) continue;
+    synthetic.push({
+      id: d.docId,
+      name: d.title || "Untitled document",
+      client: d.parties?.[0],
+      createdAt: d.createdAt ?? new Date().toISOString(),
+      docIds: [d.docId],
+    });
+  }
+  return synthetic.length ? [...projects, ...synthetic] : projects;
+}
+
 /* ── React binding (useSyncExternalStore) ─────────────────────────
    getSnapshot caches by the raw JSON string so it returns a stable
    reference unless the stored value actually changed — avoiding render

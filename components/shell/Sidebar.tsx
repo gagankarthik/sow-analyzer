@@ -22,13 +22,13 @@ type NavItem = {
 // One flat list — no categories, no headers.
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Insights", href: "/insights", icon: BarChart3 },
+  { label: "Search", action: "search", icon: Search },
   { label: "Projects", href: "/projects", icon: Briefcase },
-  { label: "Draft SOW", href: "/draft", icon: Wand2 },
   { label: "Library", href: "/library", icon: FileText },
   { label: "Workflow", href: "/workflow", icon: Kanban },
+  { label: "Draft SOW", href: "/draft", icon: Wand2 },
   { label: "Bluey", action: "copilot", icon: Sparkles },
-  { label: "Search", action: "search", icon: Search },
+  { label: "Insights", href: "/insights", icon: BarChart3 }
 ];
 
 // Pinned at the foot of the rail — always reachable, never scrolls away.
@@ -132,7 +132,7 @@ export function Sidebar({
       >
         {/* Workspace identity */}
         <Link
-          href="/dashboard"
+          href="/"
           aria-label="Blue-IQ home"
           className={cn(
             "h-14 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/40",

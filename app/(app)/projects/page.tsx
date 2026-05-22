@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MotionReveal } from "@/components/MotionReveal";
@@ -18,9 +18,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
-import { getClassification } from "@/lib/api";
+import { getClassification, deleteDocument } from "@/lib/api";
 import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
-import { useProjects, deleteProject, type LocalProject } from "@/lib/projects-store";
+import { useProjects, deleteProject, withUngroupedDocs, type LocalProject } from "@/lib/projects-store";
 import type { ApiClassification, ApiDocument, Lifecycle, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
@@ -111,9 +111,32 @@ type ViewMode = "table" | "grid";
 type SortKey = "name" | "status" | "risk" | "highRisk" | "docCount" | "clauseCount" | "value" | "date";
 type SortDir = "asc" | "desc";
 
+/** Every document that must be deleted with a project: the project's own docIds
+ *  plus every amendment whose parentDocId chain leads back to one of them, so
+ *  deleting a project removes the whole contract family — not orphaning
+ *  amendments that were never explicitly added to the project. */
+function collectProjectDocIds(rootIds: string[], allDocs: ApiDocument[]): string[] {
+  const ids = new Set(rootIds);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const d of allDocs) {
+      if (d.parentDocId && ids.has(d.parentDocId) && !ids.has(d.docId)) {
+        ids.add(d.docId);
+        grew = true;
+      }
+    }
+  }
+  return [...ids];
+}
+
 export default function ProjectsPage() {
   const { data: docs = [], isLoading, isError, refetch } = useDocuments();
-  const projects = useProjects();
+  const rawProjects = useProjects();
+  // Show every uploaded document here too — manual projects plus a synthetic
+  // entry for any ungrouped document — so the page reflects your portfolio
+  // instead of sitting empty. (Synthetic entries aren't persisted.)
+  const projects = useMemo(() => withUngroupedDocs(rawProjects, docs), [rawProjects, docs]);
   const [mounted, setMounted] = useState(false);
   const [now] = useState(() => Date.now()); // mount-time reference for relative dates
   const [q, setQ] = useState("");
@@ -122,12 +145,39 @@ export default function ProjectsPage() {
   const [view, setView] = useState<ViewMode>("grid");
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "risk", dir: "asc" });
   const [deleteTarget, setDeleteTarget] = useState<LocalProject | null>(null);
+  const [deletingProject, setDeletingProject] = useState(false);
+  const qc = useQueryClient();
+  // Documents the delete will actually remove: the project's docs + linked amendments.
+  const deleteCount = deleteTarget ? collectProjectDocIds(deleteTarget.docIds, docs).length : 0;
 
-  function confirmDelete() {
-    if (!deleteTarget) return;
-    deleteProject(deleteTarget.id);
-    toast.success("Project removed", { description: `"${deleteTarget.name}" — its documents stay in your library.` });
-    setDeleteTarget(null);
+  // Delete entirely: every document in the project (plus its linked amendments)
+  // is removed from the backend, then the local project container is dropped.
+  // The backend DELETE purges S3 + OpenSearch + all DynamoDB rows per document.
+  async function confirmDelete() {
+    if (!deleteTarget || deletingProject) return;
+    const proj = deleteTarget;
+    const ids = collectProjectDocIds(proj.docIds, docs);
+    setDeletingProject(true);
+    try {
+      const results = await Promise.allSettled(ids.map((id) => deleteDocument(id)));
+      const failed = results.filter((r) => r.status === "rejected").length;
+      deleteProject(proj.id); // also clears the local container + its doc refs
+      await qc.invalidateQueries({ queryKey: documentKeys.all });
+      if (failed > 0) {
+        toast.error("Project deleted, but some documents failed", {
+          description: `${failed} of ${ids.length} document(s) couldn't be removed from the backend — retry from the Library.`,
+        });
+      } else {
+        toast.success("Project deleted", {
+          description: `"${proj.name}"${ids.length ? ` and its ${ids.length} document${ids.length === 1 ? "" : "s"}` : ""} were permanently removed.`,
+        });
+      }
+      setDeleteTarget(null);
+    } catch (e) {
+      toast.error("Delete failed", { description: e instanceof Error ? e.message : "Please try again." });
+    } finally {
+      setDeletingProject(false);
+    }
   }
 
   useEffect(() => {
@@ -271,17 +321,22 @@ export default function ProjectsPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this project?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this project?</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong>{deleteTarget?.name}</strong> will be removed from your projects.
-              The documents inside it are <em>not</em> deleted — they stay in your library
-              and can be added to another project.
+              <strong>{deleteTarget?.name}</strong> and its{" "}
+              <strong>{deleteCount} document{deleteCount === 1 ? "" : "s"}</strong>{" "}
+              (with all clauses, analysis, and versions) will be <strong>permanently deleted</strong>
+              {" "}from the backend. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white">
-              Remove project
+            <AlertDialogCancel disabled={deletingProject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
+              disabled={deletingProject}
+              className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white"
+            >
+              {deletingProject ? "Deleting…" : "Delete permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -117,7 +117,7 @@ export default function WorkflowPage() {
         }
       />
 
-      <div className="app-container py-6 md:py-8 space-y-6">
+      <div className="app-container py-6 md:py-8 space-y-3">
         {/* Stage summary strip */}
         <MotionReveal>
         <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">

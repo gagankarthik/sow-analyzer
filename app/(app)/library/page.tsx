@@ -59,7 +59,7 @@ import {
 import { BlueyMark } from "@/components/ui/BlueyMark";
 import { MotionReveal } from "@/components/MotionReveal";
 import { listDocuments, deleteDocument, updateDocument } from "@/lib/api";
-import { useProjects } from "@/lib/projects-store";
+import { useProjects, removeDocFromAllProjects } from "@/lib/projects-store";
 import type { ApiDocument, DocType, Lifecycle } from "@/lib/types";
 import { STATUS_TONE } from "@/lib/status-tone";
 import { formatDate } from "@/lib/format";
@@ -146,6 +146,7 @@ export default function LibraryPage() {
     setDeleting(true);
     try {
       await deleteDocument(deleteTarget.docId);
+      removeDocFromAllProjects(deleteTarget.docId);
       setDocs((prev) => prev.filter((d) => d.docId !== deleteTarget.docId));
       toast.success("Document deleted", { description: deleteTarget.title });
       setDeleteTarget(null);

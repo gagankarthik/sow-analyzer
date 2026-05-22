@@ -19,7 +19,7 @@ import {
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
 import { getClassification } from "@/lib/api";
 import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
-import { useProjects, type LocalProject } from "@/lib/projects-store";
+import { useProjects, withUngroupedDocs, type LocalProject } from "@/lib/projects-store";
 import type { ApiClause, ApiClassification, ApiDocument, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
@@ -60,9 +60,11 @@ type SortDir = "asc" | "desc";
 
 export default function DashboardPage() {
   const { data: docs = [], isLoading, isFetching, isError, refetch } = useDocuments();
-  // AppShell auto-creates a project for any ungrouped document, so reading the
-  // real project list here reflects the full portfolio.
-  const projects = useProjects();
+  const rawProjects = useProjects();
+  // The dashboard is a portfolio overview, so it rolls up EVERY document —
+  // manual projects plus a synthetic entry for any ungrouped document (in
+  // memory only; the Projects page stays a separate manual organizer).
+  const projects = useMemo(() => withUngroupedDocs(rawProjects, docs), [rawProjects, docs]);
   const [mounted, setMounted] = useState(false);
   const [now] = useState(() => Date.now()); // mount-time reference for date windows
 

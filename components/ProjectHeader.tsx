@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/icons";
 import { deleteDocument } from "@/lib/api";
 import { documentKeys } from "@/lib/queries/documents";
+import { removeDocFromAllProjects } from "@/lib/projects-store";
 import { useUIStore } from "@/lib/stores/ui";
 import { formatRelativeDays, formatDate } from "@/lib/format";
 import type { Project, ApiDocument } from "@/lib/types";
@@ -49,6 +50,7 @@ export function ProjectHeader({ project }: { project: HeaderProject }) {
     setDeleting(true);
     try {
       await deleteDocument(docId);
+      removeDocFromAllProjects(docId);
       await qc.invalidateQueries({ queryKey: documentKeys.all });
       toast.success("Document deleted");
       router.push("/projects");
