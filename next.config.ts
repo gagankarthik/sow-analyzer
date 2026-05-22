@@ -14,9 +14,10 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  // Spline loads the scene + assets from prod.spline.design; web workers run from blob:.
+  // Spline loads the scene + assets from prod.spline.design and fetches its
+  // WebAssembly runtime from unpkg.com; web workers run from blob:.
   "worker-src 'self' blob:",
-  "connect-src 'self' https://*.execute-api.us-east-2.amazonaws.com https://*.s3.amazonaws.com https://*.s3.us-east-2.amazonaws.com https://cognito-idp.us-east-2.amazonaws.com https://prod.spline.design https://*.spline.design",
+  "connect-src 'self' https://*.execute-api.us-east-2.amazonaws.com https://*.s3.amazonaws.com https://*.s3.us-east-2.amazonaws.com https://cognito-idp.us-east-2.amazonaws.com https://prod.spline.design https://*.spline.design https://unpkg.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

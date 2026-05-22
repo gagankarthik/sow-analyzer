@@ -207,7 +207,7 @@ export function FloatingNav() {
                 href="/login"
                 className="hidden sm:inline-flex items-center h-9 px-3.5 rounded-full text-[13.5px] font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
               >
-                Log in
+                Login
               </Link>
             )}
             <Link
