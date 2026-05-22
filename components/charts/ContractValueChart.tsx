@@ -149,7 +149,7 @@ export function ContractValueChart({
               </div>
               <ul className="min-w-0 flex-1 space-y-2">
                 {pieData.map((d, i) => (
-                  <li key={d.name} className="flex items-center gap-2.5">
+                  <li key={`${d.name}-${i}`} className="flex items-center gap-2.5">
                     <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
                     <span className="flex-1 truncate text-[12.5px] text-foreground">{d.name}</span>
                     <span className="tabular-nums text-[12px] font-medium text-foreground">{fmtMoney(d.value, currency)}</span>

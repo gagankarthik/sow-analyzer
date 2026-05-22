@@ -14,6 +14,7 @@ export {
   Kanban,
   BookMarked,
   BarChart3,
+  Activity,
   Briefcase,
   Plus,
   Minus,

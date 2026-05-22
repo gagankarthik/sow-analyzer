@@ -667,6 +667,52 @@ html, body {
   .btn-vibrant:hover { transform: none; box-shadow: var(--glow-violet); }
 }
 
+/* Landing uses Geist (clean geometric sans) for display, body, and mono labels.
+   Scoped to .landing so the app shell keeps Inter / JetBrains Mono. */
+.landing {
+  --font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-grotesk: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Custom range slider — savings calculator (fill set inline per value) */
+.range-brand {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  cursor: pointer;
+  outline: none;
+}
+.range-brand::-webkit-slider-runnable-track { height: 6px; border-radius: 9999px; background: transparent; }
+.range-brand::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid var(--brand-primary-600);
+  box-shadow: 0 1px 4px rgba(2, 6, 23, 0.18);
+  transition: transform 0.15s ease;
+}
+.range-brand:hover::-webkit-slider-thumb,
+.range-brand:active::-webkit-slider-thumb { transform: scale(1.15); }
+.range-brand:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-primary-600) 25%, transparent); }
+.range-brand::-moz-range-track { height: 6px; border-radius: 9999px; background: transparent; }
+.range-brand::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid var(--brand-primary-600);
+  box-shadow: 0 1px 4px rgba(2, 6, 23, 0.18);
+  cursor: pointer;
+}
+
 .landing-display {
   font-family: var(--font-grotesk, var(--font-display));
   font-weight: 700;
@@ -906,6 +952,19 @@ html, body {
   100% { background-position: 200% 50%; }
 }
 
+/* On-brand animated accent for headline words (blue → indigo → violet). */
+.accent-gradient {
+  background: linear-gradient(110deg, var(--brand-primary-600) 0%, #6366F1 38%, #8B5CF6 64%, var(--brand-primary-600) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: grad-shift 8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .accent-gradient { animation: none; }
+}
+
 /* Halo glow — used behind hero numbers / brand marks */
 .halo {
   position: relative;
@@ -974,6 +1033,16 @@ html, body {
   animation: conic-spin 10s linear infinite;
 }
 @keyframes conic-spin { to { transform: rotate(360deg); } }
+
+/* Accordion expand/collapse (radix content height) */
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
 
 /* CTA-bar gradient marquee */
 .cta-stripes {

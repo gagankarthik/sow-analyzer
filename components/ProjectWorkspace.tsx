@@ -383,7 +383,7 @@ function ValueBar({ segments, total, currency, reconciled }: { segments: ValueSe
 
       <div className="mt-4 flex h-4 overflow-hidden rounded-md bg-muted">
         {segments.map((s, i) => (
-          <div key={s.docId} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
+          <div key={`${s.docId}-${i}`} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
             className="h-full transition-opacity" title={`${s.label}: ${fmtMoney(s.value, currency)}${s.source ? `\n“${s.source}”` : ""}`}
             style={{ width: `${(s.value / total) * 100}%`, background: SEG_COLORS[i % SEG_COLORS.length], opacity: hover === null || hover === i ? 1 : 0.35 }} />
         ))}
@@ -391,7 +391,7 @@ function ValueBar({ segments, total, currency, reconciled }: { segments: ValueSe
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px]">
         {segments.map((s, i) => (
-          <span key={s.docId} className="contents">
+          <span key={`${s.docId}-${i}`} className="contents">
             {i > 0 && <span className="font-semibold text-muted-foreground">+</span>}
             <Link href={`/projects/${s.docId}`} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 transition-all hover:border-[var(--brand-primary-300)]"

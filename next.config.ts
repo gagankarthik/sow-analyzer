@@ -8,12 +8,15 @@ const isProd = process.env.NODE_ENV === "production";
 const csp = [
   "default-src 'self'",
   // Next.js injects an inline bootstrap script; 'unsafe-inline' is required
-  // until a nonce-based CSP is wired through the proxy.
-  "script-src 'self' 'unsafe-inline'",
+  // until a nonce-based CSP is wired through the proxy. 'wasm-unsafe-eval' lets
+  // the Spline 3D runtime instantiate its WebAssembly module.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.execute-api.us-east-2.amazonaws.com https://*.s3.amazonaws.com https://*.s3.us-east-2.amazonaws.com https://cognito-idp.us-east-2.amazonaws.com",
+  // Spline loads the scene + assets from prod.spline.design; web workers run from blob:.
+  "worker-src 'self' blob:",
+  "connect-src 'self' https://*.execute-api.us-east-2.amazonaws.com https://*.s3.amazonaws.com https://*.s3.us-east-2.amazonaws.com https://cognito-idp.us-east-2.amazonaws.com https://prod.spline.design https://*.spline.design",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
