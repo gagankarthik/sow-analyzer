@@ -59,10 +59,9 @@ export function CommandPalette({ open, onClose }: Props) {
       title="Search Blue-IQ"
       description="Search documents, navigate, or run an AI action."
       showCloseButton={false}
-      className="rounded-xl"
     >
       <CommandInput placeholder="Search documents, pages, and actions…" />
-      <CommandList className="max-h-[55vh]">
+      <CommandList>
         <CommandEmpty>{loaded ? "No matches. Try a different term." : "Loading…"}</CommandEmpty>
 
         {recentDocs.length > 0 && (
