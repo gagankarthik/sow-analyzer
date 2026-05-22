@@ -69,7 +69,7 @@ function CommandInput({
   return (
     <div
       data-slot="command-input-wrapper"
-      className="flex h-14 items-center gap-3 border-b border-border px-4"
+      className="flex h-[60px] items-center gap-3 border-b border-border px-5"
     >
       <SearchIcon className="size-[18px] shrink-0 text-muted-foreground" />
       <CommandPrimitive.Input
@@ -95,7 +95,7 @@ function CommandList({
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        "no-scrollbar max-h-[56vh] scroll-py-2 overflow-x-hidden overflow-y-auto p-2 outline-none",
+        "no-scrollbar max-h-[58vh] scroll-py-3 overflow-x-hidden overflow-y-auto p-3 outline-none",
         className
       )}
       {...props}
@@ -124,8 +124,9 @@ function CommandGroup({
     <CommandPrimitive.Group
       data-slot="command-group"
       className={cn(
-        "overflow-hidden px-1 pb-1 text-foreground",
-        "**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-2.5 **:[[cmdk-group-heading]]:pb-1 **:[[cmdk-group-heading]]:text-[10.5px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-[0.12em] **:[[cmdk-group-heading]]:text-muted-foreground",
+        "overflow-hidden px-1 pb-1.5 text-foreground",
+        "**:[[cmdk-group-items]]:flex **:[[cmdk-group-items]]:flex-col **:[[cmdk-group-items]]:gap-0.5",
+        "**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3.5 **:[[cmdk-group-heading]]:pb-2 **:[[cmdk-group-heading]]:text-[10.5px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-[0.12em] **:[[cmdk-group-heading]]:text-muted-foreground",
         className
       )}
       {...props}
@@ -140,7 +141,7 @@ function CommandSeparator({
   return (
     <CommandPrimitive.Separator
       data-slot="command-separator"
-      className={cn("mx-2 my-1 h-px bg-border", className)}
+      className={cn("mx-3 my-1.5 h-px bg-border/70", className)}
       {...props}
     />
   )
@@ -155,7 +156,7 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative flex h-10 cursor-pointer items-center gap-3 rounded-lg px-3 text-[13.5px] text-foreground outline-hidden select-none transition-colors",
+        "group/command-item relative flex h-11 cursor-pointer items-center gap-3 rounded-lg px-3 text-[14px] text-foreground outline-hidden select-none transition-colors",
         "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
         "data-selected:bg-[var(--brand-primary-50)] data-selected:text-[var(--brand-primary-800)]",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[17px]",
@@ -196,7 +197,7 @@ function CommandShortcut({
 
 function CommandFooter() {
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 px-4 py-2.5 text-[11px] text-muted-foreground">
+    <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 px-5 py-3 text-[11px] text-muted-foreground">
       <span className="inline-flex items-center gap-1.5">
         <FooterKey>↑</FooterKey>
         <FooterKey>↓</FooterKey>
