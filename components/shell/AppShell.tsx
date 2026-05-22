@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
 import { CopilotPanel } from "./CopilotPanel";
+import { AnalysisDisclaimer } from "@/components/ui/AnalysisDisclaimer";
 import { recordRecentDoc } from "@/lib/recent";
 import { useUIStore } from "@/lib/stores/ui";
 
@@ -98,6 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onMenuClick={() => setMobileNav(true)}
         />
         <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">{children}</main>
+        <AnalysisDisclaimer />
       </div>
       <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />

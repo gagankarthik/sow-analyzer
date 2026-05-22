@@ -135,7 +135,7 @@ export function Sidebar({
           href="/dashboard"
           aria-label="Blue-IQ home"
           className={cn(
-            "h-16 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/40",
+            "h-14 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/40",
             collapsed ? "px-0 justify-center" : "px-4 gap-3",
           )}
         >
@@ -145,7 +145,6 @@ export function Sidebar({
           {!collapsed && (
             <span className="min-w-0 flex-1 leading-tight">
               <span className="block truncate text-[15px] font-semibold tracking-tight text-foreground">Blue-IQ</span>
-              <span className="block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Contract Intelligence</span>
             </span>
           )}
         </Link>
