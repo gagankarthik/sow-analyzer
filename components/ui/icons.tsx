@@ -68,6 +68,7 @@ export {
   ExternalLink,
   LineChart,
   PieChart,
+  ScatterChart,
   Layers,
   Database,
   Lock,

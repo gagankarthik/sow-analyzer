@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/Sparkline";
 import {
-  Briefcase, ShieldAlert, ArrowRight, Plus, RefreshCw, Layers, FileText, DollarSign,
-  AlertTriangle, CheckCircle2, Clock, CalendarClock, BarChart3, PieChart, Users, TrendingUp,
-  Scale, Database, Tag, Kanban, LineChart, Boxes,
+  Briefcase, ShieldAlert, ArrowRight, ArrowUp, ArrowDown, Plus, RefreshCw, Layers, FileText, DollarSign,
+  AlertTriangle, CheckCircle2, Check, CalendarClock, BarChart3, TrendingUp, Database, Boxes,
+  ChevronUp, ChevronDown, XCircle,
 } from "@/components/ui/icons";
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
 import { getClassification } from "@/lib/api";
-import { computeContractValue, fmtMoney, type ValuedDoc } from "@/lib/contract-value";
+import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
 import { useProjects, type LocalProject } from "@/lib/projects-store";
 import type { ApiClause, ApiClassification, ApiDocument, RiskLevel } from "@/lib/types";
 
@@ -34,14 +34,6 @@ const RISK_PILL: Record<RiskLevel, string> = {
 const SCOPE_CATS = ["ScopeOfWork", "Deliverables", "Acceptance", "ChangeControl"];
 const DAY = 86_400_000;
 
-function fmtDuration(ms: number): string {
-  if (!ms || ms <= 0) return "—";
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
-  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
-  if (ms < DAY) return `${(ms / 3_600_000).toFixed(1)}h`;
-  return `${(ms / DAY).toFixed(1)}d`;
-}
-
 type Agg = {
   project: LocalProject;
   docs: ApiDocument[];
@@ -52,6 +44,10 @@ type Agg = {
   highRisk: number;
   overallRisk: RiskLevel;
   value: number;
+  valueDelta: number;
+  reconciled: boolean | null;
+  currency: string | null;
+  hasReady: boolean;
   processing: number;
   failed: number;
   expired: boolean;
@@ -59,10 +55,14 @@ type Agg = {
   status: string;
 };
 
+type SortKey = "name" | "status" | "docCount" | "clauseCount" | "highRisk" | "value" | "risk";
+type SortDir = "asc" | "desc";
+
 export default function DashboardPage() {
-  const { data: docs = [], isLoading, isFetching, refetch } = useDocuments();
+  const { data: docs = [], isLoading, isFetching, isError, refetch } = useDocuments();
   const projects = useProjects();
   const [mounted, setMounted] = useState(false);
+  const [now] = useState(() => Date.now()); // mount-time reference for date windows
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -78,47 +78,63 @@ export default function DashboardPage() {
 
   const allClauses: ApiClause[] = [];
   classByDoc.forEach((c) => c.clauses.forEach((cl) => allClauses.push(cl)));
+  const classKey = classQueries.map((q) => q.dataUpdatedAt).join(",");
 
-  const now = Date.now();
   const aggregates: Agg[] = projects.map((p) => {
     const pdocs = p.docIds.map((id) => byId.get(id)).filter((d): d is ApiDocument => !!d);
     const rc = { low: 0, medium: 0, high: 0, critical: 0 };
-    let clauseCount = 0, processing = 0, failed = 0, expired = false, upcoming = false;
+    let clauseCount = 0, processing = 0, failed = 0, expired = false, upcoming = false, hasReady = false;
     for (const d of pdocs) {
       clauseCount += d.clauseCount ?? 0;
       if (d.riskCounts) { rc.low += d.riskCounts.low; rc.medium += d.riskCounts.medium; rc.high += d.riskCounts.high; rc.critical += d.riskCounts.critical; }
       if (PROCESSING.has(d.status)) processing++;
       if (d.status === "FAILED") failed++;
+      if (d.status === "READY") hasReady = true;
       if (d.lifecycle === "expired") expired = true;
       if (d.effectiveDate) { const t = new Date(d.effectiveDate).getTime(); if (t >= now && t <= now + 90 * DAY) upcoming = true; }
     }
-    const valued: ValuedDoc[] = pdocs.filter((d) => d.status === "READY").map((d) => ({ docId: d.docId, title: d.title || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt, classification: classByDoc.get(d.docId) }));
-    const value = computeContractValue(valued).total;
+    const valued: ValuedDoc[] = pdocs.filter((d) => d.status === "READY").map((d) => ({ docId: d.docId, title: d.title || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt, classification: classByDoc.get(d.docId), persisted: persistedOf(d) }));
+    const cv = computeContractValue(valued);
+    const valueDelta = cv.segments.filter((s) => s.isAmendment).reduce((s, x) => s + x.value, 0);
     const total = rc.low + rc.medium + rc.high + rc.critical;
     const highRisk = rc.high + rc.critical;
     const overallRisk: RiskLevel = rc.critical > 0 ? "critical" : rc.high > 0 ? "high" : rc.medium > 0 ? "medium" : "low";
     const root = pdocs.find((d) => d.docType !== "AMENDMENT") ?? pdocs[0];
     const status = root?.lifecycle ? root.lifecycle.charAt(0).toUpperCase() + root.lifecycle.slice(1) : "—";
-    return { project: p, docs: pdocs, docCount: pdocs.length, clauseCount, rc, total, highRisk, overallRisk, value, processing, failed, expired, upcoming, status };
+    return { project: p, docs: pdocs, docCount: pdocs.length, clauseCount, rc, total, highRisk, overallRisk, value: cv.total, valueDelta, reconciled: cv.reconciled, currency: cv.currency, hasReady, processing, failed, expired, upcoming, status };
   });
 
   const tcv = aggregates.reduce((s, a) => s + a.value, 0);
   const valueAtRisk = aggregates.filter((a) => a.overallRisk === "high" || a.overallRisk === "critical").reduce((s, a) => s + a.value, 0);
   const varPct = tcv > 0 ? Math.round((valueAtRisk / tcv) * 100) : 0;
   const highCritCount = aggregates.filter((a) => a.overallRisk === "high" || a.overallRisk === "critical").length;
-  const expiredCount = aggregates.filter((a) => a.expired).length;
+  const failedTotal = aggregates.reduce((s, a) => s + a.failed, 0);
   const renew = aggregates.filter((a) => a.upcoming);
   const renewValue = renew.reduce((s, a) => s + a.value, 0);
   const analyzingCount = aggregates.reduce((s, a) => s + a.processing, 0);
   const rcAll = aggregates.reduce((acc, a) => { acc.low += a.rc.low; acc.medium += a.rc.medium; acc.high += a.rc.high; acc.critical += a.rc.critical; return acc; }, { low: 0, medium: 0, high: 0, critical: 0 });
   const totalRiskClauses = rcAll.low + rcAll.medium + rcAll.high + rcAll.critical;
 
+  // Value coverage: of the contracts we've analyzed, how many have an extracted
+  // value — i.e. how complete (and trustworthy) the TCV figure actually is.
+  const analyzable = aggregates.filter((a) => a.hasReady);
+  const valuedCount = analyzable.filter((a) => a.value > 0).length;
+  const coveragePct = analyzable.length > 0 ? Math.round((valuedCount / analyzable.length) * 100) : 0;
+  const tcvPrev = useMemo(() => {
+    // Prior cumulative value = TCV excluding the most recently created project,
+    // so the headline TCV carries an honest "since last contract" delta.
+    const ordered = [...aggregates].sort((a, b) => new Date(a.project.createdAt).getTime() - new Date(b.project.createdAt).getTime());
+    return ordered.slice(0, -1).reduce((s, a) => s + a.value, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tcv, projects.length]);
+  const tcvDeltaPct = tcvPrev > 0 ? Math.round(((tcv - tcvPrev) / tcvPrev) * 100) : 0;
+
   const catData: CatDatum[] = useMemo(() => {
     const m: Record<string, { count: number; risk: RiskLevel }> = {};
     classByDoc.forEach((c) => c.clauses.forEach((cl) => { const e = (m[cl.category] ??= { count: 0, risk: "low" }); e.count++; if (RANK[cl.riskLevel ?? "low"] > RANK[e.risk]) e.risk = cl.riskLevel ?? "low"; }));
     return Object.entries(m).map(([name, val]) => ({ name, count: val.count, risk: val.risk })).sort((a, b) => b.count - a.count);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [readyDocs, classQueries.map((q) => q.dataUpdatedAt).join(",")]);
+  }, [readyDocs, classKey]);
 
   const tcvSeries = useMemo(() => {
     const ordered = [...aggregates].sort((a, b) => new Date(a.project.createdAt).getTime() - new Date(b.project.createdAt).getTime());
@@ -128,26 +144,47 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tcv, projects.length]);
 
-  const avgAnalyzeMs = useMemo(() => {
-    const spans = readyDocs.map((d) => new Date(d.updatedAt).getTime() - new Date(d.createdAt).getTime()).filter((n) => n > 0);
-    return spans.length ? spans.reduce((s, n) => s + n, 0) / spans.length : 0;
-  }, [readyDocs]);
-
+  // Value AND at-risk value by contract effective year — exposure in context of size.
   const valueByYear = useMemo(() => {
-    const m = new Map<string, number>();
+    const m = new Map<string, { value: number; atRisk: number }>();
     for (const a of aggregates) {
       const dates = a.docs.map((d) => d.effectiveDate || d.createdAt).filter(Boolean).sort();
       const year = dates.length ? String(new Date(dates[0]!).getFullYear()) : "Undated";
-      m.set(year, (m.get(year) ?? 0) + a.value);
+      const e = m.get(year) ?? { value: 0, atRisk: 0 };
+      e.value += a.value;
+      if (a.overallRisk === "high" || a.overallRisk === "critical") e.atRisk += a.value;
+      m.set(year, e);
     }
-    return [...m.entries()].filter(([, v]) => v > 0).sort((a, b) => a[0].localeCompare(b[0]));
+    return [...m.entries()].filter(([, v]) => v.value > 0).sort((a, b) => a[0].localeCompare(b[0]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tcv, projects.length]);
 
   const scopeRows = SCOPE_CATS.map((cat) => ({ cat, n: allClauses.filter((cl) => cl.category === cat).length })).filter((x) => x.n > 0);
   const attention = aggregates.filter((a) => a.overallRisk === "high" || a.overallRisk === "critical" || a.failed > 0).sort((a, b) => RISK_RANK[a.overallRisk] - RISK_RANK[b.overallRisk] || b.value - a.value);
   const valueRows = aggregates.filter((a) => a.value > 0).sort((a, b) => b.value - a.value).slice(0, 6);
-  const ranked = [...aggregates].sort((a, b) => RISK_RANK[a.overallRisk] - RISK_RANK[b.overallRisk] || b.value - a.value);
+
+  // Sortable contracts table
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "risk", dir: "asc" });
+  const sortedRows = useMemo(() => {
+    const rows = [...aggregates];
+    const dir = sort.dir === "asc" ? 1 : -1;
+    rows.sort((a, b) => {
+      switch (sort.key) {
+        case "name": return a.project.name.localeCompare(b.project.name) * dir;
+        case "status": return a.status.localeCompare(b.status) * dir;
+        case "docCount": return (a.docCount - b.docCount) * dir;
+        case "clauseCount": return (a.clauseCount - b.clauseCount) * dir;
+        case "highRisk": return (a.highRisk - b.highRisk) * dir;
+        case "value": return (a.value - b.value) * dir;
+        case "risk": return (RISK_RANK[a.overallRisk] - RISK_RANK[b.overallRisk]) * dir || b.value - a.value;
+        default: return 0;
+      }
+    });
+    return rows;
+  }, [aggregates, sort]);
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "name" || key === "status" ? "asc" : "desc" }));
+
   const loading = !mounted || isLoading;
 
   return (
@@ -166,34 +203,57 @@ export default function DashboardPage() {
 
       <div className="app-container space-y-6 py-6 md:py-8">
         {loading ? (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}</div>
+          <DashboardSkeleton />
+        ) : isError ? (
+          <ErrorState onRetry={() => refetch()} />
         ) : projects.length === 0 ? (
           <EmptyState />
         ) : (
           <>
-            {/* Executive KPIs */}
-            <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <MetricCard label="Total contract value" value={tcv > 0 ? fmtMoney(tcv) : "—"} tone="brand" icon={<DollarSign size={14} />} hint="under management" chart={tcvSeries.length > 1 ? <Sparkline data={tcvSeries} variant="up" width={240} height={32} className="w-full" /> : undefined} />
-              <MetricCard label="Value at risk" value={valueAtRisk > 0 ? fmtMoney(valueAtRisk) : "—"} tone={valueAtRisk > 0 ? "danger" : "success"} icon={<AlertTriangle size={14} />} hint={tcv > 0 ? `${varPct}% of portfolio` : "no exposure"} />
-              <MetricCard label="Active contracts" value={projects.length} icon={<Briefcase size={14} />} hint={`${readyDocs.length} analyzed${analyzingCount ? ` · ${analyzingCount} processing` : ""}`} />
-              <MetricCard label="High & critical" value={highCritCount} tone={highCritCount > 0 ? "danger" : "success"} icon={<ShieldAlert size={14} />} hint={`${rcAll.critical} critical · ${rcAll.high} high`} />
-              <MetricCard label="Clauses analyzed" value={totalRiskClauses.toLocaleString()} icon={<FileText size={14} />} hint={`${readyDocs.length} documents`} />
-              <MetricCard label="Avg. analysis time" value={fmtDuration(avgAnalyzeMs)} tone="success" icon={<Clock size={14} />} hint="per document" />
-              <MetricCard label="Expired" value={expiredCount} tone={expiredCount > 0 ? "warning" : "neutral"} icon={<CalendarClock size={14} />} hint="contracts past term" />
-              <MetricCard label="Renewals · 90d" value={renew.length} icon={<CalendarClock size={14} />} hint={renewValue > 0 ? fmtMoney(renewValue) : "no upcoming dates"} />
+            {/* Health band — focal value-at-risk + the few KPIs that answer "is everything okay?" */}
+            <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+              <FocalValueAtRisk
+                valueAtRisk={valueAtRisk} tcv={tcv} varPct={varPct} count={highCritCount}
+                criticalClauses={rcAll.critical} failed={failedTotal}
+              />
+              <div className="grid grid-cols-2 gap-4 lg:col-span-7 lg:grid-cols-3">
+                <MetricCard
+                  label="Needs attention" value={attention.length}
+                  tone={attention.length > 0 ? "danger" : "success"} icon={<ShieldAlert size={14} />}
+                  hint={attention.length > 0 ? `${rcAll.critical} critical · ${rcAll.high} high` : "all clear"}
+                />
+                <MetricCard
+                  label="Total contract value" value={tcv > 0 ? fmtMoney(tcv) : "—"} tone="brand" icon={<DollarSign size={14} />}
+                  delta={tcvPrev > 0 ? { value: `${tcvDeltaPct >= 0 ? "+" : ""}${tcvDeltaPct}%`, direction: tcvDeltaPct > 0 ? "up" : tcvDeltaPct < 0 ? "down" : "flat" } : undefined}
+                  hint="since last contract"
+                  chart={tcvSeries.length > 1 ? <Sparkline data={tcvSeries} variant="up" width={240} height={32} className="w-full" /> : undefined}
+                />
+                <CoverageCard pct={coveragePct} valued={valuedCount} total={analyzable.length} />
+                <MetricCard label="Active contracts" value={projects.length} icon={<Briefcase size={14} />} hint={`${readyDocs.length} analyzed${analyzingCount ? ` · ${analyzingCount} processing` : ""}`} />
+                <MetricCard label="Renewals · 90d" value={renew.length} icon={<CalendarClock size={14} />} hint={renewValue > 0 ? fmtMoney(renewValue) : "no upcoming dates"} />
+                <MetricCard label="Clauses analyzed" value={totalRiskClauses.toLocaleString()} icon={<FileText size={14} />} hint={`${readyDocs.length} documents`} />
+              </div>
             </section>
 
             {/* Risk intelligence */}
             {totalRiskClauses > 0 && <MotionReveal><RiskIntelligence counts={rcAll} categories={catData} /></MotionReveal>}
 
-            {/* Heatmap + value by year */}
+            {/* Heatmap + value/exposure by year */}
             <MotionReveal delay={0.05}>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
                 <Card className="lg:col-span-7" title="Risk by category" icon={<BarChart3 size={15} />} sub="category × severity">
                   {allClauses.length === 0 ? <Empty text="The clause heatmap appears once analysis completes." /> : <ClauseHeatmap clauses={allClauses} />}
                 </Card>
-                <Card className="lg:col-span-5" title="Contract value by year" icon={<TrendingUp size={15} />} sub={tcv > 0 ? fmtMoney(tcv) : undefined}>
-                  {valueByYear.length === 0 ? <Empty text="No dated contract value yet." /> : <BarList rows={valueByYear.map(([year, v]) => ({ label: year, value: v, sub: fmtMoney(v) }))} />}
+                <Card className="lg:col-span-5" title="Value & exposure by year" icon={<TrendingUp size={15} />} sub={tcv > 0 ? fmtMoney(tcv) : undefined}>
+                  {valueByYear.length === 0 ? <Empty text="No dated contract value yet." /> : (
+                    <>
+                      <ValueByYearBars rows={valueByYear} />
+                      <div className="mt-4 flex items-center gap-4 border-t border-border pt-3 text-[11px] text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[var(--brand-primary-600)]" />Total value</span>
+                        <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-[var(--danger)]" />At risk</span>
+                      </div>
+                    </>
+                  )}
                 </Card>
               </div>
             </MotionReveal>
@@ -215,7 +275,7 @@ export default function DashboardPage() {
                         <li key={a.project.id}>
                           <Link href={`/projects/${a.project.id}`} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40">
                             <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${RISK_PILL[a.overallRisk]}`}>{a.overallRisk}</span>
-                            <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-semibold text-foreground">{a.project.name}</div><div className="text-[11.5px] text-muted-foreground">{a.highRisk > 0 ? `${a.highRisk} high-risk clause${a.highRisk === 1 ? "" : "s"}` : ""}{a.failed > 0 ? `${a.highRisk > 0 ? " · " : ""}${a.failed} failed` : ""}{a.value > 0 ? ` · ${fmtMoney(a.value)}` : ""}</div></div>
+                            <div className="min-w-0 flex-1"><div className="truncate text-[13px] font-semibold text-foreground">{a.project.name}</div><div className="text-[11.5px] text-muted-foreground">{a.highRisk > 0 ? `${a.highRisk} high-risk clause${a.highRisk === 1 ? "" : "s"}` : ""}{a.failed > 0 ? `${a.highRisk > 0 ? " · " : ""}${a.failed} failed` : ""}{a.value > 0 ? ` · ${fmtMoney(a.value, a.currency)}` : ""}</div></div>
                             <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-[var(--brand-primary-600)]">Review<ArrowRight size={12} strokeWidth={2.25} /></span>
                           </Link>
                         </li>
@@ -236,24 +296,38 @@ export default function DashboardPage() {
               </Card>
             )}
 
-            {/* Contracts table */}
+            {/* Contracts table — sortable roll-up */}
             <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
               <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
                 <div className="flex items-center gap-2"><Briefcase size={15} className="text-[var(--brand-primary-600)]" /><h3 className="text-[14px] font-semibold tracking-tight text-foreground">Contracts <span className="ml-1 font-mono text-[11px] text-muted-foreground">{projects.length}</span></h3></div>
                 <Link href="/projects" className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">View all<ArrowRight size={12} strokeWidth={2.25} /></Link>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] border-collapse text-[13px]">
-                  <thead><tr className="border-b border-border bg-muted/40 text-left">{["Project", "Status", "Docs", "Clauses", "High-Risk", "Value", "Risk"].map((h, i) => <th key={h} className={`px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground ${i >= 2 && i <= 5 ? "text-right" : ""}`}>{h}</th>)}</tr></thead>
+                <table className="w-full min-w-[820px] border-collapse text-[13px]">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-left">
+                      <SortableTh label="Project" k="name" sort={sort} onSort={toggleSort} />
+                      <SortableTh label="Status" k="status" sort={sort} onSort={toggleSort} />
+                      <SortableTh label="Docs" k="docCount" sort={sort} onSort={toggleSort} align="right" />
+                      <SortableTh label="Clauses" k="clauseCount" sort={sort} onSort={toggleSort} align="right" />
+                      <SortableTh label="High-Risk" k="highRisk" sort={sort} onSort={toggleSort} align="right" />
+                      <SortableTh label="Value" k="value" sort={sort} onSort={toggleSort} align="right" />
+                      <th className="px-5 py-2.5 text-right text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Δ</th>
+                      <th className="px-5 py-2.5 text-center text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Data</th>
+                      <SortableTh label="Risk" k="risk" sort={sort} onSort={toggleSort} />
+                    </tr>
+                  </thead>
                   <tbody>
-                    {ranked.map((a) => (
+                    {sortedRows.map((a) => (
                       <tr key={a.project.id} className="border-b border-border last:border-0 transition-colors hover:bg-muted/40">
                         <td className="px-5 py-3"><Link href={`/projects/${a.project.id}`} className="font-semibold text-foreground hover:text-[var(--brand-primary-700)]">{a.project.name}</Link>{a.project.client && <div className="truncate text-[11px] text-muted-foreground">{a.project.client}</div>}</td>
                         <td className="px-5 py-3 text-muted-foreground">{a.status}{a.expired ? " · expired" : ""}</td>
                         <td className="px-5 py-3 text-right tabular-nums">{a.docCount}</td>
                         <td className="px-5 py-3 text-right tabular-nums">{a.clauseCount.toLocaleString()}</td>
                         <td className="px-5 py-3 text-right tabular-nums">{a.highRisk > 0 ? <span className="font-semibold text-[var(--danger)]">{a.highRisk}</span> : "0"}</td>
-                        <td className="px-5 py-3 text-right tabular-nums font-semibold">{a.value > 0 ? fmtMoney(a.value) : "—"}</td>
+                        <td className="px-5 py-3 text-right tabular-nums font-semibold">{a.value > 0 ? fmtMoney(a.value, a.currency) : "—"}</td>
+                        <td className="px-5 py-3 text-right"><ValueDelta delta={a.valueDelta} currency={a.currency} /></td>
+                        <td className="px-5 py-3 text-center"><ReconciledBadge reconciled={a.reconciled} hasValue={a.value > 0} /></td>
                         <td className="px-5 py-3">{a.total > 0 ? <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${RISK_PILL[a.overallRisk]}`}>{a.overallRisk}</span> : <span className="text-[11px] text-muted-foreground">—</span>}</td>
                       </tr>
                     ))}
@@ -262,27 +336,8 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Operations & finance — needs connected systems */}
-            <section className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Operations &amp; finance</h2>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] text-muted-foreground"><Database size={11} />Connect your ERP / HRIS / PM systems to populate these</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-                <Placeholder label="Gross margin" icon={<PieChart size={15} />} />
-                <Placeholder label="Operating P&L" icon={<LineChart size={15} />} />
-                <Placeholder label="Invoiced" icon={<DollarSign size={15} />} />
-                <Placeholder label="Billing utilisation" icon={<BarChart3 size={15} />} />
-                <Placeholder label="Budget vs payments" icon={<Scale size={15} />} />
-                <Placeholder label="Milestones" icon={<CalendarClock size={15} />} />
-                <Placeholder label="Quality score" icon={<CheckCircle2 size={15} />} />
-                <Placeholder label="Performance" icon={<TrendingUp size={15} />} />
-                <Placeholder label="Employees" icon={<Users size={15} />} />
-                <Placeholder label="Roles" icon={<Tag size={15} />} />
-                <Placeholder label="Workload" icon={<Kanban size={15} />} />
-                <Placeholder label="Utilisation" icon={<Boxes size={15} />} />
-              </div>
-            </section>
+            {/* Operations & finance — pending connected systems */}
+            <ConnectDataSources />
           </>
         )}
       </div>
@@ -290,6 +345,110 @@ export default function DashboardPage() {
   );
 }
 
+/* ── Focal: value at risk ─────────────────────────────────────── */
+function FocalValueAtRisk({ valueAtRisk, tcv, varPct, count, criticalClauses, failed }: {
+  valueAtRisk: number; tcv: number; varPct: number; count: number; criticalClauses: number; failed: number;
+}) {
+  const hasRisk = valueAtRisk > 0;
+  const anomaly = criticalClauses > 0 || failed > 0;
+  return (
+    <section className="relative flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-xs lg:col-span-5">
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="eyebrow">Value at risk</div>
+          <span className={`inline-flex h-7 w-7 items-center justify-center rounded-md ${hasRisk ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "bg-[var(--success-soft)] text-[var(--success)]"}`}>
+            {hasRisk ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
+          </span>
+        </div>
+        <div className="numeric mt-3 leading-none text-foreground" style={{ fontFamily: "var(--font-display)", fontWeight: 700, letterSpacing: "-0.025em", fontSize: 44 }}>
+          {hasRisk ? fmtMoney(valueAtRisk) : tcv > 0 ? fmtMoney(0) : "—"}
+        </div>
+        <p className="mt-2 text-[12.5px] text-muted-foreground">
+          {hasRisk
+            ? <><span className="font-semibold text-foreground">{varPct}%</span> of {fmtMoney(tcv)} portfolio · {count} contract{count === 1 ? "" : "s"} high/critical</>
+            : tcv > 0 ? "No high-risk contracts in the portfolio." : "Value appears once SOWs are analyzed."}
+        </p>
+      </div>
+
+      {/* Proportion: at-risk vs total portfolio value */}
+      {tcv > 0 && (
+        <div className="mt-5" aria-hidden>
+          <div className="flex h-2.5 overflow-hidden rounded-full bg-[var(--success-soft)]">
+            <div className="h-full rounded-full bg-[var(--danger)]" style={{ width: `${Math.max(hasRisk ? 3 : 0, varPct)}%` }} />
+          </div>
+          <div className="mt-1.5 flex justify-between text-[10.5px] text-muted-foreground">
+            <span>At risk {fmtMoney(valueAtRisk)}</span>
+            <span>Total {fmtMoney(tcv)}</span>
+          </div>
+        </div>
+      )}
+
+      {anomaly && (
+        <Link href="/projects?risk=attention" className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2 text-[12px] font-medium text-[var(--danger)] transition-colors hover:bg-[var(--danger)]/10">
+          <ShieldAlert size={14} className="shrink-0" />
+          {criticalClauses > 0 ? `${criticalClauses} critical clause${criticalClauses === 1 ? "" : "s"}` : ""}
+          {criticalClauses > 0 && failed > 0 ? " · " : ""}
+          {failed > 0 ? `${failed} failed analysis` : ""}
+          <ArrowRight size={12} strokeWidth={2.25} className="ml-auto" />
+        </Link>
+      )}
+    </section>
+  );
+}
+
+/* ── KPI: value coverage with progress toward 100% ────────────── */
+function CoverageCard({ pct, valued, total }: { pct: number; valued: number; total: number }) {
+  return (
+    <div className="relative rounded-2xl border border-border bg-card p-6 shadow-xs transition-all duration-200 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="eyebrow truncate">Value coverage</div>
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground"><Check size={14} /></span>
+      </div>
+      <div className="numeric mt-3 leading-none text-foreground" style={{ fontFamily: "var(--font-display)", fontWeight: 700, letterSpacing: "-0.025em", fontSize: 36 }}>
+        {total > 0 ? `${pct}%` : "—"}
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${pct}% of analyzed contracts have an extracted value`}>
+        <div className="h-full rounded-full bg-[var(--brand-primary-600)]" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-1.5 text-xs text-muted-foreground">{total > 0 ? `${valued} of ${total} contracts valued` : "awaiting analysis"}</div>
+    </div>
+  );
+}
+
+function ValueDelta({ delta, currency }: { delta: number; currency: string | null }) {
+  if (!delta) return <span className="text-[11px] text-muted-foreground">—</span>;
+  const up = delta > 0;
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[12px] font-medium tabular-nums ${up ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
+      {up ? <ArrowUp size={11} strokeWidth={2.25} /> : <ArrowDown size={11} strokeWidth={2.25} />}
+      {fmtMoney(Math.abs(delta), currency)}
+    </span>
+  );
+}
+
+function ReconciledBadge({ reconciled, hasValue }: { reconciled: boolean | null; hasValue: boolean }) {
+  if (!hasValue) return <span className="text-[11px] text-muted-foreground">—</span>;
+  if (reconciled === true) return <span title="Figures reconcile to the stated total" className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--success)]"><CheckCircle2 size={12} />Reconciled</span>;
+  if (reconciled === false) return <span title="Figures don't reconcile — review" className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--warning)]"><AlertTriangle size={12} />Check</span>;
+  return <span title="Single estimated figure" className="text-[11px] text-muted-foreground">Estimated</span>;
+}
+
+function SortableTh({ label, k, sort, onSort, align = "left" }: { label: string; k: SortKey; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void; align?: "left" | "right" }) {
+  const active = sort.key === k;
+  return (
+    <th aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"} className={`px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground ${align === "right" ? "text-right" : ""}`}>
+      <button
+        type="button" onClick={() => onSort(k)}
+        className={`inline-flex items-center gap-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] rounded ${align === "right" ? "flex-row-reverse" : ""} ${active ? "text-foreground" : ""}`}
+      >
+        {label}
+        {active ? (sort.dir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : <ChevronDown size={12} className="opacity-30" />}
+      </button>
+    </th>
+  );
+}
+
+/* ── Existing helpers (kept) ──────────────────────────────────── */
 function Card({ title, icon, sub, children, className }: { title: string; icon: ReactNode; sub?: string; children: ReactNode; className?: string }) {
   return (
     <section className={`rounded-2xl border border-border bg-card p-5 shadow-xs md:p-6 ${className ?? ""}`}>
@@ -316,6 +475,26 @@ function BarList({ rows }: { rows: { label: string; value: number; sub?: string;
   );
 }
 
+function ValueByYearBars({ rows }: { rows: [string, { value: number; atRisk: number }][] }) {
+  const max = Math.max(1, ...rows.map(([, v]) => v.value));
+  return (
+    <div className="space-y-3">
+      {rows.map(([year, v]) => (
+        <div key={year}>
+          <div className="mb-1 flex items-center justify-between text-[12px]">
+            <span className="font-medium text-foreground">{year}</span>
+            <span className="tabular-nums text-muted-foreground">{fmtMoney(v.value)}{v.atRisk > 0 ? <span className="ml-1.5 text-[var(--danger)]">· {fmtMoney(v.atRisk)} at risk</span> : null}</span>
+          </div>
+          <div className="relative h-2.5 overflow-hidden rounded-full bg-muted">
+            <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--brand-primary-600)]" style={{ width: `${(v.value / max) * 100}%` }} />
+            {v.atRisk > 0 && <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--danger)]" style={{ width: `${(v.atRisk / max) * 100}%` }} />}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ValueByProject({ rows }: { rows: Agg[] }) {
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(1, ...rows.map((r) => r.value));
@@ -323,26 +502,59 @@ function ValueByProject({ rows }: { rows: Agg[] }) {
     <div className="space-y-3">
       {rows.map((r, i) => (
         <Link key={r.project.id} href={`/projects/${r.project.id}`} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} className="block" style={{ opacity: hover === null || hover === i ? 1 : 0.5 }}>
-          <div className="mb-1 flex items-center justify-between text-[12px]"><span className="truncate font-medium text-foreground">{r.project.name}</span><span className="shrink-0 font-semibold tabular-nums text-foreground">{fmtMoney(r.value)}</span></div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${(r.value / max) * 100}%`, background: "var(--brand-primary-600)" }} /></div>
+          <div className="mb-1 flex items-center justify-between text-[12px]"><span className="truncate font-medium text-foreground">{r.project.name}</span><span className="shrink-0 font-semibold tabular-nums text-foreground">{fmtMoney(r.value, r.currency)}</span></div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${(r.value / max) * 100}%`, background: r.overallRisk === "critical" || r.overallRisk === "high" ? "var(--danger)" : "var(--brand-primary-600)" }} /></div>
         </Link>
       ))}
     </div>
   );
 }
 
-function Placeholder({ label, icon }: { label: string; icon: ReactNode }) {
+function ConnectDataSources() {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-card/50 p-5">
-      <div className="flex items-center justify-between"><div className="eyebrow truncate">{label}</div><span className="text-muted-foreground/50">{icon}</span></div>
-      <div className="mt-3 text-[28px] font-bold leading-none text-[var(--ink-300)]" style={{ fontFamily: "var(--font-display)" }}>—</div>
-      <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground"><Database size={11} />Connect data source</div>
-    </div>
+    <section className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-5 md:px-6">
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="flex items-start gap-3">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"><Database size={18} strokeWidth={1.75} /></span>
+          <div>
+            <h2 className="text-[14px] font-semibold tracking-tight text-foreground">Operations &amp; finance</h2>
+            <p className="mt-0.5 max-w-xl text-[12.5px] text-muted-foreground">Connect your ERP, HRIS, or PM systems to add margin, P&amp;L, invoicing, milestones, and utilisation alongside contract risk.</p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" className="gap-1.5 shrink-0" asChild>
+          <Link href="/settings"><Database size={13} />Connect data source</Link>
+        </Button>
+      </div>
+    </section>
   );
 }
 
 function Empty({ text }: { text: string }) {
   return <p className="py-6 text-center text-[12.5px] text-muted-foreground">{text}</p>;
+}
+
+function DashboardSkeleton() {
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <Skeleton className="h-[228px] rounded-2xl lg:col-span-5" />
+        <div className="grid grid-cols-2 gap-4 lg:col-span-7 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[104px] rounded-2xl" />)}</div>
+      </div>
+      <Skeleton className="h-48 rounded-2xl" />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12"><Skeleton className="h-72 rounded-2xl lg:col-span-7" /><Skeleton className="h-72 rounded-2xl lg:col-span-5" /></div>
+    </>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center rounded-3xl border border-[var(--danger)]/30 bg-[var(--danger-soft)]/50 py-20 text-center">
+      <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--danger-soft)] text-[var(--danger)]"><XCircle size={26} strokeWidth={1.5} /></span>
+      <h3 className="text-[18px] font-semibold text-foreground">Couldn&apos;t load your portfolio</h3>
+      <p className="mt-2 max-w-md text-[13px] text-muted-foreground">The document service didn&apos;t respond. Your data is safe — try again in a moment.</p>
+      <Button variant="outline" size="md" className="mt-6 gap-1.5 rounded-full" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
+    </div>
+  );
 }
 
 function EmptyState() {

@@ -22,14 +22,14 @@ import { cn } from "@/lib/utils";
 import {
   ChevronLeft, FileText, CheckCircle2, Loader2, XCircle, ArrowRight, Layers, Search,
   Building2, ShieldAlert, AlertTriangle, Info, Plus, GitBranch, Users, Sparkles, Trash2, DollarSign,
-  RefreshCw, Maximize2, Download, Clock, ExternalLink,
+  RefreshCw, Maximize2, Download, Clock, ExternalLink, CalendarClock,
 } from "@/components/ui/icons";
 import { useDocuments, useDeleteDocument, useReprocess, documentKeys } from "@/lib/queries/documents";
 import { getClassification, getDocFile, askBluey, type ApiDocFile } from "@/lib/api";
 import { useUIStore } from "@/lib/stores/ui";
 import { useProject, addDocToProject, removeDocFromProject, type LocalProject } from "@/lib/projects-store";
 import { formatRelativeDays, formatDate } from "@/lib/format";
-import { computeContractValue, fmtMoney, docValue, type ValueSegment } from "@/lib/contract-value";
+import { computeContractValue, fmtMoney, docValue, persistedOf, type ValueSegment } from "@/lib/contract-value";
 import type { ApiClause, ApiClassification, ApiDocument, RiskLevel, FindingSeverity } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
@@ -147,11 +147,15 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   // preferring the backend's validated commercials when present.
   const { valueSegments, valueTotal, valueByDoc, valueCurrency, reconciledAll } = useMemo(() => {
     const { total, segments, currency, reconciled } = computeContractValue(readyDocs.map((d) => ({
-      docId: d.docId, title: d.title || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt, classification: classByDoc.get(d.docId),
+      docId: d.docId, title: d.title || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt,
+      classification: classByDoc.get(d.docId), persisted: persistedOf(d),
     })));
     return {
       valueSegments: segments, valueTotal: total, valueCurrency: currency,
-      valueByDoc: new Map(segments.map((s) => [s.docId, s.value])),
+      // Per-document "amount" = each document's OWN contract value (consistent
+      // with the document reader and Insights), not its delta-contribution to
+      // the running total. The base+deltas breakdown lives in the value bar.
+      valueByDoc: new Map(readyDocs.map((d) => [d.docId, docValue(classByDoc.get(d.docId), persistedOf(d))])),
       reconciledAll: reconciled,
     };
   }, [allClauses]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -419,38 +423,113 @@ function ValueBar({ segments, total, currency, reconciled }: { segments: ValueSe
   );
 }
 
-/* ── Commercial terms (from the validated SOW extraction) ──────── */
+/* ── Commercial terms — aggregated across the SOW AND every amendment ──── */
+type Tagged<T> = T & { _src: string; _amend: boolean };
+
 function CommercialTerms({ v }: { v: View }) {
-  // Prefer the primary SOW's commercials; aggregate list data across all docs.
-  const primary = v.readyDocs.find((d) => d.docType !== "AMENDMENT") ?? v.readyDocs[0];
-  const com = primary ? v.classByDoc.get(primary.docId)?.commercials : undefined;
   const cur = v.valueCurrency;
+  const [now] = useState(() => Date.now()); // mount-time reference for overdue dates
 
-  const deliverables = v.readyDocs.flatMap((d) => v.classByDoc.get(d.docId)?.deliverables ?? []);
-  const milestones = v.readyDocs.flatMap((d) => v.classByDoc.get(d.docId)?.timelineDetail?.milestones ?? []);
-  const slas = v.readyDocs.flatMap((d) => v.classByDoc.get(d.docId)?.slas ?? []);
-  const personnel = v.readyDocs.flatMap((d) => v.classByDoc.get(d.docId)?.personnel ?? []);
-  const schedule = com?.paymentSchedule ?? [];
-  const rateCard = com?.rateCard ?? [];
+  // Pull a collection from every ready document, tagging each row with the
+  // document it came from (so amendment additions are attributed), then drop
+  // exact restatements that repeat verbatim across documents.
+  function collect<T extends object>(pick: (c: ApiClassification) => T[] | undefined, key: (x: T) => string): Tagged<T>[] {
+    const out: Tagged<T>[] = [];
+    const seen = new Set<string>();
+    for (const d of v.readyDocs) {
+      const c = v.classByDoc.get(d.docId);
+      if (!c) continue;
+      for (const x of pick(c) ?? []) {
+        const k = key(x);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push({ ...x, _src: d.title || "Untitled", _amend: d.docType === "AMENDMENT" });
+      }
+    }
+    return out;
+  }
+  const ts = (s?: string | null) => (s ? new Date(s).getTime() || Infinity : Infinity);
 
+  const deliverables = collect((c) => c.deliverables, (d) => `${d.name}|${d.dueDate ?? ""}|${d.value ?? ""}`)
+    .sort((a, b) => ts(a.dueDate) - ts(b.dueDate));
+  const milestones = collect((c) => c.timelineDetail?.milestones, (m) => `${m.name}|${m.date ?? ""}|${m.payment ?? ""}`)
+    .sort((a, b) => ts(a.date) - ts(b.date));
+  const schedule = collect((c) => c.commercials?.paymentSchedule, (p) => `${p.label}|${p.percent ?? ""}|${p.amount ?? ""}|${p.trigger ?? ""}`);
+  const rateCard = collect((c) => c.commercials?.rateCard, (r) => `${r.role}|${r.rate ?? ""}|${r.unit ?? ""}`);
+  const slas = collect((c) => c.slas, (s) => `${s.metric}|${s.target ?? ""}|${s.window ?? ""}`);
+  const personnel = collect((c) => c.personnel, (p) => `${p.name ?? ""}|${p.role}`);
+
+  // Consolidated deadlines: every dated obligation across all documents.
+  const deadlines: { label: string; date: string; kind: string; amend: boolean }[] = [];
+  for (const d of v.readyDocs) {
+    const c = v.classByDoc.get(d.docId);
+    if (!c) continue;
+    const amend = d.docType === "AMENDMENT";
+    for (const x of c.deliverables ?? []) if (x.dueDate) deadlines.push({ label: x.name, date: x.dueDate, kind: "Deliverable", amend });
+    for (const m of c.timelineDetail?.milestones ?? []) if (m.date) deadlines.push({ label: m.name, date: m.date, kind: "Milestone", amend });
+    for (const ph of c.timelineDetail?.phases ?? []) if (ph.end) deadlines.push({ label: `${ph.name} ends`, date: ph.end, kind: "Phase", amend });
+    if (c.timelineDetail?.endDate) deadlines.push({ label: "Contract end", date: c.timelineDetail.endDate, kind: "Term", amend });
+  }
+  const seenD = new Set<string>();
+  const allDeadlines = deadlines
+    .filter((x) => { const k = `${x.label}|${x.date}`; if (seenD.has(k) || formatDate(x.date) === "—") return false; seenD.add(k); return true; })
+    .sort((a, b) => ts(a.date) - ts(b.date));
+
+  // Commercial facts — last non-null across documents (a later amendment that
+  // restates a cap / payment terms wins over the SOW's original).
+  let pricingModel = "", paymentTerms = "", caps: number | null = null, expenses = "", latePayment = "";
+  for (const d of v.readyDocs) {
+    const com = v.classByDoc.get(d.docId)?.commercials;
+    if (!com) continue;
+    if (com.pricingModel && com.pricingModel !== "unknown") pricingModel = com.pricingModel;
+    if (com.paymentTerms) paymentTerms = com.paymentTerms;
+    if (com.caps != null) caps = com.caps;
+    if (com.expenses) expenses = com.expenses;
+    if (com.latePayment) latePayment = com.latePayment;
+  }
   const facts: { label: string; value: string }[] = [];
-  if (com?.pricingModel && com.pricingModel !== "unknown") facts.push({ label: "Pricing model", value: PRICING_LABEL[com.pricingModel] ?? com.pricingModel });
-  if (com?.paymentTerms) facts.push({ label: "Payment terms", value: com.paymentTerms });
-  if (com?.caps != null) facts.push({ label: "Not-to-exceed cap", value: fmtMoney(com.caps, cur) });
-  if (com?.expenses) facts.push({ label: "Expenses", value: com.expenses });
-  if (com?.latePayment) facts.push({ label: "Late payment", value: com.latePayment });
+  if (pricingModel) facts.push({ label: "Pricing model", value: PRICING_LABEL[pricingModel] ?? pricingModel });
+  if (paymentTerms) facts.push({ label: "Payment terms", value: paymentTerms });
+  if (caps != null) facts.push({ label: "Not-to-exceed cap", value: fmtMoney(caps, cur) });
+  if (expenses) facts.push({ label: "Expenses", value: expenses });
+  if (latePayment) facts.push({ label: "Late payment", value: latePayment });
 
-  const hasAnything = facts.length || schedule.length || rateCard.length || deliverables.length || milestones.length || slas.length || personnel.length;
+  const hasAnything = facts.length || schedule.length || rateCard.length || deliverables.length || milestones.length || slas.length || personnel.length || allDeadlines.length;
   if (!hasAnything) return null;
 
   return (
     <MotionReveal delay={0.04}>
       <section className="rounded-2xl border border-border bg-card p-5 shadow-xs md:p-6">
-        <h3 className="mb-4 flex items-center gap-2 text-[14px] font-semibold tracking-tight text-foreground"><FileSignatureFallback />Commercial terms</h3>
+        <h3 className="mb-1 flex items-center gap-2 text-[14px] font-semibold tracking-tight text-foreground"><FileSignatureFallback />Commercial terms</h3>
+        <p className="mb-4 text-[11.5px] text-muted-foreground">Aggregated across the SOW and all {v.readyDocs.length} analyzed document{v.readyDocs.length === 1 ? "" : "s"}.</p>
 
         {facts.length > 0 && (
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {facts.map((f) => <Detail key={f.label} label={f.label} value={f.value} />)}
+          </div>
+        )}
+
+        {allDeadlines.length > 0 && (
+          <div className="mb-5">
+            <TermsBlock title="Deadlines & key dates" count={allDeadlines.length}>
+              {allDeadlines.map((dl, i) => {
+                const t = new Date(dl.date).getTime();
+                const overdue = !isNaN(t) && t < now;
+                return (
+                  <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <CalendarClock size={11} className={`shrink-0 ${overdue ? "text-[var(--danger)]" : "text-muted-foreground"}`} />
+                      <span className="truncate text-foreground">{dl.label}</span>
+                      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9.5px] font-medium text-muted-foreground">{dl.kind}</span>
+                      {dl.amend && <AmendTag />}
+                    </span>
+                    <span className={`shrink-0 tabular-nums ${overdue ? "font-semibold text-[var(--danger)]" : "text-muted-foreground"}`}>
+                      {formatDate(dl.date)} · {formatRelativeDays(dl.date)}
+                    </span>
+                  </li>
+                );
+              })}
+            </TermsBlock>
           </div>
         )}
 
@@ -459,7 +538,7 @@ function CommercialTerms({ v }: { v: View }) {
             <TermsBlock title="Payment schedule" count={schedule.length}>
               {schedule.map((p, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
-                  <span className="min-w-0 flex-1 truncate text-foreground">{p.label}{p.trigger ? <span className="text-muted-foreground"> · {p.trigger}</span> : null}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5"><span className="truncate text-foreground">{p.label}{p.trigger ? <span className="text-muted-foreground"> · {p.trigger}</span> : null}</span>{p._amend && <AmendTag />}</span>
                   <span className="shrink-0 font-semibold tabular-nums text-foreground">{p.percent != null ? `${p.percent}%` : ""}{p.percent != null && p.amount != null ? " · " : ""}{p.amount != null ? fmtMoney(p.amount, cur) : ""}</span>
                 </li>
               ))}
@@ -470,7 +549,7 @@ function CommercialTerms({ v }: { v: View }) {
             <TermsBlock title="Milestones" count={milestones.length}>
               {milestones.map((mst, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
-                  <span className="min-w-0 flex-1 truncate text-foreground"><Clock size={11} className="mr-1 inline text-muted-foreground" />{mst.name}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5"><Clock size={11} className="shrink-0 text-muted-foreground" /><span className="truncate text-foreground">{mst.name}</span>{mst._amend && <AmendTag />}</span>
                   <span className="shrink-0 text-muted-foreground">{mst.date ? formatDate(mst.date) : ""}{mst.payment != null ? ` · ${fmtMoney(mst.payment, cur)}` : ""}</span>
                 </li>
               ))}
@@ -479,9 +558,9 @@ function CommercialTerms({ v }: { v: View }) {
 
           {deliverables.length > 0 && (
             <TermsBlock title="Deliverables" count={deliverables.length}>
-              {deliverables.slice(0, 12).map((d, i) => (
+              {deliverables.map((d, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
-                  <span className="min-w-0 flex-1 truncate text-foreground">{d.name}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5"><span className="truncate text-foreground">{d.name}</span>{d._amend && <AmendTag />}</span>
                   <span className="shrink-0 text-muted-foreground">{d.dueDate ? formatDate(d.dueDate) : ""}{d.value != null ? ` · ${fmtMoney(d.value, cur)}` : ""}</span>
                 </li>
               ))}
@@ -492,7 +571,7 @@ function CommercialTerms({ v }: { v: View }) {
             <TermsBlock title="Rate card" count={rateCard.length}>
               {rateCard.map((r, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
-                  <span className="min-w-0 flex-1 truncate text-foreground">{r.role}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5"><span className="truncate text-foreground">{r.role}</span>{r._amend && <AmendTag />}</span>
                   <span className="shrink-0 font-semibold tabular-nums text-foreground">{r.rate != null ? fmtMoney(r.rate, cur) : "—"}{r.unit ? <span className="font-normal text-muted-foreground">/{r.unit}</span> : null}</span>
                 </li>
               ))}
@@ -503,7 +582,7 @@ function CommercialTerms({ v }: { v: View }) {
             <TermsBlock title="Service levels" count={slas.length}>
               {slas.map((s, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
-                  <span className="min-w-0 flex-1 truncate text-foreground">{s.metric}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5"><span className="truncate text-foreground">{s.metric}</span>{s._amend && <AmendTag />}</span>
                   <span className="shrink-0 text-muted-foreground">{s.target ?? ""}{s.window ? ` · ${s.window}` : ""}</span>
                 </li>
               ))}
@@ -514,7 +593,7 @@ function CommercialTerms({ v }: { v: View }) {
             <TermsBlock title="Key personnel" count={personnel.length}>
               {personnel.map((p, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 py-1.5 text-[12.5px]">
-                  <span className="min-w-0 flex-1 truncate text-foreground">{p.name || p.role}{p.name ? <span className="text-muted-foreground"> · {p.role}</span> : null}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5"><span className="truncate text-foreground">{p.name || p.role}{p.name ? <span className="text-muted-foreground"> · {p.role}</span> : null}</span>{p._amend && <AmendTag />}</span>
                   {p.keyPerson && <span className="shrink-0 rounded-full bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--brand-primary-700)]">Key person</span>}
                 </li>
               ))}
@@ -523,6 +602,15 @@ function CommercialTerms({ v }: { v: View }) {
         </div>
       </section>
     </MotionReveal>
+  );
+}
+
+/** Small chip marking a row that an amendment introduced (vs. the original SOW). */
+function AmendTag() {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-[var(--warning-soft)] px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--warning)]" title="Added or changed by an amendment">
+      <GitBranch size={8} />Amd
+    </span>
   );
 }
 
@@ -990,8 +1078,8 @@ function DocumentReader({ doc, classification, currency, onClose }: { doc: ApiDo
   const isPdf = file?.contentType === "application/pdf" || fname.endsWith(".pdf");
   const lineItems = classification?.validation?.lineItems ?? [];
   const findings = classification?.keyFindings ?? [];
-  const reconciled = classification?.validation?.reconciled;
-  const value = docValue(classification);
+  const reconciled = doc?.reconciled ?? classification?.validation?.reconciled;
+  const value = docValue(classification, doc ? persistedOf(doc) : undefined);
 
   // GDPR data portability — export this document's record + analysis as JSON.
   function exportJson() {
