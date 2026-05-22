@@ -90,6 +90,29 @@ export async function listDocuments(): Promise<ApiDocument[]> {
   return data.documents
 }
 
+// ── Projects (cloud-stored per-tenant groupings; replaces browser localStorage) ──
+export interface StoredProject {
+  id: string
+  name: string
+  client?: string
+  createdAt: string
+  docIds: string[]
+}
+
+// Read the tenant's saved project groupings.
+export async function getProjectsState(): Promise<StoredProject[]> {
+  const data = await request<{ projects: StoredProject[] }>("/projects")
+  return data.projects ?? []
+}
+
+// Persist the tenant's project groupings (overwrites the single per-tenant record).
+export async function saveProjectsState(projects: StoredProject[]): Promise<void> {
+  await request<{ projects: StoredProject[] }>("/projects", {
+    method: "POST",
+    body: JSON.stringify({ projects }),
+  })
+}
+
 // Get one document + its versions
 export async function getDocument(docId: string): Promise<ApiDocumentDetail> {
   return request<ApiDocumentDetail>(`/documents/${docId}`)

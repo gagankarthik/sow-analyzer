@@ -9,7 +9,8 @@ import { CopilotPanel } from "./CopilotPanel";
 import { AnalysisDisclaimer } from "@/components/ui/AnalysisDisclaimer";
 import { recordRecentDoc } from "@/lib/recent";
 import { useUIStore } from "@/lib/stores/ui";
-import { resetLegacyProjects } from "@/lib/projects-store";
+import { hydrateProjects } from "@/lib/projects-store";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -20,9 +21,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const setCopilotOpen = useUIStore((s) => s.setCopilotOpen);
   const [mobileNav, setMobileNav] = useState(false);
 
-  // One-time: clear legacy auto-created projects so the list starts clean.
-  // Documents are untouched (they live in the backend / Library).
-  useEffect(() => { resetLegacyProjects(); }, []);
+  // Load the tenant's projects from the backend once signed in (migrates any
+  // legacy browser-localStorage projects to the cloud the first time), so the
+  // grouping is the same on every browser/device.
+  const { status } = useAuth();
+  useEffect(() => {
+    if (status === "authenticated") void hydrateProjects();
+  }, [status]);
 
   // Global keyboard shortcuts: ⌘K palette, ⌘/ copilot, and the "go to"
   // sequences (g then d / p) à la Linear.
