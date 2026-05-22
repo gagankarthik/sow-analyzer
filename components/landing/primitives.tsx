@@ -62,7 +62,13 @@ export function MotionFade({
   );
 }
 
-/* Brand logo — used wherever the wordmark appears */
+/* Brand logo — used wherever the wordmark appears.
+   Aspect ratio matches the /logo.svg viewBox (165.88 × 41). The SVG ships with
+   no intrinsic width/height, so we must give next/image the real ratio and let
+   the height prop drive the size — never `w-auto h-auto`, which discards both
+   dimensions and falls back to the 300×150 replaced-element default. */
+const LOGO_ASPECT = 165.88 / 41; // ≈ 4.05
+
 export function Logo({
   height = 28,
   className,
@@ -77,11 +83,10 @@ export function Logo({
       <Image
         src="/logo.svg"
         alt="Blue-IQ"
-        width={Math.round(height * 3)}
+        width={Math.round(height * LOGO_ASPECT)}
         height={height}
         priority
         className={`select-none ${variant === "dark" ? "brightness-0 invert" : ""}`}
-        style={{ height, width: "auto" }}
       />
     </span>
   );
@@ -90,9 +95,9 @@ export function Logo({
 export function AmbientAura() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <div className="absolute -left-[6%] -top-[8%] h-[44vw] w-[44vw] rounded-full blur-[120px]" style={{ background: "radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)", animation: "aurora-1 28s ease-in-out infinite alternate" }} />
-      <div className="absolute -right-[6%] top-[26%] h-[40vw] w-[40vw] rounded-full blur-[120px]" style={{ background: "radial-gradient(circle, rgba(124,58,237,0.10) 0%, transparent 70%)", animation: "aurora-2 32s ease-in-out infinite alternate" }} />
-      <div className="absolute bottom-[6%] left-[16%] h-[38vw] w-[38vw] rounded-full blur-[130px]" style={{ background: "radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%)", animation: "aurora-3 36s ease-in-out infinite alternate" }} />
+      <div className="aura-a absolute -left-[6%] -top-[8%] h-[44vw] w-[44vw] rounded-full blur-[120px]" />
+      <div className="aura-b absolute -right-[6%] top-[26%] h-[40vw] w-[40vw] rounded-full blur-[120px]" />
+      <div className="aura-c absolute bottom-[6%] left-[16%] h-[38vw] w-[38vw] rounded-full blur-[130px]" />
     </div>
   );
 }

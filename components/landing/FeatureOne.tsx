@@ -46,7 +46,7 @@ function ClauseBoard() {
 
 /* Preview · OCR — scanned page parsed into indexed clauses */
 function OcrBoard() {
-  const widths = [90, 70, 95, 60, 85, 50, 80];
+  const widths = ["w-[90%]", "w-[70%]", "w-[95%]", "w-[60%]", "w-[85%]", "w-[50%]", "w-[80%]"];
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -56,7 +56,7 @@ function OcrBoard() {
       <div className="flex gap-4">
         <div className="w-24 shrink-0 rounded-md border border-border bg-muted/40 p-2.5">
           {widths.map((w, i) => (
-            <div key={i} className="mb-1.5 h-1 rounded-full bg-border" style={{ width: `${w}%` }} />
+            <div key={i} className={`mb-1.5 h-1 rounded-full bg-border ${w}`} />
           ))}
         </div>
         <div className="min-w-0 flex-1 space-y-2">
@@ -109,7 +109,7 @@ function ProvenanceBoard() {
 export function FeatureOne() {
   const items = [
     { id: "deviation", title: "Playbook deviation detection", body: "On upload, Bluey scores each clause against your firm's playbook and flags the ones that drift, cited to the exact section.", preview: <ClauseBoard /> },
-    { id: "ocr", title: "OCR for scanned contracts", body: "Works on PDF, DOCX, and scanned image-only files. Each one is parsed and indexed down to the clause.", preview: <OcrBoard /> },
+    { id: "ocr", title: "OCR for scanned contracts", body: "Reads PDF, DOCX, and scanned image-only files. Each one is parsed and indexed down to the individual clause.", preview: <OcrBoard /> },
     { id: "provenance", title: "Audit-ready version history", body: "Every edit, approval, and upload is logged per clause. The trail is built to hold up under SOC 2, GDPR, and HIPAA review.", preview: <ProvenanceBoard /> },
   ];
   const [active, setActive] = useState("deviation");

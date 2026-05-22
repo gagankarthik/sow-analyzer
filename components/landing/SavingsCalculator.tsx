@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import { ArrowRight, TrendingUp, Clock } from "@/components/ui/icons";
 import { Reveal } from "@/components/landing/primitives";
@@ -56,7 +56,7 @@ export function SavingsCalculator() {
             </Reveal>
             <Reveal as="p" className="max-w-prose text-[15px] leading-[1.6] text-muted-foreground" delay={2}>
               Set the sliders to your numbers. Blue-IQ reads every clause in seconds, so the hours
-              your team spends on the first pass come back.
+              your team spends on the first pass come back to you.
             </Reveal>
           </div>
 
@@ -87,8 +87,8 @@ export function SavingsCalculator() {
             </div>
             <div className="flex h-3 w-full overflow-hidden rounded-full bg-[var(--brand-primary-100)]" role="presentation">
               <div
-                className="h-full rounded-full bg-[var(--brand-primary-600)] transition-[width] duration-500 ease-out"
-                style={{ width: `${savedPct}%` }}
+                className="h-full w-[var(--bar-w)] rounded-full bg-[var(--brand-primary-600)] transition-[width] duration-500 ease-out"
+                style={{ "--bar-w": `${savedPct}%` } as CSSProperties}
               />
             </div>
             <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11.5px]">
@@ -153,7 +153,7 @@ function SliderRow({
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={label}
         className="range-brand"
-        style={{ background: `linear-gradient(to right, var(--brand-primary-600) ${pct}%, var(--brand-primary-100) ${pct}%)` }}
+        style={{ "--range-fill": `${pct}%` } as CSSProperties}
       />
     </div>
   );

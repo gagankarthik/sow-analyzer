@@ -9,14 +9,14 @@ import { Reveal } from "@/components/landing/primitives";
 export function ProofSection() {
   const testimonials: Testimonial[] = [
     { text: "Our review cycle went from about three weeks to one. The liability-cap flags are what sold the team — we'd missed a 3x cap before.", name: "Mira Holm", role: "Head of Contracts · Obelisk Capital", initials: "MH" },
-    { text: "Redlines that used to wait for legal now go back to the customer the same day. Bluey drafts a first counter we mostly keep.", name: "James Okoye", role: "VP Sales Ops · Northwind Logistics", initials: "JO" },
-    { text: "It flagged a renewal clause across three vendor contracts in the first week. We'd have caught those late, if at all.", name: "Priya Mehta", role: "Legal Ops Lead · Vector Bio", initials: "PM" },
+    { text: "Redlines that used to wait for legal now reach the customer the same day. Bluey drafts a first counter we mostly keep.", name: "James Okoye", role: "VP Sales Ops · Northwind Logistics", initials: "JO" },
+    { text: "It flagged the same renewal clause across three vendor contracts in our first week. We'd have caught those late, if at all.", name: "Priya Mehta", role: "Legal Ops Lead · Vector Bio", initials: "PM" },
     { text: "Each clause is scored and cited to the section. I stopped re-reading boilerplate and just look at what changed.", name: "Daniel Reyes", role: "General Counsel · Almac Pharma", initials: "DR" },
     { text: "The amendment diffs are the part I use daily. I can see exactly how each change moved the total value.", name: "Sara Lindqvist", role: "Procurement Director · Cresso Cloud", initials: "SL" },
-    { text: "Contract value finally adds up across amendments. We retired the spreadsheet that nobody trusted anyway.", name: "Tom Whitfield", role: "Finance Lead · Finline Mutual", initials: "TW" },
-    { text: "Our auditor asked for the change history on a clause and we just exported it. The SOC 2 prep was a lot quieter this year.", name: "Aisha Bello", role: "Deputy GC · Holmgate Defense", initials: "AB" },
+    { text: "Contract value finally reconciles across amendments. We retired the spreadsheet that nobody trusted anyway.", name: "Tom Whitfield", role: "Finance Lead · Finline Mutual", initials: "TW" },
+    { text: "Our auditor asked for the change history on a clause and we just exported it. SOC 2 prep was a lot quieter this year.", name: "Aisha Bello", role: "Deputy GC · Holmgate Defense", initials: "AB" },
     { text: "When Bluey answers, it points to the clause. A new reviewer was useful by the end of their first day.", name: "Marco Bianchi", role: "Head of Legal · Wickline Foods", initials: "MB" },
-    { text: "We answer a few questions and get a clean first SOW out to Word. It's not final, but it saves the blank-page hour.", name: "Elena Park", role: "COO · Vesper Components", initials: "EP" },
+    { text: "We answer a few questions and get a clean first SOW into Word. It's not final, but it saves the blank-page hour.", name: "Elena Park", role: "COO · Vesper Components", initials: "EP" },
   ];
 
   return (

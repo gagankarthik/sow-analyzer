@@ -16,8 +16,8 @@ const DATA = [
 ];
 
 const SERIES = [
-  { key: "clauses", label: "High-risk clauses", color: "var(--brand-primary-600)" },
-  { key: "anomalies", label: "Anomalies", color: "var(--info)" },
+  { key: "clauses", label: "High-risk clauses", swatch: "bg-[var(--brand-primary-600)]" },
+  { key: "anomalies", label: "Anomalies", swatch: "bg-[var(--info)]" },
 ] as const;
 
 function MonitorTooltip({ active, payload, label }: {
@@ -34,7 +34,7 @@ function MonitorTooltip({ active, payload, label }: {
           const meta = SERIES.find((s) => s.key === p.dataKey);
           return (
             <div key={String(p.dataKey)} className="flex items-center gap-2 text-[12px]">
-              <span className="h-2 w-2 rounded-sm" style={{ background: meta?.color }} />
+              <span className={`h-2 w-2 rounded-sm ${meta?.swatch ?? ""}`} />
               <span className="text-muted-foreground">{meta?.label}</span>
               <span className="ml-auto font-semibold tabular-nums text-foreground">{p.value}</span>
             </div>
@@ -51,13 +51,16 @@ export function MonitoringChart() {
       <div className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-2">
         {SERIES.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-            <span className="h-2 w-2 rounded-sm" style={{ background: s.color }} />
+            <span className={`h-2 w-2 rounded-sm ${s.swatch}`} />
             {s.label}
           </span>
         ))}
       </div>
       <div className="h-56 w-full md:h-72">
-        <ResponsiveContainer width="100%" height="100%">
+        {/* initialDimension overrides recharts' {-1,-1} default so the first
+            paint (before the ResizeObserver fires) has positive dimensions —
+            otherwise it logs "width(-1) and height(-1)". */}
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 600, height: 224 }}>
           <AreaChart data={DATA} margin={{ top: 6, right: 6, left: 6, bottom: 0 }}>
             <defs>
               <linearGradient id="monClauses" x1="0" y1="0" x2="0" y2="1">

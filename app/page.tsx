@@ -27,7 +27,7 @@ export default function LandingPage() {
       <main>
         <Hero />
         <LeadSection />
-        <ClientLogos badge="Who it's for" heading="Built for the teams who review SOWs, MSAs, and NDAs" />
+        <ClientLogos badge="Who it's for" heading="Built for the teams who review SOWs, MSAs, and NDAs every week" />
         <FeatureOne />
         <ClauseIntelligenceSection />
         <FeatureStory />

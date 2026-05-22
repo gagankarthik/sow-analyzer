@@ -27,9 +27,8 @@ function Mark({
 }) {
   return (
     <span
-      aria-label="Bluely"
-      className={`relative inline-flex items-center justify-center shrink-0 ${className ?? ""}`}
-      style={{ width: size, height: size }}
+      aria-label="Bluey"
+      className={`relative inline-flex shrink-0 items-center justify-center ${className ?? ""}`}
     >
       <Image
         src="/logo-icon.svg"
@@ -37,8 +36,7 @@ function Mark({
         width={size}
         height={size}
         priority
-        className="select-none pointer-events-none"
-        style={{ display: "block", width: size, height: size }}
+        className="block select-none pointer-events-none"
       />
       {pulse && (
         <span className="ai-pulse absolute -top-0.5 -right-0.5 ring-2 ring-white" />
@@ -157,19 +155,19 @@ function AgentsBoard() {
 
 export function FeatureStory() {
   const platform = [
-    { title: "Ask across the whole portfolio", body: "Ask Bluey about clause language, playbook deviations, or renewal dates. Answers come back in seconds with the clause cited." },
+    { title: "Ask across the whole portfolio", body: "Ask Bluey about clause language, playbook deviations, or renewal dates. Answers come back in seconds, with the clause cited." },
     { title: "Track value across amendments", body: "See the original SOW value next to every amendment, and how the total moves. Bar, pie, and trend charts, no spreadsheet." },
     { title: "One home for every document", body: "SOWs, MSAs, NDAs, and amendments live in one place, searchable down to the individual clause." },
   ];
   const copilot = [
     { title: "Every answer cites a clause", body: "Bluey won't assert anything without showing its source. Each suggestion links to the exact section, playbook rule, or related contract." },
-    { title: "It drafts counter-language", body: "Ask for a redline and Bluey writes counter-language pulled from your playbook, then explains why each change matters." },
+    { title: "It drafts counter-language", body: "Ask for a redline and Bluey writes counter-language drawn from your playbook, then explains why each change matters." },
     { title: "Grounded in your own contract", body: "Bluey reads the document's own clauses to answer. It won't invent terms that aren't on the page." },
   ];
   const agents = [
     { title: "Draft a SOW from a few answers", body: "Answer a short questionnaire and Bluey drafts an editable statement of work. Export the final version to Word." },
     { title: "Score risk before you sign", body: "Bluey flags exposure across liability caps, indemnity carve-outs, and SLA shortfalls while there's still time to push back." },
-    { title: "Diff amendments automatically", body: "Each amendment is compared to the original. Bluey shows what moved and recalculates the contract's total value." },
+    { title: "Diff every amendment", body: "Each amendment is compared to the original. Bluey shows what moved and recalculates the contract's total value." },
   ];
 
   const tabs = [
@@ -178,7 +176,7 @@ export function FeatureStory() {
       eyebrow: "One platform", title: "Every contract in one place.",
       blurb: "Legal, sales, and finance read from the same set of contracts and the same risk scores.",
       points: platform,
-      note: "When every team works off one copy, nobody re-reads the same MSA or argues about which version is current.",
+      note: "When every team works from one copy, nobody re-reads the same MSA or debates which version is current.",
       cta: { href: "/dashboard", label: "Tour the workspace" }, visual: <PlatformBoard />,
     },
     {
@@ -193,7 +191,7 @@ export function FeatureStory() {
       eyebrow: "Bluey · drafting and review", title: "Draft, redline, and score risk.",
       blurb: "Bluey drafts a SOW from a questionnaire, scores clause risk, and diffs every amendment for you.",
       points: agents,
-      note: "The repetitive first pass goes to Bluey. Your team spends its time on the calls that need judgment.",
+      note: "Bluey handles the repetitive first pass. Your team spends its time on the calls that need judgment.",
       cta: { href: "/dashboard", label: "Meet Bluey" }, visual: <AgentsBoard />,
     },
   ];

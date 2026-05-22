@@ -29,12 +29,12 @@ export function Hero() {
         >
 
           <motion.h1 variants={reveal} className="landing-display text-[clamp(40px,5.6vw,76px)] leading-[0.98] text-foreground">
-            Read the whole contract in <span className="accent-gradient">15 seconds</span>.
+            Review the whole contract in <span className="accent-gradient">15 seconds</span>.
           </motion.h1>
 
           <motion.p variants={reveal} className="mt-7 max-w-[480px] text-[16px] leading-[1.65] text-[var(--ink-600)] md:text-[17px]">
-            Upload a SOW, MSA, or amendment. Bluey pulls out 13 clause types, scores each one
-            against your playbook, and shows you what changed.
+            Upload a SOW, MSA, or amendment. Bluey extracts 13 clause types, scores each one
+            against your playbook, and shows you exactly what changed.
           </motion.p>
 
           <motion.div variants={reveal} className="mt-9 flex flex-col gap-3 sm:flex-row">

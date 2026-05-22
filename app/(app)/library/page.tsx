@@ -59,6 +59,7 @@ import {
 import { BlueyMark } from "@/components/ui/BlueyMark";
 import { MotionReveal } from "@/components/MotionReveal";
 import { listDocuments, deleteDocument, updateDocument } from "@/lib/api";
+import { useProjects } from "@/lib/projects-store";
 import type { ApiDocument, DocType, Lifecycle } from "@/lib/types";
 import { STATUS_TONE } from "@/lib/status-tone";
 import { formatDate } from "@/lib/format";
@@ -92,6 +93,19 @@ export default function LibraryPage() {
   const [docs, setDocs] = useState<ApiDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Projects live in localStorage and group documents by docId. We join each
+  // document to the project that contains it to surface its name and let the
+  // search match on it. useProjects() is backed by useSyncExternalStore, which
+  // returns an empty list on the server so there's no hydration mismatch.
+  const projects = useProjects();
+  const projectByDocId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of projects) {
+      for (const id of p.docIds) map.set(id, p.name);
+    }
+    return map;
+  }, [projects]);
 
   const [q, setQ] = useState("");
   const [docTypeFilter, setDocTypeFilter] = useState<string>("All");
@@ -177,7 +191,10 @@ export default function LibraryPage() {
     let arr = docs;
     if (q) {
       const s = q.toLowerCase();
-      arr = arr.filter((d) => d.title?.toLowerCase().includes(s));
+      arr = arr.filter((d) =>
+        d.title?.toLowerCase().includes(s) ||
+        (projectByDocId.get(d.docId)?.toLowerCase().includes(s) ?? false),
+      );
     }
     if (docTypeFilter !== "All") arr = arr.filter((d) => d.docType === docTypeFilter);
     if (lifecycleFilter !== "All") arr = arr.filter((d) => d.lifecycle === lifecycleFilter);
@@ -193,7 +210,7 @@ export default function LibraryPage() {
       return 0;
     });
     return arr;
-  }, [docs, q, docTypeFilter, lifecycleFilter, statusFilter, sort]);
+  }, [docs, q, docTypeFilter, lifecycleFilter, statusFilter, sort, projectByDocId]);
 
   function toggleSort(key: SortKey) {
     setSort((s) =>
@@ -238,7 +255,7 @@ export default function LibraryPage() {
               />
               <Input
                 type="text"
-                placeholder="Search by title…"
+                placeholder="Search by title or project…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 className="h-10 rounded-full border border-border bg-card pl-9 pr-4 focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)]"
@@ -302,6 +319,7 @@ export default function LibraryPage() {
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow className="hover:bg-transparent h-9 border-b border-border">
                   <ThSort label="Title" onClick={() => toggleSort("title")} dir={sort.key === "title" ? sort.dir : undefined} />
+                  <TableHead className="eyebrow">Project</TableHead>
                   <ThSort label="Type" onClick={() => toggleSort("docType")} dir={sort.key === "docType" ? sort.dir : undefined} />
                   <ThSort label="Lifecycle" onClick={() => toggleSort("lifecycle")} dir={sort.key === "lifecycle" ? sort.dir : undefined} />
                   <TableHead className="eyebrow">Status</TableHead>
@@ -315,12 +333,12 @@ export default function LibraryPage() {
                 {loading ? (
                   Array.from({ length: 6 }).map((_, i) => (
                     <TableRow key={i} className="h-11">
-                      <TableCell colSpan={8}><Skeleton className="h-6 w-full" /></TableCell>
+                      <TableCell colSpan={9}><Skeleton className="h-6 w-full" /></TableCell>
                     </TableRow>
                   ))
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="p-0">
+                    <TableCell colSpan={9} className="p-0">
                       <div className="flex flex-col items-center justify-center py-16 text-center">
                         <div className="h-14 w-14 rounded-2xl bg-[var(--brand-primary-50)] flex items-center justify-center mb-4">
                           <FileText size={22} className="text-[var(--brand-primary-600)]" />
@@ -365,6 +383,11 @@ export default function LibraryPage() {
                               {doc.docId.slice(0, 8).toUpperCase()}
                             </div>
                           </Link>
+                        </TableCell>
+                        <TableCell className="text-[13px] text-muted-foreground">
+                          <span className="block truncate max-w-[200px]">
+                            {projectByDocId.get(doc.docId) ?? "—"}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" size="sm">{doc.docType}</Badge>

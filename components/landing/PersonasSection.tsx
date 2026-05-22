@@ -23,8 +23,8 @@ export function PersonasSection() {
   const personas: { title: string; body: string; icon: typeof Gavel }[] = [
     { title: "General Counsel", body: "See the risky clauses without reading all of them.", icon: Gavel },
     { title: "Procurement", body: "Catch slow payment terms and renewal traps early.", icon: ShoppingCart },
-    { title: "IT", body: "Deploy fast. SOC 2, GDPR, and HIPAA aligned.", icon: Laptop },
-    { title: "Sales", body: "Get redlines back to the customer the same day.", icon: TrendingUp },
+    { title: "IT", body: "Deploy quickly. SOC 2, GDPR, and HIPAA aligned.", icon: Laptop },
+    { title: "Sales", body: "Send redlines back to the customer the same day.", icon: TrendingUp },
     { title: "Legal Ops", body: "One version of every contract, fully searchable.", icon: Repeat },
     { title: "Compliance", body: "A clause-level audit trail that holds up.", icon: ShieldCheck },
   ];
@@ -39,7 +39,7 @@ export function PersonasSection() {
           </Reveal>
           <Reveal as="p" className="max-w-[640px] text-[15px] leading-[1.6] text-muted-foreground" delay={2}>
             The team that signs the contract and the team that delivers on it read from the same
-            clauses and the same risk scores. Each one sees what its job needs.
+            clauses and the same risk scores. Each role sees what its job needs.
           </Reveal>
         </div>
 

@@ -54,7 +54,7 @@ export function Updates() {
   const items = [
     { tag: "Product · May 18", title: "Amendment diffs now recalculate total contract value", num: "01" },
     { tag: "Insights · Apr 30", title: "How a 3x liability cap quietly doubles your exposure", num: "02" },
-    { tag: "Product · Apr 14", title: "Bluey now drafts a full SOW and exports to Word", num: "03" },
+    { tag: "Product · Apr 14", title: "Bluey now drafts a full SOW and exports it to Word", num: "03" },
   ];
   return (
     <section className="px-5 md:px-10 py-24 md:py-32">

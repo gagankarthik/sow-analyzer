@@ -51,7 +51,7 @@ export function ClauseIntelligenceSection() {
           </Reveal>
           <Reveal as="p" className="max-w-[60ch] text-[15px] leading-[1.6] text-muted-foreground" delay={1}>
             Every clause that moves your risk or your revenue — payment terms, liability caps,
-            auto-renewals, IP, termination — pulled from the SOW or MSA and labelled by type.
+            auto-renewals, IP, termination — extracted from the SOW or MSA and labelled by type.
           </Reveal>
         </div>
 

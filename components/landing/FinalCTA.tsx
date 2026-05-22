@@ -22,11 +22,11 @@ export function FinalCTA() {
       <MotionFade className="relative z-10 mx-auto flex max-w-[760px] flex-col items-center pb-[380px] text-center md:pb-[480px] bg-transparent">
 
         <h2 className="landing-display mb-5 max-w-[700px] text-balance text-[clamp(32px,5vw,58px)] leading-[1.05] text-foreground">
-          Your next contract,<br className="hidden md:block" /> read in <span className="accent-gradient">seconds</span>.
+          Your next contract,<br className="hidden md:block" /> reviewed in <span className="accent-gradient">seconds</span>.
         </h2>
 
         <p className="mb-8 max-w-[480px] text-[15px] leading-[1.65] text-muted-foreground">
-          Upload a SOW and watch Bluey pull every clause, score the risk, and cite each flag.
+          Upload a SOW and watch Bluey extract every clause, score the risk, and cite each flag.
           No credit card. Your first contract is free.
         </p>
 

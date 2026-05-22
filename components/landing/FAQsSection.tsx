@@ -21,7 +21,7 @@ export function FAQsSection() {
     },
     {
       q: "How is this different from a CLM?",
-      a: "A CLM stores contracts. Blue-IQ reads them. It extracts each clause, scores it against your playbook, and flags what deviates. There's nothing to configure for weeks before you see a result.",
+      a: "A CLM stores contracts. Blue-IQ reads them. It extracts each clause, scores it against your playbook, and flags what deviates — with no weeks of configuration before you see a result.",
     },
     {
       q: "Is our contract data secure?",
@@ -33,7 +33,7 @@ export function FAQsSection() {
     },
     {
       q: "Is there a free trial?",
-      a: "Yes, no credit card needed. Sign up and analyze your first contract for free. Pricing scales with how many documents and people you have.",
+      a: "Yes, and no credit card is needed. Sign up and analyze your first contract for free. Pricing scales with the number of documents and people you have.",
     },
   ];
 

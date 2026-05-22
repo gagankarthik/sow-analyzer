@@ -7,11 +7,11 @@ import { Reveal } from "@/components/landing/primitives";
 /*  Human vs Blue-IQ — the difference                */
 /* ──────────────────────────────────────────────── */
 const HUMAN_VS_ROWS = [
-  { dim: "Time per contract", human: "3–6 hours of manual reading", tool: "~15 seconds, end to end" },
-  { dim: "Clause coverage", human: "Skims; edge-case clauses get missed", tool: "Every clause, 13 types extracted" },
-  { dim: "Consistency", human: "Varies by reviewer, mood, and fatigue", tool: "Identical rigor on every document" },
+  { dim: "Time per contract", human: "3–6 hours of manual reading", tool: "About 15 seconds, end to end" },
+  { dim: "Clause coverage", human: "Skims; edge-case clauses get missed", tool: "Every clause, across 13 types" },
+  { dim: "Consistency", human: "Varies by reviewer and fatigue", tool: "The same rigor on every document" },
   { dim: "Risk scoring", human: "Subjective, rarely written down", tool: "Scored, ranked, and cited to the clause" },
-  { dim: "Amendments", human: "Hand-redlined against the original", tool: "Auto-diffed; value change computed" },
+  { dim: "Amendments", human: "Hand-redlined against the original", tool: "Diffed automatically; value change computed" },
   { dim: "Cost", human: "Billable hours, every single time", tool: "Flat subscription, runs in seconds" },
 ];
 
@@ -24,7 +24,7 @@ export function HumanVsTool() {
             The same review, minus the hours.
           </Reveal>
           <Reveal as="p" className="text-[15px] text-muted-foreground leading-[1.6] max-w-[58ch]" delay={2}>
-            Blue-IQ doesn&apos;t replace your judgment. It does the slow, repetitive first pass so
+            Blue-IQ doesn&apos;t replace your judgment. It runs the slow, repetitive first pass so
             your team can spend its time on the decisions that actually need a person.
           </Reveal>
         </div>

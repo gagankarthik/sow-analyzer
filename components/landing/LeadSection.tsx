@@ -79,7 +79,7 @@ export function LeadSection() {
             <Reveal as="p" className="mt-5 max-w-[480px] text-[15px] leading-[1.65] text-[var(--ink-600)]" delay={2}>
               More contracts means a slower first pass. Legal re-reads the same boilerplate for
               weeks while Finance finds the exposure months after signing. Blue-IQ extracts and
-              scores every clause the moment the file lands.
+              scores every clause the moment a contract lands.
             </Reveal>
           </div>
           <Reveal delay={3} className="mt-auto border-t border-border bg-muted/30 px-6 py-7 sm:px-10">
@@ -108,7 +108,7 @@ export function LeadSection() {
               Caught at signing
             </Reveal>
             <Reveal as="p" className="mt-6 text-2xl font-semibold leading-snug tracking-tight text-foreground" delay={1}>
-              Playbook deviations show up at upload, not six months later.
+              Playbook deviations surface at upload, not six months later.
             </Reveal>
           </div>
           <Reveal delay={2} className="mt-auto px-6 pb-8 sm:px-10">
@@ -155,7 +155,7 @@ export function LeadSection() {
           </Reveal>
           <Reveal as="p" className="mt-6 max-w-[640px] text-2xl font-semibold leading-snug tracking-tight text-foreground" delay={1}>
             Exposure flagged, month over month.{" "}
-            <span className="text-muted-foreground">Caught the moment a contract lands, while you can still act.</span>
+            <span className="text-muted-foreground">Caught the moment a contract lands, while there&apos;s still time to act.</span>
           </Reveal>
           <Reveal delay={2} className="mt-8">
             <MonitoringChart />
