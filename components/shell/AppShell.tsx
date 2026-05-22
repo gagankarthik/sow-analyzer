@@ -9,6 +9,7 @@ import { CopilotPanel } from "./CopilotPanel";
 import { AnalysisDisclaimer } from "@/components/ui/AnalysisDisclaimer";
 import { recordRecentDoc } from "@/lib/recent";
 import { useUIStore } from "@/lib/stores/ui";
+import { resetLegacyProjects } from "@/lib/projects-store";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,6 +19,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const setCopilotOpen = useUIStore((s) => s.setCopilotOpen);
   const [mobileNav, setMobileNav] = useState(false);
+
+  // One-time: clear legacy auto-created projects so the list starts clean.
+  // Documents are untouched (they live in the backend / Library).
+  useEffect(() => { resetLegacyProjects(); }, []);
 
   // Global keyboard shortcuts: ⌘K palette, ⌘/ copilot, and the "go to"
   // sequences (g then d / p) à la Linear.

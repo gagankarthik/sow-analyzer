@@ -19,6 +19,19 @@ import { clearSessionCookie } from "./auth/session"
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID ?? "default"
 
+// NEXT_PUBLIC_* values are inlined at BUILD time. If NEXT_PUBLIC_API_URL is
+// unset, left as the .env.example placeholder, or otherwise wrong, every call
+// would silently hit the app's own origin and return an empty list with no hint
+// why — exactly the "logged in but Library is empty" symptom in production.
+// Fail loudly with an actionable message instead of pretending there's no data.
+function assertApiConfigured(): void {
+  if (!BASE_URL || BASE_URL.includes("your-api-id")) {
+    throw new Error(
+      "Backend API URL is not configured. Set NEXT_PUBLIC_API_URL to your API Gateway endpoint (Vercel → Settings → Environment Variables, for Production + Preview) and redeploy.",
+    )
+  }
+}
+
 // Attaches the current Cognito ID token (auto-refreshed) so the API Gateway
 // JWT authorizer accepts the request and the backend can derive the tenant
 // from a verified claim. `x-tenant-id` remains as a fallback only.
@@ -37,6 +50,7 @@ async function authHeaders(): Promise<Record<string, string>> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  assertApiConfigured()
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: { ...(await authHeaders()), ...(init?.headers ?? {}) },

@@ -92,6 +92,8 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const reprocess = useReprocess();
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const [mounted, setMounted] = useState(false);
+  // Open on the Overview (project summary/rollup); the SOW clause details are
+  // one tab away.
   const [tab, setTab] = useState<TabId>("overview");
   const [toDelete, setToDelete] = useState<ApiDocument | null>(null);
   const [reanalyzing, setReanalyzing] = useState(false);

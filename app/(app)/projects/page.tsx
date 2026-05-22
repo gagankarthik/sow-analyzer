@@ -10,12 +10,17 @@ import { MiniRiskDonut } from "@/components/charts/MiniRiskDonut";
 import {
   Plus, Search, Briefcase, ArrowRight, ArrowUp, ArrowDown, Layers, LayoutGrid, Menu, Loader2,
   ChevronUp, ChevronDown, CheckCircle2, AlertTriangle, XCircle, RefreshCw, CalendarClock,
-  FileSignature, Eye, GitCompare, Edit3, Repeat, Check,
+  FileSignature, Eye, GitCompare, Edit3, Repeat, Check, Trash2,
 } from "@/components/ui/icons";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
 import { getClassification } from "@/lib/api";
 import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
-import { useProjects, type LocalProject } from "@/lib/projects-store";
+import { useProjects, deleteProject, type LocalProject } from "@/lib/projects-store";
 import type { ApiClassification, ApiDocument, Lifecycle, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
@@ -114,8 +119,16 @@ export default function ProjectsPage() {
   const [q, setQ] = useState("");
   const [risk, setRisk] = useState<RiskFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("any");
-  const [view, setView] = useState<ViewMode>("table");
+  const [view, setView] = useState<ViewMode>("grid");
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "risk", dir: "asc" });
+  const [deleteTarget, setDeleteTarget] = useState<LocalProject | null>(null);
+
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    deleteProject(deleteTarget.id);
+    toast.success("Project removed", { description: `"${deleteTarget.name}" — its documents stay in your library.` });
+    setDeleteTarget(null);
+  }
 
   useEffect(() => {
     setMounted(true);
@@ -247,19 +260,38 @@ export default function ProjectsPage() {
         ) : view === "grid" ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sorted.map((a, i) => (
-              <MotionReveal key={a.project.id} delay={Math.min(i * 0.04, 0.2)}><ProjectGridCard a={a} /></MotionReveal>
+              <MotionReveal key={a.project.id} delay={Math.min(i * 0.04, 0.2)}><ProjectGridCard a={a} onDelete={setDeleteTarget} /></MotionReveal>
             ))}
           </div>
         ) : (
-          <ProjectTable rows={sorted} sort={sort} onSort={toggleSort} />
+          <ProjectTable rows={sorted} sort={sort} onSort={toggleSort} onDelete={setDeleteTarget} />
         )}
       </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{deleteTarget?.name}</strong> will be removed from your projects.
+              The documents inside it are <em>not</em> deleted — they stay in your library
+              and can be added to another project.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white">
+              Remove project
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
 
 /* ── Table (default) ──────────────────────────────────────────── */
-function ProjectTable({ rows, sort, onSort }: { rows: Agg[]; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void }) {
+function ProjectTable({ rows, sort, onSort, onDelete }: { rows: Agg[]; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void; onDelete: (p: LocalProject) => void }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
       <table className="w-full min-w-[940px] border-collapse text-[13px]">
@@ -275,6 +307,7 @@ function ProjectTable({ rows, sort, onSort }: { rows: Agg[]; sort: { key: SortKe
             <th className="px-4 py-2.5 text-center text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Data</th>
             <Th label="Renewal" k="date" sort={sort} onSort={onSort} />
             <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Attention</th>
+            <th className="px-4 py-2.5" />
           </tr>
         </thead>
         <tbody>
@@ -302,6 +335,12 @@ function ProjectTable({ rows, sort, onSort }: { rows: Agg[]; sort: { key: SortKe
               <td className="px-4 py-3 text-center"><ReconciledBadge reconciled={a.reconciled} hasValue={a.value > 0} /></td>
               <td className="px-4 py-3"><RenewalCell expired={a.expired} days={a.daysToDate} /></td>
               <td className="px-4 py-3"><AttentionTag reason={a.attention} risk={a.overallRisk} expired={a.expired} failed={a.failed > 0} /></td>
+              <td className="px-4 py-3 text-right">
+                <button type="button" onClick={() => onDelete(a.project)} aria-label={`Remove project ${a.project.name}`}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]">
+                  <Trash2 size={14} />
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -381,12 +420,13 @@ function AttentionTag({ reason, risk, expired, failed }: { reason: string | null
 }
 
 /* ── Grid card (toggle) ───────────────────────────────────────── */
-function ProjectGridCard({ a }: { a: Agg }) {
+function ProjectGridCard({ a, onDelete }: { a: Agg; onDelete: (p: LocalProject) => void }) {
   const segs: { k: RiskLevel; n: number }[] = [
     { k: "critical", n: a.rc.critical }, { k: "high", n: a.rc.high }, { k: "medium", n: a.rc.medium }, { k: "low", n: a.rc.low },
   ];
   return (
-    <Link href={`/projects/${a.project.id}`} className="group flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-xs transition-all hover:border-[var(--brand-primary-300)] hover:shadow-md">
+    <div className="group relative h-full">
+    <Link href={`/projects/${a.project.id}`} className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-xs transition-all hover:border-[var(--brand-primary-300)] hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate text-[19px] font-bold leading-tight tracking-tight text-foreground transition-colors group-hover:text-[var(--brand-primary-700)]" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}>{a.project.name}</h3>
@@ -424,6 +464,15 @@ function ProjectGridCard({ a }: { a: Agg }) {
         {(a.expired || a.daysToDate !== null) && <RenewalCell expired={a.expired} days={a.daysToDate} />}
       </div>
     </Link>
+      <button
+        type="button"
+        onClick={() => onDelete(a.project)}
+        aria-label={`Remove project ${a.project.name}`}
+        className="absolute right-2.5 top-2.5 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all hover:border-[var(--danger)]/40 hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]/30"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
   );
 }
 

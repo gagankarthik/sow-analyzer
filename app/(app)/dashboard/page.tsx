@@ -60,6 +60,8 @@ type SortDir = "asc" | "desc";
 
 export default function DashboardPage() {
   const { data: docs = [], isLoading, isFetching, isError, refetch } = useDocuments();
+  // AppShell auto-creates a project for any ungrouped document, so reading the
+  // real project list here reflects the full portfolio.
   const projects = useProjects();
   const [mounted, setMounted] = useState(false);
   const [now] = useState(() => Date.now()); // mount-time reference for date windows

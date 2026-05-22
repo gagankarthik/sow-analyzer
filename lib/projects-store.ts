@@ -41,6 +41,26 @@ function write(list: LocalProject[]): void {
   }
 }
 
+// One-time cleanup. An earlier build auto-created a project per document, which
+// littered this list with single-doc cards, split amendments out, and left
+// duplicates. Clear that legacy data ONCE (documents are unaffected — they live
+// in the backend and stay in the Library) so the user starts clean and builds
+// projects manually. Bump RESET_VERSION to force another reset later.
+const RESET_KEY = "blueiq:projects:reset";
+const RESET_VERSION = "2026-05-22-manual";
+
+export function resetLegacyProjects(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (window.localStorage.getItem(RESET_KEY) === RESET_VERSION) return;
+    window.localStorage.removeItem(KEY);
+    window.localStorage.setItem(RESET_KEY, RESET_VERSION);
+    window.dispatchEvent(new Event(EVENT));
+  } catch {
+    /* storage unavailable — non-fatal */
+  }
+}
+
 export function getProjects(): LocalProject[] {
   return parse(readRaw());
 }
@@ -126,3 +146,4 @@ export function useProjects(): LocalProject[] {
 export function useProject(id: string): LocalProject | undefined {
   return useProjects().find((p) => p.id === id);
 }
+
