@@ -111,23 +111,70 @@ export async function resendConfirmationCode(email: string): Promise<void> {
 
 // ── Sign in / out ──────────────────────────────────────────────────────────
 
+// Backstop for a sign-in that never settles (e.g. a stuck network request).
+// Cognito normally answers in well under a second; 20s is generous.
+const SIGN_IN_TIMEOUT_MS = 20_000;
+
 export async function signIn(email: string, password: string): Promise<AuthUser> {
   const user = new CognitoUser({ Username: email, Pool: pool() });
   const details = new AuthenticationDetails({ Username: email, Password: password });
-  return new Promise((resolve, reject) => {
+
+  return new Promise<AuthUser>((resolve, reject) => {
+    // amazon-cognito-identity-js leaves the promise PENDING — no success, no
+    // failure — when it reaches a challenge we don't provide a callback for
+    // (MFA/TOTP/custom, which Cognito can trigger via adaptive/risk-based auth
+    // on an unrecognized device, IP, or origin). That manifests as a sign-in
+    // button that spins forever with nothing logged. We settle exactly once and
+    // turn every challenge we don't yet support into an actionable error.
+    let settled = false;
+    const timer: { id?: ReturnType<typeof setTimeout> } = {};
+    const finish = (action: () => void) => {
+      if (settled) return;
+      settled = true;
+      if (timer.id) clearTimeout(timer.id);
+      action();
+    };
+    const ok = (u: AuthUser) => finish(() => resolve(u));
+    const fail = (e: AuthError) => finish(() => reject(e));
+
+    timer.id = setTimeout(
+      () =>
+        fail(
+          new AuthError(
+            "Timeout",
+            "Sign-in timed out. Check your connection and try again.",
+          ),
+        ),
+      SIGN_IN_TIMEOUT_MS,
+    );
+
+    const challenge = (code: string, message: string) => () =>
+      fail(new AuthError(code, message));
+
+    const mfaMessage =
+      "This account has multi-factor authentication enabled, which this app doesn't collect yet. Disable MFA for the user in the Cognito console (or turn off advanced/risk-based auth), then sign in again.";
+
     user.authenticateUser(details, {
       onSuccess: (session) => {
         persist(session);
-        resolve(claimsFromSession(session));
+        ok(claimsFromSession(session));
       },
-      onFailure: (err) => reject(normalizeError(err)),
-      newPasswordRequired: () =>
-        reject(
-          new AuthError(
-            "NewPasswordRequired",
-            "A new password is required for this account. Contact your administrator.",
-          ),
-        ),
+      onFailure: (err) => fail(normalizeError(err)),
+      newPasswordRequired: challenge(
+        "NewPasswordRequired",
+        "A new password is required for this account. Contact your administrator.",
+      ),
+      mfaRequired: challenge("MfaRequired", mfaMessage),
+      totpRequired: challenge("MfaRequired", mfaMessage),
+      selectMFAType: challenge("MfaRequired", mfaMessage),
+      mfaSetup: challenge(
+        "MfaSetup",
+        "This account must finish setting up multi-factor authentication before it can sign in. Contact your administrator.",
+      ),
+      customChallenge: challenge(
+        "CustomChallenge",
+        "This sign-in needs an extra verification step that isn't supported here. Contact your administrator.",
+      ),
     });
   });
 }
