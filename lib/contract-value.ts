@@ -237,9 +237,16 @@ export function computeContractValue(docsIn: ValuedDoc[]): { total: number; segm
     // document, skip it rather than inventing one from the text.
     let added: number | null = null;
     if (s) {
-      if (s.delta != null) { added = s.delta; running += s.delta; }
-      else if (s.newTotal != null) { added = s.newTotal - running; running = s.newTotal; }
+      // Prefer the document's stated NEW contract total (authoritative) and
+      // derive its contribution as the increment over the running total. The
+      // extracted per-amendment `delta` can be a partial line item that doesn't
+      // reconcile with the stated total (e.g. delta $1,800 while the stated new
+      // total is $10,000) — using the total keeps the chain consistent with each
+      // document's own stated value shown in the Documents tab. Fall back to the
+      // delta only when no total was extracted.
+      if (s.newTotal != null) { added = s.newTotal - running; running = s.newTotal; }
       else if (s.total != null) { added = s.total - running; running = s.total; }
+      else if (s.delta != null) { added = s.delta; running += s.delta; }
     }
     if (added == null) continue;
 
