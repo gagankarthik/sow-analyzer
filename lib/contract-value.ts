@@ -1,61 +1,16 @@
-// Contract-value model. The backend now extracts and VALIDATES structured
-// commercials (baseValue, each amendment's valueDelta / newTotalValue) with a
-// reconciliation check, so when those are present we use them directly — they
-// are read verbatim from the document and add up against it.
+// Contract-value model. EXACT ONLY: every figure shown comes from the backend's
+// extracted + VALIDATED structured commercials (baseValue, each amendment's
+// valueDelta / newTotalValue, validated line items) — read verbatim from the
+// document and reconciled against it. We do NOT scrape dollar amounts out of the
+// clause text; if the backend extracted no figure for a document, it contributes
+// no value (the UI shows "—") rather than a guessed number.
 //
-// For documents processed before the structured extractor existed, we fall back
-// to a best-effort heuristic over the analyzed text: the contract value is a
-// running TOTAL — the SOW sets the initial total, each amendment states a new
-// total (or a delta). We never blindly sum the largest number in every document.
-//
+// The contract value is a running TOTAL across the chain: the SOW sets the
+// initial total, each amendment states a new total (or a delta).
 // Example: SOW $7,500 → Amendment #1 +$3,000 → Amendment #2 +$1,800
 //   ⇒ SOW initial $7,500 + Amendment #1 +$3,000 + Amendment #2 +$1,800 = $12,300.
 
 import type { ApiClassification, ApiDocument } from "@/lib/types";
-
-// "This is the running/contract total as of this document."
-const TOTAL_KW = /(new total|total project cost|total contract (?:value|price|sum|cost)|total (?:fees?|amount|cost|price|value)|contract (?:sum|value|price)|fixed price|not to exceed|grand total|aggregate (?:fees?|amount|cost))/i;
-// "This is what this amendment adds."
-const DELTA_KW = /(additional|increase(?:d|s)?|incremental|amendment (?:fee|amount|cost)|this amendment|added cost|change order|extra (?:cost|fee))/i;
-// Generic value signal (fallback).
-const VALUE_KW = /(total|fees?|value|compensation|consideration|price|amount|payable|cost|budget|sum)/i;
-
-function amounts(text: string): { n: number; idx: number }[] {
-  const re = /\$\s?([\d][\d,]*(?:\.\d+)?)\s*(k|thousand|m|mm|million|bn|billion)?/gi;
-  const out: { n: number; idx: number }[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text))) {
-    let n = parseFloat(m[1].replace(/,/g, ""));
-    const u = (m[2] || "").toLowerCase();
-    if (u.startsWith("k") || u === "thousand") n *= 1e3;
-    else if (u.startsWith("m")) n *= 1e6;
-    else if (u.startsWith("b")) n *= 1e9;
-    if (Number.isFinite(n) && n > 0) out.push({ n, idx: m.index });
-  }
-  return out;
-}
-
-/** Largest amount that sits near a keyword (within ~70 chars before it). */
-function nearest(texts: string[], kw: RegExp): number {
-  let best = 0;
-  for (const t of texts) {
-    for (const { n, idx } of amounts(t)) {
-      const ctx = t.slice(Math.max(0, idx - 70), idx + 20);
-      if (kw.test(ctx) && n > best) best = n;
-    }
-  }
-  return best;
-}
-function largest(texts: string[]): number {
-  let best = 0;
-  for (const t of texts) for (const { n } of amounts(t)) if (n > best) best = n;
-  return best;
-}
-
-function textsOf(c?: ApiClassification): string[] {
-  if (!c) return [];
-  return [c.summary, ...c.clauses.flatMap((cl) => [cl.body, cl.summary]), ...c.keyFindings.map((f) => f.detail)].filter((t): t is string => !!t);
-}
 
 // Exact, comma-separated dollars — no rounding or K/M abbreviation.
 export function fmtMoney(n: number, currency?: string | null): string {
@@ -186,34 +141,24 @@ function lineItemBreakdown(c: ApiClassification | undefined, docId: string, titl
   return { segments, total: stated, currency };
 }
 
-// A document's explicitly-stated CURRENT/NEW contract total — the authoritative
-// figure that supersedes a sum of deltas (e.g. "New Total Project Cost: $12,300").
-// Strong phrases only: a generic "total fees" of a SOW is its own fee, not a chain total.
-const NEWTOTAL_KW = /(new total project cost|new total|revised total|amended total|updated total|total contract (?:value|price|sum)|new contract (?:value|price|sum)|total project cost)/i;
-
-/** The stated contract-wide total this document declares, if any.
+/** The stated contract-wide total this document declares, if any — from the
+ *  backend's validated/extracted figures only (no text scraping).
  *
- *  Critical: a document's `total` is the chain total ONLY when it EXCEEDS the
- *  running base — i.e. it already rolls up amendments (e.g. a SOW that lists its
- *  amendments and a restated "new total"). A SOW's own total (which equals its
- *  base) is NOT the chain total: later amendments still add on top of it. The
- *  previous `s.total > ownPiece` test wrongly locked a SOW's own fee as the
- *  whole-contract total whenever no separate base was extracted (ownPiece → 0),
- *  which made the portfolio total ignore every amendment and show the SOW only. */
+ *  A document's `total` is the chain total ONLY when it EXCEEDS the running base
+ *  — i.e. it already rolls up amendments (e.g. a SOW that lists its amendments
+ *  and a restated "new total"). A SOW's own total (which equals its base) is NOT
+ *  the chain total: later amendments still add on top of it. */
 function declaredTotal(
   s: ReturnType<typeof structured>,
-  texts: string[],
   runningBase: number,
 ): number | null {
-  if (s) {
-    // An amendment's explicit "new total" is always the authoritative total.
-    if (s.newTotal != null && s.newTotal > 0) return s.newTotal;
-    // A stated total that exceeds what we've accumulated as this document's own
-    // base means it already includes amendments — treat it as the chain total.
-    if (s.total != null && s.total > runningBase) return s.total;
-  }
-  const stated = nearest(texts, NEWTOTAL_KW);
-  return stated > runningBase ? stated : null;
+  if (!s) return null;
+  // An amendment's explicit "new total" is always the authoritative total.
+  if (s.newTotal != null && s.newTotal > 0) return s.newTotal;
+  // A stated total that exceeds this document's own base means it already
+  // includes amendments — treat it as the chain total.
+  if (s.total != null && s.total > runningBase) return s.total;
+  return null;
 }
 
 /**
@@ -267,16 +212,14 @@ export function computeContractValue(docsIn: ValuedDoc[]): { total: number; segm
 
   for (const d of ordered) {
     const s = structured(d);
-    const texts = textsOf(d.classification);
     if (s?.currency && !currency) currency = s.currency;
 
     if (!started) {
-      // First document — establishes the base/initial total. Prefer the
-      // validated base, then the stated total (the SOW's own total when no
-      // separate base is given), and only then the text-scraping estimate.
-      let base = s?.base ?? s?.total ?? null;
-      if (base == null) base = nearest(texts, VALUE_KW) || largest(texts) || 0;
-      if (base <= 0) continue;
+      // First document establishes the base/initial total — from the validated
+      // base or the document's stated total. EXACT ONLY: we never scrape a
+      // figure out of the clause text. No extracted figure → it adds no value.
+      const base = s?.base ?? s?.total ?? null;
+      if (base == null || base <= 0) continue;
       running = base;
       started = true;
       segments.push({
@@ -284,32 +227,28 @@ export function computeContractValue(docsIn: ValuedDoc[]): { total: number; segm
         label: d.isAmendment ? `Amendment ${++am}` : "SOW initial",
         source: s?.source ?? null, reconciled: s?.reconciled ?? null,
       });
-      const dt = declaredTotal(s, texts, base);
+      const dt = declaredTotal(s, base);
       if (dt != null) statedFinal = dt;
       continue;
     }
 
-    // Subsequent document — add its delta (or close the gap to a new total).
+    // Subsequent document — add its extracted delta, or close the gap to a
+    // stated new total. EXACT ONLY: if the backend extracted no figure for this
+    // document, skip it rather than inventing one from the text.
     let added: number | null = null;
     if (s) {
       if (s.delta != null) { added = s.delta; running += s.delta; }
       else if (s.newTotal != null) { added = s.newTotal - running; running = s.newTotal; }
       else if (s.total != null) { added = s.total - running; running = s.total; }
     }
-    if (added == null) {
-      const delta = nearest(texts, DELTA_KW);
-      const statedTotal = nearest(texts, TOTAL_KW);
-      if (delta > 0) { added = delta; running += delta; }
-      else if (statedTotal > running) { added = statedTotal - running; running = statedTotal; }
-      else continue; // no reliable monetary signal — don't invent value
-    }
+    if (added == null) continue;
 
     segments.push({
       docId: d.docId, title: d.title, value: added, isAmendment: d.isAmendment,
       label: d.isAmendment ? `Amendment ${++am}` : d.title || "Document",
       source: s?.source ?? null, reconciled: s?.reconciled ?? null,
     });
-    const dt = declaredTotal(s, texts, running - (added ?? 0));
+    const dt = declaredTotal(s, running - (added ?? 0));
     if (dt != null) statedFinal = dt;
   }
 
@@ -336,10 +275,11 @@ export function contractTotal(docsIn: ValuedDoc[]): number {
 }
 
 /** A single document's own stated value — the canonical "this document's
- *  contract value." Prefers the backend-persisted/validated figure, then the
- *  extracted total/newTotal/base, and finally the text estimate. Pass the
- *  document's persisted commercials (via persistedOf) so it agrees with the
- *  project-total computed by computeContractValue. */
+ *  contract value." Uses only the backend-persisted/validated figure or the
+ *  extracted total/newTotal/base. EXACT ONLY: returns 0 (→ shown as "—") when
+ *  the backend extracted no figure; it is never scraped from the clause text.
+ *  Pass the document's persisted commercials (via persistedOf) so it agrees with
+ *  the project total from computeContractValue. */
 export function docValue(c?: ApiClassification, persisted?: DocCommercials): number {
   const s = structured({ classification: c, persisted });
   if (s) {
@@ -348,6 +288,5 @@ export function docValue(c?: ApiClassification, persisted?: DocCommercials): num
     if (s.base != null) return s.base;
     if (s.delta != null) return s.delta;
   }
-  const texts = textsOf(c);
-  return nearest(texts, TOTAL_KW) || nearest(texts, VALUE_KW) || largest(texts) || 0;
+  return 0;
 }
