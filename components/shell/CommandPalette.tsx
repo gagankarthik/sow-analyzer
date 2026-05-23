@@ -10,7 +10,7 @@ import {
   Sparkles, FileText, Kanban, BarChart3, BookMarked, ShieldAlert, Files,
   Plus, Settings, Briefcase, LayoutDashboard, Clock, Sun, Info, Command,
 } from "@/components/ui/icons";
-import { listDocuments } from "@/lib/api";
+import { useDocuments } from "@/lib/queries/documents";
 import { getRecentDocs } from "@/lib/recent";
 import type { ApiDocument } from "@/lib/types";
 
@@ -34,16 +34,15 @@ function toggleTheme() {
 
 export function CommandPalette({ open, onClose }: Props) {
   const router = useRouter();
-  const [docs, setDocs] = useState<ApiDocument[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  // Live shared query — stays in sync with uploads/deletes everywhere, so the
+  // search results are always current (no stale one-time snapshot).
+  const { data: docs = [], isLoading } = useDocuments();
   const [recentIds, setRecentIds] = useState<string[]>([]);
 
+  // The "recent" list is stored locally; refresh it each time the palette opens.
   useEffect(() => {
-    if (!open) return;
-    setRecentIds(getRecentDocs());
-    if (loaded) return;
-    listDocuments().then(setDocs).catch(() => {}).finally(() => setLoaded(true));
-  }, [open, loaded]);
+    if (open) setRecentIds(getRecentDocs());
+  }, [open]);
 
   const recentDocs = useMemo(
     () => recentIds.map((id) => docs.find((d) => d.docId === id)).filter((d): d is ApiDocument => !!d),
@@ -62,7 +61,7 @@ export function CommandPalette({ open, onClose }: Props) {
     >
       <CommandInput placeholder="Search documents, pages, and actions…" />
       <CommandList>
-        <CommandEmpty>{loaded ? "No matches. Try a different term." : "Loading…"}</CommandEmpty>
+        <CommandEmpty>{isLoading ? "Loading…" : "No matches. Try a different term."}</CommandEmpty>
 
         {recentDocs.length > 0 && (
           <>
@@ -124,7 +123,7 @@ export function CommandPalette({ open, onClose }: Props) {
           <>
             <CommandSeparator />
             <CommandGroup heading="Documents">
-              {docs.slice(0, 8).map((d) => (
+              {docs.map((d) => (
                 <CommandItem key={d.docId} onSelect={() => go(`/projects/${d.docId}`)} keywords={[d.docType, d.lifecycle, d.title]}>
                   <FileText />
                   <span className="truncate">{d.title || "Untitled document"}</span>

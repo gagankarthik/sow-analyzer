@@ -239,12 +239,24 @@ export function computeContractValue(docsIn: ValuedDoc[]): { total: number; segm
   // Total" recap, or a SOW that summarizes its amendments). Since `ordered` puts
   // the SOW first then amendments by date, keep the LAST such recap — it's the
   // most current chain total (an earlier amendment states a smaller, stale one).
+  const amendmentDocCount = docsIn.filter((d) => d.isAmendment).length;
   let chainBreakdown: ReturnType<typeof lineItemBreakdown> = null;
   for (const d of ordered) {
     const bd = lineItemBreakdown(d.classification, d.docId, d.title || "Untitled");
     if (bd) chainBreakdown = bd;
   }
-  if (chainBreakdown) return { total: chainBreakdown.total, segments: chainBreakdown.segments, currency: chainBreakdown.currency, reconciled: true };
+  // Only trust a single document's line-item recap as the WHOLE chain when it
+  // actually enumerates every amendment in the set. An earlier amendment (e.g.
+  // Amd#1 listing "SOW + itself = $10,000") reconciles to a stale total and would
+  // hide a later Amd#2 — so if the recap covers fewer amendments than there are
+  // amendment documents, fall through to the running-total walk below, which
+  // visits every document.
+  if (
+    chainBreakdown &&
+    chainBreakdown.segments.filter((s) => s.isAmendment).length >= amendmentDocCount
+  ) {
+    return { total: chainBreakdown.total, segments: chainBreakdown.segments, currency: chainBreakdown.currency, reconciled: true };
+  }
 
   let running = 0;
   let started = false;

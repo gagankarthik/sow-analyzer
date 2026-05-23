@@ -38,10 +38,8 @@ import {
   BookMarked,
 } from "@/components/ui/icons";
 import { useAuth, initialsOf } from "@/components/auth/AuthProvider";
-import { listDocuments } from "@/lib/api";
 import { useDocuments } from "@/lib/queries/documents";
 import { useProjects } from "@/lib/projects-store";
-import type { ApiDocument } from "@/lib/types";
 
 type Crumb = { label: string; href?: string };
 
@@ -132,21 +130,9 @@ const PAGE_HITS: SearchHit[] = [
 // the static set of workspace pages. The fetch is shared across the session
 // because the TopBar lives in the persistent AppShell layout.
 function useSearchIndex(): SearchHit[] {
-  const [docs, setDocs] = useState<ApiDocument[]>([]);
-
-  useEffect(() => {
-    let alive = true;
-    listDocuments()
-      .then((d) => {
-        if (alive) setDocs(d);
-      })
-      .catch(() => {
-        /* unauthenticated / offline — pages still searchable */
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  // Live shared query — search reflects current documents (uploads/deletes),
+  // no stale one-time snapshot.
+  const { data: docs = [] } = useDocuments();
 
   return useMemo<SearchHit[]>(() => {
     const docHits: SearchHit[] = docs.map((d) => ({
