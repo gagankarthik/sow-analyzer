@@ -178,21 +178,47 @@ export function removeDocFromAllProjects(docId: string): void {
  */
 export function withUngroupedDocs(
   projects: LocalProject[],
-  docs: { docId: string; title?: string; createdAt?: string; parties?: string[] }[],
+  docs: { docId: string; title?: string; createdAt?: string; parties?: string[]; parentDocId?: string | null }[],
 ): LocalProject[] {
   const grouped = new Set(projects.flatMap((p) => p.docIds));
-  const synthetic: LocalProject[] = [];
-  for (const d of docs) {
-    if (grouped.has(d.docId)) continue;
-    synthetic.push({
-      id: d.docId,
-      name: d.title || "Untitled document",
-      client: d.parties?.[0],
-      createdAt: d.createdAt ?? new Date().toISOString(),
-      docIds: [d.docId],
-    });
+  const ungrouped = docs.filter((d) => !grouped.has(d.docId));
+  if (ungrouped.length === 0) return projects;
+
+  // Group the ungrouped documents by amendment chain (follow parentDocId to its
+  // root) so a SOW and its amendments form ONE synthetic project. Otherwise each
+  // would be treated as a separate contract and the portfolio total would
+  // over-count — e.g. SOW $7,500 + Amd $10,000 + Amd $12,300 summed = $29,800
+  // instead of the true running total $12,300.
+  const byId = new Map(docs.map((d) => [d.docId, d]));
+  const rootOf = (docId: string): string => {
+    let cur = byId.get(docId);
+    const seen = new Set<string>();
+    while (cur?.parentDocId && byId.has(cur.parentDocId) && !seen.has(cur.docId)) {
+      seen.add(cur.docId);
+      cur = byId.get(cur.parentDocId);
+    }
+    return cur?.docId ?? docId;
+  };
+  const byCreated = (a: { createdAt?: string }, b: { createdAt?: string }) =>
+    new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime();
+
+  const chains = new Map<string, typeof ungrouped>();
+  for (const d of ungrouped) {
+    const root = rootOf(d.docId);
+    chains.set(root, [...(chains.get(root) ?? []), d]);
   }
-  return synthetic.length ? [...projects, ...synthetic] : projects;
+  const synthetic: LocalProject[] = [...chains.entries()].map(([rootId, chainDocs]) => {
+    const ordered = [...chainDocs].sort(byCreated);
+    const root = byId.get(rootId) ?? ordered[0];
+    return {
+      id: rootId,
+      name: root.title || "Untitled document",
+      client: root.parties?.[0],
+      createdAt: root.createdAt ?? new Date().toISOString(),
+      docIds: ordered.map((d) => d.docId),
+    };
+  });
+  return [...projects, ...synthetic];
 }
 
 // ── React binding ──────────────────────────────────────────────────────────────
