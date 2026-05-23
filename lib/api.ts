@@ -256,6 +256,24 @@ export async function getTimeline(docId: string): Promise<ApiTimeline> {
   }
 }
 
+export interface SimilarClause {
+  docId: string
+  docTitle: string
+  docType: string
+  clauseNumber: string
+  category: string
+  score: number
+  text: string
+}
+
+// Top-KNN: clauses across the tenant's documents most similar to a given clause
+// (cosine over the stored embeddings). Empty when the clause isn't embedded yet.
+export async function getSimilarClauses(docId: string, clauseNumber: string, k = 5): Promise<SimilarClause[]> {
+  const qs = new URLSearchParams({ clause: clauseNumber, k: String(k) })
+  const data = await request<{ similar: SimilarClause[] }>(`/documents/${docId}/similar?${qs}`)
+  return data.similar ?? []
+}
+
 // Ask Bluey (RAG) about a document — embed → hybrid vector+BM25 search over
 // the document's clauses → grounded GPT answer with clause citations.
 export async function askBluey(docId: string, question: string, topK?: number): Promise<ChatResponse> {

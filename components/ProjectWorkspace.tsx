@@ -25,7 +25,7 @@ import {
   RefreshCw, Maximize2, Download, Clock, ExternalLink, CalendarClock,
 } from "@/components/ui/icons";
 import { useDocuments, useDeleteDocument, useReprocess, documentKeys } from "@/lib/queries/documents";
-import { getClassification, getDocFile, askBluey, type ApiDocFile } from "@/lib/api";
+import { getClassification, getDocFile, askBluey, getSimilarClauses, type ApiDocFile, type SimilarClause } from "@/lib/api";
 import { useUIStore } from "@/lib/stores/ui";
 import { useProject, addDocToProject, removeDocFromProject, type LocalProject } from "@/lib/projects-store";
 import { formatRelativeDays, formatDate } from "@/lib/format";
@@ -744,6 +744,19 @@ function ClauseSheet({ clause, related, onClose }: { clause: AggClause | null; r
   const key = clause ? `${clause._docId}:${clause.number}` : "";
   useEffect(() => { setSug({ loading: false, text: null, err: null }); }, [key]);
 
+  // Top-KNN: semantically similar clauses across all the tenant's documents.
+  const [similar, setSimilar] = useState<{ loading: boolean; items: SimilarClause[] }>({ loading: false, items: [] });
+  useEffect(() => {
+    if (!clause) { setSimilar({ loading: false, items: [] }); return; }
+    let alive = true;
+    setSimilar({ loading: true, items: [] });
+    getSimilarClauses(clause._docId, clause.number, 5)
+      .then((items) => { if (alive) setSimilar({ loading: false, items }); })
+      .catch(() => { if (alive) setSimilar({ loading: false, items: [] }); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
   async function generate() {
     if (!clause) return;
     setSug({ loading: true, text: null, err: null });
@@ -821,6 +834,40 @@ function ClauseSheet({ clause, related, onClose }: { clause: AggClause | null; r
                       );
                     })}
                   </ul>
+                </div>
+              )}
+
+              {/* Top-KNN: semantically similar clauses across every document, by
+                  embedding similarity (not just same-category). */}
+              {(similar.loading || similar.items.length > 0) && (
+                <div>
+                  <h4 className="mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    <Layers size={12} />Similar clauses · across your documents
+                  </h4>
+                  {similar.loading ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
+                      <Loader2 size={13} className="animate-spin" />Finding the most similar clauses…
+                    </div>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {similar.items.map((s, i) => (
+                        <li key={`${s.docId}-${s.clauseNumber}-${i}`}>
+                          <Link href={`/projects/${s.docId}/sow`} className="block rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:border-[var(--brand-primary-300)]">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10.5px] text-muted-foreground">{s.clauseNumber}</span>
+                              <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-foreground">{s.docTitle}</span>
+                              <span className="shrink-0 rounded-full bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--brand-primary-700)]">{Math.min(100, Math.round(s.score * 100))}% match</span>
+                            </div>
+                            {s.text && <p className="mt-1 line-clamp-2 text-[11.5px] leading-snug text-muted-foreground">{s.text}</p>}
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">{s.docType}</span>
+                              <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">{s.category}</span>
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
 
