@@ -60,12 +60,18 @@ export function Updates() {
     <section className="px-5 md:px-10 py-24 md:py-32">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-12 flex items-end justify-between gap-4">
-          <Reveal as="h2" className="landing-h2 text-[clamp(28px,3vw,40px)] text-foreground">
-            From the team
-          </Reveal>
+          <div>
+            <Reveal as="span" className="led-marker inline-flex items-center gap-2 text-[var(--led-blue)]">
+              <span className="inline-block h-2 w-2 rounded-[2px] bg-[var(--led-blue)]" />
+              From the team
+            </Reveal>
+            <Reveal as="h2" delay={1} className="led-display mt-5 text-[clamp(28px,3vw,42px)] text-[var(--led-ink)]">
+              Notes from the desk.
+            </Reveal>
+          </div>
           <Link
             href="/insights"
-            className="border-b border-foreground pb-0.5 text-[12px] font-semibold transition-colors hover:border-[var(--brand-primary-700)] hover:text-[var(--brand-primary-700)]"
+            className="shrink-0 border-b border-[var(--led-ink)] pb-0.5 text-[12px] font-semibold transition-colors hover:border-[var(--led-blue)] hover:text-[var(--led-blue)]"
           >
             View all
           </Link>
@@ -89,7 +95,7 @@ export function Updates() {
                   </div>
                 </TiltCard>
                 <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{it.tag}</p>
-                <h4 className="landing-h3 text-[18px] text-foreground transition-colors group-hover:text-[var(--brand-primary-700)]">
+                <h4 className="led-serif text-[18px] leading-snug text-[var(--led-ink)] transition-colors group-hover:text-[var(--led-blue)]">
                   {it.title}
                 </h4>
               </Link>

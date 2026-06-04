@@ -212,7 +212,7 @@ export function FloatingNav() {
             )}
             <Link
               href="/signup"
-              className="hidden sm:inline-flex items-center gap-1.5 h-9 px-5 text-[13.5px] font-semibold rounded-full text-background bg-foreground hover:opacity-90 transition-opacity duration-200 whitespace-nowrap shrink-0"
+              className="hidden sm:inline-flex items-center gap-1.5 h-9 px-5 text-[13.5px] font-semibold rounded-lg text-white bg-[var(--led-blue)] hover:bg-[var(--led-blue-7)] transition-colors duration-200 whitespace-nowrap shrink-0"
             >
               Book a demo
               <ArrowRight size={14} strokeWidth={2.5} />

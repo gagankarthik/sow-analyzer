@@ -1,7 +1,5 @@
 "use client";
 
-import { ClientLogos } from "@/components/ClientLogos";
-import { AmbientAura } from "@/components/landing/primitives";
 import { FloatingNav } from "@/components/landing/FloatingNav";
 import { Hero } from "@/components/landing/Hero";
 import { LeadSection } from "@/components/landing/LeadSection";
@@ -19,15 +17,13 @@ import { Footer } from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (
-    <div className="landing relative min-h-screen text-[14px] leading-[1.6] antialiased selection:bg-[var(--brand-primary-600)] selection:text-white">
-      <AmbientAura />
+    <div className="landing relative min-h-screen text-[14px] leading-[1.6] antialiased selection:bg-[var(--led-ink)] selection:text-white">
       <div className="relative z-10">
       <FloatingNav />
 
       <main>
         <Hero />
         <LeadSection />
-        <ClientLogos badge="Who it's for" heading="Built for the teams who review SOWs, MSAs, and NDAs every week" />
         <FeatureOne />
         <ClauseIntelligenceSection />
         <FeatureStory />

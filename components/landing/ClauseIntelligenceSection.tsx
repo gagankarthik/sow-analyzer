@@ -46,8 +46,11 @@ export function ClauseIntelligenceSection() {
     <section className="px-5 md:px-10 py-24 md:py-32">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-10 flex flex-col items-center gap-4 text-center md:mb-14">
-          <Reveal as="h2" className="landing-h2 max-w-[20ch] text-[clamp(28px,3.4vw,46px)] leading-[1.08] text-foreground">
-            <span className="tabular-nums">{CLAUSE_TYPES.length}</span> clause types, found in about 15 seconds
+          <Reveal as="span" className="led-marker text-[var(--led-blue)]">
+            The taxonomy
+          </Reveal>
+          <Reveal as="h2" className="led-display max-w-[20ch] text-[clamp(30px,3.4vw,46px)] leading-[1.05] text-[var(--led-ink)]">
+            <span className="tabular-nums">{CLAUSE_TYPES.length}</span> clause types, found in seconds
           </Reveal>
           <Reveal as="p" className="max-w-[60ch] text-[15px] leading-[1.6] text-muted-foreground" delay={1}>
             Every clause that moves your risk or your revenue — payment terms, liability caps,

@@ -1242,3 +1242,156 @@ html, body {
 .docx-page em { font-style: italic; }
 .docx-page a { color: #0176D3; text-decoration: underline; }
 .docx-page img { max-width: 100%; height: auto; }
+
+/* ═══════════════════════════════════════════════════════════════
+   "THE LEDGER" — landing redesign system
+   ---------------------------------------------------------------
+   A bold editorial legal-dossier aesthetic: warm paper canvas, an
+   off-black ink, Source Serif display headlines, ruled lines, and
+   colour delivered exclusively through SOLID flat blocks (navy,
+   ink-blue, and the product's own risk palette). No gradients,
+   no glassmorphism, no AI pills. Scoped to `.landing` so the app
+   shell is untouched.
+   ═══════════════════════════════════════════════════════════════ */
+.landing {
+  /* Bright Atlassian-style canvas + navy ink + Atlassian blue. */
+  --page-bg:      #FFFFFF;
+  --paper:        #FFFFFF;
+  --paper-elev:   #FFFFFF;
+  --background:   #FFFFFF;
+  --surface-2:    #F7F8F9;   /* subtle alternating-section tint */
+
+  --led-ink:      #172B4D;   /* Atlassian N800 — headings + body */
+  --led-ink-soft: #44546F;   /* Atlassian N300 — secondary text */
+  --led-line:     #DFE1E6;   /* Atlassian N40 — hairline border */
+  --led-line-2:   #C1C7D0;   /* stronger border */
+  --foreground:   #172B4D;
+  --border:       #DFE1E6;
+  --muted-foreground: #5E6C84;
+
+  --led-blue:     #1868DB;   /* Atlassian primary blue */
+  --led-blue-7:   #1558BC;   /* hover */
+  --led-navy:     #172B4D;   /* deep navy colour-block panels */
+  --led-cream:    #F7F8F9;   /* light surface tint / light-on-dark text */
+
+  /* Soft pastel section panels — solid fills, no gradient. */
+  --panel-blue:   #E9F2FF;
+  --panel-purple: #EAE6FF;
+  --panel-teal:   #E7F9F4;
+  --panel-yellow: #FFF7D6;
+
+  /* Status palette (Atlassian-aligned). */
+  --led-low:  #1F845A;       /* within playbook  */
+  --led-med:  #B38600;       /* watch            */
+  --led-high: #C25100;       /* deviates         */
+  --led-crit: #C9372C;       /* flagged          */
+
+  /* Re-point brand tokens used across sections to Atlassian blue. */
+  --brand-primary-600: #1868DB;
+  --brand-primary-700: #1558BC;
+  --brand-primary-50:  #E9F2FF;
+  --brand-primary-100: #CCE0FF;
+
+  background: var(--page-bg);
+  color: var(--led-ink);
+}
+.dark .landing {
+  --page-bg:    #0E1016;
+  --paper:      #0E1016;
+  --paper-elev: #14161F;
+  --background: #0E1016;
+  --led-ink:    #F4F1E8;
+  --foreground: #F4F1E8;
+  --led-line:   #262833;
+  --border:     #262833;
+  --muted-foreground: #9A9486;
+}
+
+/* — Display typeface: Geist, a clean geometric sans in the spirit of
+     Atlassian Sans. Bold, tight headings; body stays Geist too. */
+.led-serif {
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+.led-display {
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.022em;
+}
+
+/* Mono section marker — e.g. “§ 02 — THE PROBLEM” */
+.led-marker {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Solid highlight block behind a headline word — flat ink-blue, no gradient. */
+.led-mark {
+  background: var(--led-blue);
+  color: #FFFFFF;
+  padding: 0.02em 0.22em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  border-radius: 4px;
+}
+.led-underline {
+  background-image: linear-gradient(var(--led-blue), var(--led-blue));
+  background-repeat: no-repeat;
+  background-position: 0 92%;
+  background-size: 100% 0.16em;
+}
+
+/* Ruled-paper hairlines + ledger texture (solid lines, no gradient fill). */
+.led-rule { border-top: 1px solid var(--led-line); }
+.led-grid {
+  background-image:
+    linear-gradient(to right, var(--led-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--led-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* Solid colour-block panels — the page's bold, gradient-free colour. */
+.block-navy { background: var(--led-navy); color: #FFFFFF; }
+.block-blue { background: var(--led-blue); color: #FFFFFF; }
+.block-cream { background: var(--led-cream); }
+
+/* Soft pastel section panels — solid fills, no gradient (Atlassian-style). */
+.panel-blue   { background: var(--panel-blue); }
+.panel-purple { background: var(--panel-purple); }
+.panel-teal   { background: var(--panel-teal); }
+.panel-yellow { background: var(--panel-yellow); }
+.surface-2    { background: var(--surface-2); }
+
+/* Soft elevation — friendly Atlassian card depth, tinted to the navy hue. */
+.led-stamp { box-shadow: 0 8px 24px -10px rgba(9,30,66,0.22), 0 1px 2px rgba(9,30,66,0.08); }
+.led-stamp-blue { box-shadow: 0 16px 32px -12px rgba(24,104,219,0.40), 0 1px 2px rgba(9,30,66,0.08); }
+
+/* Risk chip — solid, legible, the product's signal colours. */
+.rk { color: #fff; }
+.rk-low  { background: var(--led-low);  }
+.rk-med  { background: var(--led-med);  }
+.rk-high { background: var(--led-high); }
+.rk-crit { background: var(--led-crit); }
+
+/* Smooth anchor scrolling for the landing nav (reduced-motion guard already
+   forces `auto` further down the file). */
+html { scroll-behavior: smooth; }
+
+/* Re-tint the cursor spotlight from the old indigo to the ink-blue accent so
+   no AI-purple leaks into the redesign. */
+.landing .spot::after {
+  background: radial-gradient(
+    240px circle at var(--sx, 50%) var(--sy, 50%),
+    color-mix(in srgb, var(--led-blue) 14%, transparent),
+    transparent 60%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .led-display, .led-mark { animation: none; }
+}

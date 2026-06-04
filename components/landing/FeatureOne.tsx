@@ -9,12 +9,12 @@ import { Reveal } from "@/components/landing/primitives";
 /*  Feature 1 — clause workspace (accordion + preview)*/
 /* ──────────────────────────────────────────────── */
 const FEATURE_ONE_CLAUSES = [
-  { num: "§1.1", title: "Definitions", risk: "low" },
-  { num: "§3.4", title: "Payment Terms", risk: "med" },
-  { num: "§4.2", title: "Service Level Agreement", risk: "high" },
-  { num: "§5.1", title: "Background IP", risk: "low" },
-  { num: "§7.2", title: "Limitation of Liability", risk: "critical" },
-  { num: "§10.3", title: "Termination for Convenience", risk: "high" },
+  { num: "1.1", title: "Definitions", risk: "low" },
+  { num: "3.4", title: "Payment Terms", risk: "med" },
+  { num: "4.2", title: "Service Level Agreement", risk: "high" },
+  { num: "5.1", title: "Background IP", risk: "low" },
+  { num: "7.2", title: "Limitation of Liability", risk: "critical" },
+  { num: "10.3", title: "Termination for Convenience", risk: "high" },
 ];
 
 function clauseRiskDot(risk: string) {
@@ -60,7 +60,7 @@ function OcrBoard() {
           ))}
         </div>
         <div className="min-w-0 flex-1 space-y-2">
-          {["§2 Scope of Services", "§3.4 Payment Terms", "§7.2 Limitation of Liability"].map((t) => (
+          {["2 Scope of Services", "3.4 Payment Terms", "7.2 Limitation of Liability"].map((t) => (
             <div key={t} className="flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand-primary-600)]" />
               <span className="truncate text-[12px] text-foreground">{t}</span>
@@ -76,14 +76,14 @@ function OcrBoard() {
 /* Preview · provenance — version history + compliance */
 function ProvenanceBoard() {
   const log = [
-    { who: "PM", what: "edited §7.2 Limitation of Liability", when: "2d ago" },
+    { who: "PM", what: "edited 7.2 Limitation of Liability", when: "2d ago" },
     { who: "GC", what: "approved · sign-off complete", when: "5d ago" },
     { who: "DR", what: "uploaded Northwind MSA v1", when: "Mar 3" },
   ];
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Version history · §7.2</span>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Version history · 7.2</span>
         <span className="font-mono text-[10.5px] text-muted-foreground">v3</span>
       </div>
       <ol className="relative space-y-4 before:absolute before:bottom-2 before:left-[13px] before:top-2 before:w-px before:bg-border">
@@ -119,7 +119,11 @@ export function FeatureOne() {
     <section className="px-5 md:px-10 py-24 md:py-32">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-10 max-w-[640px] md:mb-14">
-          <Reveal as="h2" className="landing-h2 text-[clamp(28px,3.2vw,42px)] leading-[1.12] text-foreground">
+          <Reveal as="span" className="led-marker inline-flex items-center gap-2 text-[var(--led-blue)]">
+            <span className="inline-block h-2 w-2 rounded-[2px] bg-[var(--led-blue)]" />
+            Clause extraction
+          </Reveal>
+          <Reveal as="h2" delay={1} className="led-display mt-5 text-[clamp(30px,3.4vw,46px)] leading-[1.05] text-[var(--led-ink)]">
             Every clause, indexed and searchable.
           </Reveal>
         </div>

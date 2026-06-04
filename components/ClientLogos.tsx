@@ -491,10 +491,11 @@ export function ClientLogos({
           className="flex flex-col items-center justify-center gap-5 bg-card"
           style={{ gridColumn: "2 / span 3", gridRow: "2 / span 2" }}
         >
-          <span className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-card border border-border text-muted-foreground shadow-sm">
+          <span className="led-marker inline-flex items-center gap-2 text-[var(--led-blue)]">
+            <span className="inline-block h-2 w-2 rounded-[2px] bg-[var(--led-blue)]" />
             {badge}
           </span>
-          <h2 className="text-2xl md:text-3xl font-semibold text-center text-foreground max-w-[516px] leading-tight tracking-tight px-4">
+          <h2 className="led-serif max-w-[516px] px-4 text-center text-[22px] leading-snug text-[var(--led-ink)] md:text-[28px]">
             {heading}
           </h2>
         </div>

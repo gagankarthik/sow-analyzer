@@ -39,7 +39,7 @@ function Mark({
         className="block select-none pointer-events-none"
       />
       {pulse && (
-        <span className="ai-pulse absolute -top-0.5 -right-0.5 ring-2 ring-white" />
+        <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-[var(--led-low)] ring-2 ring-white" />
       )}
     </span>
   );
@@ -63,7 +63,7 @@ function PlatformBoard() {
     <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Portfolio · 248 contracts</span>
-        <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] text-[var(--ai-ink)]"><span className="ai-pulse" />synced</span>
+        <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] text-[var(--led-low)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--led-low)]" />synced</span>
       </div>
       <div className="divide-y divide-border">
         {rows.map((r) => (
@@ -90,17 +90,17 @@ function CopilotBoard() {
         <Mark size={28} />
         <div>
           <div className="text-[12.5px] font-semibold text-foreground">Bluey · Copilot</div>
-          <div className="font-mono text-[10.5px] text-muted-foreground">context · §7.2 Northwind MSA</div>
+          <div className="font-mono text-[10.5px] text-muted-foreground">context · clause 7.2 Northwind MSA</div>
         </div>
-        <span className="ai-pulse ml-auto" />
+        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[var(--led-low)]" />
       </div>
 
       <div className="mb-3 ml-auto max-w-[88%] rounded-lg bg-[var(--brand-primary-600)] px-3 py-2 text-[13px] text-white">
-        Walk me through the risk in §7.2 and draft a counter.
+        Walk me through the risk in clause 7.2 and draft a counter.
       </div>
 
       <div className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-[13px] leading-relaxed text-foreground">
-        §7.2 sits <span className="font-semibold">2× above</span> the firm playbook cap. On Northwind&apos;s $4.28M envelope this exposes <span className="font-semibold">$3.36M</span> versus the standard 1× cap. The carve-outs (confidentiality, IP indemnity) are unlimited — typical, but worth reviewing alongside §9.1.
+        clause 7.2 sits <span className="font-semibold">2× above</span> the firm playbook cap. On Northwind&apos;s $4.28M envelope this exposes <span className="font-semibold">$3.36M</span> versus the standard 1× cap. The carve-outs (confidentiality, IP indemnity) are unlimited — typical, but worth reviewing alongside clause 9.1.
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-2">
@@ -111,7 +111,7 @@ function CopilotBoard() {
         </button>
         <button className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-muted">
           <GitBranch size={13} className="text-muted-foreground" />
-          <span className="text-[13px] font-medium text-foreground">Compare to playbook §G.1</span>
+          <span className="text-[13px] font-medium text-foreground">Compare to playbook clause G.1</span>
           <ArrowRight size={11} className="ml-auto text-muted-foreground" />
         </button>
       </div>
@@ -122,7 +122,7 @@ function CopilotBoard() {
 /* Side visual · Multi-agent — parallel agent run */
 function AgentsBoard() {
   const run = [
-    { name: "Draft agent", task: "Counter-language · §7.2", state: "done" },
+    { name: "Draft agent", task: "Counter-language · clause 7.2", state: "done" },
     { name: "Risk agent", task: "Liability + indemnity scan", state: "running" },
     { name: "Monitor agent", task: "SLA + renewal watch", state: "queued" },
   ];
@@ -131,7 +131,7 @@ function AgentsBoard() {
       <div className="mb-4 flex items-center gap-2">
         <Mark size={24} />
         <span className="text-[12.5px] font-semibold text-foreground">Multi-agent run</span>
-        <span className="ai-pulse ml-auto" />
+        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[var(--led-low)]" />
       </div>
       <div className="space-y-2.5">
         {run.map((a) => (
@@ -144,7 +144,7 @@ function AgentsBoard() {
               <div className="truncate font-mono text-[10.5px] text-muted-foreground">{a.task}</div>
             </div>
             {a.state === "done" && <span className="inline-flex items-center gap-1 text-[11px] text-[var(--success)]"><CheckCircle2 size={12} />done</span>}
-            {a.state === "running" && <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--brand-primary-700)]"><span className="ai-pulse" />running</span>}
+            {a.state === "running" && <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--brand-primary-700)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary-600)]" />running</span>}
             {a.state === "queued" && <span className="font-mono text-[10.5px] text-muted-foreground">queued</span>}
           </div>
         ))}
@@ -200,7 +200,10 @@ export function FeatureStory() {
     <section id="features" className="px-5 md:px-10 py-24 md:py-32">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-10 flex flex-col items-center gap-4 text-center md:mb-12">
-          <Reveal as="h2" className="landing-h2 max-w-[20ch] text-[clamp(28px,3.4vw,46px)] leading-[1.1] text-foreground">
+          <Reveal as="span" className="led-marker text-[var(--led-blue)]">
+            The platform
+          </Reveal>
+          <Reveal as="h2" className="led-display max-w-[20ch] text-[clamp(30px,3.4vw,46px)] leading-[1.05] text-[var(--led-ink)]">
             What Bluey does once you upload.
           </Reveal>
         </div>

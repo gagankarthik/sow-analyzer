@@ -19,12 +19,12 @@ backend repo (`sow-analyser-backend`); this app talks to it over a REST API.
   original SOW and each amendment are labelled, diffed, and the **contract value
   increase/decrease** is computed and visualised (bar, pie, and value-journey
   charts in the project overview).
-- **Bluey co-pilot** — RAG chat grounded in a contract's clauses, with citations.
+- **Sonar Inetelligance** — RAG chat grounded in a contract's clauses, with citations.
 - **Draft a SOW with AI** (`/draft`) — answer a guided questionnaire, Bluey drafts
   a complete SOW, you edit it (preview or source) or ask Bluey to revise it in
   plain English, then download a `.docx`.
 - **Clause Intelligence taxonomy** — a single source of truth in
-  `lib/clause-types.ts`, shared by the landing page and the drafter.
+  clauses shared by the landing page and the drafter.
 
 ## Getting started
 

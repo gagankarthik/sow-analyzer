@@ -19,7 +19,7 @@ export function Footer() {
               Contract intelligence for SOWs, MSAs, and NDAs. Bluey extracts every clause and scores the risk.
             </p>
             <span className="inline-flex w-fit items-center gap-1.5 text-[11.5px] text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)] ai-pulse" /> All systems normal
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--led-low)]" /> All systems normal
             </span>
           </div>
 
@@ -50,16 +50,18 @@ export function Footer() {
               items={[
                 { label: "Create account", href: "/signup" },
                 { label: "Sign in", href: "/login" },
-                { label: "Platform", href: "#features" },
-                { label: "Customers", href: "#customers" },
+                { label: "Book a demo", href: "/signup" },
+                { label: "Pricing", href: "#pricing" },
               ]}
             />
             <FooterCol
-              title="Account"
+              title="Legal & trust"
               items={[
-                { label: "Sign up", href: "/signup" },
-                { label: "Log in", href: "/login" },
-                { label: "Reset password", href: "/reset" },
+                { label: "Privacy policy", href: "/legal/privacy" },
+                { label: "Terms of service", href: "/legal/terms" },
+                { label: "Security", href: "/legal/security" },
+                { label: "Data processing", href: "/legal/dpa" },
+                { label: "Sub-processors", href: "/legal/subprocessors" },
               ]}
             />
           </div>
@@ -67,7 +69,12 @@ export function Footer() {
 
         {/* Legal row */}
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-border pt-6 md:flex-row md:items-center">
-          <span className="font-mono text-[11px] text-muted-foreground/80">© 2026 Blue-IQ Inc. — all contracts considered.</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="font-mono text-[11px] text-muted-foreground/80">© 2026 Blue-IQ Inc.</span>
+            <Link href="/legal/privacy" className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground">Privacy</Link>
+            <Link href="/legal/terms" className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground">Terms</Link>
+            <Link href="/legal/security" className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground">Security</Link>
+          </div>
 
           <div className="flex items-center gap-3">
             <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-[11.5px] text-muted-foreground">
