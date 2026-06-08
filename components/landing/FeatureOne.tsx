@@ -108,7 +108,7 @@ function ProvenanceBoard() {
 
 export function FeatureOne() {
   const items = [
-    { id: "deviation", title: "Playbook deviation detection", body: "On upload, Bluey scores each clause against your firm's playbook and flags the ones that drift, cited to the exact section.", preview: <ClauseBoard /> },
+    { id: "deviation", title: "Playbook deviation detection", body: "On upload, Sonar scores each clause against your firm's playbook and flags the ones that drift, cited to the exact section.", preview: <ClauseBoard /> },
     { id: "ocr", title: "OCR for scanned contracts", body: "Reads PDF, DOCX, and scanned image-only files. Each one is parsed and indexed down to the individual clause.", preview: <OcrBoard /> },
     { id: "provenance", title: "Audit-ready version history", body: "Every edit, approval, and upload is logged per clause. The trail is built to hold up under SOC 2, GDPR, and HIPAA review.", preview: <ProvenanceBoard /> },
   ];

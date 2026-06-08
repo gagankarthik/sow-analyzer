@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Reveal } from "@/components/landing/primitives";
 
 /* ──────────────────────────────────────────────── */
-/*  Bluey — AI assistant mark (logo-icon)            */
+/*  Sonar — AI assistant mark (logo-icon)            */
 /* ──────────────────────────────────────────────── */
 function Mark({
   size = 24,
@@ -27,7 +27,7 @@ function Mark({
 }) {
   return (
     <span
-      aria-label="Bluey"
+      aria-label="Sonar"
       className={`relative inline-flex shrink-0 items-center justify-center ${className ?? ""}`}
     >
       <Image
@@ -89,7 +89,7 @@ function CopilotBoard() {
       <div className="mb-5 flex items-center gap-3">
         <Mark size={28} />
         <div>
-          <div className="text-[12.5px] font-semibold text-foreground">Bluey · Copilot</div>
+          <div className="text-[12.5px] font-semibold text-foreground">Sonar · Copilot</div>
           <div className="font-mono text-[10.5px] text-muted-foreground">context · clause 7.2 Northwind MSA</div>
         </div>
         <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[var(--led-low)]" />
@@ -155,19 +155,19 @@ function AgentsBoard() {
 
 export function FeatureStory() {
   const platform = [
-    { title: "Ask across the whole portfolio", body: "Ask Bluey about clause language, playbook deviations, or renewal dates. Answers come back in seconds, with the clause cited." },
+    { title: "Ask across the whole portfolio", body: "Ask Sonar about clause language, playbook deviations, or renewal dates. Answers come back in seconds, with the clause cited." },
     { title: "Track value across amendments", body: "See the original SOW value next to every amendment, and how the total moves. Bar, pie, and trend charts, no spreadsheet." },
     { title: "One home for every document", body: "SOWs, MSAs, NDAs, and amendments live in one place, searchable down to the individual clause." },
   ];
   const copilot = [
-    { title: "Every answer cites a clause", body: "Bluey won't assert anything without showing its source. Each suggestion links to the exact section, playbook rule, or related contract." },
-    { title: "It drafts counter-language", body: "Ask for a redline and Bluey writes counter-language drawn from your playbook, then explains why each change matters." },
-    { title: "Grounded in your own contract", body: "Bluey reads the document's own clauses to answer. It won't invent terms that aren't on the page." },
+    { title: "Every answer cites a clause", body: "Sonar won't assert anything without showing its source. Each suggestion links to the exact section, playbook rule, or related contract." },
+    { title: "It drafts counter-language", body: "Ask for a redline and Sonar writes counter-language drawn from your playbook, then explains why each change matters." },
+    { title: "Grounded in your own contract", body: "Sonar reads the document's own clauses to answer. It won't invent terms that aren't on the page." },
   ];
   const agents = [
-    { title: "Draft a SOW from a few answers", body: "Answer a short questionnaire and Bluey drafts an editable statement of work. Export the final version to Word." },
-    { title: "Score risk before you sign", body: "Bluey flags exposure across liability caps, indemnity carve-outs, and SLA shortfalls while there's still time to push back." },
-    { title: "Diff every amendment", body: "Each amendment is compared to the original. Bluey shows what moved and recalculates the contract's total value." },
+    { title: "Draft a SOW from a few answers", body: "Answer a short questionnaire and Sonar drafts an editable statement of work. Export the final version to Word." },
+    { title: "Score risk before you sign", body: "Sonar flags exposure across liability caps, indemnity carve-outs, and SLA shortfalls while there's still time to push back." },
+    { title: "Diff every amendment", body: "Each amendment is compared to the original. Sonar shows what moved and recalculates the contract's total value." },
   ];
 
   const tabs = [
@@ -181,18 +181,18 @@ export function FeatureStory() {
     },
     {
       value: "copilot", label: "Copilot", icon: <Sparkles className="h-4 w-4 shrink-0" />,
-      eyebrow: "Copilot", title: "Ask Bluey about any clause.",
-      blurb: "Bluey answers from the contract's own text and drafts counter-language, with the clause cited every time.",
+      eyebrow: "Copilot", title: "Ask Sonar about any clause.",
+      blurb: "Sonar answers from the contract's own text and drafts counter-language, with the clause cited every time.",
       points: copilot, note: null,
-      cta: { href: "/dashboard", label: "See Bluey in action" }, visual: <CopilotBoard />,
+      cta: { href: "/dashboard", label: "See Sonar in action" }, visual: <CopilotBoard />,
     },
     {
       value: "agents", label: "Drafting and review", icon: <Brain className="h-4 w-4 shrink-0" />,
-      eyebrow: "Bluey · drafting and review", title: "Draft, redline, and score risk.",
-      blurb: "Bluey drafts a SOW from a questionnaire, scores clause risk, and diffs every amendment for you.",
+      eyebrow: "Sonar · drafting and review", title: "Draft, redline, and score risk.",
+      blurb: "Sonar drafts a SOW from a questionnaire, scores clause risk, and diffs every amendment for you.",
       points: agents,
-      note: "Bluey handles the repetitive first pass. Your team spends its time on the calls that need judgment.",
-      cta: { href: "/dashboard", label: "Meet Bluey" }, visual: <AgentsBoard />,
+      note: "Sonar handles the repetitive first pass. Your team spends its time on the calls that need judgment.",
+      cta: { href: "/dashboard", label: "Meet Sonar" }, visual: <AgentsBoard />,
     },
   ];
 
@@ -204,7 +204,7 @@ export function FeatureStory() {
             The platform
           </Reveal>
           <Reveal as="h2" className="led-display max-w-[20ch] text-[clamp(30px,3.4vw,46px)] leading-[1.05] text-[var(--led-ink)]">
-            What Bluey does once you upload.
+            What Sonar does once you upload.
           </Reveal>
         </div>
 

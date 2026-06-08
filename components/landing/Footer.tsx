@@ -16,7 +16,7 @@ export function Footer() {
           <div className="flex flex-col gap-5 lg:col-span-5">
             <Logo height={28} />
             <p className="max-w-sm text-[13.5px] leading-relaxed text-muted-foreground">
-              Contract intelligence for SOWs, MSAs, and NDAs. Bluey extracts every clause and scores the risk.
+              Contract intelligence for SOWs, MSAs, and NDAs. Sonar extracts every clause and scores the risk.
             </p>
             <span className="inline-flex w-fit items-center gap-1.5 text-[11.5px] text-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--led-low)]" /> All systems normal

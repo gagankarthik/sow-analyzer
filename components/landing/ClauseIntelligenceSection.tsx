@@ -88,7 +88,7 @@ export function ClauseIntelligenceSection() {
             className="group inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
           >
             <Sparkles size={14} className="text-[var(--brand-primary-600)]" />
-            Draft a SOW with Bluey
+            Draft a SOW with Sonar
             <ArrowRight size={14} strokeWidth={2.5} className="transition-transform group-hover:translate-x-0.5" />
           </Link>
         </Reveal>
