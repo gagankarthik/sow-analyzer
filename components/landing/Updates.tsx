@@ -61,11 +61,7 @@ export function Updates() {
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-12 flex items-end justify-between gap-4">
           <div>
-            <Reveal as="span" className="led-marker inline-flex items-center gap-2 text-[var(--led-blue)]">
-              <span className="inline-block h-2 w-2 rounded-[2px] bg-[var(--led-blue)]" />
-              From the team
-            </Reveal>
-            <Reveal as="h2" delay={1} className="led-display mt-5 text-[clamp(28px,3vw,42px)] text-[var(--led-ink)]">
+            <Reveal as="h2" className="led-display text-[clamp(28px,3vw,42px)] text-[var(--led-ink)]">
               Notes from the desk.
             </Reveal>
           </div>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
-import { ArrowRight, TrendingUp, Clock } from "@/components/ui/icons";
+import { ArrowRight } from "@/components/ui/icons";
 import { Reveal } from "@/components/landing/primitives";
 
 /* ──────────────────────────────────────────────────────────────
@@ -49,15 +49,15 @@ export function SavingsCalculator() {
   return (
     <section className="px-5 py-24 md:px-10 md:py-32">
       <div className="mx-auto max-w-[1120px]">
-        <div className="mb-12 max-w-[640px]">
-          <Reveal as="span" className="led-marker inline-flex items-center gap-2 text-[var(--led-blue)]">
-            <span className="inline-block h-2 w-2 rounded-[2px] bg-[var(--led-blue)]" />
-            Run your numbers
+        <div className="mb-12 max-w-[720px]">
+          <Reveal as="h2" className="led-display text-[clamp(34px,4.8vw,62px)] text-[var(--led-ink)]">
+            What does the first pass{" "}
+            <span className="relative whitespace-nowrap">
+              cost you?
+              <span aria-hidden className="absolute -bottom-1 left-0 h-[0.12em] w-full rounded-full bg-[var(--pix-coral)]" />
+            </span>
           </Reveal>
-          <Reveal as="h2" delay={1} className="led-display mt-5 text-[clamp(30px,3.6vw,50px)] text-[var(--led-ink)]">
-            What does the first pass cost you?
-          </Reveal>
-          <Reveal as="p" delay={2} className="mt-5 text-[15.5px] leading-[1.65] text-[var(--led-ink-soft)]">
+          <Reveal as="p" delay={2} className="mt-6 max-w-[52ch] text-[16px] leading-[1.65] text-[var(--led-ink-soft)] md:text-[17px]">
             Set the sliders to your own volume. Blue-IQ reads every clause in seconds, so the hours
             your team spends on first-pass review come back to the calendar.
           </Reveal>
@@ -65,16 +65,18 @@ export function SavingsCalculator() {
 
         <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
           {/* Controls */}
-          <Reveal delay={1} className="flex flex-col gap-7 rounded-xl border border-[var(--led-line)] bg-white p-7 led-stamp md:p-9">
+          <Reveal delay={1} className="flex flex-col gap-7 rounded-xl border border-[var(--led-line)] bg-[var(--paper-elev)] p-7 led-stamp md:p-9">
             <span className="led-marker text-[var(--led-ink-soft)]">Your inputs</span>
             <SliderRow label="Contracts reviewed / month" value={contracts.toLocaleString()} min={5} max={500} step={5} raw={contracts} onChange={setContracts} />
             <SliderRow label="Hours of manual review each" value={`${hours} hrs`} min={1} max={20} step={1} raw={hours} onChange={setHours} />
             <SliderRow label="Blended hourly rate" value={`$${rate}`} min={50} max={500} step={10} raw={rate} onChange={setRate} />
           </Reveal>
 
-          {/* Result — solid navy block, no coloured glow */}
-          <Reveal delay={2} className="block-navy flex flex-col rounded-xl border border-[var(--led-line)] p-8 led-stamp-blue md:p-10">
-            <span className="led-marker text-white/55">Estimated annual saving</span>
+          {/* Result — dark band, matching the hero's capability strip */}
+          <Reveal delay={2} className="pix-dark relative flex flex-col overflow-hidden rounded-[28px] p-8 md:p-10">
+            <span aria-hidden className="absolute right-8 top-8 h-2 w-2 rounded-[2px] bg-[var(--pix-coral)]" />
+            <span aria-hidden className="absolute right-12 top-8 h-2 w-2 rounded-[2px] bg-[var(--pix-peri)]" />
+            <span className="led-marker text-[10.5px] text-white/45">Estimated annual saving</span>
             <AnimatedValue
               value={savedYear}
               format={money}
@@ -109,12 +111,12 @@ export function SavingsCalculator() {
 
             <div className="mt-7 grid grid-cols-2 gap-3">
               <StatTile
-                icon={<Clock size={15} />}
+                accent="var(--pix-coral)"
                 value={<AnimatedValue value={hoursYear} format={(v) => `${Math.round(v).toLocaleString()} hrs`} />}
                 label="reclaimed per year"
               />
               <StatTile
-                icon={<TrendingUp size={15} />}
+                accent="var(--pix-peri)"
                 value={`${Math.round(EFFICIENCY * 100)}%`}
                 label="of first-pass time automated"
               />
@@ -164,12 +166,12 @@ function SliderRow({
   );
 }
 
-function StatTile({ icon, value, label }: { icon: ReactNode; value: ReactNode; label: string }) {
+function StatTile({ accent, value, label }: { accent: string; value: ReactNode; label: string }) {
   return (
-    <div className="rounded-lg border border-white/15 bg-white/5 p-4">
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/10 text-[var(--led-cream)]">{icon}</span>
-      <div className="mt-2.5 text-[18px] font-bold tabular-nums text-[var(--led-cream)]">{value}</div>
-      <div className="text-[11.5px] text-white/55">{label}</div>
+    <div className="relative rounded-2xl bg-[#262521] p-4">
+      <span aria-hidden className="absolute right-4 top-4 h-2 w-2 rounded-[2px]" style={{ background: accent }} />
+      <div className="led-display pr-6 text-[clamp(20px,2.2vw,26px)] leading-none tabular-nums text-[#F5F4F0]">{value}</div>
+      <div className="mt-2.5 text-[11.5px] text-white/55">{label}</div>
     </div>
   );
 }

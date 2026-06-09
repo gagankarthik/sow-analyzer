@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "@/components/ui/icons";
+import { Plus, ShieldCheck } from "@/components/ui/icons";
 import { Reveal } from "@/components/landing/primitives";
+
+/* Compliance posture — doubles as the FAQ's supporting visual. */
+const COMPLIANCE = ["SOC 2 Type II", "GDPR", "HIPAA", "WCAG 2.1 AA", "ADA"];
 
 /* ──────────────────────────────────────────────────────────────
    FAQs — ledger accordion + FAQPage structured data for SEO.
@@ -21,6 +24,10 @@ const FAQS = [
     a: "Blue-IQ is aligned to SOC 2, GDPR, and HIPAA. Data is encrypted in transit and at rest, access is scoped per tenant, and your contracts are never used to train shared models.",
   },
   {
+    q: "Is the product accessible?",
+    a: "Yes. Blue-IQ is built to WCAG 2.1 AA and ADA standards — full keyboard navigation, visible focus states, semantic markup, screen-reader labels, and respect for reduced-motion preferences across the app.",
+  },
+  {
     q: "What document types can it read?",
     a: "SOWs, MSAs, NDAs, and amendments. PDF, DOCX, and scanned image-only files all work — OCR handles the scanned ones down to the individual clause.",
   },
@@ -30,7 +37,7 @@ const FAQS = [
   },
   {
     q: "Is there a free trial?",
-    a: "Yes, and no credit card is needed. Sign up and analyze your first contract for free. Pricing scales with the number of documents and people on the account.",
+    a: "Yes, and no credit card is needed. Sign up and analyze your first contract for free.",
   },
 ];
 
@@ -57,15 +64,38 @@ export function FAQsSection() {
 
       <div className="mx-auto grid max-w-[1120px] grid-cols-1 gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
         <div className="lg:sticky lg:top-[120px] lg:self-start">
-          <Reveal as="span" className="led-marker inline-flex items-center gap-2 text-[var(--led-blue)]">
-            <span className="inline-block h-2 w-2 rounded-[2px] bg-[var(--led-blue)]" />
-            Common questions
-          </Reveal>
-          <Reveal as="h2" delay={1} className="led-display mt-5 text-[clamp(30px,3.4vw,48px)] text-[var(--led-ink)]">
+          <Reveal as="h2" className="led-display text-[clamp(30px,3.4vw,48px)] text-[var(--led-ink)]">
             The things teams ask first.
           </Reveal>
           <Reveal as="p" delay={2} className="mt-5 max-w-[36ch] text-[15px] leading-[1.65] text-[var(--led-ink-soft)]">
             Still deciding? These are the questions that come up in the first call.
+          </Reveal>
+
+          {/* Compliance / trust panel — the section's supporting visual */}
+          <Reveal delay={2} className="mt-8 overflow-hidden rounded-2xl border border-[var(--led-line)] bg-[var(--paper-elev)] p-6">
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--led-low)]/12 text-[var(--led-low)]">
+                <ShieldCheck size={18} strokeWidth={1.9} />
+              </span>
+              <div>
+                <p className="text-[13.5px] font-semibold text-[var(--led-ink)]">Built to enterprise standards</p>
+                <p className="text-[11.5px] text-[var(--led-ink-soft)]">Security, privacy &amp; accessibility</p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {COMPLIANCE.map((c, i) => (
+                <span
+                  key={c}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--led-line)] bg-[var(--page-bg)] px-3 py-1.5 text-[12px] font-medium text-[var(--led-ink)]"
+                >
+                  <span className="h-1.5 w-1.5 rounded-[1px]" style={{ background: i % 2 === 0 ? "var(--pix-coral)" : "var(--pix-peri)" }} />
+                  {c}
+                </span>
+              ))}
+            </div>
+            <p className="mt-4 border-t border-[var(--led-line)] pt-4 text-[12px] leading-[1.55] text-[var(--led-ink-soft)]">
+              Keyboard-navigable, screen-reader labelled, and reduced-motion aware — aligned end to end.
+            </p>
           </Reveal>
         </div>
 

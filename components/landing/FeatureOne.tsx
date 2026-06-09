@@ -119,11 +119,7 @@ export function FeatureOne() {
     <section className="px-5 md:px-10 py-24 md:py-32">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-10 max-w-[640px] md:mb-14">
-          <Reveal as="span" className="led-marker inline-flex items-center gap-2 text-[var(--led-blue)]">
-            <span className="inline-block h-2 w-2 rounded-[2px] bg-[var(--led-blue)]" />
-            Clause extraction
-          </Reveal>
-          <Reveal as="h2" delay={1} className="led-display mt-5 text-[clamp(30px,3.4vw,46px)] leading-[1.05] text-[var(--led-ink)]">
+          <Reveal as="h2" className="led-display text-[clamp(30px,3.4vw,46px)] leading-[1.05] text-[var(--led-ink)]">
             Every clause, indexed and searchable.
           </Reveal>
         </div>

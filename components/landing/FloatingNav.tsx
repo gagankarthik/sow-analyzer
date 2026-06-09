@@ -75,10 +75,6 @@ const NAV_MENUS: NavMenu[] = [
     },
   },
   {
-    label: "Pricing",
-    href: "#pricing",
-  },
-  {
     label: "Resources",
     href: "#features",
     items: [

@@ -51,7 +51,7 @@ export function Footer() {
                 { label: "Create account", href: "/signup" },
                 { label: "Sign in", href: "/login" },
                 { label: "Book a demo", href: "/signup" },
-                { label: "Pricing", href: "#pricing" },
+                { label: "Open workspace", href: "/dashboard" },
               ]}
             />
             <FooterCol
@@ -76,12 +76,15 @@ export function Footer() {
             <Link href="/legal/security" className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground">Security</Link>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-[11.5px] text-muted-foreground">
               <Globe2 size={12} /> English · US
             </span>
             <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-[11.5px] text-muted-foreground">
-              <ShieldCheck size={12} /> SOC 2–aligned
+              <ShieldCheck size={12} /> SOC 2 · GDPR · HIPAA
+            </span>
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-[11.5px] text-muted-foreground">
+              <ShieldCheck size={12} /> WCAG 2.1 AA · ADA
             </span>
           </div>
         </div>

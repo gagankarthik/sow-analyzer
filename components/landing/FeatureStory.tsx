@@ -11,7 +11,6 @@ import {
   Brain,
 } from "@/components/ui/icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Reveal } from "@/components/landing/primitives";
 
 /* ──────────────────────────────────────────────── */
 /*  Sonar — AI assistant mark (logo-icon)            */
@@ -155,43 +154,41 @@ function AgentsBoard() {
 
 export function FeatureStory() {
   const platform = [
-    { title: "Ask across the whole portfolio", body: "Ask Sonar about clause language, playbook deviations, or renewal dates. Answers come back in seconds, with the clause cited." },
-    { title: "Track value across amendments", body: "See the original SOW value next to every amendment, and how the total moves. Bar, pie, and trend charts, no spreadsheet." },
-    { title: "One home for every document", body: "SOWs, MSAs, NDAs, and amendments live in one place, searchable down to the individual clause." },
+    { title: "Ask across the whole portfolio", body: "Query clause language, playbook deviations, or renewal dates — answered in seconds, with the clause cited." },
+    { title: "Track value across amendments", body: "See how every amendment moves the total, in clear charts instead of a spreadsheet." },
+    { title: "One home for every document", body: "SOWs, MSAs, NDAs, and amendments — searchable down to the clause." },
   ];
   const copilot = [
-    { title: "Every answer cites a clause", body: "Sonar won't assert anything without showing its source. Each suggestion links to the exact section, playbook rule, or related contract." },
-    { title: "It drafts counter-language", body: "Ask for a redline and Sonar writes counter-language drawn from your playbook, then explains why each change matters." },
-    { title: "Grounded in your own contract", body: "Sonar reads the document's own clauses to answer. It won't invent terms that aren't on the page." },
+    { title: "Every answer cites a clause", body: "Each suggestion links to the exact section, playbook rule, or related contract." },
+    { title: "It drafts counter-language", body: "Ask for a redline and Sonar writes counter-language straight from your playbook." },
+    { title: "Grounded in your contract", body: "Sonar answers from the document's own clauses — it won't invent terms." },
   ];
   const agents = [
-    { title: "Draft a SOW from a few answers", body: "Answer a short questionnaire and Sonar drafts an editable statement of work. Export the final version to Word." },
-    { title: "Score risk before you sign", body: "Sonar flags exposure across liability caps, indemnity carve-outs, and SLA shortfalls while there's still time to push back." },
-    { title: "Diff every amendment", body: "Each amendment is compared to the original. Sonar shows what moved and recalculates the contract's total value." },
+    { title: "Draft a SOW in minutes", body: "Answer a short questionnaire; Sonar drafts an editable SOW you can export to Word." },
+    { title: "Score risk before you sign", body: "Exposure flagged across liability caps, indemnity, and SLAs — while you can still push back." },
+    { title: "Diff every amendment", body: "Each version compared to the original, with the total value recalculated." },
   ];
 
   const tabs = [
     {
       value: "platform", label: "One platform", icon: <Layers className="h-4 w-4 shrink-0" />,
-      eyebrow: "One platform", title: "Every contract in one place.",
-      blurb: "Legal, sales, and finance read from the same set of contracts and the same risk scores.",
+      title: "Every contract in one place.",
+      blurb: "Legal, sales, and finance work from the same contracts and the same risk scores.",
       points: platform,
-      note: "When every team works from one copy, nobody re-reads the same MSA or debates which version is current.",
       cta: { href: "/dashboard", label: "Tour the workspace" }, visual: <PlatformBoard />,
     },
     {
       value: "copilot", label: "Copilot", icon: <Sparkles className="h-4 w-4 shrink-0" />,
-      eyebrow: "Copilot", title: "Ask Sonar about any clause.",
-      blurb: "Sonar answers from the contract's own text and drafts counter-language, with the clause cited every time.",
-      points: copilot, note: null,
+      title: "Ask Sonar about any clause.",
+      blurb: "Sonar answers from the contract's own text and drafts counter-language — clause cited every time.",
+      points: copilot,
       cta: { href: "/dashboard", label: "See Sonar in action" }, visual: <CopilotBoard />,
     },
     {
-      value: "agents", label: "Drafting and review", icon: <Brain className="h-4 w-4 shrink-0" />,
-      eyebrow: "Sonar · drafting and review", title: "Draft, redline, and score risk.",
-      blurb: "Sonar drafts a SOW from a questionnaire, scores clause risk, and diffs every amendment for you.",
+      value: "agents", label: "Drafting & review", icon: <Brain className="h-4 w-4 shrink-0" />,
+      title: "Draft, redline, and score risk.",
+      blurb: "Sonar drafts SOWs, scores clause risk, and diffs every amendment for you.",
       points: agents,
-      note: "Sonar handles the repetitive first pass. Your team spends its time on the calls that need judgment.",
       cta: { href: "/dashboard", label: "Meet Sonar" }, visual: <AgentsBoard />,
     },
   ];
@@ -200,12 +197,13 @@ export function FeatureStory() {
     <section id="features" className="px-5 md:px-10 py-24 md:py-32">
       <div className="mx-auto max-w-[1120px]">
         <div className="mb-10 flex flex-col items-center gap-4 text-center md:mb-12">
-          <Reveal as="span" className="led-marker text-[var(--led-blue)]">
-            The platform
-          </Reveal>
-          <Reveal as="h2" className="led-display max-w-[20ch] text-[clamp(30px,3.4vw,46px)] leading-[1.05] text-[var(--led-ink)]">
+          <h2 className="led-display fade-up max-w-[22ch] text-[clamp(32px,3.6vw,48px)] leading-[1.04] text-[var(--led-ink)]">
             What Sonar does once you upload.
-          </Reveal>
+          </h2>
+          <p className="fade-up max-w-[54ch] text-[15px] leading-[1.6] text-[var(--led-ink-soft)]">
+            One assistant for the whole document — it reads, scores, and drafts, then hands you
+            the calls that need judgment.
+          </p>
         </div>
 
         <Tabs defaultValue="platform" className="flex-col items-center">
@@ -239,12 +237,6 @@ export function FeatureStory() {
                       </div>
                     ))}
                   </div>
-
-                  {t.note && (
-                    <p className="mt-5 max-w-prose rounded-xl border border-border bg-muted/50 p-4 text-[13px] leading-[1.55] text-foreground/70">
-                      {t.note}
-                    </p>
-                  )}
 
                   <Link
                     href={t.cta.href}
