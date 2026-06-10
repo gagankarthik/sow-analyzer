@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -13,7 +14,17 @@ import {
   readEnabledPacks,
   type PackIconKey,
 } from "@/lib/compliance-packs";
+import { getCompliancePacks, saveCompliancePacks } from "@/lib/api";
 import { ShieldCheck, Lock, Globe2, Database, BookMarked, Check } from "@/components/ui/icons";
+
+function writeMirror(enabled: Record<string, boolean>) {
+  // Mirror to localStorage so the dashboard's useEnabledPacks reads it instantly.
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(enabled));
+  } catch {
+    /* ignore quota/private-mode */
+  }
+}
 
 const PACK_ICON: Record<PackIconKey, typeof ShieldCheck> = {
   gdpr: Globe2,
@@ -24,21 +35,46 @@ const PACK_ICON: Record<PackIconKey, typeof ShieldCheck> = {
 };
 
 export default function CompliancePacksPage() {
-  // Lazy-init from storage (returns defaults on the server); the `mounted` flag
-  // gates hydration-sensitive UI so SSR and first client render match.
+  // Lazy-init from the localStorage cache (returns defaults on the server); the
+  // `mounted` flag gates hydration-sensitive UI so SSR and first render match.
   const [enabled, setEnabled] = useState<Record<string, boolean>>(readEnabledPacks);
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const [saving, setSaving] = useState(false);
 
-  // Persist on change (effects run client-side only, so no SSR guard needed).
+  // Hydrate from the backend (the per-tenant source of truth) and mirror it to
+  // localStorage so the cache + dashboard reflect what's actually saved.
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(enabled));
-    } catch {
-      /* ignore quota/private-mode */
-    }
-  }, [enabled]);
+    let cancelled = false;
+    getCompliancePacks()
+      .then((state) => {
+        if (cancelled) return;
+        const on = new Set(state.packs);
+        const next = Object.fromEntries(PACKS.map((p) => [p.id, on.has(p.id)]));
+        setEnabled(next);
+        writeMirror(next);
+      })
+      .catch(() => {
+        /* offline / API not configured — keep the localStorage cache */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const toggle = (id: string) => setEnabled((e) => ({ ...e, [id]: !e[id] }));
+  const toggle = (id: string) => {
+    const next = { ...enabled, [id]: !enabled[id] };
+    setEnabled(next);
+    writeMirror(next);
+    const ids = PACKS.filter((p) => next[p.id]).map((p) => p.id);
+    setSaving(true);
+    saveCompliancePacks(ids)
+      .catch((err: unknown) =>
+        toast.error("Couldn't save compliance packs", {
+          description: err instanceof Error ? err.message : "Please try again.",
+        }),
+      )
+      .finally(() => setSaving(false));
+  };
 
   const stats = useMemo(() => {
     const on = PACKS.filter((p) => enabled[p.id]);
@@ -125,9 +161,21 @@ export default function CompliancePacksPage() {
           })}
         </div>
 
-        <p className="text-[12px] text-muted-foreground">
-          Packs are applied on the next analysis. Re-analyse a document to grade it against newly
-          enabled frameworks.
+        <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          {saving ? (
+            <span className="inline-flex items-center gap-1.5 text-[var(--brand-primary-600)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-primary-600)] animate-pulse" />
+              Saving…
+            </span>
+          ) : mounted ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Check size={13} className="text-[var(--success)]" />
+              Synced to your workspace
+            </span>
+          ) : null}
+          <span className="text-muted-foreground/70">
+            · Applied on the next analysis — re-analyse a document to grade it against newly enabled frameworks.
+          </span>
         </p>
       </div>
     </>

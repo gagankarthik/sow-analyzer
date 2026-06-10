@@ -147,6 +147,25 @@ export async function saveProjectsState(projects: StoredProject[]): Promise<void
   })
 }
 
+// ── Compliance packs (per-tenant; which frameworks Sonar grades against) ──
+export interface CompliancePacksState {
+  packs: string[]      // effective enabled pack ids (defaults if never set)
+  explicit: boolean    // has the tenant chosen, or are these system defaults?
+  known: string[]      // all known pack ids the backend supports
+}
+
+export async function getCompliancePacks(): Promise<CompliancePacksState> {
+  return request<CompliancePacksState>("/tenant/compliance")
+}
+
+export async function saveCompliancePacks(packs: string[]): Promise<string[]> {
+  const data = await request<{ packs: string[] }>("/tenant/compliance", {
+    method: "POST",
+    body: JSON.stringify({ packs }),
+  })
+  return data.packs
+}
+
 // Get one document + its versions
 export async function getDocument(docId: string): Promise<ApiDocumentDetail> {
   return request<ApiDocumentDetail>(`/documents/${docId}`)

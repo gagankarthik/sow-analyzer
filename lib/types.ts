@@ -38,6 +38,15 @@ export interface ApiDocument {
   paymentTerms?: string | null
   reconciled?: boolean | null
   parentReference?: string | null
+  // Term / renewal dates (written by persist; power the obligations & renewals view)
+  termEndDate?: string | null
+  renewalDate?: string | null
+  autoRenews?: boolean
+  renewalNoticeDays?: number | null
+  // Compliance-pack coverage aggregates (written by persist when packs are enabled)
+  complianceCoveragePct?: number | null
+  complianceGaps?: number | null
+  complianceFrameworks?: string[]
 }
 
 export interface ApiVersion {

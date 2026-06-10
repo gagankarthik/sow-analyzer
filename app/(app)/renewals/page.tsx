@@ -19,6 +19,8 @@ type Item = {
   days: number; // days from now (negative = overdue)
   kind: "renewal" | "expired" | "upcoming";
   value: number;
+  autoRenews: boolean;
+  dateLabel: string; // what the key date represents (Renewal / Term ends / Effective)
 };
 
 function monthLabel(ms: number): string {
@@ -40,16 +42,24 @@ export default function RenewalsPage() {
     const out: Item[] = [];
     for (const d of docs) {
       const value = d.contractValue ?? 0;
-      const eff = d.effectiveDate ? new Date(d.effectiveDate).getTime() : NaN;
-      const hasDate = Number.isFinite(eff);
-      const days = hasDate ? Math.round((eff - now) / DAY) : 0;
+      const autoRenews = !!d.autoRenews;
 
-      if (d.lifecycle === "expired") {
-        out.push({ doc: d, date: hasDate ? eff : now, days: hasDate ? days : -1, kind: "expired", value });
-      } else if (d.lifecycle === "renewal") {
-        out.push({ doc: d, date: hasDate ? eff : now, days: hasDate ? days : 0, kind: "renewal", value });
-      } else if (hasDate && eff >= now && eff <= now + 180 * DAY) {
-        out.push({ doc: d, date: eff, days, kind: "upcoming", value });
+      // Prefer the real renewal/term-end date the pipeline now extracts; fall back
+      // to the effective date only when neither is present.
+      const keyIso = d.renewalDate || d.termEndDate || d.effectiveDate;
+      const dateLabel = d.renewalDate ? "Renews" : d.termEndDate ? "Term ends" : "Effective";
+      const t = keyIso ? new Date(keyIso).getTime() : NaN;
+      const hasDate = Number.isFinite(t);
+      const days = hasDate ? Math.round((t - now) / DAY) : 0;
+
+      const base = { doc: d, value, autoRenews, dateLabel } as const;
+
+      if (d.lifecycle === "expired" || (hasDate && d.termEndDate && t < now)) {
+        out.push({ ...base, date: hasDate ? t : now, days: hasDate ? days : -1, kind: "expired" });
+      } else if (d.lifecycle === "renewal" || (!!d.renewalDate && hasDate && t <= now + 180 * DAY)) {
+        out.push({ ...base, date: hasDate ? t : now, days: hasDate ? days : 0, kind: "renewal" });
+      } else if (hasDate && t >= now && t <= now + 180 * DAY) {
+        out.push({ ...base, date: t, days, kind: "upcoming" });
       }
     }
     return out.sort((a, b) => a.date - b.date);
@@ -101,7 +111,7 @@ export default function RenewalsPage() {
           <div className="flex items-center gap-2 mb-4">
             <CalendarClock size={15} className="text-[var(--brand-primary-600)]" />
             <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Upcoming window</h3>
-            <span className="ml-auto text-[11px] text-muted-foreground">by effective date</span>
+            <span className="ml-auto text-[11px] text-muted-foreground">by renewal / term-end date</span>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {([["30 days", kpis.d30], ["60 days", kpis.d60], ["90 days", kpis.d90]] as const).map(([label, n]) => (
@@ -152,9 +162,14 @@ export default function RenewalsPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-[13.5px] font-semibold text-foreground truncate">{i.doc.title || "Untitled"}</span>
                             <DocTypeBadge type={i.doc.docType} />
+                            {i.autoRenews && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wide text-[var(--warning)]">
+                                <Repeat size={9} />auto
+                              </span>
+                            )}
                           </div>
                           <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                            {i.doc.effectiveDate ? new Date(i.date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "No date set"}
+                            {Number.isFinite(i.date) ? `${i.dateLabel} ${new Date(i.date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : "No date set"}
                             {i.value > 0 ? ` · ${fmtMoney(i.value, i.doc.currency)}` : ""}
                           </div>
                         </div>

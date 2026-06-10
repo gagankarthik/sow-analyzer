@@ -235,6 +235,18 @@ export default function DashboardPage() {
   }, [classKey, enabledPacks]);
   const complianceGaps = complianceCoverage.reduce((s, c) => s + c.gaps, 0);
 
+  // Persisted, per-document coverage (written by the backend persist stage) — a
+  // cheaper and more accurate portfolio figure than the clause-lumped gauges,
+  // available straight from the document list without loading classifications.
+  const persistedCoverage = useMemo(() => {
+    const isComplianceDoc = (d: ApiDocument) => d.docType === "DPA" || d.docType === "BAA" || d.docType === "COMPLIANCE";
+    const scored = docs.filter((d) => isComplianceDoc(d) && typeof d.complianceCoveragePct === "number");
+    if (scored.length === 0) return null;
+    const avg = Math.round(scored.reduce((s, d) => s + (d.complianceCoveragePct ?? 0), 0) / scored.length);
+    const withGaps = scored.filter((d) => (d.complianceGaps ?? 0) > 0).length;
+    return { avg, scored: scored.length, withGaps };
+  }, [docs]);
+
   // Sortable contracts table
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>(() => {
     const f = loadFilters();
@@ -394,7 +406,13 @@ export default function DashboardPage() {
                 <Card
                   title="Compliance coverage"
                   icon={<ShieldCheck size={15} />}
-                  sub={complianceGaps > 0 ? `${complianceGaps} clause gap${complianceGaps === 1 ? "" : "s"} across enabled packs` : "all obligations present"}
+                  sub={
+                    persistedCoverage
+                      ? `${persistedCoverage.avg}% avg per document · ${persistedCoverage.withGaps} with gaps`
+                      : complianceGaps > 0
+                        ? `${complianceGaps} clause gap${complianceGaps === 1 ? "" : "s"} across enabled packs`
+                        : "all obligations present"
+                  }
                 >
                   <div className="flex flex-wrap items-start justify-around gap-x-6 gap-y-6 pt-1">
                     {complianceCoverage.map((c) => (
