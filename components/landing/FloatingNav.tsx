@@ -78,6 +78,7 @@ const NAV_MENUS: NavMenu[] = [
     label: "Resources",
     href: "#features",
     items: [
+      { label: "Savings calculator", href: "/calculator", description: "Estimate the hours and cost you'd save", icon: BarChart3 },
       { label: "Workflow", href: "/workflow", description: "See where every contract is stuck", icon: GitBranch },
       { label: "Security", href: "#security", description: "SOC 2, GDPR, and HIPAA aligned", icon: Lock },
       { label: "Playbook", href: "/settings/playbook", description: "Your firm's standard positions", icon: Users },

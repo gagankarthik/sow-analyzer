@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DocTypeBadge } from "@/components/DocTypeBadge";
 import { ProcessingState } from "@/components/ProcessingState";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { ContractEvolution } from "@/components/ContractEvolution";
 import { SowTimeline } from "@/components/SowTimeline";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
@@ -32,7 +33,7 @@ import type { ApiClause, ApiKeyFinding, DocType, Lifecycle, RiskLevel, FindingSe
 
 type Project = ReturnType<typeof apiDocToProject>;
 
-const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "OTHER"];
+const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "LICENSE", "DPA", "BAA", "COMPLIANCE", "OTHER"];
 const LIFECYCLE_OPTIONS: Lifecycle[] = ["draft", "review", "negotiation", "approval", "signed", "active", "renewal", "expired"];
 const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
   draft: "Draft", review: "Review", negotiation: "Negotiation", approval: "Approval",
@@ -187,9 +188,9 @@ function DocumentOverview() {
         {/* ── Executive summary ─────────────────────────────── */}
         <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
           <div className="flex items-start gap-3.5">
-            <BlueyMark size="md" tile pulse />
+            <SonarMark size="md" tile pulse />
             <div className="flex-1 min-w-0">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluey · executive summary</div>
+              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Sonar · executive summary</div>
               {!isReady ? (
                 <p className="text-[13.5px] text-muted-foreground">The summary appears once processing completes.</p>
               ) : summary ? (
@@ -317,7 +318,7 @@ function DocumentOverview() {
           <div className="rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs">
             <h3 className="text-[14px] font-semibold tracking-tight text-foreground mb-5">Document details</h3>
             <dl className="space-y-3">
-              <DetailItem label="Type"><Badge variant="neutral" size="sm">{doc.docType}</Badge></DetailItem>
+              <DetailItem label="Type"><DocTypeBadge type={doc.docType} /></DetailItem>
               <DetailItem label="Lifecycle"><Badge variant="neutral" size="sm" className="capitalize">{doc.lifecycle}</Badge></DetailItem>
               <DetailItem label="Status"><Badge variant={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"} size="sm" className="font-mono">{rawStatus}</Badge></DetailItem>
               {doc.effectiveDate && <DetailItem label="Effective"><span className="text-[12px] font-medium text-foreground">{formatDate(doc.effectiveDate)}</span></DetailItem>}

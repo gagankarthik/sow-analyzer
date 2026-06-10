@@ -50,7 +50,7 @@ export function Footer() {
               items={[
                 { label: "Create account", href: "/signup" },
                 { label: "Sign in", href: "/login" },
-                { label: "Book a demo", href: "/signup" },
+                { label: "Savings calculator", href: "/calculator" },
                 { label: "Open workspace", href: "/dashboard" },
               ]}
             />

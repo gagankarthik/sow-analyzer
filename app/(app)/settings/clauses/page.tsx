@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { MotionReveal } from "@/components/MotionReveal";
 import {
   Search,
@@ -107,7 +107,7 @@ export default function ClauseLibraryPage() {
           </div>
           <div className="flex-1" />
           <Button variant="ai" size="md" className="gap-1.5 pl-2" disabled>
-            <BlueyMark size="sm" />
+            <SonarMark size="sm" />
             Suggest gaps in coverage
           </Button>
         </div>
@@ -135,13 +135,13 @@ export default function ClauseLibraryPage() {
         {totalCount !== null && totalCount > 0 && (
           <MotionReveal>
             <div className="rounded-2xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 shadow-xs p-5 md:p-6 flex items-start gap-3">
-              <BlueyMark size="sm" />
+              <SonarMark size="sm" />
               <div>
                 <div className="text-[13px] font-medium text-foreground">
                   {readyCount} document{readyCount === 1 ? "" : "s"} ready for clause extraction
                 </div>
                 <p className="mt-0.5 text-[12px] text-muted-foreground">
-                  Bluey will extract and categorize clauses as your documents are processed. Clauses will appear here automatically.
+                  Sonar will extract and categorize clauses as your documents are processed. Clauses will appear here automatically.
                 </p>
               </div>
             </div>
@@ -159,8 +159,8 @@ export default function ClauseLibraryPage() {
             </h3>
             <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed mb-5">
               {totalCount === 0
-                ? "Upload documents in Projects and Bluey will extract and categorize clauses automatically."
-                : "Bluey is indexing your documents. Clauses will appear here as processing completes."}
+                ? "Upload documents in Projects and Sonar will extract and categorize clauses automatically."
+                : "Sonar is indexing your documents. Clauses will appear here as processing completes."}
             </p>
             {totalCount === 0 && (
               <Button variant="primary" size="md" asChild>

@@ -5,9 +5,7 @@ import { Hero } from "@/components/landing/Hero";
 import { PixelFeatures } from "@/components/landing/PixelFeatures";
 import { LeadSection } from "@/components/landing/LeadSection";
 import { ClauseIntelligenceSection } from "@/components/landing/ClauseIntelligenceSection";
-import { FeatureStory } from "@/components/landing/FeatureStory";
 import { HumanVsTool } from "@/components/landing/HumanVsTool";
-import { SavingsCalculator } from "@/components/landing/SavingsCalculator";
 import { PersonasSection } from "@/components/landing/PersonasSection";
 import { ProofSection } from "@/components/landing/ProofSection";
 import { FAQsSection } from "@/components/landing/FAQsSection";
@@ -26,9 +24,7 @@ export default function LandingPage() {
         <PixelFeatures />
         <LeadSection />
         <ClauseIntelligenceSection />
-        <FeatureStory />
         <HumanVsTool />
-        <SavingsCalculator />
         <PersonasSection />
         <ProofSection />
         <FAQsSection />

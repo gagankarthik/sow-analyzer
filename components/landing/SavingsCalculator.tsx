@@ -47,29 +47,20 @@ export function SavingsCalculator() {
   const savedPct = manualCostYear > 0 ? (savedYear / manualCostYear) * 100 : 0;
 
   return (
-    <section className="px-5 py-24 md:px-10 md:py-32">
+    <section className="px-5 pb-10 pt-4 md:px-10 md:pb-16 md:pt-6">
       <div className="mx-auto max-w-[1120px]">
-        <div className="mb-12 max-w-[720px]">
-          <Reveal as="h2" className="led-display text-[clamp(34px,4.8vw,62px)] text-[var(--led-ink)]">
-            What does the first pass{" "}
-            <span className="relative whitespace-nowrap">
-              cost you?
-              <span aria-hidden className="absolute -bottom-1 left-0 h-[0.12em] w-full rounded-full bg-[var(--pix-coral)]" />
-            </span>
-          </Reveal>
-          <Reveal as="p" delay={2} className="mt-6 max-w-[52ch] text-[16px] leading-[1.65] text-[var(--led-ink-soft)] md:text-[17px]">
-            Set the sliders to your own volume. Blue-IQ reads every clause in seconds, so the hours
-            your team spends on first-pass review come back to the calendar.
-          </Reveal>
-        </div>
-
-        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
+        <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[1fr_1.05fr]">
           {/* Controls */}
-          <Reveal delay={1} className="flex flex-col gap-7 rounded-xl border border-[var(--led-line)] bg-[var(--paper-elev)] p-7 led-stamp md:p-9">
-            <span className="led-marker text-[var(--led-ink-soft)]">Your inputs</span>
-            <SliderRow label="Contracts reviewed / month" value={contracts.toLocaleString()} min={5} max={500} step={5} raw={contracts} onChange={setContracts} />
-            <SliderRow label="Hours of manual review each" value={`${hours} hrs`} min={1} max={20} step={1} raw={hours} onChange={setHours} />
-            <SliderRow label="Blended hourly rate" value={`$${rate}`} min={50} max={500} step={10} raw={rate} onChange={setRate} />
+          <Reveal delay={1} className="flex flex-col rounded-[28px] border border-[var(--led-line)] bg-[var(--paper-elev)] p-7 led-stamp md:p-9">
+            <div className="flex items-center justify-between border-b border-[var(--led-line)] pb-5">
+              <span className="led-marker text-[10.5px] text-[var(--led-ink-soft)]">Your inputs</span>
+              <span className="text-[11px] text-[var(--led-ink-soft)]">Drag to adjust</span>
+            </div>
+            <div className="mt-7 flex flex-col gap-8">
+              <SliderRow label="Contracts reviewed / month" value={contracts.toLocaleString()} min={5} max={500} step={5} raw={contracts} onChange={setContracts} />
+              <SliderRow label="Hours of manual review each" value={`${hours} hrs`} min={1} max={20} step={1} raw={hours} onChange={setHours} />
+              <SliderRow label="Blended hourly rate" value={`$${rate}`} min={50} max={500} step={10} raw={rate} onChange={setRate} />
+            </div>
           </Reveal>
 
           {/* Result — dark band, matching the hero's capability strip */}
@@ -130,7 +121,7 @@ export function SavingsCalculator() {
               <ArrowRight size={15} strokeWidth={2.5} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
             <p className="mt-3 text-center text-[11px] text-white/45">
-              An estimate from your inputs. Assumes Blue-IQ handles first-pass extraction and risk review.
+              An estimate from your inputs. Assumes Sonar handles first-pass extraction and risk review.
             </p>
           </Reveal>
         </div>

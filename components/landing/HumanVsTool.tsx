@@ -1,6 +1,7 @@
 "use client";
 
-import { X, Check, Clock } from "@/components/ui/icons";
+import Link from "next/link";
+import { X, Check, Clock, ArrowRight } from "@/components/ui/icons";
 import { PixelArt } from "@/components/landing/PixelArt";
 import { Reveal } from "@/components/landing/primitives";
 
@@ -110,6 +111,18 @@ export function HumanVsTool() {
               <VsBadge />
             </div>
           </div>
+        </Reveal>
+
+        {/* Lead to the savings calculator */}
+        <Reveal delay={1} className="mt-10 flex flex-col items-center gap-3 text-center">
+          <p className="text-[14px] text-[var(--led-ink-soft)]">Want the number for your team?</p>
+          <Link
+            href="/calculator"
+            className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--led-ink)] px-6 text-[15px] font-semibold text-[#F5F4F0] transition-colors hover:bg-black"
+          >
+            Open the savings calculator
+            <ArrowRight size={16} strokeWidth={2.25} className="transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </Reveal>
       </div>
     </section>

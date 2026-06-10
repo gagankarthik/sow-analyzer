@@ -22,6 +22,7 @@ import {
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument, useDeleteVersion, useDeleteDocument } from "@/lib/queries/documents";
 import { formatDate, formatRelativeDays } from "@/lib/format";
+import { DocTypeBadge } from "@/components/DocTypeBadge";
 import type { ApiVersion } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
@@ -100,7 +101,7 @@ export default function DocumentsPage() {
             <div className="flex items-end justify-between gap-3 flex-wrap">
               <div>
                 <h2 className="text-[18px] font-semibold tracking-tight text-foreground">Versions · {versions.length}</h2>
-                <p className="mt-1 text-[13px] text-muted-foreground">Every processed version of this document. Bluey indexes each one.</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">Every processed version of this document. Sonar indexes each one.</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="md" asChild><Link href="/projects/new"><Upload size={13} />Upload new</Link></Button>
@@ -148,7 +149,7 @@ export default function DocumentsPage() {
             <Link href="/projects/new" className="block rounded-xl border-2 border-dashed border-border bg-card/40 hover:bg-card hover:border-[var(--brand-primary-400)] transition-colors p-8 text-center group">
               <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)] mb-4 group-hover:scale-110 transition-transform"><Upload size={18} strokeWidth={1.75} /></span>
               <h3 className="text-[14px] font-semibold text-foreground">Upload a new version</h3>
-              <p className="mt-1.5 text-[12.5px] text-muted-foreground max-w-xs mx-auto">Drop an updated document — Bluey will diff it against the current version automatically.</p>
+              <p className="mt-1.5 text-[12.5px] text-muted-foreground max-w-xs mx-auto">Drop an updated document — Sonar will diff it against the current version automatically.</p>
             </Link>
           </main>
 
@@ -157,7 +158,7 @@ export default function DocumentsPage() {
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-3">Document info</div>
               <ul className="space-y-2.5 text-[12.5px]">
-                <Row label="Type"><span className="font-semibold text-foreground">{doc.docType}</span></Row>
+                <Row label="Type"><DocTypeBadge type={doc.docType} /></Row>
                 <Row label="Lifecycle"><span className="font-semibold text-foreground capitalize">{doc.lifecycle}</span></Row>
                 <Row label="Status"><Badge variant={doc.status === "READY" ? "success" : doc.status === "FAILED" ? "danger" : "warning"} size="sm" className="font-mono">{doc.status}</Badge></Row>
                 <Row label="Versions"><span className="font-semibold text-foreground tabular-nums">{versions.length}</span></Row>

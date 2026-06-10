@@ -42,7 +42,11 @@ function LoginForm() {
     setLoading(true);
     try {
       await signIn(email.trim().toLowerCase(), password);
-      router.replace(redirectTo);
+      // Hard navigation (not router.replace): the session cookie was just set,
+      // but the client router may hold a cached middleware redirect from when
+      // this page loaded unauthenticated. A full navigation re-runs the proxy
+      // gate with the cookie present, so we land on the dashboard first try.
+      window.location.assign(redirectTo);
     } catch (err) {
       if (err instanceof AuthError && err.code === "UserNotConfirmedException") {
         router.push(`/confirm?email=${encodeURIComponent(email.trim().toLowerCase())}`);

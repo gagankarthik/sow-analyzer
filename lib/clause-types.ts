@@ -1,4 +1,4 @@
-// Canonical clause taxonomy — the 13 clause types Bluey extracts from contracts
+// Canonical clause taxonomy — the 13 clause types Sonar extracts from contracts
 // and can weave into a freshly drafted SOW. Kept as pure data (no React, no
 // "use client") so it is safe to import from both client components and the
 // server-side route handlers that build the model prompt.
@@ -101,7 +101,7 @@ export const CLAUSE_TYPES: ClauseType[] = [
   {
     id: "other",
     label: "Other",
-    blurb: "Anything else — captured from your notes to Bluey.",
+    blurb: "Anything else — captured from your notes to Sonar.",
     prompt:
       "Include any additional standard provisions appropriate to a professional-services SOW that the parties would expect.",
   },

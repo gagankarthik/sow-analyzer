@@ -1,6 +1,6 @@
 "use client";
 
-// Chronological timeline of the dates Bluey extracts from a SOW (and its
+// Chronological timeline of the dates Sonar extracts from a SOW (and its
 // amendments): effective date, engagement start/end, phases, milestones, and
 // deliverable due dates. Reads the structured `timelineDetail`/`deliverables`
 // already produced by the classify stage — no new extraction needed.

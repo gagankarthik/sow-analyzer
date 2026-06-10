@@ -25,6 +25,10 @@ const DOC_TYPE_OPTIONS: { value: DocType; label: string }[] = [
   { value: "MSA", label: "Master Service Agreement (MSA)" },
   { value: "AMENDMENT", label: "Amendment" },
   { value: "NDA", label: "Non-Disclosure Agreement (NDA)" },
+  { value: "LICENSE", label: "Licence / Technology Agreement" },
+  { value: "DPA", label: "Data Processing Agreement (DPA)" },
+  { value: "BAA", label: "Business Associate Agreement (BAA)" },
+  { value: "COMPLIANCE", label: "Compliance (SOC 2 / VPAT / Policy)" },
   { value: "OTHER", label: "Other" },
 ];
 

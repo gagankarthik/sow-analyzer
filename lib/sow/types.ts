@@ -9,7 +9,7 @@ export const PRICING_LABELS: Record<SowPricingModel, string> = {
   retainer: "Monthly retainer",
 };
 
-/** The questionnaire answers Bluey turns into a first draft. */
+/** The questionnaire answers Sonar turns into a first draft. */
 export interface SowAnswers {
   title: string;
   provider: string;

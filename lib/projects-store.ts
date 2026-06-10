@@ -13,7 +13,11 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { getProjectsState, saveProjectsState } from "@/lib/api";
+import {
+  getProjectsState, saveProjectsState,
+  inviteProjectMember, removeProjectMember,
+  type ProjectMember, type ProjectMemberRole,
+} from "@/lib/api";
 
 export interface LocalProject {
   id: string;
@@ -21,6 +25,9 @@ export interface LocalProject {
   client?: string;
   createdAt: string;
   docIds: string[];
+  members?: ProjectMember[];
+  /** Email of the creator; only the owner may delete the project. */
+  ownerEmail?: string;
 }
 
 const EVENT = "blueiq:projects-changed";
@@ -109,17 +116,26 @@ export function getProject(id: string): LocalProject | undefined {
 
 // ── Mutations (optimistic mirror update + debounced cloud save) ────────────────
 
-export function createProject(name: string, client?: string): LocalProject {
+export function createProject(name: string, client?: string, ownerEmail?: string): LocalProject {
   const project: LocalProject = {
     id: newId(),
     name: name.trim() || "Untitled project",
     client: client?.trim() || undefined,
     createdAt: new Date().toISOString(),
     docIds: [],
+    ownerEmail: ownerEmail?.trim().toLowerCase() || undefined,
   };
   setCache([project, ...cache]);
   scheduleSave();
   return project;
+}
+
+/** True when `email` is the project's owner (or the project predates ownership,
+ *  so existing projects stay deletable by their tenant). */
+export function isProjectOwner(project: LocalProject | undefined, email: string | null | undefined): boolean {
+  if (!project) return false;
+  if (!project.ownerEmail) return true; // legacy project — no owner recorded
+  return !!email && project.ownerEmail.toLowerCase() === email.toLowerCase();
 }
 
 export function addDocToProject(projectId: string, docId: string): void {
@@ -154,6 +170,32 @@ export function renameProject(projectId: string, name: string): void {
 export function deleteProject(projectId: string): void {
   setCache(cache.filter((p) => p.id !== projectId));
   scheduleSave();
+}
+
+// ── Membership (server-authoritative; the API persists, we mirror locally) ────
+
+/** Invite a user to a project via Cognito, then mirror the new member locally.
+ *  Throws (with the API error message) on failure so the UI can surface it. */
+export async function inviteMember(
+  projectId: string,
+  email: string,
+  role: ProjectMemberRole = "member",
+): Promise<ProjectMember> {
+  const member = await inviteProjectMember(projectId, email, role);
+  setCache(cache.map((p) =>
+    p.id === projectId ? { ...p, members: [...(p.members ?? []), member] } : p,
+  ));
+  return member;
+}
+
+/** Remove a member from a project, then mirror the removal locally. */
+export async function removeMember(projectId: string, email: string): Promise<void> {
+  await removeProjectMember(projectId, email);
+  setCache(cache.map((p) =>
+    p.id === projectId
+      ? { ...p, members: (p.members ?? []).filter((m) => m.email.toLowerCase() !== email.toLowerCase()) }
+      : p,
+  ));
 }
 
 /** Strip a docId from every project that references it. Call after a document is

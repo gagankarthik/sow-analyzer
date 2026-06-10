@@ -19,11 +19,15 @@ import {
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
 import { getClassification } from "@/lib/api";
 import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
+import { categoryLabel } from "@/lib/clause-categories";
+import { docTypeShort } from "@/lib/doc-types";
+import { HBarChart, type HBarDatum } from "@/components/charts/HBarChart";
 import { useProjects, withUngroupedDocs, type LocalProject } from "@/lib/projects-store";
 import type { ApiClause, ApiClassification, ApiDocument, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
 const RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2, critical: 3 };
+const RISK_COLOR: Record<RiskLevel, string> = { low: "var(--success)", medium: "var(--ink-400)", high: "var(--warning)", critical: "var(--danger)" };
 const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const RISK_PILL: Record<RiskLevel, string> = {
   critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
@@ -136,9 +140,29 @@ export default function DashboardPage() {
   const catData: CatDatum[] = useMemo(() => {
     const m: Record<string, { count: number; risk: RiskLevel }> = {};
     classByDoc.forEach((c) => c.clauses.forEach((cl) => { const e = (m[cl.category] ??= { count: 0, risk: "low" }); e.count++; if (RANK[cl.riskLevel ?? "low"] > RANK[e.risk]) e.risk = cl.riskLevel ?? "low"; }));
-    return Object.entries(m).map(([name, val]) => ({ name, count: val.count, risk: val.risk })).sort((a, b) => b.count - a.count);
+    return Object.entries(m).map(([name, val]) => ({ name: categoryLabel(name), count: val.count, risk: val.risk })).sort((a, b) => b.count - a.count);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readyDocs, classKey]);
+
+  // Risk by document type — high-risk clause count per type (SOW vs License vs
+  // DPA/BAA/Compliance), so the riskiest document classes are visible at a glance.
+  const riskByType: HBarDatum[] = useMemo(() => {
+    const m: Record<string, { docs: number; total: number; high: number; risk: RiskLevel }> = {};
+    for (const d of readyDocs) {
+      const e = (m[d.docType] ??= { docs: 0, total: 0, high: 0, risk: "low" });
+      e.docs++;
+      for (const cl of classByDoc.get(d.docId)?.clauses ?? []) {
+        e.total++;
+        if (cl.riskLevel === "high" || cl.riskLevel === "critical") e.high++;
+        if (RANK[cl.riskLevel ?? "low"] > RANK[e.risk]) e.risk = cl.riskLevel ?? "low";
+      }
+    }
+    return Object.entries(m)
+      .map(([type, v]) => ({ id: type, label: docTypeShort(type), value: v.high, color: RISK_COLOR[v.risk], sub: `${v.docs} doc${v.docs > 1 ? "s" : ""} · ${v.total} clauses` }))
+      .sort((a, b) => b.value - a.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyDocs, classKey]);
+  const hasTypeRisk = riskByType.some((r) => r.value > 0);
 
   const tcvSeries = useMemo(() => {
     const ordered = [...aggregates].sort((a, b) => new Date(a.project.createdAt).getTime() - new Date(b.project.createdAt).getTime());
@@ -261,6 +285,15 @@ export default function DashboardPage() {
                 </Card>
               </div>
             </MotionReveal>
+
+            {/* Risk by document type */}
+            {hasTypeRisk && (
+              <MotionReveal delay={0.05}>
+                <Card title="Risk by document type" icon={<BarChart3 size={15} />} sub="high-risk clauses by type">
+                  <HBarChart data={riskByType} valueFormatter={(n) => n.toLocaleString()} />
+                </Card>
+              </MotionReveal>
+            )}
 
             {/* Needs attention + value by project */}
             <MotionReveal delay={0.05}>
@@ -566,7 +599,7 @@ function EmptyState() {
     <div className="flex flex-col items-center rounded-3xl border border-dashed border-border bg-card/50 py-20 text-center">
       <span className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]"><Layers size={28} strokeWidth={1.5} /></span>
       <h3 className="text-[18px] font-semibold text-foreground">No contracts yet</h3>
-      <p className="mt-2 max-w-md text-[13px] text-muted-foreground">Create a project and upload its SOW. Bluey scores risk, estimates value, and rolls it up across your whole portfolio here.</p>
+      <p className="mt-2 max-w-md text-[13px] text-muted-foreground">Create a project and upload its SOW. Sonar scores risk, estimates value, and rolls it up across your whole portfolio here.</p>
       <Button variant="primary" size="lg" className="mt-6 rounded-full" asChild><Link href="/projects/new"><Plus size={15} />New project</Link></Button>
     </div>
   );

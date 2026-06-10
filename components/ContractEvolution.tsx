@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowRight, Plus, Minus, GitBranch, Clock } from "@/components/ui/icons";
+import { categoryLabel } from "@/lib/clause-categories";
 import type { ApiTimeline, ApiTimelineState } from "@/lib/types";
 
 type View = "initial" | "current" | "expected";
@@ -127,7 +128,7 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[12.5px] font-medium text-foreground truncate">{c.title || c.number}</span>
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{c.category}</span>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{categoryLabel(c.category)}</span>
                     {tag === "added" && <Tag tone="add">added</Tag>}
                     {tag === "modified" && <Tag tone="mod">modified</Tag>}
                   </div>

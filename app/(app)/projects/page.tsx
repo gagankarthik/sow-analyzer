@@ -20,7 +20,8 @@ import { toast } from "sonner";
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
 import { getClassification, deleteDocument } from "@/lib/api";
 import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
-import { useProjects, deleteProject, withUngroupedDocs, type LocalProject } from "@/lib/projects-store";
+import { useProjects, deleteProject, withUngroupedDocs, isProjectOwner, type LocalProject } from "@/lib/projects-store";
+import { useAuth } from "@/components/auth/AuthProvider";
 import type { ApiClassification, ApiDocument, Lifecycle, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
@@ -146,6 +147,8 @@ export default function ProjectsPage() {
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "risk", dir: "asc" });
   const [deleteTarget, setDeleteTarget] = useState<LocalProject | null>(null);
   const [deletingProject, setDeletingProject] = useState(false);
+  const { user } = useAuth();
+  const currentEmail = user?.email;
   const qc = useQueryClient();
   // Documents the delete will actually remove: the project's docs + linked amendments.
   const deleteCount = deleteTarget ? collectProjectDocIds(deleteTarget.docIds, docs).length : 0;
@@ -310,11 +313,11 @@ export default function ProjectsPage() {
         ) : view === "grid" ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sorted.map((a, i) => (
-              <MotionReveal key={a.project.id} delay={Math.min(i * 0.04, 0.2)}><ProjectGridCard a={a} onDelete={setDeleteTarget} /></MotionReveal>
+              <MotionReveal key={a.project.id} delay={Math.min(i * 0.04, 0.2)}><ProjectGridCard a={a} onDelete={setDeleteTarget} canDelete={isProjectOwner(a.project, currentEmail)} /></MotionReveal>
             ))}
           </div>
         ) : (
-          <ProjectTable rows={sorted} sort={sort} onSort={toggleSort} onDelete={setDeleteTarget} />
+          <ProjectTable rows={sorted} sort={sort} onSort={toggleSort} onDelete={setDeleteTarget} currentEmail={currentEmail} />
         )}
       </div>
 
@@ -346,7 +349,7 @@ export default function ProjectsPage() {
 }
 
 /* ── Table (default) ──────────────────────────────────────────── */
-function ProjectTable({ rows, sort, onSort, onDelete }: { rows: Agg[]; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void; onDelete: (p: LocalProject) => void }) {
+function ProjectTable({ rows, sort, onSort, onDelete, currentEmail }: { rows: Agg[]; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void; onDelete: (p: LocalProject) => void; currentEmail: string | null | undefined }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
       <table className="w-full min-w-[940px] border-collapse text-[13px]">
@@ -391,10 +394,12 @@ function ProjectTable({ rows, sort, onSort, onDelete }: { rows: Agg[]; sort: { k
               <td className="px-4 py-3"><RenewalCell expired={a.expired} days={a.daysToDate} /></td>
               <td className="px-4 py-3"><AttentionTag reason={a.attention} risk={a.overallRisk} expired={a.expired} failed={a.failed > 0} /></td>
               <td className="px-4 py-3 text-right">
-                <button type="button" onClick={() => onDelete(a.project)} aria-label={`Remove project ${a.project.name}`}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]">
-                  <Trash2 size={14} />
-                </button>
+                {isProjectOwner(a.project, currentEmail) && (
+                  <button type="button" onClick={() => onDelete(a.project)} aria-label={`Remove project ${a.project.name}`}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]">
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </td>
             </tr>
           ))}
@@ -475,7 +480,7 @@ function AttentionTag({ reason, risk, expired, failed }: { reason: string | null
 }
 
 /* ── Grid card (toggle) ───────────────────────────────────────── */
-function ProjectGridCard({ a, onDelete }: { a: Agg; onDelete: (p: LocalProject) => void }) {
+function ProjectGridCard({ a, onDelete, canDelete }: { a: Agg; onDelete: (p: LocalProject) => void; canDelete: boolean }) {
   const segs: { k: RiskLevel; n: number }[] = [
     { k: "critical", n: a.rc.critical }, { k: "high", n: a.rc.high }, { k: "medium", n: a.rc.medium }, { k: "low", n: a.rc.low },
   ];
@@ -519,14 +524,16 @@ function ProjectGridCard({ a, onDelete }: { a: Agg; onDelete: (p: LocalProject) 
         {(a.expired || a.daysToDate !== null) && <RenewalCell expired={a.expired} days={a.daysToDate} />}
       </div>
     </Link>
-      <button
-        type="button"
-        onClick={() => onDelete(a.project)}
-        aria-label={`Remove project ${a.project.name}`}
-        className="absolute right-2.5 top-2.5 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all hover:border-[var(--danger)]/40 hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]/30"
-      >
-        <Trash2 size={14} />
-      </button>
+      {canDelete && (
+        <button
+          type="button"
+          onClick={() => onDelete(a.project)}
+          aria-label={`Remove project ${a.project.name}`}
+          className="absolute right-2.5 top-2.5 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all hover:border-[var(--danger)]/40 hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]/30"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </div>
   );
 }
@@ -557,7 +564,7 @@ function EmptyState({ pristine, reset }: { pristine: boolean; reset?: () => void
       <span className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]"><Layers size={28} strokeWidth={1.5} /></span>
       <h3 className="text-[18px] font-semibold text-foreground">{pristine ? "No projects yet" : "No projects match"}</h3>
       <p className="mt-2 max-w-sm text-[13px] text-muted-foreground">
-        {pristine ? "Create a project, then upload its SOW. Bluey extracts clauses, scores risk, and rolls it up here." : "Try a different filter or clear your search."}
+        {pristine ? "Create a project, then upload its SOW. Sonar extracts clauses, scores risk, and rolls it up here." : "Try a different filter or clear your search."}
       </p>
       {pristine ? (
         <Button variant="primary" size="lg" className="mt-6 rounded-full" asChild><Link href="/projects/new"><Plus size={15} />Create your first project</Link></Button>

@@ -1,4 +1,4 @@
-// Builds the chat messages Bluey uses to draft and revise a Statement of Work.
+// Builds the chat messages Sonar uses to draft and revise a Statement of Work.
 // Pure functions — no I/O — so they're trivial to test and safe on the server.
 
 import { CLAUSE_TYPES } from "../clause-types";
@@ -9,7 +9,7 @@ export interface ChatMessage {
   content: string;
 }
 
-const SYSTEM = `You are Bluey, a senior commercial contracts attorney drafting a Statement of Work (SOW) for a professional-services engagement.
+const SYSTEM = `You are Sonar, a senior commercial contracts attorney drafting a Statement of Work (SOW) for a professional-services engagement.
 
 Rules:
 - Write in clear, enforceable plain English — precise but readable, not bloated legalese.

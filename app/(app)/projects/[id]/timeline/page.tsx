@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import {
   Upload, GitBranch, CheckCircle2, CalendarClock, Files, Layers, Clock,
 } from "@/components/ui/icons";
@@ -156,8 +156,8 @@ export default function TimelinePage() {
 
           <aside className="lg:col-span-4 space-y-5">
             <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/60 p-5">
-              <div className="flex items-center gap-2 mb-3"><BlueyMark size="sm" /><span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Bluey · activity read</span></div>
-              <p className="text-[12.5px] leading-relaxed text-foreground">Ask Bluey to summarize how this contract has evolved and flag the inflection points that changed its risk.</p>
+              <div className="flex items-center gap-2 mb-3"><SonarMark size="sm" /><span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Sonar · activity read</span></div>
+              <p className="text-[12.5px] leading-relaxed text-foreground">Ask Sonar to summarize how this contract has evolved and flag the inflection points that changed its risk.</p>
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">

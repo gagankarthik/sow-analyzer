@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MotionReveal } from "@/components/MotionReveal";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { CategoryRadar } from "@/components/charts/CategoryRadar";
@@ -25,10 +25,15 @@ import {
   RefreshCw, Maximize2, Download, Clock, ExternalLink, CalendarClock,
 } from "@/components/ui/icons";
 import { useDocuments, useDeleteDocument, useReprocess, documentKeys } from "@/lib/queries/documents";
-import { getClassification, getDocFile, askBluey, getSimilarClauses, type ApiDocFile, type SimilarClause } from "@/lib/api";
+import { getClassification, getDocFile, askSonar, getSimilarClauses, type ApiDocFile, type SimilarClause } from "@/lib/api";
 import { useUIStore } from "@/lib/stores/ui";
-import { useProject, addDocToProject, removeDocFromProject, type LocalProject } from "@/lib/projects-store";
+import { useProject, addDocToProject, removeDocFromProject, deleteProject, isProjectOwner, type LocalProject } from "@/lib/projects-store";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { ProjectMembersDialog } from "@/components/projects/ProjectMembersDialog";
 import { formatRelativeDays, formatDate } from "@/lib/format";
+import { categoryLabel } from "@/lib/clause-categories";
+import { docTypeShort, docTypeTone } from "@/lib/doc-types";
 import { computeContractValue, fmtMoney, docValue, persistedOf, type ValueSegment } from "@/lib/contract-value";
 import type { ApiClause, ApiClassification, ApiDocument, RiskLevel, FindingSeverity } from "@/lib/types";
 
@@ -86,12 +91,23 @@ type View = {
 
 export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const project = useProject(projectId);
+  const router = useRouter();
+  const { user } = useAuth();
+  const canDelete = isProjectOwner(project, user?.email);
   const { data: allDocs = [] } = useDocuments();
   const qc = useQueryClient();
   const del = useDeleteDocument();
   const reprocess = useReprocess();
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const [mounted, setMounted] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
+
+  function handleDeleteProject() {
+    deleteProject(projectId);
+    toast.success("Project deleted", { description: "The project container was removed; its documents remain in your library." });
+    router.push("/projects");
+  }
   // Open on the Overview (project summary/rollup); the SOW clause details are
   // one tab away.
   const [tab, setTab] = useState<TabId>("overview");
@@ -134,7 +150,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const catData: CatDatum[] = useMemo(() => {
     const m: Record<string, { count: number; risk: RiskLevel }> = {};
     for (const c of allClauses) { const e = (m[c.category] ??= { count: 0, risk: "low" }); e.count++; if (RANK[c.riskLevel ?? "low"] > RANK[e.risk]) e.risk = c.riskLevel ?? "low"; }
-    return Object.entries(m).map(([name, val]) => ({ name, count: val.count, risk: val.risk })).sort((a, b) => b.count - a.count);
+    return Object.entries(m).map(([name, val]) => ({ name: categoryLabel(name), count: val.count, risk: val.risk })).sort((a, b) => b.count - a.count);
   }, [allClauses]);
 
   const keyFindings = useMemo(() => {
@@ -233,20 +249,43 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
         title={project.name}
         subtitle={hasDocs ? `${docs.length} document${docs.length === 1 ? "" : "s"}${processingCount > 0 ? ` · ${processingCount} analyzing` : ""} · ${totalClauses.toLocaleString()} clauses` : "Upload your SOW to begin the analysis."}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {hasDocs && (
               <Button variant="outline" size="sm" className="gap-1.5" onClick={reanalyzeAll} disabled={reanalyzing || processingCount === docs.length} title="Re-run analysis on every document in this project">
                 <RefreshCw size={14} className={reanalyzing ? "animate-spin" : undefined} />{reanalyzing ? "Re-analyzing…" : "Re-analyze"}
               </Button>
             )}
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setTab("documents")}><FileText size={14} />Documents</Button>
-            <Button variant="ai" size="sm" className="gap-1.5" onClick={toggleCopilot}><Sparkles size={13} />Ask Bluey</Button>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setMembersOpen(true)}><Users size={14} />Members</Button>
+            <Button variant="ai" size="sm" className="gap-1.5" onClick={toggleCopilot}><Sparkles size={13} />Ask Sonar</Button>
+            {canDelete && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-[var(--danger)] border-[var(--danger)]/30 hover:bg-[var(--danger-soft)]" onClick={() => setConfirmDeleteProject(true)} title="Delete this project (owner only)">
+                <Trash2 size={14} />Delete
+              </Button>
+            )}
             <Link href="/projects" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-muted">
               <ChevronLeft size={14} />Projects
             </Link>
           </div>
         }
       />
+
+      <ProjectMembersDialog projectId={membersOpen ? projectId : null} onClose={() => setMembersOpen(false)} />
+
+      <Dialog open={confirmDeleteProject} onOpenChange={setConfirmDeleteProject}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Delete this project?</DialogTitle>
+          </DialogHeader>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
+            <strong className="text-foreground">{project.name}</strong> will be removed as a project. Its documents stay in your library and can be regrouped later.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" size="md" onClick={() => setConfirmDeleteProject(false)}>Cancel</Button>
+            <Button variant="primary" size="md" className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white" onClick={handleDeleteProject}>Delete project</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="border-b border-border bg-card">
         <div className="app-container">
@@ -299,11 +338,11 @@ function OverviewPanel({ v }: { v: View }) {
     <>
       <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 shadow-xs md:p-6">
         <div className="flex items-start gap-3.5">
-          <BlueyMark size="md" tile pulse={v.analyzingClauses} />
+          <SonarMark size="md" tile pulse={v.analyzingClauses} />
           <div className="min-w-0 flex-1">
-            <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Bluey · project overview</div>
+            <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Sonar · project overview</div>
             {!v.hasAnalysis ? (
-              <p className="text-[13.5px] text-muted-foreground">{v.analyzingClauses || v.processingCount > 0 ? "Analyzing the documents in this project — the overview appears as each SOW finishes." : "Upload a SOW and Bluey will summarize the project here."}</p>
+              <p className="text-[13.5px] text-muted-foreground">{v.analyzingClauses || v.processingCount > 0 ? "Analyzing the documents in this project — the overview appears as each SOW finishes." : "Upload a SOW and Sonar will summarize the project here."}</p>
             ) : (
               <p className="max-w-[80ch] text-[14px] leading-relaxed text-foreground">
                 This project spans <strong>{v.readyDocs.length}</strong> analyzed document{v.readyDocs.length === 1 ? "" : "s"} and <strong>{v.totalClauses.toLocaleString()}</strong> clauses, with an overall risk of <span className={`font-semibold ${RISK_META[v.overallRisk].text}`}>{RISK_META[v.overallRisk].label.toLowerCase()}</span>.{" "}
@@ -416,7 +455,7 @@ function ValueBar({ segments, total, currency, reconciled }: { segments: ValueSe
       </div>
       <p className="mt-3 text-[11px] text-muted-foreground">
         {reconciled === true
-          ? "Read from the documents and reconciled by Bluey's validation agent (SOW base + each amendment add up to the stated total). Hover a segment to see the source text; click to open that document."
+          ? "Read from the documents and reconciled by Sonar's validation agent (SOW base + each amendment add up to the stated total). Hover a segment to see the source text; click to open that document."
           : reconciled === false
           ? "Showing the document's stated total (e.g. “New Total Project Cost”), which is authoritative. The component amounts below are estimates that don't fully reconcile to it — re-analyze the documents for validated per-amendment figures."
           : "Estimated from monetary amounts detected in the contract text. Re-analyze the documents for validated figures. Hover a segment to highlight; click to open that document."}
@@ -665,7 +704,7 @@ function SowPanel({ v }: { v: View }) {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     return [...v.allClauses]
-      .filter((c) => (risk === "all" || c.riskLevel === risk) && (category === "all" || c.category === category) && (!term || `${c.number} ${c.title} ${c.category} ${c.summary} ${c._docTitle}`.toLowerCase().includes(term)))
+      .filter((c) => (risk === "all" || c.riskLevel === risk) && (category === "all" || c.category === category) && (!term || `${c.number} ${c.title} ${categoryLabel(c.category)} ${c.summary} ${c._docTitle}`.toLowerCase().includes(term)))
       .sort((a, b) => RISK_SORT[a.riskLevel] - RISK_SORT[b.riskLevel]);
   }, [v.allClauses, q, risk, category]);
 
@@ -694,7 +733,7 @@ function SowPanel({ v }: { v: View }) {
           <SelectTrigger className="h-9 w-[170px] text-[13px]"><SelectValue placeholder="Category" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
-            {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            {categories.map((c) => <SelectItem key={c} value={c}>{categoryLabel(c)}</SelectItem>)}
           </SelectContent>
         </Select>
         <span className="font-mono text-[11px] text-muted-foreground">{filtered.length}/{v.allClauses.length}</span>
@@ -715,7 +754,7 @@ function SowPanel({ v }: { v: View }) {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[13px] font-semibold text-foreground">{c.title || c.number}</span>
                       <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${m.bg} ${m.text}`}>{m.label}</span>
-                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{c.category}</span>
+                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{categoryLabel(c.category)}</span>
                     </div>
                     {c.summary && <p className="mt-0.5 line-clamp-1 text-[12px] leading-relaxed text-muted-foreground">{c.summary}</p>}
                     <p className="mt-1 truncate text-[10.5px] text-muted-foreground/70">{c._docTitle}</p>
@@ -762,7 +801,7 @@ function ClauseSheet({ clause, related, onClose }: { clause: AggClause | null; r
     setSug({ loading: true, text: null, err: null });
     try {
       const q = `Suggest an improved, more balanced revision of clause ${clause.number}${clause.title ? ` (${clause.title})` : ""} that reduces our risk while staying fair to both parties. Return only the revised clause text, with no preamble.`;
-      const res = await askBluey(clause._docId, q);
+      const res = await askSonar(clause._docId, q);
       setSug({ loading: false, text: res.answer, err: null });
     } catch (e) {
       setSug({ loading: false, text: null, err: e instanceof Error ? e.message : "Could not generate a suggestion." });
@@ -777,7 +816,7 @@ function ClauseSheet({ clause, related, onClose }: { clause: AggClause | null; r
             <SheetHeader className="border-b border-border">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${m.bg} ${m.text}`}>{m.label} risk</span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{clause.category}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{categoryLabel(clause.category)}</span>
                 <span className="font-mono text-[11px] text-muted-foreground">Clause {clause.number}</span>
               </div>
               <SheetTitle className="mt-1 text-[16px]">{clause.title || `Clause ${clause.number}`}</SheetTitle>
@@ -791,35 +830,35 @@ function ClauseSheet({ clause, related, onClose }: { clause: AggClause | null; r
                 <p className="whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-3 font-mono text-[12px] leading-relaxed text-foreground">{clause.body || "No clause text was extracted."}</p>
               </div>
 
-              {/* Suggested (real, generated by Bluey on request) */}
+              {/* Suggested (real, generated by Sonar on request) */}
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <h4 className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ai-ink)]"><Sparkles size={12} />Suggested revision · Bluey</h4>
+                  <h4 className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ai-ink)]"><Sparkles size={12} />Suggested revision · Sonar</h4>
                   {sug.text && !sug.loading && <button onClick={generate} className="text-[11px] font-semibold text-[var(--ai-ink)] hover:underline">Regenerate</button>}
                 </div>
                 {sug.loading ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 p-3 text-[12px] text-muted-foreground"><Loader2 size={13} className="animate-spin" />Bluey is drafting a revision from this contract&apos;s clauses…</div>
+                  <div className="flex items-center gap-2 rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 p-3 text-[12px] text-muted-foreground"><Loader2 size={13} className="animate-spin" />Sonar is drafting a revision from this contract&apos;s clauses…</div>
                 ) : sug.text ? (
                   <p className="whitespace-pre-wrap rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 p-3 text-[12.5px] leading-relaxed text-foreground">{sug.text}</p>
                 ) : sug.err ? (
                   <div className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-3 text-[12px] text-[var(--danger)]">{sug.err}</div>
                 ) : (
                   <button onClick={generate} className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--ai-border)] bg-[var(--ai-surface)]/30 p-3 text-[12.5px] font-medium text-[var(--ai-ink)] transition-colors hover:bg-[var(--ai-surface)]/60">
-                    <Sparkles size={13} />Ask Bluey to draft a more balanced version
+                    <Sparkles size={13} />Ask Sonar to draft a more balanced version
                   </button>
                 )}
               </div>
 
               {clause.summary && (
                 <div>
-                  <h4 className="mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ai-ink)]"><Sparkles size={12} />Bluey&apos;s analysis</h4>
+                  <h4 className="mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ai-ink)]"><Sparkles size={12} />Sonar&apos;s analysis</h4>
                   <p className="text-[13.5px] leading-relaxed text-foreground">{clause.summary}</p>
                 </div>
               )}
 
               {related.length > 0 && (
                 <div>
-                  <h4 className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Related clauses · {clause.category}</h4>
+                  <h4 className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Related clauses · {categoryLabel(clause.category)}</h4>
                   <ul className="space-y-1.5">
                     {related.map((r, i) => {
                       const rm = RISK_META[r.riskLevel ?? "low"];
@@ -861,7 +900,7 @@ function ClauseSheet({ clause, related, onClose }: { clause: AggClause | null; r
                             {s.text && <p className="mt-1 line-clamp-2 text-[11.5px] leading-snug text-muted-foreground">{s.text}</p>}
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">{s.docType}</span>
-                              <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">{s.category}</span>
+                              <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">{categoryLabel(s.category)}</span>
                             </div>
                           </Link>
                         </li>
@@ -873,7 +912,7 @@ function ClauseSheet({ clause, related, onClose }: { clause: AggClause | null; r
 
               <div className="grid grid-cols-2 gap-3">
                 <Detail label="Risk level" value={m.label} />
-                <Detail label="Category" value={clause.category} />
+                <Detail label="Category" value={categoryLabel(clause.category)} />
                 <Detail label="Clause number" value={clause.number} />
                 <Detail label="Source file" value={clause._docTitle} />
               </div>
@@ -1189,7 +1228,7 @@ function DocumentReader({ doc, classification, currency, onClose }: { doc: ApiDo
 
           {/* Right — AI analysis with provenance */}
           <div className="bg-card p-4 lg:min-h-0 lg:overflow-y-auto">
-            <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]"><Sparkles size={12} />Bluey · extracted from this document</div>
+            <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]"><Sparkles size={12} />Sonar · extracted from this document</div>
 
             {/* Value + reconciliation */}
             {value > 0 && (
@@ -1259,7 +1298,7 @@ function UploadPrompt({ v }: { v: View }) {
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-xs md:p-6">
       <h3 className="mb-1 text-[15px] font-semibold tracking-tight text-foreground">Upload your SOW</h3>
-      <p className="mb-4 text-[12.5px] text-muted-foreground">Drop the contract for {v.project.name}. Bluey extracts clauses, scores risk, and surfaces key findings.</p>
+      <p className="mb-4 text-[12.5px] text-muted-foreground">Drop the contract for {v.project.name}. Sonar extracts clauses, scores risk, and surfaces key findings.</p>
       <UploadDropzone defaultDocType="SOW" onDocCreated={v.onDocCreated} onDocReady={v.onDocReady} />
     </section>
   );
@@ -1290,7 +1329,7 @@ function AttentionRow({ c }: { c: AggClause }) {
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <span className="text-[13px] font-semibold text-foreground">{c.title || c.number}</span>
             <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${m.bg} ${m.text}`}>{m.label}</span>
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{c.category}</span>
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{categoryLabel(c.category)}</span>
           </div>
           {c.summary && <p className="text-[12px] leading-relaxed text-muted-foreground">{c.summary}</p>}
           <p className="mt-1 truncate text-[10.5px] text-muted-foreground/70">{c._docTitle}</p>

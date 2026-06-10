@@ -91,18 +91,52 @@ export async function listDocuments(): Promise<ApiDocument[]> {
 }
 
 // ── Projects (cloud-stored per-tenant groupings; replaces browser localStorage) ──
+export type ProjectMemberRole = "owner" | "editor" | "viewer" | "member"
+export interface ProjectMember {
+  email: string
+  role: ProjectMemberRole
+  status: "invited" | "active"
+  sub?: string | null
+  invitedAt?: string
+}
+
 export interface StoredProject {
   id: string
   name: string
   client?: string
   createdAt: string
   docIds: string[]
+  members?: ProjectMember[]
+  /** Email of the user who created the project; only they can delete it. */
+  ownerEmail?: string
 }
 
 // Read the tenant's saved project groupings.
 export async function getProjectsState(): Promise<StoredProject[]> {
   const data = await request<{ projects: StoredProject[] }>("/projects")
   return data.projects ?? []
+}
+
+// Invite a user (via Cognito) to a project. The backend creates/links the pool
+// user, emails an invitation, and records them as a project member.
+export async function inviteProjectMember(
+  projectId: string,
+  email: string,
+  role: ProjectMemberRole = "member",
+): Promise<ProjectMember> {
+  const data = await request<{ member: ProjectMember }>(
+    `/projects/${encodeURIComponent(projectId)}/invite`,
+    { method: "POST", body: JSON.stringify({ email, role }) },
+  )
+  return data.member
+}
+
+// Remove a member from a project (does not delete their Cognito account).
+export async function removeProjectMember(projectId: string, email: string): Promise<void> {
+  await request<{ removed: boolean }>(
+    `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(email)}`,
+    { method: "DELETE" },
+  )
 }
 
 // Persist the tenant's project groupings (overwrites the single per-tenant record).
@@ -274,9 +308,9 @@ export async function getSimilarClauses(docId: string, clauseNumber: string, k =
   return data.similar ?? []
 }
 
-// Ask Bluey (RAG) about a document — embed → hybrid vector+BM25 search over
+// Ask Sonar (RAG) about a document — embed → hybrid vector+BM25 search over
 // the document's clauses → grounded GPT answer with clause citations.
-export async function askBluey(docId: string, question: string, topK?: number): Promise<ChatResponse> {
+export async function askSonar(docId: string, question: string, topK?: number): Promise<ChatResponse> {
   return request<ChatResponse>(`/documents/${docId}/chat`, {
     method: "POST",
     body: JSON.stringify(topK ? { question, topK } : { question }),

@@ -21,11 +21,11 @@ type Props = {
 };
 
 /**
- * Bluey — the AI assistant brand mark.
+ * Sonar — the AI assistant brand mark.
  * Use this anywhere AI-generated content or insights appear.
  * Renders /public/logo-icon.svg at the requested size, with optional tile + pulse.
  */
-export function BlueyMark({
+export function SonarMark({
   size = "md",
   pulse = false,
   tile = false,
@@ -48,7 +48,7 @@ export function BlueyMark({
     const tileSize = Math.round(px * 1.5);
     return (
       <span
-        aria-label="Bluey"
+        aria-label="Sonar"
         className={cn(
           "relative inline-flex items-center justify-center rounded-lg bg-[var(--ai-surface)] ring-1 ring-[var(--ai-border)] shrink-0",
           className,
@@ -65,7 +65,7 @@ export function BlueyMark({
 
   return (
     <span
-      aria-label="Bluey"
+      aria-label="Sonar"
       className={cn("relative inline-flex items-center justify-center shrink-0", className)}
       style={{ width: px, height: px }}
     >

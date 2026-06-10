@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ArrowRight, Briefcase, Upload, Sparkles } from "@/components/ui/icons";
 import { createProject } from "@/lib/projects-store";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function NewProjectPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [name, setName] = useState("");
   const [client, setClient] = useState("");
   const [creating, setCreating] = useState(false);
@@ -20,7 +22,7 @@ export default function NewProjectPage() {
   function create() {
     if (!canCreate) return;
     setCreating(true);
-    const project = createProject(name, client);
+    const project = createProject(name, client, user?.email);
     router.push(`/projects/${project.id}`);
   }
 

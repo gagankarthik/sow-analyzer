@@ -15,6 +15,7 @@ const PUBLIC_ROUTES = new Set([
   "/signup",
   "/confirm",
   "/reset",
+  "/calculator",
 ]);
 
 function isPublic(pathname: string): boolean {

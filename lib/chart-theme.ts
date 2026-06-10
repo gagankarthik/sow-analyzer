@@ -7,7 +7,7 @@
 //    risk is shown so the meaning of each color is consistent across the app.
 //  • CATEGORICAL — a restrained ramp (blue tints + ink grays + one cyan) for
 //    non-risk categories like pricing model or document type. Deliberately NOT
-//    a rainbow, and deliberately avoids violet (reserved for AI / Bluey).
+//    a rainbow, and deliberately avoids violet (reserved for AI / Sonar).
 
 import type { RiskLevel, FindingSeverity } from "@/lib/types";
 

@@ -56,7 +56,7 @@ import {
   Pencil,
   Loader2,
 } from "@/components/ui/icons";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { MotionReveal } from "@/components/MotionReveal";
 import { listDocuments, deleteDocument, updateDocument } from "@/lib/api";
 import { useProjects, removeDocFromAllProjects } from "@/lib/projects-store";
@@ -65,7 +65,7 @@ import { STATUS_TONE } from "@/lib/status-tone";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "OTHER"];
+const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "LICENSE", "DPA", "BAA", "COMPLIANCE", "OTHER"];
 
 const LIFECYCLE_OPTIONS: Lifecycle[] = [
   "draft", "review", "negotiation", "approval", "signed", "active", "renewal", "expired",
@@ -306,8 +306,8 @@ export default function LibraryPage() {
             <div className="flex-1" />
 
             <Button variant="ai" size="md" className="h-10 rounded-full gap-1.5 pl-2">
-              <BlueyMark size="sm" />
-              Ask Bluey to analyze
+              <SonarMark size="sm" />
+              Ask Sonar to analyze
             </Button>
           </div>
         </MotionReveal>

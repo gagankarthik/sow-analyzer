@@ -27,7 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Library", href: "/library", icon: FileText },
   { label: "Workflow", href: "/workflow", icon: Kanban },
   { label: "Draft SOW", href: "/draft", icon: Wand2 },
-  { label: "Bluey", action: "copilot", icon: Sparkles },
+  { label: "Sonar", action: "copilot", icon: Sparkles },
   { label: "Insights", href: "/insights", icon: BarChart3 }
 ];
 

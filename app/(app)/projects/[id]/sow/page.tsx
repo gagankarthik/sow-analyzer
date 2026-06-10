@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
 import { ProcessingState } from "@/components/ProcessingState";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +20,8 @@ import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelli
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { CategoryRadar } from "@/components/charts/CategoryRadar";
 import { MotionReveal } from "@/components/MotionReveal";
+import { docTypeShort } from "@/lib/doc-types";
+import { categoryLabel } from "@/lib/clause-categories";
 import type { ApiClause, RiskLevel, FindingSeverity } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
@@ -73,7 +75,7 @@ export default function SowPage() {
       e.count++;
       if (RISK_RANK[c.riskLevel ?? "low"] < RISK_RANK[e.risk]) e.risk = c.riskLevel ?? "low";
     }
-    return Object.entries(m).map(([name, v]) => ({ name, count: v.count, risk: v.risk })).sort((a, b) => b.count - a.count);
+    return Object.entries(m).map(([name, v]) => ({ name: categoryLabel(name), count: v.count, risk: v.risk })).sort((a, b) => b.count - a.count);
   }, [allClauses]);
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -119,26 +121,26 @@ export default function SowPage() {
             <p className="text-[13.5px] text-[var(--danger)] leading-relaxed"><span className="font-semibold">Processing failed.</span> Delete this document and try uploading again.</p>
           </div>
         )}
-        {isProcessing && <ProcessingState status={rawStatus} title="Bluey is analyzing this document" subtitle="Clause extraction and risk analysis appear automatically as each stage completes." />}
+        {isProcessing && <ProcessingState status={rawStatus} title="Sonar is analyzing this document" subtitle="Clause extraction and risk analysis appear automatically as each stage completes." />}
 
         {isReady && (
           <>
             {/* Executive summary */}
             <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6 shadow-xs">
               <div className="flex items-start gap-3.5">
-                <BlueyMark size="md" tile pulse />
+                <SonarMark size="md" tile pulse />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Bluey · executive summary</div>
+                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1.5">Sonar · executive summary</div>
                   {classLoading ? (
                     <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
                   ) : classification?.summary ? (
                     <p className="text-[14px] leading-relaxed text-foreground max-w-[78ch]">{classification.summary}</p>
                   ) : (
-                    <p className="text-[13.5px] text-muted-foreground">Bluey has indexed this document. Ask a question for a deeper read.</p>
+                    <p className="text-[13.5px] text-muted-foreground">Sonar has indexed this document. Ask a question for a deeper read.</p>
                   )}
                   {classification && (
                     <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[12px]">
-                      <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{classification.docType}</span>
+                      <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{docTypeShort(classification.docType)}</span>
                       {classification.effectiveDate && <span className="inline-flex items-center gap-1 text-muted-foreground"><CalendarClock size={12} />{classification.effectiveDate}</span>}
                       {classification.parties.slice(0, 2).map((p) => <span key={p} className="inline-flex items-center gap-1 text-muted-foreground"><Building2 size={12} />{p}</span>)}
                       <span className="inline-flex items-center gap-1 text-muted-foreground"><FileText size={12} />{allClauses.length} clauses</span>
@@ -208,7 +210,7 @@ export default function SowPage() {
                         <SelectTrigger className="h-8 text-[12.5px] w-[150px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="ALL">All categories</SelectItem>
-                          {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                          {categories.map((c) => <SelectItem key={c} value={c}>{categoryLabel(c)}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     )}
@@ -257,7 +259,7 @@ export default function SowPage() {
               <aside className="lg:col-span-4">
                 <div className="lg:sticky lg:top-[76px] space-y-4">
                   <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 shadow-[var(--shadow-ai)]">
-                    <div className="flex items-center gap-2 mb-3"><BlueyMark size="sm" /><span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Bluey Co-pilot</span></div>
+                    <div className="flex items-center gap-2 mb-3"><SonarMark size="sm" /><span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Sonar Co-pilot</span></div>
                     <p className="text-[12.5px] leading-relaxed text-foreground">
                       {riskCounts.critical + riskCounts.high > 0
                         ? `${riskCounts.critical + riskCounts.high} clause(s) flagged high or critical. Ask how to negotiate them.`
@@ -329,7 +331,7 @@ function ClauseCard({ clause, isExpanded, onToggle }: { clause: ApiClause; isExp
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
               <span className="text-[13.5px] font-semibold text-foreground leading-snug">{clause.title || clause.number}</span>
               <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${m.bg} ${m.text}`}><span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />{m.label}</span>
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{clause.category}</span>
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{categoryLabel(clause.category)}</span>
             </div>
             {clause.summary && <p className="text-[12.5px] text-foreground/80 leading-relaxed mb-2 italic">{clause.summary}</p>}
             <p className="text-[12.5px] text-muted-foreground leading-relaxed whitespace-pre-line">{isExpanded ? clause.body : preview}</p>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { ConfidenceDots } from "@/components/ui/ConfidenceDots";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +26,9 @@ import {
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
 import { getClassification } from "@/lib/api";
 import { docValue, persistedOf } from "@/lib/contract-value";
+import { categoryLabel } from "@/lib/clause-categories";
+import { docTypeShort } from "@/lib/doc-types";
+import { ValueDelivered } from "@/components/insights/ValueDelivered";
 import type { ApiClassification, DocType, RiskLevel, FindingSeverity, PricingModel } from "@/lib/types";
 
 const RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2, critical: 3 };
@@ -96,7 +99,7 @@ export default function InsightsPage() {
   const riskByCategory: HBarDatum[] = useMemo(() => {
     const m: Record<string, { count: number; risk: RiskLevel }> = {};
     classByDoc.forEach((c) => c.clauses.forEach((cl) => { const e = (m[cl.category] ??= { count: 0, risk: "low" }); e.count++; if (RANK[cl.riskLevel ?? "low"] > RANK[e.risk]) e.risk = cl.riskLevel ?? "low"; }));
-    return Object.entries(m).map(([label, v]) => ({ label, value: v.count, color: RISK_COLOR[v.risk], sub: "Clauses" })).sort((a, b) => b.value - a.value).slice(0, 8);
+    return Object.entries(m).map(([label, v]) => ({ label: categoryLabel(label), value: v.count, color: RISK_COLOR[v.risk], sub: "Clauses" })).sort((a, b) => b.value - a.value).slice(0, 8);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readyDocs, classKey]);
 
@@ -128,7 +131,7 @@ export default function InsightsPage() {
   const typeMix: CompositionSegment[] = useMemo(() => {
     const m: Partial<Record<DocType, number>> = {};
     docs.forEach((d) => { m[d.docType] = (m[d.docType] ?? 0) + 1; });
-    return (Object.entries(m) as [DocType, number][]).sort((a, b) => b[1] - a[1]).map(([k, v], i) => ({ key: k, label: k, value: v, color: categoricalColor(i) }));
+    return (Object.entries(m) as [DocType, number][]).sort((a, b) => b[1] - a[1]).map(([k, v], i) => ({ key: k, label: docTypeShort(k), value: v, color: categoricalColor(i) }));
   }, [docs]);
 
   // Amendment value movement — signed deltas from amendments that state one.
@@ -172,26 +175,26 @@ export default function InsightsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Bluey · contract intelligence"
+        eyebrow="Sonar · contract intelligence"
         title="Portfolio insights"
         subtitle="Where exposure concentrates, why, and which contracts drive it — across every analyzed document."
       />
 
       <div className="app-container space-y-6 py-6 md:py-8">
-        {/* Bluey brief */}
+        {/* Sonar brief */}
         <MotionReveal>
           <Card ai inset="lg" className="relative overflow-hidden rounded-2xl">
             <div className="ai-rule absolute left-0 right-0 top-0" />
             <div className="flex items-start gap-3.5">
-              <BlueyMark size="lg" tile pulse={classifying} />
+              <SonarMark size="lg" tile pulse={classifying} />
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex items-center gap-3">
-                  <div className="eyebrow text-[var(--ai-ink)]">Portfolio read · Bluey</div>
+                  <div className="eyebrow text-[var(--ai-ink)]">Portfolio read · Sonar</div>
                   <ConfidenceDots level={loading ? 1 : readyDocs.length > 0 ? 3 : 1} showLabel className="ml-auto" />
                 </div>
                 <p className="max-w-[74ch] text-[15px] leading-relaxed text-foreground">
                   {loading ? "Loading your portfolio…" : readyDocs.length === 0 ? (
-                    "No analyzed contracts yet. Upload a SOW or MSA and Bluey will surface risk and key findings here."
+                    "No analyzed contracts yet. Upload a SOW or MSA and Sonar will surface risk and key findings here."
                   ) : (
                     <>
                       Across <strong>{readyDocs.length}</strong> analyzed document{readyDocs.length === 1 ? "" : "s"} and <strong>{totalClauses.toLocaleString()}</strong> clauses, the portfolio carries{" "}
@@ -215,6 +218,11 @@ export default function InsightsPage() {
           <ErrorState onRetry={() => refetch()} />
         ) : readyDocs.length === 0 ? null : (
           <>
+            {/* Value delivered — what the team is saving, from real usage */}
+            <MotionReveal>
+              <ValueDelivered contractsAnalyzed={readyDocs.length} />
+            </MotionReveal>
+
             {/* Focal: value × risk */}
             <MotionReveal>
               <ChartCard

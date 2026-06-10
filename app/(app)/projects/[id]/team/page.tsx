@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { Mail, Building2, Users, Files } from "@/components/ui/icons";
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument } from "@/lib/queries/documents";
@@ -52,7 +52,7 @@ export default function TeamPage() {
                   Document parties
                 </h2>
                 <p className="mt-1 text-[13px] text-muted-foreground">
-                  Organisations and signatories Bluey identified on this engagement.
+                  Organisations and signatories Sonar identified on this engagement.
                 </p>
               </div>
             </div>
@@ -89,27 +89,27 @@ export default function TeamPage() {
                 </p>
                 <p className="text-[12.5px] text-muted-foreground max-w-sm">
                   {isReady
-                    ? "Bluey did not identify any named parties in this document. They will appear here automatically if a future version includes them."
-                    : "Parties will appear here once Bluey finishes processing and extracts them from the document."}
+                    ? "Sonar did not identify any named parties in this document. They will appear here automatically if a future version includes them."
+                    : "Parties will appear here once Sonar finishes processing and extracts them from the document."}
                 </p>
               </section>
             )}
           </main>
 
           <aside className="lg:col-span-4 space-y-5">
-            {/* Bluey team read */}
+            {/* Sonar team read */}
             <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/60 p-5 shadow-xs">
               <div className="flex items-center gap-2 mb-3">
-                <BlueyMark size="sm" />
+                <SonarMark size="sm" />
                 <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">
-                  Bluey · team read
+                  Sonar · team read
                 </span>
               </div>
               <p className="text-[12.5px] leading-relaxed text-foreground">
-                Ask Bluey who the key stakeholders are for this engagement.
+                Ask Sonar who the key stakeholders are for this engagement.
               </p>
               <Button variant="ai" size="sm" className="mt-4 w-full">
-                Ask Bluey
+                Ask Sonar
               </Button>
             </div>
 

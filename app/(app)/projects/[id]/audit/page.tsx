@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +21,7 @@ import {
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument } from "@/lib/queries/documents";
 import { formatDate } from "@/lib/format";
+import { docTypeShort } from "@/lib/doc-types";
 import type { ApiVersion } from "@/lib/types";
 
 type Project = ReturnType<typeof apiDocToProject>;
@@ -131,7 +132,7 @@ export default function AuditPage() {
             value={rawStatus}
             tone={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"}
           />
-          <IntegrityCard label="Document type" value={doc.docType} />
+          <IntegrityCard label="Document type" value={docTypeShort(doc.docType)} />
           <IntegrityCard label="Lifecycle stage" value={doc.lifecycle} />
           <IntegrityCard label="Latest version" value={`v${doc.latestVersion}`} />
           <IntegrityCard label="Created" value={formatDate(doc.createdAt)} />
@@ -279,21 +280,21 @@ export default function AuditPage() {
           )}
         </section>
 
-        {/* ── Bluey compliance read ────────────────────────── */}
+        {/* ── Sonar compliance read ────────────────────────── */}
         <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-            <BlueyMark size="lg" tile pulse />
+            <SonarMark size="lg" tile pulse />
             <div className="flex-1">
               <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)] mb-1">
-                Bluey · audit assistant
+                Sonar · audit assistant
               </p>
               <p className="text-[14px] leading-relaxed text-foreground">
-                Ask Bluey to run a compliance check on this document — identify missing clauses,
+                Ask Sonar to run a compliance check on this document — identify missing clauses,
                 flag deviations from your playbook, or summarise version-to-version changes.
               </p>
             </div>
             <Button variant="ai" size="md" className="shrink-0 self-start sm:self-center gap-1.5 pl-2">
-              <BlueyMark size="sm" />
+              <SonarMark size="sm" />
               Run audit
             </Button>
           </div>

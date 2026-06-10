@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { MarkdownView } from "@/components/MarkdownView";
 import { MotionReveal } from "@/components/MotionReveal";
 import {
@@ -103,12 +103,12 @@ export default function DraftSowPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Draft with Bluey"
+        eyebrow="Draft with Sonar"
         title={step === "intake" ? "Write a Statement of Work" : answers.title || "Your Statement of Work"}
         subtitle={
           step === "intake"
-            ? "Answer a few questions and Bluey drafts a complete, editable SOW grounded in what you provide — nothing fabricated. Refine it in plain English, then download as Word."
-            : "Edit directly, or ask Bluey to make changes. Download as a Word document when you're ready."
+            ? "Answer a few questions and Sonar drafts a complete, editable SOW grounded in what you provide — nothing fabricated. Refine it in plain English, then download as Word."
+            : "Edit directly, or ask Sonar to make changes. Download as a Word document when you're ready."
         }
         actions={
           step === "editor" ? (
@@ -170,7 +170,7 @@ function IntakeForm({
               <p className="font-medium">{error}</p>
               {noKey && (
                 <p className="mt-1 text-[var(--danger)]/80">
-                  Add <code className="font-mono">OPENAI_API_KEY=…</code> to <code className="font-mono">.env.local</code> and restart the dev server. Bluey uses <code className="font-mono">gpt-4.1-mini</code>.
+                  Add <code className="font-mono">OPENAI_API_KEY=…</code> to <code className="font-mono">.env.local</code> and restart the dev server. Sonar uses <code className="font-mono">gpt-4.1-mini</code>.
                 </p>
               )}
             </div>
@@ -237,7 +237,7 @@ function IntakeForm({
         </MotionReveal>
 
         <MotionReveal>
-          <Section title="Clauses to include" icon={<Sparkles size={15} />} subtitle="Pick the protections Bluey should draft. Each becomes its own section.">
+          <Section title="Clauses to include" icon={<Sparkles size={15} />} subtitle="Pick the protections Sonar should draft. Each becomes its own section.">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {CLAUSE_TYPES.filter((c) => c.id !== "other").map((c) => {
                 const Icon = CLAUSE_ICONS[c.id] ?? Layers;
@@ -265,7 +265,7 @@ function IntakeForm({
                 );
               })}
             </div>
-            <Field label="Anything else for Bluey?" hint="Special terms, tone, or instructions.">
+            <Field label="Anything else for Sonar?" hint="Special terms, tone, or instructions.">
               <Textarea value={answers.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Include a 12-month warranty on deliverables. Keep clauses concise." rows={2} />
             </Field>
           </Section>
@@ -274,13 +274,13 @@ function IntakeForm({
         <div className="sticky bottom-4 z-10">
           <div className="rounded-2xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/90 backdrop-blur p-4 shadow-[var(--shadow-ai)] flex items-center justify-between gap-4">
             <div className="flex items-center gap-2.5 min-w-0">
-              <BlueyMark size="sm" />
+              <SonarMark size="sm" />
               <p className="text-[12.5px] text-muted-foreground truncate">
-                {canDraft ? "Ready when you are — Bluey drafts in a few seconds." : "Add at least a title and scope to begin."}
+                {canDraft ? "Ready when you are — Sonar drafts in a few seconds." : "Add at least a title and scope to begin."}
               </p>
             </div>
             <Button variant="ai" size="lg" disabled={!canDraft} onClick={onGenerate} className="shrink-0">
-              {busy ? <><Loader2 size={15} className="mr-1.5 animate-spin" />Drafting…</> : <><Wand2 size={15} className="mr-1.5" />Draft with Bluey</>}
+              {busy ? <><Loader2 size={15} className="mr-1.5 animate-spin" />Drafting…</> : <><Wand2 size={15} className="mr-1.5" />Draft with Sonar</>}
             </Button>
           </div>
         </div>
@@ -388,11 +388,11 @@ function EditorView({ draft, setDraft, title }: { draft: string; setDraft: (s: s
           <div className="lg:sticky lg:top-[76px] space-y-4">
             <div className="rounded-2xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 shadow-[var(--shadow-ai)]">
               <div className="flex items-center gap-2 mb-3">
-                <BlueyMark size="sm" />
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Ask Bluey to revise</span>
+                <SonarMark size="sm" />
+                <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Ask Sonar to revise</span>
               </div>
               <p className="text-[12.5px] text-muted-foreground leading-relaxed">
-                Describe a change in plain English. Bluey rewrites the whole document and keeps everything else intact.
+                Describe a change in plain English. Sonar rewrites the whole document and keeps everything else intact.
               </p>
 
               <div className="mt-3 flex flex-wrap gap-1.5">
@@ -426,7 +426,7 @@ function EditorView({ draft, setDraft, title }: { draft: string; setDraft: (s: s
               </div>
 
               {error && <p className="mt-2 text-[11.5px] text-[var(--danger)]">{error}</p>}
-              {revising && <p className="mt-2 text-[11.5px] text-[var(--ai-ink)] flex items-center gap-1.5"><span className="ai-pulse" />Bluey is revising the document…</p>}
+              {revising && <p className="mt-2 text-[11.5px] text-[var(--ai-ink)] flex items-center gap-1.5"><span className="ai-pulse" />Sonar is revising the document…</p>}
             </div>
 
             <div className="rounded-2xl border border-border bg-card p-4">
@@ -435,7 +435,7 @@ function EditorView({ draft, setDraft, title }: { draft: string; setDraft: (s: s
                 <Download size={14} className="mr-1.5" />Download as Word
               </Button>
               <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
-                Opens in Word, Google Docs, or Pages. Always review before sending — Bluey can be wrong.
+                Opens in Word, Google Docs, or Pages. Always review before sending — Sonar can be wrong.
               </p>
             </div>
           </div>

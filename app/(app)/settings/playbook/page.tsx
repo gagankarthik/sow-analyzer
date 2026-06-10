@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { MotionReveal } from "@/components/MotionReveal";
 import {
   Edit3,
@@ -114,19 +114,19 @@ export default function PlaybookPage() {
                 ))}
               </ul>
 
-              {/* Bluey suggestion card */}
+              {/* Sonar suggestion card */}
               <Card ai inset="md" className="mt-6 rounded-2xl">
                 <div className="flex items-start gap-2.5">
-                  <BlueyMark size="sm" />
+                  <SonarMark size="sm" />
                   <div>
-                    <div className="eyebrow text-[var(--ai-ink)] mb-1">Bluey</div>
+                    <div className="eyebrow text-[var(--ai-ink)] mb-1">Sonar</div>
                     <p className="text-[11.5px] text-foreground leading-snug">
                       {readyCount !== null && readyCount > 0
-                        ? `Bluey has indexed ${readyCount} document${readyCount === 1 ? "" : "s"}. Ask it to suggest standards based on your approved contracts.`
-                        : "Bluey learns from your approved contracts. Add standards to guide future reviews."}
+                        ? `Sonar has indexed ${readyCount} document${readyCount === 1 ? "" : "s"}. Ask it to suggest standards based on your approved contracts.`
+                        : "Sonar learns from your approved contracts. Add standards to guide future reviews."}
                     </p>
                     <button className="mt-2 text-[11px] font-medium text-[var(--ai-ink)] hover:underline">
-                      Ask Bluey to suggest standards →
+                      Ask Sonar to suggest standards →
                     </button>
                   </div>
                 </div>

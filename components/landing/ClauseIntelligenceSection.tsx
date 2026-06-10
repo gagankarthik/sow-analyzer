@@ -63,9 +63,10 @@ export function ClauseIntelligenceSection() {
           <Reveal as="h2" className="led-display text-[clamp(30px,3.4vw,46px)] leading-[1.05] text-[var(--led-ink)]">
             Every clause, extracted and scored.
           </Reveal>
-          <Reveal as="p" delay={1} className="mt-5 max-w-[54ch] text-[15px] leading-[1.6] text-muted-foreground">
-            Sonar reads the whole document, scores each clause against your playbook, and indexes
-            it by type — so nothing waits for a manual first pass.
+          <Reveal as="p" delay={1} className="mt-5 max-w-[58ch] text-[15px] leading-[1.6] text-muted-foreground">
+            SOWs, MSAs, NDAs, licences, DPAs, BAAs and compliance documents — Sonar reads the whole
+            file, scores each clause against your playbook, and indexes it by type, so nothing waits
+            for a manual first pass.
           </Reveal>
         </div>
 

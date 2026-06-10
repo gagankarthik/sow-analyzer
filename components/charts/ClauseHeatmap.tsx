@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { RiskLevel } from "@/lib/types";
+import { categoryLabel } from "@/lib/clause-categories";
 
 type ClauseLike = { category: string; riskLevel: RiskLevel };
 
@@ -61,7 +62,7 @@ export function ClauseHeatmap({ clauses, maxRows = 10 }: { clauses: ClauseLike[]
           {rows.map((r) => (
             <tr key={r.category}>
               <td className="text-[12px] font-medium text-foreground pr-2 pl-1 whitespace-nowrap">
-                <span className="inline-block max-w-[160px] truncate align-middle">{r.category}</span>
+                <span className="inline-block max-w-[160px] truncate align-middle" title={categoryLabel(r.category)}>{categoryLabel(r.category)}</span>
                 <span className="ml-1.5 text-[10.5px] tabular-nums text-muted-foreground">{r.total}</span>
               </td>
               {COLS.map((c) => {
@@ -75,7 +76,7 @@ export function ClauseHeatmap({ clauses, maxRows = 10 }: { clauses: ClauseLike[]
                         background: n === 0 ? "var(--ink-50)" : `color-mix(in srgb, ${c.color} ${Math.round(intensity * 100)}%, transparent)`,
                         color: n === 0 ? "var(--ink-300)" : intensity > 0.55 ? "#fff" : "var(--ink-800)",
                       }}
-                      title={`${r.category} · ${c.label}: ${n}`}
+                      title={`${categoryLabel(r.category)} · ${c.label}: ${n}`}
                     >
                       {n || "·"}
                     </div>

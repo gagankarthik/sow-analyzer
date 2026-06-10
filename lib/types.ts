@@ -1,6 +1,6 @@
 // Processing pipeline status
 export type DocStatus = "PENDING" | "PARSING" | "CLASSIFYING" | "EMBEDDING" | "GRAPHING" | "DIFFING" | "TIMELINING" | "PERSISTING" | "READY" | "FAILED"
-export type DocType = "SOW" | "MSA" | "AMENDMENT" | "NDA" | "OTHER"
+export type DocType = "SOW" | "MSA" | "AMENDMENT" | "NDA" | "LICENSE" | "DPA" | "BAA" | "COMPLIANCE" | "OTHER"
 export type Lifecycle = "draft" | "review" | "negotiation" | "approval" | "signed" | "active" | "renewal" | "expired"
 
 // Raw API response shapes (what the backend actually returns)
@@ -319,7 +319,7 @@ export interface ApiTimeline {
   futureState: ApiTimelineState | null
 }
 
-// RAG / Bluey chat
+// RAG / Sonar chat
 export interface ChatCitation {
   clauseNumber: string
   docId: string

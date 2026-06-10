@@ -6,9 +6,10 @@ import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
 import { ProcessingState } from "@/components/ProcessingState";
 import { Button } from "@/components/ui/button";
-import { BlueyMark } from "@/components/ui/BlueyMark";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { DocTypeBadge } from "@/components/DocTypeBadge";
 import {
   Plus, GitBranch, Files, XCircle, AlertCircle, ChevronDown, ChevronUp,
   ArrowRight, ShieldAlert, TrendingUp,
@@ -89,7 +90,7 @@ export default function AmendmentsPage() {
                 <p className="text-[13.5px] text-[var(--danger)] leading-relaxed"><span className="font-semibold">Processing failed.</span> Amendment data is unavailable.</p>
               </div>
             )}
-            {isProcessing && <ProcessingState status={rawStatus} title="Bluey is analyzing this document" subtitle="Amendment changes appear automatically as each stage completes." />}
+            {isProcessing && <ProcessingState status={rawStatus} title="Sonar is analyzing this document" subtitle="Amendment changes appear automatically as each stage completes." />}
 
             {/* Parent relationship */}
             {isAmendment && doc.parentDocId && (
@@ -109,7 +110,7 @@ export default function AmendmentsPage() {
                   {/* Comparison header strip */}
                   <section className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 p-5 shadow-xs">
                     <div className="flex items-start gap-3.5">
-                      <BlueyMark size="md" tile pulse />
+                      <SonarMark size="md" tile pulse />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--ai-ink)]">Change analysis</span>
@@ -140,7 +141,7 @@ export default function AmendmentsPage() {
                   <p className="text-[12px] text-muted-foreground max-w-sm mb-4">
                     {isAmendment
                       ? "This amendment introduced no detected clause changes versus its parent, or the parent could not be matched."
-                      : `${diffMissing ? "" : ""}This is an original document. Upload an amendment that references it and Bluey will diff the clauses automatically.`}
+                      : `${diffMissing ? "" : ""}This is an original document. Upload an amendment that references it and Sonar will diff the clauses automatically.`}
                   </p>
                   <Button variant="primary" size="md" asChild><Link href="/projects/new"><Plus size={13} />Upload amendment</Link></Button>
                 </div>
@@ -153,7 +154,7 @@ export default function AmendmentsPage() {
             <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
               <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-4">Document info</div>
               <ul className="space-y-4">
-                <InfoRow label="Doc type"><Badge variant="neutral" size="sm">{doc.docType}</Badge></InfoRow>
+                <InfoRow label="Doc type"><DocTypeBadge type={doc.docType} /></InfoRow>
                 <InfoRow label="Lifecycle"><Badge variant="neutral" size="sm" className="capitalize">{doc.lifecycle}</Badge></InfoRow>
                 <InfoRow label="Status"><Badge variant={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"} size="sm" className="font-mono">{rawStatus}</Badge></InfoRow>
                 <InfoRow label="Versions"><span className="tabular-nums font-semibold text-foreground">{doc.latestVersion}</span></InfoRow>
@@ -178,7 +179,7 @@ export default function AmendmentsPage() {
 
             <div className="rounded-lg border border-border bg-card p-5">
               <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">Draft a new amendment</div>
-              <p className="text-[12.5px] text-muted-foreground leading-relaxed mb-4">Bluey will pre-fill the standard fields and surface any playbook deviations introduced.</p>
+              <p className="text-[12.5px] text-muted-foreground leading-relaxed mb-4">Sonar will pre-fill the standard fields and surface any playbook deviations introduced.</p>
               <Button variant="ai" size="sm" className="w-full"><Plus size={12} />Open draft assistant</Button>
             </div>
           </aside>
