@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ChevronLeft } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -6,6 +8,8 @@ type Props = {
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   meta?: React.ReactNode;
+  /** Optional back link rendered top-left, above the title. */
+  back?: { href: string; label: string };
   className?: string;
 };
 
@@ -15,6 +19,7 @@ export function PageHeader({
   subtitle,
   actions,
   meta,
+  back,
   className,
 }: Props) {
   return (
@@ -23,6 +28,15 @@ export function PageHeader({
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
           {/* Title block — own column, stacks safely */}
           <div className="min-w-0 flex-1 flex flex-col gap-2.5 md:gap-3">
+            {back && (
+              <Link
+                href={back.href}
+                className="-mb-0.5 inline-flex w-fit items-center gap-1 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronLeft size={15} strokeWidth={2} />
+                {back.label}
+              </Link>
+            )}
             {eyebrow && (
               <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground leading-[1.4]">
                 {eyebrow}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MotionReveal } from "@/components/MotionReveal";
@@ -10,18 +10,13 @@ import { MiniRiskDonut } from "@/components/charts/MiniRiskDonut";
 import {
   Plus, Search, Briefcase, ArrowRight, ArrowUp, ArrowDown, Layers, LayoutGrid, Menu, Loader2,
   ChevronUp, ChevronDown, CheckCircle2, AlertTriangle, XCircle, RefreshCw, CalendarClock,
-  FileSignature, Eye, GitCompare, Edit3, Repeat, Check, Trash2,
+  FileSignature, Eye, GitCompare, Edit3, Repeat, Check, Filter,
 } from "@/components/ui/icons";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
-import { getClassification, deleteDocument } from "@/lib/api";
+import { getClassification } from "@/lib/api";
 import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
-import { useProjects, deleteProject, withUngroupedDocs, isProjectOwner, type LocalProject } from "@/lib/projects-store";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useProjects, withUngroupedDocs, type LocalProject } from "@/lib/projects-store";
 import type { ApiClassification, ApiDocument, Lifecycle, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
@@ -112,25 +107,6 @@ type ViewMode = "table" | "grid";
 type SortKey = "name" | "status" | "risk" | "highRisk" | "docCount" | "clauseCount" | "value" | "date";
 type SortDir = "asc" | "desc";
 
-/** Every document that must be deleted with a project: the project's own docIds
- *  plus every amendment whose parentDocId chain leads back to one of them, so
- *  deleting a project removes the whole contract family — not orphaning
- *  amendments that were never explicitly added to the project. */
-function collectProjectDocIds(rootIds: string[], allDocs: ApiDocument[]): string[] {
-  const ids = new Set(rootIds);
-  let grew = true;
-  while (grew) {
-    grew = false;
-    for (const d of allDocs) {
-      if (d.parentDocId && ids.has(d.parentDocId) && !ids.has(d.docId)) {
-        ids.add(d.docId);
-        grew = true;
-      }
-    }
-  }
-  return [...ids];
-}
-
 export default function ProjectsPage() {
   const { data: docs = [], isLoading, isError, refetch } = useDocuments();
   const rawProjects = useProjects();
@@ -145,43 +121,6 @@ export default function ProjectsPage() {
   const [status, setStatus] = useState<StatusFilter>("any");
   const [view, setView] = useState<ViewMode>("grid");
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "risk", dir: "asc" });
-  const [deleteTarget, setDeleteTarget] = useState<LocalProject | null>(null);
-  const [deletingProject, setDeletingProject] = useState(false);
-  const { user } = useAuth();
-  const currentEmail = user?.email;
-  const qc = useQueryClient();
-  // Documents the delete will actually remove: the project's docs + linked amendments.
-  const deleteCount = deleteTarget ? collectProjectDocIds(deleteTarget.docIds, docs).length : 0;
-
-  // Delete entirely: every document in the project (plus its linked amendments)
-  // is removed from the backend, then the local project container is dropped.
-  // The backend DELETE purges S3 + OpenSearch + all DynamoDB rows per document.
-  async function confirmDelete() {
-    if (!deleteTarget || deletingProject) return;
-    const proj = deleteTarget;
-    const ids = collectProjectDocIds(proj.docIds, docs);
-    setDeletingProject(true);
-    try {
-      const results = await Promise.allSettled(ids.map((id) => deleteDocument(id)));
-      const failed = results.filter((r) => r.status === "rejected").length;
-      deleteProject(proj.id); // also clears the local container + its doc refs
-      await qc.invalidateQueries({ queryKey: documentKeys.all });
-      if (failed > 0) {
-        toast.error("Project deleted, but some documents failed", {
-          description: `${failed} of ${ids.length} document(s) couldn't be removed from the backend — retry from the Library.`,
-        });
-      } else {
-        toast.success("Project deleted", {
-          description: `"${proj.name}"${ids.length ? ` and its ${ids.length} document${ids.length === 1 ? "" : "s"}` : ""} were permanently removed.`,
-        });
-      }
-      setDeleteTarget(null);
-    } catch (e) {
-      toast.error("Delete failed", { description: e instanceof Error ? e.message : "Please try again." });
-    } finally {
-      setDeletingProject(false);
-    }
-  }
 
   useEffect(() => {
     setMounted(true);
@@ -252,11 +191,11 @@ export default function ProjectsPage() {
             <div>
               <h1 className="text-[18px] font-bold leading-tight tracking-tight text-foreground">Projects</h1>
               <p className="text-[12px] text-muted-foreground">
-                {mounted ? `${projects.length} project${projects.length === 1 ? "" : "s"} · ${totalDocs} document${totalDocs === 1 ? "" : "s"}` : "Your contracts and the documents inside them"}
+                {mounted ? `${projects.length} project${projects.length === 1 ? "" : "s"} · ${totalDocs} document${totalDocs === 1 ? "" : "s"}` : "SOWs, MSAs, licences, DPAs, BAAs & compliance documents — grouped by engagement"}
               </p>
             </div>
           </div>
-          <Link href="/projects/new" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--brand-primary-600)] px-4 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[var(--brand-primary-700)]">
+          <Link href="/projects/new" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand-primary-600)] px-4 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[var(--brand-primary-700)]">
             <Plus size={15} strokeWidth={2.5} />New project
           </Link>
         </div>
@@ -268,29 +207,26 @@ export default function ProjectsPage() {
             <div className="relative flex min-w-[200px] flex-1 items-center sm:max-w-xs">
               <Search size={15} className="pointer-events-none absolute left-3 text-muted-foreground" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search projects…"
-                className="h-9 w-full rounded-full border border-border bg-card pl-9 pr-4 text-[13px] outline-none transition-shadow placeholder:text-muted-foreground focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-100)]" />
+                className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-4 text-[13px] outline-none transition-shadow placeholder:text-muted-foreground focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-100)]" />
             </div>
-            <div className="flex items-center gap-1">
-              {([
-                { k: "all", label: "All" },
-                { k: "attention", label: "Needs attention" },
-                { k: "critical", label: "Critical" },
-                { k: "high", label: "High" },
-              ] as { k: RiskFilter; label: string }[]).map((f) => (
-                <button key={f.k} onClick={() => setRisk(f.k)} data-active={risk === f.k}
-                  className="inline-flex h-8 items-center rounded-full border border-transparent px-3 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] data-[active=true]:bg-[var(--brand-primary-50)] data-[active=true]:text-[var(--brand-primary-700)]">
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            <label className="sr-only" htmlFor="status-filter">Filter by status</label>
-            <select id="status-filter" value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}
-              className="h-8 rounded-full border border-border bg-card px-3 text-[12.5px] font-medium text-muted-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
-              <option value="any">Any status</option>
-              <option value="active">Active / Signed</option>
-              <option value="expiring">Expiring · 90d</option>
-              <option value="expired">Expired</option>
-            </select>
+            <Select value={risk} onValueChange={(v) => setRisk(v as RiskFilter)}>
+              <SelectTrigger size="sm" className="h-9 w-[155px] text-[12.5px]"><Filter size={13} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All risk</SelectItem>
+                <SelectItem value="attention">Needs attention</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+              <SelectTrigger size="sm" className="h-9 w-[140px] text-[12.5px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any status</SelectItem>
+                <SelectItem value="active">Active / Signed</SelectItem>
+                <SelectItem value="expiring">Expiring · 90d</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="ml-auto inline-flex items-center rounded-md border border-border bg-card p-0.5">
               {([{ m: "table", icon: <Menu size={15} /> }, { m: "grid", icon: <LayoutGrid size={15} /> }] as { m: ViewMode; icon: React.ReactNode }[]).map((vm) => (
                 <button key={vm.m} onClick={() => setView(vm.m)} data-active={view === vm.m} aria-label={`${vm.m} view`}
@@ -313,43 +249,19 @@ export default function ProjectsPage() {
         ) : view === "grid" ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sorted.map((a, i) => (
-              <MotionReveal key={a.project.id} delay={Math.min(i * 0.04, 0.2)}><ProjectGridCard a={a} onDelete={setDeleteTarget} canDelete={isProjectOwner(a.project, currentEmail)} /></MotionReveal>
+              <MotionReveal key={a.project.id} delay={Math.min(i * 0.04, 0.2)}><ProjectGridCard a={a} /></MotionReveal>
             ))}
           </div>
         ) : (
-          <ProjectTable rows={sorted} sort={sort} onSort={toggleSort} onDelete={setDeleteTarget} currentEmail={currentEmail} />
+          <ProjectTable rows={sorted} sort={sort} onSort={toggleSort} />
         )}
       </div>
-
-      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this project?</AlertDialogTitle>
-            <AlertDialogDescription>
-              <strong>{deleteTarget?.name}</strong> and its{" "}
-              <strong>{deleteCount} document{deleteCount === 1 ? "" : "s"}</strong>{" "}
-              (with all clauses, analysis, and versions) will be <strong>permanently deleted</strong>
-              {" "}from the backend. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingProject}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
-              disabled={deletingProject}
-              className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white"
-            >
-              {deletingProject ? "Deleting…" : "Delete permanently"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
 
 /* ── Table (default) ──────────────────────────────────────────── */
-function ProjectTable({ rows, sort, onSort, onDelete, currentEmail }: { rows: Agg[]; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void; onDelete: (p: LocalProject) => void; currentEmail: string | null | undefined }) {
+function ProjectTable({ rows, sort, onSort }: { rows: Agg[]; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
       <table className="w-full min-w-[940px] border-collapse text-[13px]">
@@ -365,7 +277,6 @@ function ProjectTable({ rows, sort, onSort, onDelete, currentEmail }: { rows: Ag
             <th className="px-4 py-2.5 text-center text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Data</th>
             <Th label="Renewal" k="date" sort={sort} onSort={onSort} />
             <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Attention</th>
-            <th className="px-4 py-2.5" />
           </tr>
         </thead>
         <tbody>
@@ -393,14 +304,6 @@ function ProjectTable({ rows, sort, onSort, onDelete, currentEmail }: { rows: Ag
               <td className="px-4 py-3 text-center"><ReconciledBadge reconciled={a.reconciled} hasValue={a.value > 0} /></td>
               <td className="px-4 py-3"><RenewalCell expired={a.expired} days={a.daysToDate} /></td>
               <td className="px-4 py-3"><AttentionTag reason={a.attention} risk={a.overallRisk} expired={a.expired} failed={a.failed > 0} /></td>
-              <td className="px-4 py-3 text-right">
-                {isProjectOwner(a.project, currentEmail) && (
-                  <button type="button" onClick={() => onDelete(a.project)} aria-label={`Remove project ${a.project.name}`}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]">
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </td>
             </tr>
           ))}
         </tbody>
@@ -428,7 +331,7 @@ function StatusPill({ lifecycle }: { lifecycle: Lifecycle | "—" }) {
   const Icon = meta.Icon;
   const danger = lifecycle === "expired";
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium ${danger ? "border-[var(--danger)]/30 bg-[var(--danger-soft)] text-[var(--danger)]" : "border-border bg-muted/60 text-foreground"}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[11px] font-medium ${danger ? "border-[var(--danger)]/30 bg-[var(--danger-soft)] text-[var(--danger)]" : "border-border bg-muted/60 text-foreground"}`}>
       <Icon size={11} />{meta.label}
     </span>
   );
@@ -480,7 +383,7 @@ function AttentionTag({ reason, risk, expired, failed }: { reason: string | null
 }
 
 /* ── Grid card (toggle) ───────────────────────────────────────── */
-function ProjectGridCard({ a, onDelete, canDelete }: { a: Agg; onDelete: (p: LocalProject) => void; canDelete: boolean }) {
+function ProjectGridCard({ a }: { a: Agg }) {
   const segs: { k: RiskLevel; n: number }[] = [
     { k: "critical", n: a.rc.critical }, { k: "high", n: a.rc.high }, { k: "medium", n: a.rc.medium }, { k: "low", n: a.rc.low },
   ];
@@ -524,16 +427,6 @@ function ProjectGridCard({ a, onDelete, canDelete }: { a: Agg; onDelete: (p: Loc
         {(a.expired || a.daysToDate !== null) && <RenewalCell expired={a.expired} days={a.daysToDate} />}
       </div>
     </Link>
-      {canDelete && (
-        <button
-          type="button"
-          onClick={() => onDelete(a.project)}
-          aria-label={`Remove project ${a.project.name}`}
-          className="absolute right-2.5 top-2.5 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all hover:border-[var(--danger)]/40 hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]/30"
-        >
-          <Trash2 size={14} />
-        </button>
-      )}
     </div>
   );
 }
@@ -553,7 +446,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--danger-soft)] text-[var(--danger)]"><XCircle size={26} strokeWidth={1.5} /></span>
       <h3 className="text-[17px] font-semibold text-foreground">Couldn&apos;t load your projects</h3>
       <p className="mt-2 max-w-md text-[13px] text-muted-foreground">The document service didn&apos;t respond. Your projects are safe — try again in a moment.</p>
-      <Button variant="outline" size="md" className="mt-6 gap-1.5 rounded-full" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
+      <Button variant="outline" size="md" className="mt-6 gap-1.5" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
     </div>
   );
 }
@@ -567,9 +460,9 @@ function EmptyState({ pristine, reset }: { pristine: boolean; reset?: () => void
         {pristine ? "Create a project, then upload its SOW. Sonar extracts clauses, scores risk, and rolls it up here." : "Try a different filter or clear your search."}
       </p>
       {pristine ? (
-        <Button variant="primary" size="lg" className="mt-6 rounded-full" asChild><Link href="/projects/new"><Plus size={15} />Create your first project</Link></Button>
+        <Button variant="primary" size="lg" className="mt-6" asChild><Link href="/projects/new"><Plus size={15} />Create your first project</Link></Button>
       ) : (
-        <Button variant="outline" size="md" className="mt-6 rounded-full" onClick={reset}>Clear filters</Button>
+        <Button variant="outline" size="md" className="mt-6" onClick={reset}>Clear filters</Button>
       )}
       {pristine && <Link href="/projects/new" className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">or add documents <ArrowRight size={12} /></Link>}
     </div>

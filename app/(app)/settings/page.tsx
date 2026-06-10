@@ -38,14 +38,14 @@ const groups: NavGroup[] = [
     items: [
       { icon: BookMarked, title: "Playbook", desc: "Edit your firm's clause standards and deviation thresholds.", href: "/settings/playbook" },
       { icon: Briefcase, title: "Clause library", desc: "Reusable clause blocks across the team.", href: "/settings/clauses" },
-      { icon: ShieldCheck, title: "Compliance packs", desc: "GDPR, SOC2, HIPAA clause coverage rules.", href: "#", soon: true },
+      { icon: ShieldCheck, title: "Compliance packs", desc: "GDPR, SOC2, HIPAA clause coverage rules.", href: "/settings/compliance" },
     ],
   },
   {
     label: "Workspace",
     desc: "People, permissions, and external systems your contracts flow through.",
     items: [
-      { icon: Users, title: "Team & roles", desc: "Manage who reviews, approves, and signs.", href: "#", soon: true },
+      { icon: Users, title: "Team & roles", desc: "See everyone with access and what each role can do.", href: "/settings/team" },
       { icon: Lock, title: "Approval routing", desc: "Define routing rules by contract value and risk.", href: "#", soon: true },
       { icon: Globe2, title: "Integrations", desc: "DocuSign, Salesforce, Workday, Slack, MS Teams.", href: "#", soon: true },
     ],

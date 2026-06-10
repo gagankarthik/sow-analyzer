@@ -28,7 +28,6 @@ import { getClassification } from "@/lib/api";
 import { docValue, persistedOf } from "@/lib/contract-value";
 import { categoryLabel } from "@/lib/clause-categories";
 import { docTypeShort } from "@/lib/doc-types";
-import { ValueDelivered } from "@/components/insights/ValueDelivered";
 import type { ApiClassification, DocType, RiskLevel, FindingSeverity, PricingModel } from "@/lib/types";
 
 const RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2, critical: 3 };
@@ -218,11 +217,6 @@ export default function InsightsPage() {
           <ErrorState onRetry={() => refetch()} />
         ) : readyDocs.length === 0 ? null : (
           <>
-            {/* Value delivered — what the team is saving, from real usage */}
-            <MotionReveal>
-              <ValueDelivered contractsAnalyzed={readyDocs.length} />
-            </MotionReveal>
-
             {/* Focal: value × risk */}
             <MotionReveal>
               <ChartCard
@@ -353,7 +347,7 @@ function FilterChip({ active, onClick, dot, children }: { active: boolean; onCli
   return (
     <button
       type="button" onClick={onClick} aria-pressed={active}
-      className="inline-flex h-7 items-center gap-1.5 rounded-full border border-transparent px-2.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:bg-[var(--brand-primary-50)] aria-[pressed=true]:text-[var(--brand-primary-700)]"
+      className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-transparent px-2.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:bg-[var(--brand-primary-50)] aria-[pressed=true]:text-[var(--brand-primary-700)]"
     >
       {dot && <span className="h-2 w-2 rounded-full" style={{ background: dot }} />}
       {children}
@@ -367,7 +361,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--danger-soft)] text-[var(--danger)]"><XCircle size={26} strokeWidth={1.5} /></span>
       <h3 className="text-[17px] font-semibold text-foreground">Couldn&apos;t load insights</h3>
       <p className="mt-2 max-w-md text-[13px] text-muted-foreground">The document service didn&apos;t respond. Try again in a moment.</p>
-      <button type="button" onClick={onRetry} className="mt-6 inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"><RefreshCw size={14} />Try again</button>
+      <button type="button" onClick={onRetry} className="mt-6 inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"><RefreshCw size={14} />Try again</button>
     </div>
   );
 }

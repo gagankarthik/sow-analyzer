@@ -88,7 +88,7 @@ export function CumulativeArea({ points }: { points: AreaPoint[] }) {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis
-              dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]}
+              dataKey="t" type="number" domain={["dataMin", "dataMax"]}
               tickFormatter={fmtDate} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               tickLine={false} axisLine={false} dy={6}
             />

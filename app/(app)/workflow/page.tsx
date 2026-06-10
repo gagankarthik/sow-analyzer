@@ -22,7 +22,11 @@ import {
   MoreHorizontal,
   Kanban,
 } from "@/components/ui/icons";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DOC_TYPE_META, docTypeShort } from "@/lib/doc-types";
 import { listDocuments } from "@/lib/api";
+
+const DOC_TYPE_KEYS = Object.keys(DOC_TYPE_META) as (keyof typeof DOC_TYPE_META)[];
 import type { ApiDocument, Lifecycle } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -82,15 +86,18 @@ export default function WorkflowPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const [docTypeFilter, setDocTypeFilter] = useState<string>("All");
+  const visibleDocs = docTypeFilter === "All" ? docs : docs.filter((d) => d.docType === docTypeFilter);
+
   const totals = STAGES.reduce<Record<Lifecycle, number>>(
     (acc, s) => {
-      acc[s] = docs.filter((d) => d.lifecycle === s).length;
+      acc[s] = visibleDocs.filter((d) => d.lifecycle === s).length;
       return acc;
     },
     {} as Record<Lifecycle, number>,
   );
 
-  const totalDocs = docs.length;
+  const totalDocs = visibleDocs.length;
 
   return (
     <>
@@ -100,16 +107,20 @@ export default function WorkflowPage() {
         subtitle="Documents organized by lifecycle stage — track progress from draft through to active and renewal."
         actions={
           <>
-            <Button variant="outline" size="md">
-              <Filter size={12} /> Filter
-            </Button>
+            <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
+              <SelectTrigger size="sm" className="h-8 w-[150px] text-[12.5px]"><Filter size={13} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All types</SelectItem>
+                {DOC_TYPE_KEYS.map((t) => <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Button variant="ai" size="md" className="gap-1.5 pl-1.5">
               <SonarMark size="xs" />
               Ask Sonar
             </Button>
             <Link
               href="/projects/new"
-              className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
             >
               <Plus size={13} /> New document
             </Link>
@@ -176,7 +187,7 @@ export default function WorkflowPage() {
         <section className="overflow-x-auto pb-2">
           <div className="grid grid-cols-8 gap-4 min-w-[1760px]">
             {STAGES.map((s) => {
-              const stageItems = docs.filter((d) => d.lifecycle === s);
+              const stageItems = visibleDocs.filter((d) => d.lifecycle === s);
               const accent = STAGE_ACCENT[s];
               return (
                 <div

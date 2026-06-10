@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
+import { DocTypeBadge } from "@/components/DocTypeBadge";
+import { docTypeShort } from "@/lib/doc-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -237,7 +238,7 @@ export default function LibraryPage() {
         actions={
           <Link
             href="/projects/new"
-            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
           >
             <Plus size={13} strokeWidth={2.5} />
             New document
@@ -259,26 +260,26 @@ export default function LibraryPage() {
                 placeholder="Search by title or project…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="h-10 rounded-full border border-border bg-card pl-9 pr-4 focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)]"
+                className="h-10 rounded-lg border border-border bg-card pl-9 pr-4 focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)]"
               />
             </div>
 
             <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
-              <SelectTrigger className="h-10 w-[160px] rounded-full">
-                <span className="text-muted-foreground mr-1.5 text-[12px]">Type</span>
+              <SelectTrigger className="h-10 w-[160px] rounded-lg">
+                <span className="text-muted-foreground text-[12px]">Type</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All types</SelectItem>
                 {DOC_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                  <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-              <SelectTrigger className="h-10 w-[170px] rounded-full">
-                <span className="text-muted-foreground mr-1.5 text-[12px]">Lifecycle</span>
+              <SelectTrigger className="h-10 w-[170px] rounded-lg">
+                <span className="text-muted-foreground text-[12px]">Lifecycle</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -291,8 +292,8 @@ export default function LibraryPage() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-10 w-[170px] rounded-full">
-                <span className="text-muted-foreground mr-1.5 text-[12px]">Status</span>
+              <SelectTrigger className="h-10 w-[170px] rounded-lg">
+                <span className="text-muted-foreground text-[12px]">Status</span>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -303,9 +304,23 @@ export default function LibraryPage() {
               </SelectContent>
             </Select>
 
+            <Select value={sort.key} onValueChange={(v) => setSort({ key: v as SortKey, dir: v === "title" ? "asc" : "desc" })}>
+              <SelectTrigger className="h-10 w-[150px] rounded-lg">
+                <span className="text-muted-foreground text-[12px]">Sort</span>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Newest</SelectItem>
+                <SelectItem value="title">Title</SelectItem>
+                <SelectItem value="docType">Type</SelectItem>
+                <SelectItem value="lifecycle">Lifecycle</SelectItem>
+                <SelectItem value="latestVersion">Versions</SelectItem>
+              </SelectContent>
+            </Select>
+
             <div className="flex-1" />
 
-            <Button variant="ai" size="md" className="h-10 rounded-full gap-1.5 pl-2">
+            <Button variant="ai" size="md" className="h-10 rounded-lg gap-1.5 pl-2">
               <SonarMark size="sm" />
               Ask Sonar to analyze
             </Button>
@@ -315,9 +330,8 @@ export default function LibraryPage() {
         {/* Table */}
         <MotionReveal delay={0.05}>
         <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="sticky top-0 bg-card z-10">
+            <Table className="min-w-[820px]">
+              <TableHeader className="bg-card">
                 <TableRow className="hover:bg-transparent h-9 border-b border-border">
                   <ThSort label="Title" onClick={() => toggleSort("title")} dir={sort.key === "title" ? sort.dir : undefined} />
                   <TableHead className="eyebrow">Project</TableHead>
@@ -355,13 +369,13 @@ export default function LibraryPage() {
                         {docs.length === 0 ? (
                           <Link
                             href="/projects/new"
-                            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
+                            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
                           >
                             <Plus size={13} strokeWidth={2.5} />
                             Upload a document
                           </Link>
                         ) : (
-                          <Button variant="primary" size="md" className="rounded-full" onClick={clearFilters}>
+                          <Button variant="primary" size="md" onClick={clearFilters}>
                             Clear filters
                           </Button>
                         )}
@@ -391,7 +405,7 @@ export default function LibraryPage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" size="sm">{doc.docType}</Badge>
+                          <DocTypeBadge type={doc.docType} />
                         </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${tone.text}`}>
@@ -456,7 +470,6 @@ export default function LibraryPage() {
                 )}
               </TableBody>
             </Table>
-          </div>
 
           <div className="flex items-center justify-between px-5 py-3.5 border-t border-border text-[12px] text-muted-foreground">
             <span className="font-mono">

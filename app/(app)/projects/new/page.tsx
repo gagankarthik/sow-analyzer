@@ -82,7 +82,7 @@ export default function NewProjectPage() {
               <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
                 <Upload size={13} /> Upload SOWs in the next step
               </span>
-              <Button variant="primary" size="lg" className="rounded-full" disabled={!canCreate} onClick={create}>
+              <Button variant="primary" size="lg" disabled={!canCreate} onClick={create}>
                 Create project <ArrowRight size={15} />
               </Button>
             </div>

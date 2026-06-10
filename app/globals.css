@@ -9,6 +9,7 @@
    ───────────────────────────────────────────────────────────── */
 
 :root {
+  color-scheme: light;
   /* ─── Brand — Enterprise blue per spec ──────────────────── */
   --brand-primary-50:  #EFF6FF;
   --brand-primary-100: #DBEAFE;
@@ -218,6 +219,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --paper:       #0D0E0B;
   --paper-elev:  #14140F;
   --panel:       #1B1B17;
@@ -385,6 +387,16 @@
 /* ─────────────────────────────────────────────────────────────
    Base
    ───────────────────────────────────────────────────────────── */
+
+/* Smooth light/dark theme switch — fades surfaces instead of a hard flip,
+   so the toggle feels polished (Aesthetic-Usability / Peak-End Rule). Scoped
+   to colour properties so it never slows down hover/interaction transitions. */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-anim,
+  html.theme-anim *:not(svg):not(path) {
+    transition: background-color 220ms ease, border-color 220ms ease, color 180ms ease;
+  }
+}
 
 html, body {
   background: var(--background);

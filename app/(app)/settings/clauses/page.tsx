@@ -101,7 +101,7 @@ export default function ClauseLibraryPage() {
               placeholder="Search by title or category…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="h-10 rounded-full border border-border bg-card pl-9 pr-4 focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)]"
+              className="h-10 rounded-lg border border-border bg-card pl-9 pr-4 focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)]"
               disabled
             />
           </div>

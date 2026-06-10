@@ -88,7 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [mobileNav]);
 
   return (
-    <div className="sf-app flex w-full min-h-screen bg-background">
+    <div className="flex w-full min-h-screen bg-background">
       {/* Keyboard users can jump straight to content, bypassing the nav (WCAG 2.4.1). */}
       <a
         href="#main-content"

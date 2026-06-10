@@ -7,8 +7,8 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  LayoutDashboard, FileText, Kanban, BarChart3, Briefcase, Sparkles, Search,
-  Settings, Info, ChevronsLeft, ChevronsRight, Wand2,
+  LayoutDashboard, FileText, Kanban, BarChart3, Briefcase, Sparkles,
+  Settings, Info, ChevronsLeft, ChevronsRight, Wand2, CalendarClock,
 } from "@/components/ui/icons";
 
 type NavItem = {
@@ -22,10 +22,10 @@ type NavItem = {
 // One flat list — no categories, no headers.
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Search", action: "search", icon: Search },
   { label: "Projects", href: "/projects", icon: Briefcase },
   { label: "Library", href: "/library", icon: FileText },
   { label: "Workflow", href: "/workflow", icon: Kanban },
+  { label: "Renewals", href: "/renewals", icon: CalendarClock },
   { label: "Draft SOW", href: "/draft", icon: Wand2 },
   { label: "Sonar", action: "copilot", icon: Sparkles },
   { label: "Insights", href: "/insights", icon: BarChart3 }
@@ -34,7 +34,7 @@ const NAV_ITEMS: NavItem[] = [
 // Pinned at the foot of the rail — always reachable, never scrolls away.
 const systemItems: NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Help & docs", href: "#", icon: Info },
+  { label: "Help", href: "/help", icon: Info },
 ];
 
 const ALL_HREFS = NAV_ITEMS.filter((i) => i.href).map((i) => i.href as string);

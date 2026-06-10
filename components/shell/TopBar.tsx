@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useNotifications, type NotificationType } from "@/lib/notifications";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -23,6 +24,7 @@ import {
   Bell,
   Sun,
   Moon,
+  Home,
   Search,
   Command,
   ChevronRight,
@@ -111,7 +113,7 @@ type SearchHit = {
   label: string;
   sub: string;
   href: string;
-  group: "Pages" | "Documents";
+  group: "Pages" | "Documents" | "Projects";
   icon: React.ReactNode;
 };
 
@@ -134,7 +136,17 @@ function useSearchIndex(): SearchHit[] {
   // no stale one-time snapshot.
   const { data: docs = [] } = useDocuments();
 
+  const projects = useProjects();
+
   return useMemo<SearchHit[]>(() => {
+    const projectHits: SearchHit[] = projects.map((p) => ({
+      id: p.id,
+      label: p.name,
+      sub: p.client ? `Project · ${p.client}` : "Project",
+      href: `/projects/${p.id}`,
+      group: "Projects",
+      icon: <Briefcase size={14} />,
+    }));
     const docHits: SearchHit[] = docs.map((d) => ({
       id: d.docId,
       label: d.title || "Untitled document",
@@ -143,11 +155,11 @@ function useSearchIndex(): SearchHit[] {
       group: "Documents",
       icon: <FileText size={14} />,
     }));
-    return [...PAGE_HITS, ...docHits];
-  }, [docs]);
+    return [...projectHits, ...docHits, ...PAGE_HITS];
+  }, [docs, projects]);
 }
 
-function SearchBar({ onCommandOpen }: { onCommandOpen?: () => void }) {
+function SearchBar() {
   const router = useRouter();
   const index = useSearchIndex();
   const [q, setQ] = useState("");
@@ -222,7 +234,7 @@ function SearchBar({ onCommandOpen }: { onCommandOpen?: () => void }) {
   }
 
   return (
-    <div ref={wrapRef} className="relative w-full max-w-[420px] hidden md:block">
+    <div ref={wrapRef} className="relative w-full max-w-[420px] hidden sm:block">
       <Search
         size={14}
         strokeWidth={1.75}
@@ -241,7 +253,7 @@ function SearchBar({ onCommandOpen }: { onCommandOpen?: () => void }) {
         onKeyDown={onKeyDown}
         placeholder="Search documents & pages…"
         className={cn(
-          "h-9 w-full rounded-full pl-9 pr-16 text-[13px]",
+          "h-9 w-full rounded-lg pl-9 pr-16 text-[13px]",
           "bg-muted/60 border border-transparent placeholder:text-muted-foreground",
           "focus:outline-none focus:bg-card focus:border-border focus:ring-2 focus:ring-ring/30",
           "transition-colors",
@@ -279,24 +291,6 @@ function SearchBar({ onCommandOpen }: { onCommandOpen?: () => void }) {
                   </li>
                 ))}
               </ul>
-              {onCommandOpen && (
-                <>
-                  <Separator className="my-2" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      onCommandOpen();
-                    }}
-                    className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  >
-                    <span>Open command palette</span>
-                    <span className="font-mono inline-flex items-center gap-0.5">
-                      <Command size={10} strokeWidth={2} />K
-                    </span>
-                  </button>
-                </>
-              )}
             </div>
           ) : results.length === 0 ? (
             <div className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
@@ -305,7 +299,7 @@ function SearchBar({ onCommandOpen }: { onCommandOpen?: () => void }) {
             </div>
           ) : (
             <div className="max-h-[360px] overflow-y-auto">
-              {(["Documents", "Pages"] as const).map(
+              {(["Projects", "Documents", "Pages"] as const).map(
                 (group) => {
                   const items = grouped[group];
                   if (!items?.length) return null;
@@ -372,32 +366,29 @@ function SearchBar({ onCommandOpen }: { onCommandOpen?: () => void }) {
 /*  Notification bell                               */
 /* ──────────────────────────────────────────────── */
 
-const NOTIFICATIONS = [
-  {
-    id: "n1",
-    tone: "danger" as const,
-    title: "Northwind MSA · §7.2",
-    body: "Material deviation flagged — review required.",
-    ts: "2m",
-  },
-  {
-    id: "n2",
-    tone: "warning" as const,
-    title: "Vector Bio · Amendment A-04",
-    body: "Awaiting your countersignature.",
-    ts: "1h",
-  },
-  {
-    id: "n3",
-    tone: "success" as const,
-    title: "Obelisk Custody · signed",
-    body: "Routed to ops · audit trail saved.",
-    ts: "3h",
-  },
-];
+const NOTIF_DOT: Record<NotificationType, string> = {
+  risk: "bg-[var(--danger)]",
+  failed: "bg-[var(--danger)]",
+  renewal: "bg-[var(--warning)]",
+  analysis: "bg-[var(--success)]",
+  team: "bg-[var(--brand-primary-600)]",
+};
+
+function notifAgo(ts: number): string {
+  if (!ts) return "";
+  const diff = Math.max(0, Date.now() - ts);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
 
 function NotificationBell() {
-  const unread = NOTIFICATIONS.length;
+  const { notifications, unreadCount, markRead } = useNotifications();
+  const recent = notifications.slice(0, 6);
+  const unread = unreadCount;
   return (
     <DropdownMenu>
       <Tooltip>
@@ -421,7 +412,7 @@ function NotificationBell() {
                     "ring-2 ring-card",
                   )}
                 >
-                  {unread}
+                  {unread > 9 ? "9+" : unread}
                 </span>
               )}
               {unread > 0 && (
@@ -441,46 +432,46 @@ function NotificationBell() {
             {unread} new
           </span>
         </DropdownMenuLabel>
-        <ul className="max-h-[360px] overflow-y-auto">
-          {NOTIFICATIONS.map((n) => (
-            <li key={n.id}>
-              <button
-                type="button"
-                className="w-full flex items-start gap-2.5 px-3 py-3 text-left hover:bg-muted/60 transition-colors border-b border-border last:border-b-0"
-              >
-                <span
-                  className={cn(
-                    "mt-1 h-2 w-2 rounded-full shrink-0",
-                    n.tone === "danger" && "bg-[var(--danger)]",
-                    n.tone === "warning" && "bg-[var(--warning)]",
-                    n.tone === "success" && "bg-[var(--success)]",
-                  )}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-[12.5px] font-semibold text-foreground truncate">
-                      {n.title}
-                    </span>
-                    <span className="font-mono text-[10px] text-muted-foreground shrink-0">
-                      {n.ts}
-                    </span>
+        {recent.length === 0 ? (
+          <div className="px-3 py-8 text-center text-[12px] text-muted-foreground">
+            You&apos;re all caught up.
+          </div>
+        ) : (
+          <ul className="max-h-[360px] overflow-y-auto">
+            {recent.map((n) => (
+              <li key={n.id}>
+                <Link
+                  href={n.href}
+                  onClick={() => markRead(n.id)}
+                  className="w-full flex items-start gap-2.5 px-3 py-3 text-left hover:bg-muted/60 transition-colors border-b border-border last:border-b-0"
+                >
+                  <span className={cn("mt-1 h-2 w-2 rounded-full shrink-0", NOTIF_DOT[n.type])} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[12.5px] font-semibold text-foreground truncate">
+                        {n.title}
+                      </span>
+                      <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                        {notifAgo(n.timestamp)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11.5px] text-muted-foreground leading-snug line-clamp-2">
+                      {n.body}
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-[11.5px] text-muted-foreground leading-snug">
-                    {n.body}
-                  </p>
-                </div>
-              </button>
-            </li>
-          ))}
-        </ul>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="border-t border-border p-2">
-          <button
-            type="button"
+          <Link
+            href="/notifications"
             className="w-full inline-flex items-center justify-center gap-1 px-3 py-2 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             View all notifications
             <ArrowRight size={11} strokeWidth={2.25} />
-          </button>
+          </Link>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -533,7 +524,7 @@ function ProfileMenu() {
       <DropdownMenuContent align="end" className="w-[280px] p-0 overflow-hidden">
         {/* Identity header */}
         <div className="flex items-center gap-3 px-4 py-4 bg-muted/40 border-b border-border">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--brand-primary-600)] text-white text-[14px] font-semibold shrink-0 uppercase">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--brand-primary-600)] text-white text-[14px] font-semibold shrink-0 uppercase">
             {initials}
           </span>
           <div className="min-w-0 flex-1">
@@ -619,15 +610,28 @@ export function TopBar({ onCommandOpen, onMenuClick }: Props) {
   }, [docs, projects]);
   const crumbs = crumbsFromPath(pathname, nameOf);
   const mounted = useHasMounted();
-  const [dark, setDark] = useState<boolean>(readDark);
+  const [dark, setDark] = useState(false);
+  // Sync from the actual <html> class after mount (the bootstrap script set it
+  // before paint), and keep in step if another control toggles the theme.
+  useEffect(() => {
+    setDark(readDark());
+    const obs = new MutationObserver(() => setDark(readDark()));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
 
   function toggleTheme() {
-    const next = !dark;
+    // Read the real current state (not stale React state) so this stays correct
+    // even if the command palette toggled the theme.
+    const root = document.documentElement;
+    root.classList.add("theme-anim"); // fade surfaces only during the switch
+    const next = !root.classList.contains("dark");
+    root.classList.toggle("dark", next);
     setDark(next);
-    document.documentElement.classList.toggle("dark", next);
     try {
       localStorage.setItem("clausal-theme", next ? "dark" : "light");
     } catch {}
+    window.setTimeout(() => root.classList.remove("theme-anim"), 260);
   }
 
   return (
@@ -653,13 +657,17 @@ export function TopBar({ onCommandOpen, onMenuClick }: Props) {
         aria-label="Breadcrumb"
         className="flex items-center gap-1.5 min-w-0 text-[12.5px] overflow-hidden"
       >
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground hidden sm:inline">
-          Blue-IQ
-        </span>
+        <Link
+          href="/dashboard"
+          aria-label="Home"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Home size={15} strokeWidth={1.85} />
+        </Link>
         <ChevronRight
           size={12}
           strokeWidth={1.75}
-          className="text-muted-foreground/40 hidden sm:inline shrink-0"
+          className="text-muted-foreground/40 shrink-0 hidden sm:inline"
         />
         {crumbs.map((c, i) => {
           const isLast = i === crumbs.length - 1;
@@ -695,7 +703,7 @@ export function TopBar({ onCommandOpen, onMenuClick }: Props) {
 
       {/* Search — center */}
       <div className="flex-1 flex items-center justify-center min-w-0">
-        <SearchBar onCommandOpen={onCommandOpen} />
+        <SearchBar />
       </div>
 
       {/* mobile search button */}
@@ -714,30 +722,25 @@ export function TopBar({ onCommandOpen, onMenuClick }: Props) {
         {/* Notification bell — prominent */}
         <NotificationBell />
 
-        {/* Theme toggle */}
-        {mounted && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                aria-label={dark ? "Light mode" : "Dark mode"}
-                className={cn(
-                  "inline-flex items-center justify-center h-9 w-9 rounded-md",
-                  "text-muted-foreground hover:text-foreground hover:bg-muted",
-                  "transition-colors",
-                )}
-              >
-                {dark ? (
-                  <Sun size={15} strokeWidth={1.85} className="text-foreground" />
-                ) : (
-                  <Moon size={15} strokeWidth={1.85} className="text-foreground" />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{dark ? "Light mode" : "Dark mode"}</TooltipContent>
-          </Tooltip>
-        )}
+        {/* Theme toggle — plain button (no Radix asChild wrapper, so the click
+            always fires and reliably flips the theme). */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+          title={dark ? "Light mode" : "Dark mode"}
+          className={cn(
+            "inline-flex items-center justify-center h-9 w-9 rounded-md",
+            "text-muted-foreground hover:text-foreground hover:bg-muted",
+            "transition-colors",
+          )}
+        >
+          {mounted && dark ? (
+            <Sun size={15} strokeWidth={1.85} />
+          ) : (
+            <Moon size={15} strokeWidth={1.85} />
+          )}
+        </button>
 
         <Separator orientation="vertical" className="!h-5 mx-1" />
 

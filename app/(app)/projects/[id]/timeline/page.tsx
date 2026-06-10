@@ -179,7 +179,7 @@ export default function TimelinePage() {
 function Node({ state, icon }: { state: DotState; icon: React.ReactNode }) {
   if (state === "active") {
     return (
-      <span className="relative z-10 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-600)] text-white ring-4 ring-[var(--brand-primary-100)]">{icon}</span>
+      <span className="relative z-10 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-600)] text-white ring-4 ring-[var(--brand-primary-100)]">{icon}</span>
     );
   }
   if (state === "forecast") {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -13,8 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkline } from "@/components/ui/Sparkline";
 import {
   Briefcase, ShieldAlert, ArrowRight, ArrowUp, ArrowDown, Plus, RefreshCw, Layers, FileText, DollarSign,
-  AlertTriangle, CheckCircle2, Check, CalendarClock, BarChart3, TrendingUp, Database, Boxes,
-  ChevronUp, ChevronDown, XCircle,
+  AlertTriangle, CheckCircle2, Check, CalendarClock, BarChart3, TrendingUp, Database, Boxes, ShieldCheck,
+  ChevronUp, ChevronDown, XCircle, Filter,
 } from "@/components/ui/icons";
 import { useDocuments, documentKeys } from "@/lib/queries/documents";
 import { getClassification } from "@/lib/api";
@@ -22,8 +22,10 @@ import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/l
 import { categoryLabel } from "@/lib/clause-categories";
 import { docTypeShort } from "@/lib/doc-types";
 import { HBarChart, type HBarDatum } from "@/components/charts/HBarChart";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProjects, withUngroupedDocs, type LocalProject } from "@/lib/projects-store";
-import type { ApiClause, ApiClassification, ApiDocument, RiskLevel } from "@/lib/types";
+import { useEnabledPacks, COMPLIANCE_PACKS } from "@/lib/compliance-packs";
+import type { ApiClause, ApiClassification, ApiDocument, DocType, RiskLevel } from "@/lib/types";
 
 const PROCESSING = new Set(["PENDING", "PARSING", "CLASSIFYING", "EMBEDDING", "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING"]);
 const RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2, critical: 3 };
@@ -37,6 +39,15 @@ const RISK_PILL: Record<RiskLevel, string> = {
 };
 const SCOPE_CATS = ["ScopeOfWork", "Deliverables", "Acceptance", "ChangeControl"];
 const DAY = 86_400_000;
+
+// Persist the contracts-table filters so a returning user keeps their view.
+const FILTER_KEY = "biq-dashboard-filters";
+const DOC_TYPE_ORDER: DocType[] = ["SOW", "MSA", "AMENDMENT", "LICENSE", "DPA", "BAA", "COMPLIANCE", "NDA", "OTHER"];
+type SavedFilters = { risk?: RiskLevel | "all"; docType?: DocType | "all"; sortKey?: SortKey; sortDir?: SortDir };
+function loadFilters(): SavedFilters | null {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(localStorage.getItem(FILTER_KEY) || "null"); } catch { return null; }
+}
 
 type Agg = {
   project: LocalProject;
@@ -164,6 +175,17 @@ export default function DashboardPage() {
   }, [readyDocs, classKey]);
   const hasTypeRisk = riskByType.some((r) => r.value > 0);
 
+  // Documents by type — total count per type (SOW, MSA, licence, DPA, BAA,
+  // compliance), so the full document mix is visible at a glance.
+  const docsByType: HBarDatum[] = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const d of readyDocs) m[d.docType] = (m[d.docType] ?? 0) + 1;
+    return Object.entries(m)
+      .map(([t, n]) => ({ id: t, label: docTypeShort(t), value: n, color: "var(--brand-primary-500)" }))
+      .sort((a, b) => b.value - a.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readyDocs, classKey]);
+
   const tcvSeries = useMemo(() => {
     const ordered = [...aggregates].sort((a, b) => new Date(a.project.createdAt).getTime() - new Date(b.project.createdAt).getTime());
     let run = 0; const out: number[] = [];
@@ -191,8 +213,33 @@ export default function DashboardPage() {
   const attention = aggregates.filter((a) => a.overallRisk === "high" || a.overallRisk === "critical" || a.failed > 0).sort((a, b) => RISK_RANK[a.overallRisk] - RISK_RANK[b.overallRisk] || b.value - a.value);
   const valueRows = aggregates.filter((a) => a.value > 0).sort((a, b) => b.value - a.value).slice(0, 6);
 
+  // Compliance coverage: of each enabled framework's clause obligations, how many
+  // are actually present (and how many are weak) across analysed DPA/BAA/compliance docs.
+  const { enabled: enabledPacks, mounted: packsMounted } = useEnabledPacks();
+  const hasComplianceDocs = aggregates.some((a) => a.docs.some((d) => d.docType === "DPA" || d.docType === "BAA" || d.docType === "COMPLIANCE"));
+  const complianceCoverage = useMemo(() => {
+    const present = new Set<string>();
+    const weak = new Set<string>();
+    for (const cl of allClauses) {
+      if (!cl.category) continue;
+      present.add(cl.category);
+      if (cl.riskLevel === "high" || cl.riskLevel === "critical") weak.add(cl.category);
+    }
+    return COMPLIANCE_PACKS.filter((p) => enabledPacks[p.id]).map((p) => {
+      const covered = p.checks.filter((c) => present.has(c));
+      const gaps = p.checks.filter((c) => !present.has(c));
+      const pct = p.checks.length ? Math.round((covered.length / p.checks.length) * 100) : 0;
+      return { id: p.id, name: p.name, pct, covered: covered.length, total: p.checks.length, gaps: gaps.length, weak: covered.filter((c) => weak.has(c)).length };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classKey, enabledPacks]);
+  const complianceGaps = complianceCoverage.reduce((s, c) => s + c.gaps, 0);
+
   // Sortable contracts table
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "risk", dir: "asc" });
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>(() => {
+    const f = loadFilters();
+    return f?.sortKey ? { key: f.sortKey, dir: f.sortDir ?? "desc" } : { key: "risk", dir: "asc" };
+  });
   const sortedRows = useMemo(() => {
     const rows = [...aggregates];
     const dir = sort.dir === "asc" ? 1 : -1;
@@ -213,6 +260,45 @@ export default function DashboardPage() {
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "name" || key === "status" ? "asc" : "desc" }));
 
+  // Contracts-table options (dropdown-driven): filter by risk, by document type,
+  // and choose a sort key. Selections persist (see effect below) so they're kept.
+  const [riskFilter, setRiskFilter] = useState<RiskLevel | "all">(() => loadFilters()?.risk ?? "all");
+  const [docTypeFilter, setDocTypeFilter] = useState<DocType | "all">(() => loadFilters()?.docType ?? "all");
+
+  // Document types actually present in the portfolio, in a sensible order.
+  const availableDocTypes = useMemo(() => {
+    const present = new Set<DocType>();
+    for (const a of aggregates) for (const d of a.docs) if (d.docType) present.add(d.docType);
+    return DOC_TYPE_ORDER.filter((t) => present.has(t));
+  }, [aggregates]);
+
+  const visibleRows = useMemo(() => {
+    let rows = sortedRows;
+    if (riskFilter !== "all") rows = rows.filter((a) => a.overallRisk === riskFilter);
+    if (docTypeFilter !== "all") rows = rows.filter((a) => a.docs.some((d) => d.docType === docTypeFilter));
+    return rows;
+  }, [sortedRows, riskFilter, docTypeFilter]);
+
+  const filtersActive = riskFilter !== "all" || docTypeFilter !== "all";
+  const setSortKey = (key: SortKey) =>
+    setSort({ key, dir: key === "name" || key === "status" ? "asc" : "desc" });
+  const resetFilters = () => { setRiskFilter("all"); setDocTypeFilter("all"); };
+
+  // Cross-filtering: clicking a "by type" chart bar filters the contracts table
+  // to that document type and brings it into view.
+  const tableRef = useRef<HTMLElement>(null);
+  const focusContractsByType = (type: string) => {
+    setDocTypeFilter((cur) => (cur === type ? "all" : (type as DocType)));
+    requestAnimationFrame(() => tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+
+  // Keep the user's filter + sort choices across navigation and reloads.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const payload: SavedFilters = { risk: riskFilter, docType: docTypeFilter, sortKey: sort.key, sortDir: sort.dir };
+    try { localStorage.setItem(FILTER_KEY, JSON.stringify(payload)); } catch { /* ignore quota/private-mode */ }
+  }, [riskFilter, docTypeFilter, sort]);
+
   const loading = !mounted || isLoading;
 
   return (
@@ -220,11 +306,11 @@ export default function DashboardPage() {
       <PageHeader
         eyebrow="Portfolio command center"
         title="Dashboard"
-        subtitle="Contract value, risk, and what needs attention across every project — live."
+        subtitle="Value, risk, and what needs attention across every SOW, MSA, licence, DPA, BAA, and compliance document — live."
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => refetch()}><RefreshCw size={14} className={isFetching ? "animate-spin" : undefined} />Refresh</Button>
-            <Link href="/projects/new" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--brand-primary-600)] px-4 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[var(--brand-primary-700)]"><Plus size={15} strokeWidth={2.5} />New project</Link>
+            <Link href="/projects/new" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand-primary-600)] px-4 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-[var(--brand-primary-700)]"><Plus size={15} strokeWidth={2.5} />New project</Link>
           </div>
         }
       />
@@ -238,6 +324,7 @@ export default function DashboardPage() {
           <EmptyState />
         ) : (
           <>
+            <SectionLabel>Overview</SectionLabel>
             {/* Health band — focal value-at-risk + the few KPIs that answer "is everything okay?" */}
             <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
               <FocalValueAtRisk
@@ -263,6 +350,7 @@ export default function DashboardPage() {
               </div>
             </section>
 
+            <SectionLabel>Risk &amp; value</SectionLabel>
             {/* Risk intelligence */}
             {totalRiskClauses > 0 && <MotionReveal><RiskIntelligence counts={rcAll} categories={catData} /></MotionReveal>}
 
@@ -286,11 +374,44 @@ export default function DashboardPage() {
               </div>
             </MotionReveal>
 
-            {/* Risk by document type */}
-            {hasTypeRisk && (
+            {/* Documents by type + risk by type */}
+            {docsByType.length > 0 && (
               <MotionReveal delay={0.05}>
-                <Card title="Risk by document type" icon={<BarChart3 size={15} />} sub="high-risk clauses by type">
-                  <HBarChart data={riskByType} valueFormatter={(n) => n.toLocaleString()} />
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <Card title="Documents by type" icon={<Layers size={15} />} sub="click a bar to filter contracts">
+                    <HBarChart data={docsByType} valueFormatter={(n) => n.toLocaleString()} onSelect={focusContractsByType} />
+                  </Card>
+                  <Card title="Risk by document type" icon={<BarChart3 size={15} />} sub="click a bar to filter contracts">
+                    {hasTypeRisk ? <HBarChart data={riskByType} valueFormatter={(n) => n.toLocaleString()} onSelect={focusContractsByType} /> : <Empty text="No high-risk clauses by type yet." />}
+                  </Card>
+                </div>
+              </MotionReveal>
+            )}
+
+            {/* Compliance coverage — gauges per enabled framework */}
+            {packsMounted && hasComplianceDocs && complianceCoverage.length > 0 && (
+              <MotionReveal delay={0.05}>
+                <Card
+                  title="Compliance coverage"
+                  icon={<ShieldCheck size={15} />}
+                  sub={complianceGaps > 0 ? `${complianceGaps} clause gap${complianceGaps === 1 ? "" : "s"} across enabled packs` : "all obligations present"}
+                >
+                  <div className="flex flex-wrap items-start justify-around gap-x-6 gap-y-6 pt-1">
+                    {complianceCoverage.map((c) => (
+                      <RadialGauge
+                        key={c.id}
+                        pct={c.pct}
+                        label={c.name}
+                        sub={c.gaps > 0 ? `${c.covered}/${c.total} · ${c.gaps} gap${c.gaps === 1 ? "" : "s"}` : `${c.covered}/${c.total} met`}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-border pt-3 text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[var(--success)]" />Strong ≥80%</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[var(--warning)]" />Partial 50–79%</span>
+                    <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[var(--danger)]" />Weak &lt;50%</span>
+                    <Link href="/settings/compliance" className="ml-auto inline-flex items-center gap-1 font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">Manage packs<ArrowRight size={12} strokeWidth={2.25} /></Link>
+                  </div>
                 </Card>
               </MotionReveal>
             )}
@@ -333,11 +454,55 @@ export default function DashboardPage() {
               </Card>
             )}
 
-            {/* Contracts table — sortable roll-up */}
-            <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
-              <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-                <div className="flex items-center gap-2"><Briefcase size={15} className="text-[var(--brand-primary-600)]" /><h3 className="text-[14px] font-semibold tracking-tight text-foreground">Contracts <span className="ml-1 font-mono text-[11px] text-muted-foreground">{projects.length}</span></h3></div>
-                <Link href="/projects" className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">View all<ArrowRight size={12} strokeWidth={2.25} /></Link>
+            <SectionLabel>Contracts</SectionLabel>
+            {/* Contracts table — sortable roll-up with dropdown options */}
+            <section ref={tableRef} className="scroll-mt-20 overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
+              <div className="flex flex-col gap-3 border-b border-border px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <Briefcase size={15} className="text-[var(--brand-primary-600)]" />
+                  <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Contracts <span className="ml-1 font-mono text-[11px] text-muted-foreground">{visibleRows.length}{filtersActive ? `/${projects.length}` : ""}</span></h3>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {filtersActive && (
+                    <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground">
+                      <XCircle size={13} />Clear
+                    </button>
+                  )}
+                  {availableDocTypes.length > 1 && (
+                    <Select value={docTypeFilter} onValueChange={(v) => setDocTypeFilter(v as DocType | "all")}>
+                      <SelectTrigger size="sm" className="h-8 w-[140px] text-[12.5px]"><Layers size={13} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All types</SelectItem>
+                        {availableDocTypes.map((t) => (
+                          <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Select value={riskFilter} onValueChange={(v) => setRiskFilter(v as RiskLevel | "all")}>
+                    <SelectTrigger size="sm" className="h-8 w-[130px] text-[12.5px]"><Filter size={13} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All risk</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={sort.key} onValueChange={(v) => setSortKey(v as SortKey)}>
+                    <SelectTrigger size="sm" className="h-8 w-[150px] text-[12.5px]"><span className="text-muted-foreground">Sort:</span><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="risk">Risk level</SelectItem>
+                      <SelectItem value="value">Contract value</SelectItem>
+                      <SelectItem value="highRisk">High-risk clauses</SelectItem>
+                      <SelectItem value="clauseCount">Clause count</SelectItem>
+                      <SelectItem value="docCount">Document count</SelectItem>
+                      <SelectItem value="name">Project name</SelectItem>
+                      <SelectItem value="status">Status</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Link href="/projects" className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">View all<ArrowRight size={12} strokeWidth={2.25} /></Link>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[820px] border-collapse text-[13px]">
@@ -355,7 +520,10 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedRows.map((a) => (
+                    {visibleRows.length === 0 && (
+                      <tr><td colSpan={9} className="px-5 py-10 text-center text-[13px] text-muted-foreground">No contracts match this filter.</td></tr>
+                    )}
+                    {visibleRows.map((a) => (
                       <tr key={a.project.id} className="border-b border-border last:border-0 transition-colors hover:bg-muted/40">
                         <td className="px-5 py-3"><Link href={`/projects/${a.project.id}`} className="font-semibold text-foreground hover:text-[var(--brand-primary-700)]">{a.project.name}</Link>{a.project.client && <div className="truncate text-[11px] text-muted-foreground">{a.project.client}</div>}</td>
                         <td className="px-5 py-3 text-muted-foreground">{a.status}{a.expired ? " · expired" : ""}</td>
@@ -383,6 +551,43 @@ export default function DashboardPage() {
 }
 
 /* ── Focal: value at risk ─────────────────────────────────────── */
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 pt-2 first:pt-0">
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{children}</h2>
+      <span className="h-px flex-1 bg-border" aria-hidden />
+    </div>
+  );
+}
+
+function gaugeTone(pct: number): string {
+  if (pct >= 80) return "var(--success)";
+  if (pct >= 50) return "var(--warning)";
+  return "var(--danger)";
+}
+
+function RadialGauge({ pct, label, sub }: { pct: number; label: string; sub: string }) {
+  const r = 26;
+  const circ = 2 * Math.PI * r;
+  const off = circ - (Math.max(0, Math.min(100, pct)) / 100) * circ;
+  const tone = gaugeTone(pct);
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative h-[70px] w-[70px]">
+        <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
+          <circle cx="32" cy="32" r={r} fill="none" stroke="var(--border)" strokeWidth="6" />
+          <circle cx="32" cy="32" r={r} fill="none" stroke={tone} strokeWidth="6" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} className="transition-[stroke-dashoffset] duration-700 ease-out motion-reduce:transition-none" />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-[15px] font-bold tabular-nums text-foreground">{pct}%</span>
+      </div>
+      <div className="text-center">
+        <div className="text-[12px] font-semibold text-foreground">{label}</div>
+        <div className="text-[10.5px] text-muted-foreground">{sub}</div>
+      </div>
+    </div>
+  );
+}
+
 function FocalValueAtRisk({ valueAtRisk, tcv, varPct, count, criticalClauses, failed }: {
   valueAtRisk: number; tcv: number; varPct: number; count: number; criticalClauses: number; failed: number;
 }) {
@@ -445,7 +650,7 @@ function CoverageCard({ pct, valued, total }: { pct: number; valued: number; tot
         {total > 0 ? `${pct}%` : "—"}
       </div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${pct}% of analyzed contracts have an extracted value`}>
-        <div className="h-full rounded-full bg-[var(--brand-primary-600)]" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-lg bg-[var(--brand-primary-600)]" style={{ width: `${pct}%` }} />
       </div>
       <div className="mt-1.5 text-xs text-muted-foreground">{total > 0 ? `${valued} of ${total} contracts valued` : "awaiting analysis"}</div>
     </div>
@@ -523,7 +728,7 @@ function ValueByYearBars({ rows }: { rows: [string, { value: number; atRisk: num
             <span className="tabular-nums text-muted-foreground">{fmtMoney(v.value)}{v.atRisk > 0 ? <span className="ml-1.5 text-[var(--danger)]">· {fmtMoney(v.atRisk)} at risk</span> : null}</span>
           </div>
           <div className="relative h-2.5 overflow-hidden rounded-full bg-muted">
-            <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--brand-primary-600)]" style={{ width: `${(v.value / max) * 100}%` }} />
+            <div className="absolute inset-y-0 left-0 rounded-lg bg-[var(--brand-primary-600)]" style={{ width: `${(v.value / max) * 100}%` }} />
             {v.atRisk > 0 && <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--danger)]" style={{ width: `${(v.atRisk / max) * 100}%` }} />}
           </div>
         </div>
@@ -589,7 +794,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--danger-soft)] text-[var(--danger)]"><XCircle size={26} strokeWidth={1.5} /></span>
       <h3 className="text-[18px] font-semibold text-foreground">Couldn&apos;t load your portfolio</h3>
       <p className="mt-2 max-w-md text-[13px] text-muted-foreground">The document service didn&apos;t respond. Your data is safe — try again in a moment.</p>
-      <Button variant="outline" size="md" className="mt-6 gap-1.5 rounded-full" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
+      <Button variant="outline" size="md" className="mt-6 gap-1.5" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
     </div>
   );
 }
@@ -600,7 +805,7 @@ function EmptyState() {
       <span className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]"><Layers size={28} strokeWidth={1.5} /></span>
       <h3 className="text-[18px] font-semibold text-foreground">No contracts yet</h3>
       <p className="mt-2 max-w-md text-[13px] text-muted-foreground">Create a project and upload its SOW. Sonar scores risk, estimates value, and rolls it up across your whole portfolio here.</p>
-      <Button variant="primary" size="lg" className="mt-6 rounded-full" asChild><Link href="/projects/new"><Plus size={15} />New project</Link></Button>
+      <Button variant="primary" size="lg" className="mt-6" asChild><Link href="/projects/new"><Plus size={15} />New project</Link></Button>
     </div>
   );
 }

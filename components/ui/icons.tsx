@@ -11,6 +11,7 @@ export {
   FileSignature,
   Files,
   LayoutDashboard,
+  Home,
   Kanban,
   BookMarked,
   BarChart3,

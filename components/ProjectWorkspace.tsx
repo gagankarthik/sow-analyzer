@@ -20,20 +20,22 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  ChevronLeft, FileText, CheckCircle2, Loader2, XCircle, ArrowRight, Layers, Search,
+  FileText, CheckCircle2, Loader2, XCircle, ArrowRight, Layers, Search,
   Building2, ShieldAlert, AlertTriangle, Info, Plus, GitBranch, Users, Sparkles, Trash2, DollarSign,
-  RefreshCw, Maximize2, Download, Clock, ExternalLink, CalendarClock,
+  RefreshCw, Maximize2, Download, Clock, ExternalLink, CalendarClock, MoreHorizontal,
 } from "@/components/ui/icons";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useDocuments, useDeleteDocument, useReprocess, documentKeys } from "@/lib/queries/documents";
 import { getClassification, getDocFile, askSonar, getSimilarClauses, type ApiDocFile, type SimilarClause } from "@/lib/api";
 import { useUIStore } from "@/lib/stores/ui";
-import { useProject, addDocToProject, removeDocFromProject, deleteProject, isProjectOwner, type LocalProject } from "@/lib/projects-store";
+import { useProject, addDocToProject, removeDocFromProject, deleteProject, isProjectOwner, inviteMember, removeMember, type LocalProject } from "@/lib/projects-store";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ProjectMembersDialog } from "@/components/projects/ProjectMembersDialog";
+import type { ProjectMemberRole } from "@/lib/api";
 import { formatRelativeDays, formatDate } from "@/lib/format";
 import { categoryLabel } from "@/lib/clause-categories";
-import { docTypeShort, docTypeTone } from "@/lib/doc-types";
 import { computeContractValue, fmtMoney, docValue, persistedOf, type ValueSegment } from "@/lib/contract-value";
 import type { ApiClause, ApiClassification, ApiDocument, RiskLevel, FindingSeverity } from "@/lib/types";
 
@@ -100,7 +102,6 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const reprocess = useReprocess();
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const [mounted, setMounted] = useState(false);
-  const [membersOpen, setMembersOpen] = useState(false);
   const [confirmDeleteProject, setConfirmDeleteProject] = useState(false);
 
   function handleDeleteProject() {
@@ -245,32 +246,44 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   return (
     <>
       <PageHeader
+        back={{ href: "/projects", label: "Projects" }}
         eyebrow={project.client ? `Project · ${project.client}` : "Project"}
         title={project.name}
-        subtitle={hasDocs ? `${docs.length} document${docs.length === 1 ? "" : "s"}${processingCount > 0 ? ` · ${processingCount} analyzing` : ""} · ${totalClauses.toLocaleString()} clauses` : "Upload your SOW to begin the analysis."}
+        subtitle={hasDocs ? `${docs.length} document${docs.length === 1 ? "" : "s"}${processingCount > 0 ? ` · ${processingCount} analyzing` : ""} · ${totalClauses.toLocaleString()} clauses` : "Upload a SOW, MSA, licence, DPA, BAA, or compliance document to begin."}
         actions={
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {hasDocs && (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={reanalyzeAll} disabled={reanalyzing || processingCount === docs.length} title="Re-run analysis on every document in this project">
-                <RefreshCw size={14} className={reanalyzing ? "animate-spin" : undefined} />{reanalyzing ? "Re-analyzing…" : "Re-analyze"}
-              </Button>
-            )}
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setTab("documents")}><FileText size={14} />Documents</Button>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setMembersOpen(true)}><Users size={14} />Members</Button>
+          <div className="flex items-center gap-2">
             <Button variant="ai" size="sm" className="gap-1.5" onClick={toggleCopilot}><Sparkles size={13} />Ask Sonar</Button>
-            {canDelete && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-[var(--danger)] border-[var(--danger)]/30 hover:bg-[var(--danger-soft)]" onClick={() => setConfirmDeleteProject(true)} title="Delete this project (owner only)">
-                <Trash2 size={14} />Delete
-              </Button>
-            )}
-            <Link href="/projects" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-muted">
-              <ChevronLeft size={14} />Projects
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5" aria-label="More actions">
+                  <MoreHorizontal size={16} /><span className="hidden sm:inline">More</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                {hasDocs && (
+                  <DropdownMenuItem onClick={reanalyzeAll} disabled={reanalyzing || processingCount === docs.length}>
+                    <RefreshCw size={14} className={reanalyzing ? "animate-spin" : undefined} />
+                    {reanalyzing ? "Re-analyzing…" : "Re-analyze all"}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setTab("documents")}><FileText size={14} />Documents</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTab("team")}><Users size={14} />Team &amp; invites</DropdownMenuItem>
+                {canDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setConfirmDeleteProject(true)}
+                      className="text-[var(--danger)] focus:text-[var(--danger)]"
+                    >
+                      <Trash2 size={14} />Delete project
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         }
       />
-
-      <ProjectMembersDialog projectId={membersOpen ? projectId : null} onClose={() => setMembersOpen(false)} />
 
       <Dialog open={confirmDeleteProject} onOpenChange={setConfirmDeleteProject}>
         <DialogContent className="sm:max-w-[420px]">
@@ -987,18 +1000,96 @@ function TimelinePanel({ v }: { v: View }) {
 
 /* ── Team ──────────────────────────────────────────────────────── */
 function TeamPanel({ v }: { v: View }) {
+  const { user } = useAuth();
+  const projectId = v.project.id;
+  const members = v.project.members ?? [];
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<ProjectMemberRole>("editor");
+  const [sending, setSending] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  async function onInvite(e: React.FormEvent) {
+    e.preventDefault();
+    const value = email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) { toast.error("Enter a valid email address."); return; }
+    setSending(true);
+    try {
+      await inviteMember(projectId, value, role);
+      toast.success(`Invitation sent to ${value}.`);
+      setEmail("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send the invitation.");
+    } finally { setSending(false); }
+  }
+
+  async function onRemove(memberEmail: string) {
+    setRemoving(memberEmail);
+    try {
+      await removeMember(projectId, memberEmail);
+      toast.success(`Removed ${memberEmail}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove the member.");
+    } finally { setRemoving(null); }
+  }
+
   return (
     <section className="rounded-xl border border-border bg-card p-5 shadow-xs md:p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Team</h3>
-        <Button variant="outline" size="sm" className="gap-1.5"><Plus size={13} />Invite</Button>
+      <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Team</h3>
+      <p className="mt-1 text-[12.5px] leading-[1.5] text-muted-foreground">
+        Invite colleagues by email to review {v.project.name}. They&apos;ll receive a sign-in
+        invitation and access to this project&apos;s documents.
+      </p>
+
+      {/* Invite form */}
+      <form onSubmit={onInvite} className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <input
+          type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          placeholder="name@company.com" autoComplete="off" aria-label="Invitee email"
+          className="h-9 flex-1 rounded-lg border border-input bg-transparent px-3 text-[13px] outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+        />
+        <Select value={role} onValueChange={(val) => setRole(val as ProjectMemberRole)}>
+          <SelectTrigger size="sm" className="h-9 w-full text-[13px] sm:w-[120px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="editor">Editor</SelectItem>
+            <SelectItem value="viewer">Viewer</SelectItem>
+            <SelectItem value="member">Member</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button type="submit" variant="primary" size="md" disabled={sending} className="h-9 shrink-0 gap-1.5">
+          {sending ? <Loader2 size={14} className="animate-spin" /> : <><Plus size={14} />Invite</>}
+        </Button>
+      </form>
+
+      {/* Owner + invited members */}
+      <div className="mt-5 divide-y divide-border overflow-hidden rounded-lg border border-border">
+        <div className="flex items-center gap-3 p-3">
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary-600)] text-[11px] font-semibold uppercase text-white">{(user?.email?.slice(0, 2) ?? "YO")}</span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] font-semibold text-foreground">{user?.email ?? "You"}</div>
+            <div className="text-[11px] text-muted-foreground">Owner</div>
+          </div>
+          <Users size={15} className="text-muted-foreground" />
+        </div>
+        {members.map((m) => (
+          <div key={m.email} className="flex items-center gap-3 p-3">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-[11px] font-semibold uppercase text-muted-foreground">{m.email.slice(0, 2)}</span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-medium text-foreground">{m.email}</div>
+              <div className="text-[11px] capitalize text-muted-foreground">
+                {m.role}
+                {m.status === "invited" && <span className="ml-1.5 rounded bg-[var(--warning-soft)] px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wide text-[var(--warning)]">Invited</span>}
+              </div>
+            </div>
+            <button
+              type="button" onClick={() => onRemove(m.email)} disabled={removing === m.email}
+              aria-label={`Remove ${m.email}`}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] disabled:opacity-50"
+            >
+              {removing === m.email ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+            </button>
+          </div>
+        ))}
       </div>
-      <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-primary-600)] text-[12px] font-semibold text-white">YO</span>
-        <div className="min-w-0 flex-1"><div className="text-[13px] font-semibold text-foreground">You</div><div className="text-[11.5px] text-muted-foreground">Owner</div></div>
-        <Users size={15} className="text-muted-foreground" />
-      </div>
-      <p className="mt-3 text-[12px] text-muted-foreground">Invite colleagues to review {v.project.name} together. Shared projects and roles are coming soon.</p>
     </section>
   );
 }
@@ -1034,7 +1125,7 @@ function DocumentsPanel({ v }: { v: View }) {
 
       {(showUpload || !v.docs.length) && (
         <section className="rounded-xl border border-border bg-card p-5 shadow-xs">
-          <p className="mb-3 text-[12.5px] text-muted-foreground">Drop a SOW, MSA, or amendment. Amendments nest under the contract they amend; open any document for its full analysis.</p>
+          <p className="mb-3 text-[12.5px] text-muted-foreground">Drop a SOW, MSA, licence, DPA, BAA, compliance document, or amendment. Amendments nest under the contract they amend; open any document for its full analysis.</p>
           <UploadDropzone defaultDocType="SOW" compact onDocCreated={v.onDocCreated} onDocReady={v.onDocReady} />
         </section>
       )}
@@ -1368,7 +1459,7 @@ function NotFound() {
       <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground"><Layers size={24} strokeWidth={1.5} /></span>
       <h1 className="text-[22px] font-semibold text-foreground" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}>Project not found</h1>
       <p className="mt-2 max-w-sm text-[14px] text-muted-foreground">This project was created on another device or browser — projects are stored locally for now.</p>
-      <Link href="/projects" className="mt-6 inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--brand-primary-600)] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)]">Back to projects</Link>
+      <Link href="/projects" className="mt-6 inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--brand-primary-600)] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)]">Back to projects</Link>
     </div>
   );
 }

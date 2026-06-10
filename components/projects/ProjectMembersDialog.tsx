@@ -131,7 +131,7 @@ export function ProjectMembersDialog({
                     onClick={() => onRemove(m.email)}
                     disabled={removing === m.email}
                     aria-label={`Remove ${m.email}`}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] disabled:opacity-50"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] disabled:opacity-50"
                   >
                     {removing === m.email ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                   </button>
