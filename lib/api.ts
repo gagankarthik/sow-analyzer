@@ -27,7 +27,6 @@ import { getIdToken } from "./auth/cognito"
 import { clearSessionCookie } from "./auth/session"
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
-const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID ?? "default"
 
 // NEXT_PUBLIC_* values are inlined at BUILD time. If NEXT_PUBLIC_API_URL is
 // unset, left as the .env.example placeholder, or otherwise wrong, every call
@@ -43,12 +42,11 @@ function assertApiConfigured(): void {
 }
 
 // Attaches the current Cognito ID token (auto-refreshed) so the API Gateway
-// JWT authorizer accepts the request and the backend can derive the tenant
-// from a verified claim. `x-tenant-id` remains as a fallback only.
+// JWT authorizer accepts the request. The backend takes the caller's identity
+// from the verified token and nothing else.
 async function authHeaders(): Promise<Record<string, string>> {
   const h: Record<string, string> = {
     "Content-Type": "application/json",
-    "x-tenant-id": TENANT_ID,
   }
   try {
     const token = await getIdToken()

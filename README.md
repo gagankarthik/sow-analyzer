@@ -33,7 +33,6 @@ inlined at build time, so they must be set when `npm run build` runs.
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `NEXT_PUBLIC_API_URL` | yes | Backend API Gateway base URL, no trailing slash |
-| `NEXT_PUBLIC_TENANT_ID` | yes | Default tenant id sent with API requests |
 | `NEXT_PUBLIC_SITE_URL` | in production | Public origin, used for canonical URLs, Open Graph, `sitemap.xml` and `robots.txt`. Falls back to `http://localhost:3000` |
 | `NEXT_PUBLIC_COGNITO_REGION` | yes | Cognito region |
 | `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | yes | Cognito user pool |

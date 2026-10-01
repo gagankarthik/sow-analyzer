@@ -173,7 +173,7 @@ function IntakeForm({
               <p className="font-medium">{error}</p>
               {noKey && (
                 <p className="mt-1 break-words">
-                  Add <code className="font-mono">OPENAI_API_KEY=…</code> to <code className="font-mono">.env.local</code> and restart the dev server. Sonar uses <code className="font-mono">gpt-4.1-mini</code>.
+                  Drafting is not switched on for this workspace yet. Ask your administrator to finish setup.
                 </p>
               )}
             </div>
