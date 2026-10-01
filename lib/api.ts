@@ -9,10 +9,20 @@ import type {
   ApiTimeline,
   ChatResponse,
   DocType,
-  Status,
-  RiskLevel,
-  Persona,
+  ProjectMember,
+  ProjectRole,
+  StoredProject,
 } from "./types"
+import { normaliseClauses, normaliseExtraction, normaliseReasons } from "./classification"
+import { normaliseKeyDates } from "./key-dates"
+import {
+  normalisePlaybook,
+  normalisePlaybookSummary,
+  normaliseRule,
+  type Playbook,
+  type PlaybookRule,
+  type PlaybookRuleInput,
+} from "./playbook"
 import { getIdToken } from "./auth/cognito"
 import { clearSessionCookie } from "./auth/session"
 
@@ -27,7 +37,7 @@ const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID ?? "default"
 function assertApiConfigured(): void {
   if (!BASE_URL || BASE_URL.includes("your-api-id")) {
     throw new Error(
-      "Backend API URL is not configured. Set NEXT_PUBLIC_API_URL to your API Gateway endpoint (Vercel → Settings → Environment Variables, for Production + Preview) and redeploy.",
+      "Backend API URL is not configured. Set NEXT_PUBLIC_API_URL to your API Gateway endpoint in the build environment and rebuild.",
     )
   }
 }
@@ -49,102 +59,221 @@ async function authHeaders(): Promise<Record<string, string>> {
   return h
 }
 
+/** Shown wherever the API refuses an action the user's role does not allow. */
+export const PERMISSION_DENIED = "You do not have permission to do this."
+
+/**
+ * Every failed API call throws one of these. `status` is the HTTP status and
+ * `code` the machine-readable reason from the response body (`forbidden`,
+ * `unauthenticated`, `not_found`, `already_member`, `conflict`, …).
+ */
+export class ApiError extends Error {
+  readonly status: number
+  readonly code?: string
+
+  constructor(message: string, status: number, code?: string) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+    this.code = code
+  }
+}
+
+function endSession(): void {
+  clearSessionCookie()
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    const back = encodeURIComponent(window.location.pathname + window.location.search)
+    window.location.href = `/login?redirect=${back}`
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   assertApiConfigured()
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: { ...(await authHeaders()), ...(init?.headers ?? {}) },
   })
+  if (res.ok) return res.json() as Promise<T>
 
-  // Session expired or rejected by the authorizer → drop it and re-auth.
-  if (res.status === 401 || res.status === 403) {
-    clearSessionCookie()
-    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-      const back = encodeURIComponent(window.location.pathname + window.location.search)
-      window.location.href = `/login?redirect=${back}`
-    }
-    throw new Error("Your session has expired. Please sign in again.")
+  const body = (await res.json().catch(() => ({}))) as { error?: string; message?: string; code?: string }
+  const code = typeof body.code === "string" ? body.code : undefined
+
+  // The session ended: 401 from the gateway's authorizer, or the API saying it
+  // found no verified identity. Drop the session and sign in again.
+  if (res.status === 401 || (res.status === 403 && code === "unauthenticated")) {
+    endSession()
+    throw new ApiError("Your session has expired. Please sign in again.", res.status, "unauthenticated")
   }
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    const err = new Error(
-      (body as { error?: string }).error ?? `HTTP ${res.status}`,
-    ) as Error & { status?: number }
-    err.status = res.status
-    throw err
-  }
-  return res.json() as Promise<T>
+  // Signed in, but this role may not do it. The session is fine: the caller
+  // shows the message and nothing is logged out.
+  if (res.status === 403) throw new ApiError(PERMISSION_DENIED, 403, "forbidden")
+
+  throw new ApiError(body.error ?? body.message ?? `HTTP ${res.status}`, res.status, code)
 }
 
-/** Type guard for the status attached to errors thrown by `request()`. */
+/** The HTTP status attached to errors thrown by `request()`. */
 export function errorStatus(e: unknown): number | undefined {
   return typeof e === "object" && e !== null && "status" in e
     ? (e as { status?: number }).status
     : undefined
 }
 
-// List all documents for the current tenant
+/** The API's machine-readable reason for a failure, when it sent one. */
+export function errorCode(e: unknown): string | undefined {
+  return e instanceof ApiError ? e.code : undefined
+}
+
+/** The signed-in user's role does not allow the action (403 `forbidden`). */
+export function isForbidden(e: unknown): boolean {
+  return e instanceof ApiError && e.status === 403 && e.code !== "unauthenticated"
+}
+
+/** The thing does not exist, or the user may not see it (the API says 404 for both). */
+export function isNotFound(e: unknown): boolean {
+  return errorStatus(e) === 404
+}
+
+/** Failures that asking again cannot fix: not found, not allowed, bad request. */
+export function isPermanentError(e: unknown): boolean {
+  const status = errorStatus(e)
+  return status !== undefined && status >= 400 && status < 500 && status !== 408 && status !== 429
+}
+
+// Every document the signed-in user may see: their own uploads plus the
+// documents of every project they belong to. The server does the filtering.
 export async function listDocuments(): Promise<ApiDocument[]> {
   const data = await request<{ documents: ApiDocument[]; count: number }>("/documents")
   return data.documents
 }
 
-// ── Projects (cloud-stored per-tenant groupings; replaces browser localStorage) ──
-export type ProjectMemberRole = "owner" | "editor" | "viewer" | "member"
-export interface ProjectMember {
-  email: string
-  role: ProjectMemberRole
-  status: "invited" | "active"
-  sub?: string | null
-  invitedAt?: string
+// ── Projects ────────────────────────────────────────────────────────────────
+// Access is per project and decided by the server on every call. One request
+// changes one thing; nothing here ever sends the whole projects list back.
+
+export type { ProjectMember, ProjectRole, StoredProject }
+
+const projectPath = (projectId: string) => `/projects/${encodeURIComponent(projectId)}`
+const memberPath = (projectId: string, email: string) =>
+  `${projectPath(projectId)}/members/${encodeURIComponent(email.trim().toLowerCase())}`
+
+/** Anything that is not one of the three real roles gets the least privilege,
+ *  exactly as the server does (a legacy `member` is a viewer). */
+function toRole(value: unknown): ProjectRole {
+  return value === "owner" || value === "editor" ? value : "viewer"
 }
 
-export interface StoredProject {
-  id: string
-  name: string
-  client?: string
-  createdAt: string
-  docIds: string[]
-  members?: ProjectMember[]
-  /** Email of the user who created the project; only they can delete it. */
-  ownerEmail?: string
+function toMember(raw: Partial<ProjectMember>): ProjectMember {
+  return {
+    email: String(raw.email ?? "").toLowerCase(),
+    role: toRole(raw.role),
+    status: raw.status === "active" ? "active" : "invited",
+    sub: raw.sub ?? null,
+    invitedAt: raw.invitedAt || undefined,
+  }
 }
 
-// Read the tenant's saved project groupings.
+function toProject(raw: Partial<StoredProject>): StoredProject {
+  return {
+    id: String(raw.id ?? ""),
+    name: raw.name ?? "",
+    client: raw.client || undefined,
+    createdAt: raw.createdAt ?? "",
+    updatedAt: raw.updatedAt ?? null,
+    docIds: Array.isArray(raw.docIds) ? raw.docIds : [],
+    ownerEmail: raw.ownerEmail || undefined,
+    role: toRole(raw.role),
+    members: (Array.isArray(raw.members) ? raw.members : []).filter((m) => !!m?.email).map(toMember),
+  }
+}
+
+// GET /projects — the projects the signed-in user owns or is a member of.
 export async function getProjectsState(): Promise<StoredProject[]> {
-  const data = await request<{ projects: StoredProject[] }>("/projects")
-  return data.projects ?? []
+  const data = await request<{ projects?: Partial<StoredProject>[] }>("/projects")
+  return (data.projects ?? []).map(toProject)
 }
 
-// Invite a user (via Cognito) to a project. The backend creates/links the pool
-// user, emails an invitation, and records them as a project member.
+// GET /projects/{id} — 404 when it does not exist or is not shared with the user.
+export async function getProject(projectId: string): Promise<StoredProject> {
+  const data = await request<{ project: Partial<StoredProject> }>(projectPath(projectId))
+  return toProject(data.project)
+}
+
+// PUT /projects/{id} — creates the project (the caller becomes its owner) when
+// the id is new, otherwise renames it (owner only). `client: null` clears it;
+// leaving `client` out keeps what is stored.
+export async function putProject(
+  projectId: string,
+  fields: { name?: string; client?: string | null },
+): Promise<StoredProject> {
+  const data = await request<{ project: Partial<StoredProject> }>(projectPath(projectId), {
+    method: "PUT",
+    body: JSON.stringify(fields),
+  })
+  return toProject(data.project)
+}
+
+// DELETE /projects/{id} — owner only. The project's documents are kept.
+export async function deleteProjectById(projectId: string): Promise<void> {
+  await request<{ deleted: boolean }>(projectPath(projectId), { method: "DELETE" })
+}
+
+// PUT /projects/{id}/documents/{docId} — file an existing document in a project.
+export async function addProjectDocument(projectId: string, docId: string): Promise<StoredProject> {
+  const data = await request<{ project: Partial<StoredProject> }>(
+    `${projectPath(projectId)}/documents/${encodeURIComponent(docId)}`,
+    { method: "PUT" },
+  )
+  return toProject(data.project)
+}
+
+// DELETE /projects/{id}/documents/{docId} — take a document out of a project.
+// The document itself is not deleted.
+export async function removeProjectDocument(projectId: string, docId: string): Promise<StoredProject> {
+  const data = await request<{ project: Partial<StoredProject> }>(
+    `${projectPath(projectId)}/documents/${encodeURIComponent(docId)}`,
+    { method: "DELETE" },
+  )
+  return toProject(data.project)
+}
+
+export interface InviteResult {
+  member: ProjectMember
+  /** False when the person already had an account, or the email could not be sent. */
+  invitationEmailSent: boolean
+}
+
+// POST /projects/{id}/invite — owner only. Any email address may be invited;
+// access starts when someone signs in with that (verified) address.
 export async function inviteProjectMember(
   projectId: string,
   email: string,
-  role: ProjectMemberRole = "member",
-): Promise<ProjectMember> {
-  const data = await request<{ member: ProjectMember }>(
-    `/projects/${encodeURIComponent(projectId)}/invite`,
+  role: Exclude<ProjectRole, "owner"> = "viewer",
+): Promise<InviteResult> {
+  const data = await request<{ member: Partial<ProjectMember>; invitationEmailSent?: boolean }>(
+    `${projectPath(projectId)}/invite`,
     { method: "POST", body: JSON.stringify({ email, role }) },
   )
-  return data.member
+  return { member: toMember(data.member), invitationEmailSent: data.invitationEmailSent === true }
 }
 
-// Remove a member from a project (does not delete their Cognito account).
-export async function removeProjectMember(projectId: string, email: string): Promise<void> {
-  await request<{ removed: boolean }>(
-    `/projects/${encodeURIComponent(projectId)}/members/${encodeURIComponent(email)}`,
-    { method: "DELETE" },
-  )
-}
-
-// Persist the tenant's project groupings (overwrites the single per-tenant record).
-export async function saveProjectsState(projects: StoredProject[]): Promise<void> {
-  await request<{ projects: StoredProject[] }>("/projects", {
-    method: "POST",
-    body: JSON.stringify({ projects }),
+// PATCH /projects/{id}/members/{email} — owner only; editor or viewer.
+export async function setProjectMemberRole(
+  projectId: string,
+  email: string,
+  role: Exclude<ProjectRole, "owner">,
+): Promise<ProjectMember> {
+  const data = await request<{ member: Partial<ProjectMember> }>(memberPath(projectId, email), {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
   })
+  return toMember(data.member)
+}
+
+// DELETE /projects/{id}/members/{email} — the owner removes anyone but
+// themself; a member may remove themself (leave). The account is not deleted.
+export async function removeProjectMember(projectId: string, email: string): Promise<void> {
+  await request<{ removed: boolean }>(memberPath(projectId, email), { method: "DELETE" })
 }
 
 // ── Compliance packs (per-tenant; which frameworks Sonar grades against) ──
@@ -171,9 +300,12 @@ export async function getDocument(docId: string): Promise<ApiDocumentDetail> {
   return request<ApiDocumentDetail>(`/documents/${docId}`)
 }
 
-// Get a presigned S3 upload URL
-export async function getUploadUrl(filename: string, docType: DocType): Promise<ApiUploadUrl> {
+// Get a presigned S3 upload URL. With `projectId` the server checks that the
+// user may upload to that project and files the new document in it, so there is
+// no second "add to project" call. Each call creates a new PENDING document.
+export async function getUploadUrl(filename: string, docType: DocType, projectId?: string): Promise<ApiUploadUrl> {
   const qs = new URLSearchParams({ filename, docType })
+  if (projectId) qs.set("projectId", projectId)
   return request<ApiUploadUrl>(`/documents/upload-url?${qs}`)
 }
 
@@ -236,6 +368,7 @@ export async function getClassification(docId: string): Promise<ApiClassificatio
   const data = await request<Partial<ApiClassification> & { timeline?: ApiClassification["timelineDetail"] }>(
     `/documents/${docId}/classification`,
   )
+  const raw = data as Record<string, unknown>
   return {
     docType: data.docType ?? "OTHER",
     title: data.title ?? "",
@@ -245,14 +378,15 @@ export async function getClassification(docId: string): Promise<ApiClassificatio
     summary: data.summary ?? "",
     keyFindings: data.keyFindings ?? [],
     structuralHash: data.structuralHash ?? "",
-    clauses: (data.clauses ?? []).map((c) => ({
-      number: c.number ?? "",
-      title: c.title ?? "",
-      body: c.body ?? "",
-      category: c.category ?? "Other",
-      riskLevel: c.riskLevel ?? "low",
-      summary: c.summary ?? "",
-    })),
+    // Each clause, with its playbook result joined in (see lib/classification.ts).
+    clauses: normaliseClauses(data.clauses, raw.playbook),
+    // Newer analysis only. Each stays undefined for a document analysed before
+    // the field existed, so the UI can say "re-analyse" instead of "none".
+    keyDates: Array.isArray(raw.keyDates) ? normaliseKeyDates(raw.keyDates) : undefined,
+    playbook: normalisePlaybookSummary(raw.playbook) ?? undefined,
+    needsReview: typeof raw.needsReview === "boolean" ? raw.needsReview : undefined,
+    reviewReasons: normaliseReasons(raw.reviewReasons),
+    extraction: normaliseExtraction(raw.extraction),
     // Structured anatomy — passed through as-is; undefined for older documents.
     identification: data.identification,
     scope: data.scope,
@@ -266,6 +400,28 @@ export async function getClassification(docId: string): Promise<ApiClassificatio
     confidence: data.confidence,
     validation: data.validation,
   }
+}
+
+// ── Playbook (the standard positions clauses are graded against) ──
+// GET /playbook: the effective rules for the caller's workspace.
+export async function getPlaybook(): Promise<Playbook> {
+  return normalisePlaybook(await request<unknown>("/playbook"))
+}
+
+const rulePath = (ruleId: string) => `/playbook/rules/${encodeURIComponent(ruleId)}`
+
+// PUT /playbook/rules/{ruleId}: create or replace one workspace rule. Returns
+// the rule as the API now describes it. A 400 carries the reason as its message.
+export async function savePlaybookRule(ruleId: string, input: PlaybookRuleInput): Promise<PlaybookRule | null> {
+  const data = await request<{ rule?: unknown }>(rulePath(ruleId), { method: "PUT", body: JSON.stringify(input) })
+  return normaliseRule(data.rule)
+}
+
+// DELETE /playbook/rules/{ruleId}: remove the workspace rule. Returns the
+// built-in default it falls back to, or null when the type has none.
+export async function deletePlaybookRule(ruleId: string): Promise<PlaybookRule | null> {
+  const data = await request<{ rule?: unknown }>(rulePath(ruleId), { method: "DELETE" })
+  return normaliseRule(data.rule)
 }
 
 export interface ApiDocFile { url: string; filename: string; contentType: string }
@@ -290,7 +446,7 @@ export async function getDiff(docId: string): Promise<ApiDiff> {
       field: c.field ?? "body",
       before: c.before ?? "",
       after: c.after ?? "",
-      impactScore: c.impactScore ?? 0,
+      impactScore: typeof c.impactScore === "number" ? c.impactScore : null,
       impactRationale: c.impactRationale ?? "",
     })),
     impactSummary: data.impactSummary ?? "",
@@ -311,7 +467,8 @@ export async function getTimeline(docId: string): Promise<ApiTimeline> {
 
 export interface SimilarClause {
   docId: string
-  docTitle: string
+  /** null when that document has no title; the UI supplies its own label. */
+  docTitle: string | null
   docType: string
   clauseNumber: string
   category: string
@@ -319,7 +476,7 @@ export interface SimilarClause {
   text: string
 }
 
-// Top-KNN: clauses across the tenant's documents most similar to a given clause
+// Top-KNN: clauses across the documents this user may read most similar to a given clause
 // (cosine over the stored embeddings). Empty when the clause isn't embedded yet.
 export async function getSimilarClauses(docId: string, clauseNumber: string, k = 5): Promise<SimilarClause[]> {
   const qs = new URLSearchParams({ clause: clauseNumber, k: String(k) })
@@ -341,47 +498,16 @@ export async function deleteVersion(docId: string, version: number): Promise<voi
   await request<{ deleted: boolean }>(`/documents/${docId}/versions/${version}`, { method: "DELETE" })
 }
 
-// Derive a 0-100 health score from processing status and assessed risk.
-// READY docs start at 100 and lose points for high/critical clauses.
-function healthFromDoc(doc: ApiDocument): number {
-  if (doc.status === "FAILED") return 10
-  if (doc.status !== "READY") return 50
-  const rc = doc.riskCounts
-  if (!rc) {
-    return doc.overallRisk === "critical" ? 45
-      : doc.overallRisk === "high" ? 65
-      : doc.overallRisk === "medium" ? 82 : 92
-  }
-  const penalty = rc.critical * 18 + rc.high * 8 + rc.medium * 2
-  return Math.max(20, Math.min(100, 100 - penalty))
+/** What the document header needs: the document itself plus the two ids the
+ *  routes use. Nothing here is invented — every field is read from the API row.
+ *  (The previous version also returned a made-up health score, a "You / Legal"
+ *  owner, $0 value/ARR/margin and other fields from the old mock `Project` type.) */
+export interface DocHeaderModel {
+  id: string
+  name: string
+  _raw: ApiDocument
 }
 
-// Helper: map ApiDocument → the Project shape used by existing UI components
-// Fields not in the backend default gracefully
-export function apiDocToProject(doc: ApiDocument) {
-  return {
-    id: doc.docId,
-    code: doc.docId.slice(0, 8).toUpperCase(),
-    name: doc.title || "Untitled",
-    client: doc.parties?.[0] ?? "—",
-    clientIndustry: "—",
-    value: 0,
-    arr: 0,
-    margin: 0,
-    status: doc.lifecycle as Status,
-    health: healthFromDoc(doc),
-    owner: { name: "You", initials: "YO", role: "Legal" as Persona },
-    team: [],
-    signed: doc.createdAt ?? null,
-    starts: doc.effectiveDate ?? doc.createdAt ?? "",
-    ends: "",
-    renewalDate: "",
-    daysInStage: 0,
-    riskScore: (doc.overallRisk ?? "low") as RiskLevel,
-    amendments: doc.latestVersion,
-    trend: [],
-    region: "—",
-    tags: [doc.docType],
-    _raw: doc,   // keep original for status badge / processing overlay
-  }
+export function apiDocToProject(doc: ApiDocument): DocHeaderModel {
+  return { id: doc.docId, name: doc.title, _raw: doc }
 }

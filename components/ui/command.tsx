@@ -75,12 +75,12 @@ function CommandInput({
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "h-full w-full bg-transparent text-[15px] text-foreground outline-hidden placeholder:text-muted-foreground/70 disabled:cursor-not-allowed disabled:opacity-50",
+          "h-full w-full bg-transparent text-base text-foreground outline-hidden placeholder:text-muted-foreground/70 disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         {...props}
       />
-      <kbd className="hidden h-5 shrink-0 select-none items-center rounded-md border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline-flex">
+      <kbd className="hidden h-5 shrink-0 select-none items-center rounded-md border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground sm:inline-flex">
         ESC
       </kbd>
     </div>
@@ -110,7 +110,7 @@ function CommandEmpty({
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className={cn("py-12 text-center text-[13px] text-muted-foreground", className)}
+      className={cn("py-12 text-center text-sm text-muted-foreground", className)}
       {...props}
     />
   )
@@ -126,7 +126,7 @@ function CommandGroup({
       className={cn(
         "overflow-hidden px-1 pb-1.5 text-foreground",
         "**:[[cmdk-group-items]]:flex **:[[cmdk-group-items]]:flex-col **:[[cmdk-group-items]]:gap-0.5",
-        "**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3.5 **:[[cmdk-group-heading]]:pb-2 **:[[cmdk-group-heading]]:text-[10.5px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-[0.12em] **:[[cmdk-group-heading]]:text-muted-foreground",
+        "**:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:pt-3.5 **:[[cmdk-group-heading]]:pb-2 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground",
         className
       )}
       {...props}
@@ -156,7 +156,7 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative flex h-11 cursor-pointer items-center gap-3 rounded-lg px-3 text-[14px] text-foreground outline-hidden select-none transition-colors",
+        "group/command-item relative flex h-11 cursor-pointer items-center gap-3 rounded-lg px-3 text-base text-foreground outline-hidden select-none transition-colors",
         "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
         "data-selected:bg-[var(--brand-primary-50)] data-selected:text-[var(--brand-primary-800)]",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[17px]",
@@ -185,7 +185,7 @@ function CommandShortcut({
         ? keys.map((k, i) => (
             <kbd
               key={i}
-              className="inline-flex h-5 min-w-5 select-none items-center justify-center rounded-md border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground group-data-selected/command-item:border-[var(--brand-primary-200)] group-data-selected/command-item:bg-[var(--brand-primary-100)] group-data-selected/command-item:text-[var(--brand-primary-700)]"
+              className="inline-flex h-5 min-w-5 select-none items-center justify-center rounded-md border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground group-data-selected/command-item:border-[var(--brand-primary-200)] group-data-selected/command-item:bg-[var(--brand-primary-100)] group-data-selected/command-item:text-[var(--brand-primary-700)]"
             >
               {k}
             </kbd>
@@ -197,7 +197,7 @@ function CommandShortcut({
 
 function CommandFooter() {
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 px-5 py-3 text-[11px] text-muted-foreground">
+    <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 px-5 py-3 text-xs text-muted-foreground">
       <span className="inline-flex items-center gap-1.5">
         <FooterKey>↑</FooterKey>
         <FooterKey>↓</FooterKey>
@@ -217,7 +217,7 @@ function CommandFooter() {
 
 function FooterKey({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex h-5 min-w-5 select-none items-center justify-center rounded-md border border-border bg-card px-1 font-mono text-[10px] text-muted-foreground">
+    <kbd className="inline-flex h-5 min-w-5 select-none items-center justify-center rounded-md border border-border bg-card px-1 font-mono text-xs text-muted-foreground">
       {children}
     </kbd>
   )

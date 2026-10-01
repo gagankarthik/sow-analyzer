@@ -1,21 +1,24 @@
-export function formatCurrency(amount: number, opts?: { compact?: boolean }) {
-  if (opts?.compact) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(amount);
+/**
+ * Symbol for an ISO currency code, or "" when the currency is not known.
+ *
+ * Unknown is not dollars: a missing currency used to fall back to "$", which
+ * made an amount of unknown currency look like a USD figure. Callers that have
+ * no currency now get a bare number ("12,300"); pass the document's `currency`
+ * to get a symbol.
+ */
+export function currencySymbol(currency?: string | null): string {
+  const code = (currency ?? "").trim().toUpperCase();
+  if (!code) return "";
+  switch (code) {
+    case "USD": return "$";
+    case "EUR": return "€";
+    case "GBP": return "£";
+    case "INR": return "₹";
+    case "JPY": return "¥";
+    // Any other code is printed as the code itself ("CAD 12,300") rather than
+    // guessed at.
+    default: return `${code} `;
   }
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-export function formatPct(n: number, digits = 0) {
-  return `${n >= 0 ? "+" : ""}${n.toFixed(digits)}%`;
 }
 
 export function formatDate(d: string | Date) {

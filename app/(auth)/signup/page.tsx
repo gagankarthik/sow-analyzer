@@ -3,62 +3,99 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { signUp } from "@/lib/auth/cognito";
 import {
   AuthHeading,
-  Field,
-  FormError,
-  PasswordInput,
+  EMAIL_PATTERN,
+  FormAlert,
+  PasswordField,
   PasswordRules,
+  SubmitButton,
+  TextField,
+  authErrorCode,
+  authLinkClass,
+  commonAuthMessage,
+  focusField,
   passwordIsStrong,
 } from "@/components/auth/fields";
-import { Loader2 } from "@/components/ui/icons";
+
+type FieldName = "name" | "email" | "password";
+type Errors = Partial<Record<FieldName, React.ReactNode>>;
+
+const ORDER: FieldName[] = ["name", "email", "password"];
+
+function validate(values: Record<FieldName, string>): Errors {
+  const errors: Errors = {};
+  if (!values.name.trim()) errors.name = "Enter your full name.";
+  if (!values.email.trim()) errors.email = "Enter your work email address.";
+  else if (!EMAIL_PATTERN.test(values.email.trim())) errors.email = "Enter an email address like name@company.com.";
+  if (!values.password) errors.password = "Create a password.";
+  else if (!passwordIsStrong(values.password)) errors.password = "The password does not meet every requirement below.";
+  return errors;
+}
 
 export default function SignupPage() {
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [values, setValues] = useState<Record<FieldName, string>>({ name: "", email: "", password: "" });
+  const [checked, setChecked] = useState<Partial<Record<FieldName, boolean>>>({});
+  // Errors the server reported for a field; cleared when that field is edited.
+  const [serverErrors, setServerErrors] = useState<Errors>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const problems = validate(values);
+  const errorFor = (field: FieldName) => serverErrors[field] ?? (checked[field] ? problems[field] : undefined);
+
+  function bind(field: FieldName) {
+    return {
+      value: values[field],
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+        setValues((v) => ({ ...v, [field]: e.target.value }));
+        setServerErrors((s) => ({ ...s, [field]: undefined }));
+      },
+      // Leaving an untouched, empty field is not an error yet.
+      onBlur: () => setChecked((c) => ({ ...c, [field]: c[field] || values[field] !== "" })),
+      error: errorFor(field),
+    };
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setFormError(null);
+    setChecked({ name: true, email: true, password: true });
+    const firstInvalid = ORDER.find((f) => problems[f]);
+    if (firstInvalid) return focusField(firstInvalid);
 
-    if (!name.trim()) return setError("Enter your name.");
-    if (!emailValid) return setError("Enter a valid email address.");
-    if (!passwordIsStrong(password)) {
-      return setError("Choose a password that meets all the requirements below.");
-    }
-
+    const email = values.email.trim().toLowerCase();
     setLoading(true);
     try {
-      const res = await signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        name: name.trim(),
-      });
-      const target = `/confirm?email=${encodeURIComponent(email.trim().toLowerCase())}`;
-      if (res.userConfirmed) {
-        toast.success("Account created. You can sign in now.");
-        router.push("/login");
-      } else {
-        toast.success(
-          res.destination
-            ? `We sent a verification code to ${res.destination}.`
-            : "We sent you a verification code.",
-        );
-        router.push(target);
-      }
+      const res = await signUp({ email, password: values.password, name: values.name.trim() });
+      const query = `email=${encodeURIComponent(email)}`;
+      // `sent=1` tells the confirm screen a code is already on its way.
+      router.push(res.userConfirmed ? `/login?${query}&notice=created` : `/confirm?${query}&sent=1`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to create your account.");
+      const code = authErrorCode(err);
+      if (code === "UsernameExistsException") {
+        setServerErrors({
+          email: (
+            <>
+              An account with this email already exists.{" "}
+              <Link href={`/login?email=${encodeURIComponent(email)}`} className="font-semibold underline underline-offset-4">
+                Sign in
+              </Link>
+            </>
+          ),
+        });
+        focusField("email");
+      } else if (code === "InvalidPasswordException") {
+        setServerErrors({ password: "This password was not accepted. Try a longer or less common one." });
+        focusField("password");
+      } else {
+        setFormError(
+          commonAuthMessage(err, err instanceof Error ? err.message : "We could not create your account. Try again."),
+        );
+      }
       setLoading(false);
     }
   }
@@ -67,69 +104,64 @@ export default function SignupPage() {
     <>
       <AuthHeading
         title="Create your account"
-        subtitle="Start analyzing contracts with Sonar in minutes."
+        subtitle="Set up a login for Blue-IQ Govern. We will email a code to verify your address."
       />
 
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        <FormError message={error} />
+      <form onSubmit={onSubmit} noValidate>
+        <TextField
+          id="name"
+          label="Full name"
+          type="text"
+          name="name"
+          autoComplete="name"
+          required
+          {...bind("name")}
+        />
 
-        <Field label="Full name" htmlFor="name">
-          <Input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoComplete="name"
-            placeholder="Jane Cooper"
-            className="h-10"
-          />
-        </Field>
+        <TextField
+          id="email"
+          label="Work email"
+          type="email"
+          name="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder="name@company.com"
+          required
+          {...bind("email")}
+        />
 
-        <Field label="Work email" htmlFor="email">
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            placeholder="you@company.com"
-            className="h-10"
-          />
-        </Field>
+        <PasswordField
+          id="password"
+          label="Password"
+          name="password"
+          autoComplete="new-password"
+          describedBy="password-rules"
+          required
+          {...bind("password")}
+        />
+        <PasswordRules id="password-rules" value={values.password} flagUnmet={Boolean(checked.password)} />
 
-        <Field label="Password" htmlFor="password">
-          <PasswordInput
-            id="password"
-            value={password}
-            onChange={setPassword}
-            autoComplete="new-password"
-            placeholder="Create a strong password"
-          />
-        </Field>
-
-        {password.length > 0 && <PasswordRules value={password} />}
-
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={loading}
-          className="h-10 w-full text-[13.5px]"
-        >
-          {loading ? <Loader2 size={15} className="animate-spin" /> : "Create account"}
-        </Button>
-
-        <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
-          By creating an account you agree to the Terms of Service and Privacy
-          Policy.
+        <SubmitButton loading={loading} loadingLabel="Creating account">
+          Create account
+        </SubmitButton>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          By creating an account you agree to the{" "}
+          <Link href="/legal/terms" className={authLinkClass}>
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/legal/privacy" className={authLinkClass}>
+            Privacy Policy
+          </Link>
+          .
         </p>
+        <FormAlert message={formError} />
       </form>
 
-      <p className="mt-6 text-center text-[13px] text-muted-foreground">
+      <p className="text-base text-[var(--ink-600)]">
         Already have an account?{" "}
-        <Link
-          href="/login"
-          className="font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]"
-        >
+        <Link href="/login" className={authLinkClass}>
           Sign in
         </Link>
       </p>

@@ -11,21 +11,16 @@
 //   ⇒ SOW initial $7,500 + Amendment #1 +$3,000 + Amendment #2 +$1,800 = $12,300.
 
 import type { ApiClassification, ApiDocument } from "@/lib/types";
+import { currencySymbol } from "@/lib/format";
 
-// Exact, comma-separated dollars — no rounding or K/M abbreviation.
+// Exact, comma-separated amount — no rounding or K/M abbreviation. The symbol
+// comes from the document's own currency; when no currency was extracted the
+// amount is printed bare rather than assumed to be dollars.
 export function fmtMoney(n: number, currency?: string | null): string {
-  if (!n || n <= 0) return currencySymbol(currency) + "0";
-  return `${currencySymbol(currency)}${Math.round(n).toLocaleString()}`;
-}
-
-function currencySymbol(currency?: string | null): string {
-  switch ((currency || "USD").toUpperCase()) {
-    case "EUR": return "€";
-    case "GBP": return "£";
-    case "INR": return "₹";
-    case "JPY": return "¥";
-    default: return "$";
-  }
+  const sym = currencySymbol(currency);
+  if (!Number.isFinite(n) || n === 0) return `${sym}0`;
+  const amount = Math.round(Math.abs(n)).toLocaleString();
+  return n < 0 ? `−${sym}${amount}` : `${sym}${amount}`;
 }
 
 /** Backend-persisted, validated commercial figures carried on the document list
@@ -283,17 +278,18 @@ export function contractTotal(docsIn: ValuedDoc[]): number {
 
 /** A single document's own stated value — the canonical "this document's
  *  contract value." Uses only the backend-persisted/validated figure or the
- *  extracted total/newTotal/base. EXACT ONLY: returns 0 (→ shown as "—") when
- *  the backend extracted no figure; it is never scraped from the clause text.
- *  Pass the document's persisted commercials (via persistedOf) so it agrees with
- *  the project total from computeContractValue. */
-export function docValue(c?: ApiClassification, persisted?: DocCommercials): number {
+ *  extracted total/newTotal/base, never a number scraped from the clause text.
+ *  Returns null when the backend extracted no figure, so callers can tell
+ *  "no value extracted" apart from a real zero. Pass the document's persisted
+ *  commercials (via persistedOf) so it agrees with computeContractValue. */
+export function docValueOrNull(c?: ApiClassification, persisted?: DocCommercials): number | null {
   const s = structured({ classification: c, persisted });
-  if (s) {
-    if (s.total != null) return s.total;
-    if (s.newTotal != null) return s.newTotal;
-    if (s.base != null) return s.base;
-    if (s.delta != null) return s.delta;
-  }
-  return 0;
+  if (!s) return null;
+  return s.total ?? s.newTotal ?? s.base ?? s.delta ?? null;
+}
+
+/** As docValueOrNull, but 0 when nothing was extracted. Only for callers that
+ *  already hide a zero (they render "—"); prefer docValueOrNull. */
+export function docValue(c?: ApiClassification, persisted?: DocCommercials): number {
+  return docValueOrNull(c, persisted) ?? 0;
 }

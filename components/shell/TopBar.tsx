@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useNotifications, type NotificationType } from "@/lib/notifications";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -14,25 +13,30 @@ import {
 } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Bell,
   Sun,
   Moon,
-  Home,
   Search,
   Command,
-  ChevronRight,
   ChevronDown,
   ArrowRight,
   User,
+  Users,
+  LogOut,
   Settings,
   Menu,
+  PanelLeft,
+  Help,
   Briefcase,
   FileText,
   Kanban,
@@ -42,50 +46,9 @@ import {
 import { useAuth, initialsOf } from "@/components/auth/AuthProvider";
 import { useDocuments } from "@/lib/queries/documents";
 import { useProjects } from "@/lib/projects-store";
-
-type Crumb = { label: string; href?: string };
-
-function crumbsFromPath(p: string, resolve: (id: string) => string): Crumb[] {
-  if (p.startsWith("/dashboard")) return [{ label: "Overview" }, { label: "Dashboard" }];
-  if (p.startsWith("/workflow")) return [{ label: "Contracts" }, { label: "Workflow" }];
-  if (p.startsWith("/library")) return [{ label: "Contracts" }, { label: "Library" }];
-  if (p.startsWith("/insights")) return [{ label: "Overview" }, { label: "Insights" }];
-  if (p.startsWith("/projects/new")) {
-    return [{ label: "Projects", href: "/projects" }, { label: "New" }];
-  }
-  if (p === "/projects" || p.startsWith("/projects?")) return [{ label: "Contracts" }, { label: "Projects" }];
-  if (p.startsWith("/projects")) {
-    const seg = p.split("/").filter(Boolean);
-    const id = seg[1] ?? "";
-    const tail = seg[2];
-    const tailLabel =
-      tail === "sow"
-        ? "SOW"
-        : tail === "amendments"
-        ? "Amendments"
-        : tail === "insights"
-        ? "Insights"
-        : tail === "timeline"
-        ? "Timeline"
-        : tail === "audit"
-        ? "Audit"
-        : tail === "team"
-        ? "Team"
-        : tail === "documents"
-        ? "Documents"
-        : undefined;
-    if (!id) return [{ label: "Projects" }];
-    return [
-      { label: "Projects", href: "/projects" },
-      { label: resolve(id), href: `/projects/${id}` },
-      ...(tailLabel ? [{ label: tailLabel }] : []),
-    ];
-  }
-  if (p.startsWith("/settings/playbook")) return [{ label: "Settings" }, { label: "Playbook" }];
-  if (p.startsWith("/settings/clauses")) return [{ label: "Settings" }, { label: "Clause Library" }];
-  if (p.startsWith("/settings")) return [{ label: "Workspace" }, { label: "Settings" }];
-  return [{ label: "Workspace" }];
-}
+import { useUIStore } from "@/lib/stores/ui";
+import { useNow } from "@/lib/use-now";
+import { readDark, subscribeTheme, toggleTheme } from "@/lib/theme";
 
 type Props = {
   onCommandOpen?: () => void;
@@ -95,17 +58,17 @@ type Props = {
   onMenuClick?: () => void;
 };
 
+/** 40px icon button used across the bar. */
+const ICON_BUTTON =
+  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[var(--ink-700)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+
 const NOOP_SUBSCRIBE = () => () => {};
 function useHasMounted(): boolean {
   return useSyncExternalStore(NOOP_SUBSCRIBE, () => true, () => false);
 }
-function readDark(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.documentElement.classList.contains("dark");
-}
 
 /* ──────────────────────────────────────────────── */
-/*  Search — built from in-memory mock data         */
+/*  Search — live documents, projects and pages     */
 /* ──────────────────────────────────────────────── */
 
 type SearchHit = {
@@ -118,23 +81,22 @@ type SearchHit = {
 };
 
 const PAGE_HITS: SearchHit[] = [
-  { id: "p-dashboard", label: "Dashboard", sub: "Portfolio analytics", href: "/dashboard", group: "Pages", icon: <BarChart3 size={14} /> },
-  { id: "p-projects", label: "Projects", sub: "All engagements", href: "/projects", group: "Pages", icon: <Briefcase size={14} /> },
-  { id: "p-workflow", label: "Workflow", sub: "Kanban pipeline", href: "/workflow", group: "Pages", icon: <Kanban size={14} /> },
-  { id: "p-library", label: "Library", sub: "Contract library", href: "/library", group: "Pages", icon: <FileText size={14} /> },
-  { id: "p-insights", label: "Insights", sub: "Cross-portfolio analytics", href: "/insights", group: "Pages", icon: <BarChart3 size={14} /> },
-  { id: "p-playbook", label: "Playbook", sub: "Settings · standard positions", href: "/settings/playbook", group: "Pages", icon: <BookMarked size={14} /> },
-  { id: "p-clauses", label: "Clause library", sub: "Settings · reusable clauses", href: "/settings/clauses", group: "Pages", icon: <FileText size={14} /> },
-  { id: "p-settings", label: "Settings", sub: "Workspace · preferences", href: "/settings", group: "Pages", icon: <Settings size={14} /> },
+  // Each `sub` says what the page actually shows today (kept in step with the page headers).
+  { id: "p-dashboard", label: "Dashboard", sub: "Portfolio overview", href: "/dashboard", group: "Pages", icon: <BarChart3 size={14} /> },
+  { id: "p-projects", label: "Projects", sub: "Contracts grouped with their amendments", href: "/projects", group: "Pages", icon: <Briefcase size={14} /> },
+  { id: "p-workflow", label: "Workflow", sub: "Documents by lifecycle stage", href: "/workflow", group: "Pages", icon: <Kanban size={14} /> },
+  { id: "p-library", label: "Library", sub: "Every uploaded document", href: "/library", group: "Pages", icon: <FileText size={14} /> },
+  { id: "p-insights", label: "Insights", sub: "Portfolio insights", href: "/insights", group: "Pages", icon: <BarChart3 size={14} /> },
+  { id: "p-playbook", label: "Playbook", sub: "Settings · negotiation standards", href: "/settings/playbook", group: "Pages", icon: <BookMarked size={14} /> },
+  { id: "p-clauses", label: "Clause library", sub: "Settings · clauses extracted from your documents", href: "/settings/clauses", group: "Pages", icon: <FileText size={14} /> },
+  { id: "p-settings", label: "Settings", sub: "Rules and integrations", href: "/settings", group: "Pages", icon: <Settings size={14} /> },
 ];
 
-// Search is built from REAL documents fetched once when the shell mounts, plus
-// the static set of workspace pages. The fetch is shared across the session
-// because the TopBar lives in the persistent AppShell layout.
+// Search is built from the shared, live documents query and the projects list
+// (so it reflects uploads and deletes), plus the static set of workspace pages.
 function useSearchIndex(): SearchHit[] {
-  // Live shared query — search reflects current documents (uploads/deletes),
-  // no stale one-time snapshot.
-  const { data: docs = [] } = useDocuments();
+  const { data } = useDocuments();
+  const docs = useMemo(() => data ?? [], [data]);
 
   const projects = useProjects();
 
@@ -167,6 +129,7 @@ function SearchBar() {
   const [active, setActive] = useState(0);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const listId = useId();
 
   // Click-outside
   useEffect(() => {
@@ -234,9 +197,9 @@ function SearchBar() {
   }
 
   return (
-    <div ref={wrapRef} className="relative w-full max-w-[420px] hidden sm:block">
+    <div ref={wrapRef} className="relative w-full max-w-[440px]">
       <Search
-        size={14}
+        size={16}
         strokeWidth={1.75}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
       />
@@ -253,25 +216,28 @@ function SearchBar() {
         onKeyDown={onKeyDown}
         placeholder="Search documents & pages…"
         className={cn(
-          "h-9 w-full rounded-lg pl-9 pr-16 text-[13px]",
-          "bg-muted/60 border border-transparent placeholder:text-muted-foreground",
-          "focus:outline-none focus:bg-card focus:border-border focus:ring-2 focus:ring-ring/30",
+          "h-10 w-full rounded-lg pl-9 pr-3 md:pr-16 text-base text-foreground",
+          "bg-[var(--panel)] border border-[var(--ink-300)] placeholder:text-muted-foreground",
+          "focus:outline-none focus:bg-card focus:border-[var(--brand-primary-600)] focus:ring-2 focus:ring-ring/30",
           "transition-colors",
         )}
+        role="combobox"
         aria-label="Search"
         aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
         autoComplete="off"
       />
-      <kbd className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-[10px] font-mono border border-border text-muted-foreground bg-card">
-        <Command size={10} strokeWidth={2} />K
+      <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-xs font-mono border border-border text-muted-foreground bg-card pointer-events-none">
+        <Command size={12} strokeWidth={2} />K
       </kbd>
 
       {/* Results dropdown */}
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+        <div id={listId} className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 min-w-[280px] rounded-xl border border-border bg-card shadow-md overflow-hidden">
           {q.trim() === "" ? (
             <div className="p-3">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2 px-1">
+              <div className="text-xs font-medium text-muted-foreground mb-1.5 px-2">
                 Quick links
               </div>
               <ul className="space-y-0.5">
@@ -280,11 +246,11 @@ function SearchBar() {
                     <button
                       type="button"
                       onClick={() => go(h)}
-                      className="w-full flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-muted transition-colors"
+                      className="w-full flex items-center gap-2.5 min-h-10 rounded-lg px-2 text-left text-base text-foreground hover:bg-muted transition-colors"
                     >
                       <span className="text-muted-foreground">{h.icon}</span>
                       <span className="flex-1 min-w-0 truncate">{h.label}</span>
-                      <span className="text-[10.5px] font-mono text-muted-foreground">
+                      <span className="hidden lg:block shrink-0 max-w-[50%] truncate text-xs text-muted-foreground">
                         {h.sub}
                       </span>
                     </button>
@@ -293,9 +259,9 @@ function SearchBar() {
               </ul>
             </div>
           ) : results.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground break-words">
               No matches for{" "}
-              <span className="font-mono text-foreground">&ldquo;{q}&rdquo;</span>
+              <span className="font-medium text-foreground">&ldquo;{q}&rdquo;</span>
             </div>
           ) : (
             <div className="max-h-[360px] overflow-y-auto">
@@ -305,7 +271,7 @@ function SearchBar() {
                   if (!items?.length) return null;
                   return (
                     <div key={group}>
-                      <div className="px-3 pt-2.5 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      <div className="px-3 pt-3 pb-1 text-xs font-medium text-muted-foreground">
                         {group}
                       </div>
                       <ul>
@@ -323,26 +289,26 @@ function SearchBar() {
                                 }
                                 onClick={() => go(h)}
                                 className={cn(
-                                  "w-full flex items-center gap-3 px-3 py-2 text-left text-[13px] transition-colors",
+                                  "w-full flex items-center gap-3 px-3 py-2 min-h-11 text-left text-base transition-colors",
                                   isActive
                                     ? "bg-muted"
                                     : "hover:bg-muted/60",
                                 )}
                               >
-                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground shrink-0">
+                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-[var(--ink-700)] shrink-0">
                                   {h.icon}
                                 </span>
                                 <span className="flex-1 min-w-0">
                                   <span className="block font-medium text-foreground truncate">
                                     {h.label}
                                   </span>
-                                  <span className="block text-[11.5px] text-muted-foreground truncate">
+                                  <span className="block text-xs text-muted-foreground truncate">
                                     {h.sub}
                                   </span>
                                 </span>
                                 <ArrowRight
-                                  size={11}
-                                  strokeWidth={2.25}
+                                  size={14}
+                                  strokeWidth={2}
                                   className="text-muted-foreground shrink-0"
                                 />
                               </button>
@@ -374,9 +340,9 @@ const NOTIF_DOT: Record<NotificationType, string> = {
   team: "bg-[var(--brand-primary-600)]",
 };
 
-function notifAgo(ts: number): string {
+function notifAgo(ts: number, now: number): string {
   if (!ts) return "";
-  const diff = Math.max(0, Date.now() - ts);
+  const diff = Math.max(0, now - ts);
   const m = Math.floor(diff / 60000);
   if (m < 1) return "now";
   if (m < 60) return `${m}m`;
@@ -386,9 +352,14 @@ function notifAgo(ts: number): string {
 }
 
 function NotificationBell() {
-  const { notifications, unreadCount, markRead } = useNotifications();
+  const { notifications, unreadCount, markRead, isLoading, isError, refetch } = useNotifications();
+  const now = useNow();
   const recent = notifications.slice(0, 6);
-  const unread = unreadCount;
+  // Until the documents the notifications are derived from have loaded, the
+  // count is unknown — it is not zero, and the list is not "all caught up".
+  const known = !isLoading && !isError;
+  const unread = known ? unreadCount : 0;
+  const stateLabel = isLoading ? "loading" : isError ? "could not be loaded" : `${unread} unread`;
   return (
     <DropdownMenu>
       <Tooltip>
@@ -396,66 +367,78 @@ function NotificationBell() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`Notifications · ${unread} unread`}
-              className={cn(
-                "relative inline-flex items-center justify-center h-9 w-9 rounded-md",
-                "text-muted-foreground hover:text-foreground hover:bg-muted",
-                "transition-colors",
-              )}
+              aria-label={`Notifications · ${stateLabel}`}
+              className={cn(ICON_BUTTON, "relative")}
             >
-              <Bell size={15} strokeWidth={1.85} className="text-foreground" />
+              <Bell size={18} strokeWidth={1.75} />
               {unread > 0 && (
                 <span
                   className={cn(
-                    "absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center",
-                    "rounded-full bg-[var(--danger)] px-1 text-[9.5px] font-bold text-white",
+                    "absolute top-0 right-0 inline-flex h-[18px] min-w-[18px] items-center justify-center",
+                    "rounded-full bg-[var(--danger)] px-1 text-xs leading-none font-semibold text-white tabular-nums",
                     "ring-2 ring-card",
                   )}
                 >
                   {unread > 9 ? "9+" : unread}
                 </span>
               )}
-              {unread > 0 && (
-                <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[var(--danger)] animate-ping" />
-              )}
             </button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent>
-          {unread > 0 ? `${unread} unread alerts` : "No new alerts"}
+          {isLoading ? "Loading notifications" : isError ? "Notifications could not be loaded" : unread > 0 ? `${unread} unread alerts` : "No new alerts"}
         </TooltipContent>
       </Tooltip>
-      <DropdownMenuContent align="end" className="w-80 p-0">
-        <DropdownMenuLabel className="flex items-center justify-between px-3 py-3 border-b border-border">
-          <span className="text-[13px] font-semibold">Notifications</span>
-          <span className="text-[10.5px] font-mono text-muted-foreground">
-            {unread} new
-          </span>
+      <DropdownMenuContent align="end" className="w-[min(22rem,calc(100vw-1.5rem))] p-0">
+        <DropdownMenuLabel className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border">
+          <span className="text-base font-semibold text-foreground">Notifications</span>
+          {known && (
+            <span className="text-xs font-medium text-muted-foreground tabular-nums">
+              {unread} new
+            </span>
+          )}
         </DropdownMenuLabel>
-        {recent.length === 0 ? (
-          <div className="px-3 py-8 text-center text-[12px] text-muted-foreground">
-            You&apos;re all caught up.
+        {isLoading ? (
+          <div role="status" className="px-4 py-8 text-center text-sm text-muted-foreground">
+            Loading notifications…
+          </div>
+        ) : isError ? (
+          <div role="alert" className="px-4 py-6 text-center">
+            <p className="text-sm text-[var(--ink-600)]">
+              Notifications couldn&apos;t be loaded, so there may be alerts that are not shown here.
+            </p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="mt-2 inline-flex h-10 items-center rounded-lg px-3 text-sm font-semibold text-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-50)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              Try again
+            </button>
+          </div>
+        ) : recent.length === 0 ? (
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+            No notifications. Nothing in your documents or project invitations is flagged right now.
           </div>
         ) : (
-          <ul className="max-h-[360px] overflow-y-auto">
+          <ul className="max-h-[min(360px,60dvh)] overflow-y-auto">
             {recent.map((n) => (
               <li key={n.id}>
                 <Link
                   href={n.href}
                   onClick={() => markRead(n.id)}
-                  className="w-full flex items-start gap-2.5 px-3 py-3 text-left hover:bg-muted/60 transition-colors border-b border-border last:border-b-0"
+                  className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted transition-colors border-b border-border last:border-b-0 focus-visible:outline-none focus-visible:bg-muted"
                 >
-                  <span className={cn("mt-1 h-2 w-2 rounded-full shrink-0", NOTIF_DOT[n.type])} />
+                  <span className={cn("mt-1.5 h-2 w-2 rounded-full shrink-0", NOTIF_DOT[n.type])} aria-hidden />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[12.5px] font-semibold text-foreground truncate">
+                      <span className="text-sm font-semibold text-foreground truncate">
                         {n.title}
                       </span>
-                      <span className="font-mono text-[10px] text-muted-foreground shrink-0">
-                        {notifAgo(n.timestamp)}
+                      <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                        {notifAgo(n.timestamp, now)}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[11.5px] text-muted-foreground leading-snug line-clamp-2">
+                    <p className="mt-0.5 text-sm text-[var(--ink-600)] leading-snug line-clamp-2">
                       {n.body}
                     </p>
                   </div>
@@ -467,10 +450,10 @@ function NotificationBell() {
         <div className="border-t border-border p-2">
           <Link
             href="/notifications"
-            className="w-full inline-flex items-center justify-center gap-1 px-3 py-2 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="w-full inline-flex items-center justify-center gap-1.5 h-10 px-3 rounded-lg text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] hover:bg-[var(--brand-primary-50)] transition-colors"
           >
-            View all notifications
-            <ArrowRight size={11} strokeWidth={2.25} />
+            {known && notifications.length > recent.length ? `View all ${notifications.length} notifications` : "View all notifications"}
+            <ArrowRight size={14} strokeWidth={2} />
           </Link>
         </div>
       </DropdownMenuContent>
@@ -482,113 +465,117 @@ function NotificationBell() {
 /*  Profile menu                                    */
 /* ──────────────────────────────────────────────── */
 
-function ProfileMenu() {
-  const router = useRouter();
+const ACCOUNT_LINKS = [
+  { label: "Profile & settings", href: "/settings", icon: User },
+  { label: "Team", href: "/settings/team", icon: Users },
+  { label: "Notifications", href: "/notifications", icon: Bell },
+  { label: "Help", href: "/help", icon: Help },
+];
+
+/** 40px menu row. Icons inherit the muted ink until the row is focused. */
+const MENU_ROW =
+  "min-h-10 cursor-pointer gap-3 rounded-lg px-2.5 py-2 text-base font-medium [&_svg]:text-[var(--ink-600)]";
+
+function ProfileMenu({ onCommandOpen }: { onCommandOpen?: () => void }) {
   const { user, status, signOut } = useAuth();
+  const { unreadCount, isLoading: notifLoading, isError: notifError } = useNotifications();
+  const mounted = useHasMounted();
+  const dark = useSyncExternalStore(subscribeTheme, readDark, () => false);
 
   const initials = initialsOf(user);
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
   const email = user?.email || (status === "loading" ? "Loading…" : "Not signed in");
-  const role = user?.groups?.[0] || "Member";
+  // Only shown when the identity token actually carries a group; no invented role.
+  const group = user?.groups?.[0];
+  const isMac = mounted && /Mac|iPhone|iPad/.test(navigator.platform);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="Account menu"
+          aria-label={`Account menu for ${displayName}`}
           className={cn(
-            "inline-flex items-center gap-2 h-9 pl-1 pr-2 rounded-md",
-            "hover:bg-muted",
-            "transition-colors",
+            "inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-1 md:pr-2",
+            "hover:bg-muted aria-expanded:bg-muted",
+            "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           )}
         >
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] text-[11px] font-semibold uppercase">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-600)] text-xs font-semibold uppercase text-white">
             {initials}
           </span>
-          <span className="hidden md:flex flex-col items-start leading-tight max-w-[140px]">
-            <span className="text-[12.5px] font-semibold text-foreground truncate w-full text-left">
-              {displayName}
-            </span>
-            <span className="text-[10px] text-muted-foreground tracking-wide capitalize truncate w-full text-left">
-              {role}
-            </span>
+          <span className="hidden max-w-[140px] truncate text-sm font-semibold text-foreground md:block">
+            {displayName}
           </span>
-          <ChevronDown
-            size={12}
-            strokeWidth={2}
-            className="text-muted-foreground"
-          />
+          <ChevronDown size={14} strokeWidth={2} className="hidden text-muted-foreground md:block" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[280px] p-0 overflow-hidden">
-        {/* Identity header */}
-        <div className="flex items-center gap-3 px-4 py-4 bg-muted/40 border-b border-border">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--brand-primary-600)] text-white text-[14px] font-semibold shrink-0 uppercase">
+      <DropdownMenuContent align="end" className="w-[min(18rem,calc(100vw-1.5rem))] p-0">
+        {/* Identity */}
+        <DropdownMenuLabel className="flex items-center gap-3 border-b border-border bg-[var(--panel)] px-4 py-3.5">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-600)] text-sm font-semibold uppercase text-white">
             {initials}
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-[14px] font-semibold text-foreground truncate">
-              {displayName}
-            </div>
-            <div className="text-[11.5px] text-muted-foreground truncate">
-              {email}
-            </div>
-            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] text-[var(--success)] px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.1em] capitalize">
-              {role}
-            </span>
-          </div>
-        </div>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-base font-semibold text-foreground">{displayName}</span>
+            <span className="block truncate text-sm font-normal text-[var(--ink-600)]" title={email}>{email}</span>
+            {group && (
+              <span className="mt-1 inline-flex max-w-full items-center truncate rounded-md border border-border bg-card px-1.5 py-0.5 text-xs font-medium capitalize text-[var(--ink-700)]">
+                {group}
+              </span>
+            )}
+          </span>
+        </DropdownMenuLabel>
 
-        {/* Account */}
-        <div className="p-1.5">
-          <DropdownMenuItem
-            onClick={() => router.push("/settings")}
-            className="gap-2.5 rounded-md py-2 cursor-pointer"
-          >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
-              <User size={14} />
-            </span>
-            <div className="flex flex-col">
-              <span className="text-[13px] font-medium leading-tight">
-                Profile &amp; settings
-              </span>
-              <span className="text-[10.5px] text-muted-foreground leading-tight">
-                Workspace configuration
-              </span>
-            </div>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push("/settings/playbook")}
-            className="gap-2.5 rounded-md py-2 cursor-pointer"
-          >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
-              <BookMarked size={14} />
-            </span>
-            <div className="flex flex-col">
-              <span className="text-[13px] font-medium leading-tight">
-                Playbook
-              </span>
-              <span className="text-[10.5px] text-muted-foreground leading-tight">
-                Clause standards &amp; rules
-              </span>
-            </div>
-          </DropdownMenuItem>
-        </div>
+        <DropdownMenuGroup className="p-1.5">
+          {ACCOUNT_LINKS.map(({ label, href, icon: Icon }) => (
+            <DropdownMenuItem key={href} asChild className={MENU_ROW}>
+              <Link href={href}>
+                <Icon size={16} />
+                <span className="min-w-0 flex-1 truncate">{label}</span>
+                {href === "/notifications" && !notifLoading && !notifError && unreadCount > 0 && (
+                  <span className="rounded-md bg-[var(--danger-soft)] px-1.5 py-0.5 text-xs font-semibold tabular-nums text-[var(--danger)]">
+                    {unreadCount > 99 ? "99+" : unreadCount} new
+                  </span>
+                )}
+              </Link>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
 
-        <DropdownMenuSeparator className="my-0" />
-        <div className="p-1.5">
+        <DropdownMenuSeparator className="mx-0 my-0" />
+        <DropdownMenuGroup className="p-1.5">
+          {/* Stays open on select so the switch can be seen flipping. */}
+          <DropdownMenuCheckboxItem
+            checked={mounted && dark}
+            onCheckedChange={toggleTheme}
+            onSelect={(e) => e.preventDefault()}
+            className={cn(MENU_ROW, "pr-10")}
+          >
+            {mounted && dark ? <Moon size={16} /> : <Sun size={16} />}
+            <span className="min-w-0 flex-1 truncate">Dark theme</span>
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuItem onSelect={onCommandOpen} className={MENU_ROW}>
+            <Command size={16} />
+            <span className="min-w-0 flex-1 truncate">Search &amp; commands</span>
+            <DropdownMenuShortcut className="font-mono tracking-normal">
+              {isMac ? "⌘K" : "Ctrl K"}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator className="mx-0 my-0" />
+        <DropdownMenuGroup className="p-1.5">
           <DropdownMenuItem
-            onClick={signOut}
+            variant="destructive"
+            onSelect={signOut}
             disabled={status !== "authenticated"}
-            className="gap-2.5 rounded-md py-2 cursor-pointer text-[var(--danger)] focus:text-[var(--danger)] focus:bg-[var(--danger-soft)]"
+            className="min-h-10 cursor-pointer gap-3 rounded-lg px-2.5 py-2 text-base font-medium"
           >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[var(--danger-soft)] text-[var(--danger)]">
-              <ArrowRight size={14} />
-            </span>
-            <span className="text-[13px] font-medium">Sign out</span>
+            <LogOut size={16} />
+            Sign out
           </DropdownMenuItem>
-        </div>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -599,153 +586,76 @@ function ProfileMenu() {
 /* ──────────────────────────────────────────────── */
 
 export function TopBar({ onCommandOpen, onMenuClick }: Props) {
-  const pathname = usePathname() ?? "";
-  const { data: docs = [] } = useDocuments();
-  const projects = useProjects();
-  const nameOf = useMemo(() => {
-    const m = new Map<string, string>();
-    docs.forEach((d) => m.set(d.docId, d.title || "Untitled document"));
-    projects.forEach((p) => m.set(p.id, p.name));
-    return (id: string) => m.get(id) || (id.startsWith("proj_") ? "Project" : "Document");
-  }, [docs, projects]);
-  const crumbs = crumbsFromPath(pathname, nameOf);
-  const mounted = useHasMounted();
-  const [dark, setDark] = useState(false);
-  // Sync from the actual <html> class after mount (the bootstrap script set it
-  // before paint), and keep in step if another control toggles the theme.
-  useEffect(() => {
-    setDark(readDark());
-    const obs = new MutationObserver(() => setDark(readDark()));
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-
-  function toggleTheme() {
-    // Read the real current state (not stale React state) so this stays correct
-    // even if the command palette toggled the theme.
-    const root = document.documentElement;
-    root.classList.add("theme-anim"); // fade surfaces only during the switch
-    const next = !root.classList.contains("dark");
-    root.classList.toggle("dark", next);
-    setDark(next);
-    try {
-      localStorage.setItem("clausal-theme", next ? "dark" : "light");
-    } catch {}
-    window.setTimeout(() => root.classList.remove("theme-anim"), 260);
-  }
+  const sidebarCollapsed = useUIStore((st) => st.sidebarCollapsed);
+  const toggleSidebar = useUIStore((st) => st.toggleSidebar);
 
   return (
     <header
       className={cn(
-        "h-14 sticky top-0 z-30 flex items-center gap-3 border-b border-border",
-        "px-3 md:px-5",
-        "bg-card/85 backdrop-blur-md supports-[backdrop-filter]:bg-card/70",
+        "h-14 lg:h-16 sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3",
+        "px-2 sm:px-4",
+        "bg-card border-b border-border",
       )}
     >
-      {/* Mobile menu button */}
+      {/* Left slot — the mobile drawer button below `lg`, the sidebar
+          collapse toggle from `lg` up. Never both. */}
       <button
         type="button"
         aria-label="Open navigation"
         onClick={onMenuClick}
-        className="lg:hidden inline-flex items-center justify-center h-9 w-9 rounded-md text-foreground hover:bg-muted transition-colors shrink-0 -ml-1"
+        className={cn(ICON_BUTTON, "lg:hidden text-foreground")}
       >
-        <Menu size={18} strokeWidth={2} />
+        <Menu size={20} strokeWidth={2} />
       </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-pressed={sidebarCollapsed}
+            className={cn(ICON_BUTTON, "hidden lg:inline-flex")}
+          >
+            <PanelLeft size={18} strokeWidth={1.75} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} · [
+        </TooltipContent>
+      </Tooltip>
 
-      {/* Breadcrumb */}
-      <nav
-        aria-label="Breadcrumb"
-        className="flex items-center gap-1.5 min-w-0 text-[12.5px] overflow-hidden"
-      >
-        <Link
-          href="/dashboard"
-          aria-label="Home"
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Home size={15} strokeWidth={1.85} />
-        </Link>
-        <ChevronRight
-          size={12}
-          strokeWidth={1.75}
-          className="text-muted-foreground/40 shrink-0 hidden sm:inline"
-        />
-        {crumbs.map((c, i) => {
-          const isLast = i === crumbs.length - 1;
-          const content = (
-            <span
-              className={cn(
-                "truncate",
-                isLast
-                  ? "text-foreground font-medium"
-                  : "text-muted-foreground hover:text-foreground transition-colors",
-              )}
-            >
-              {c.label}
-            </span>
-          );
-          return (
-            <span
-              key={`${c.label}-${i}`}
-              className="flex items-center gap-1.5 min-w-0"
-            >
-              {c.href && !isLast ? <Link href={c.href}>{content}</Link> : content}
-              {!isLast && (
-                <ChevronRight
-                  size={12}
-                  strokeWidth={1.75}
-                  className="text-muted-foreground/40 shrink-0"
-                />
-              )}
-            </span>
-          );
-        })}
-      </nav>
-
-      {/* Search — center */}
-      <div className="flex-1 flex items-center justify-center min-w-0">
+      {/* Search — inline field from `sm` up, beside the toggle */}
+      <div className="hidden sm:flex flex-1 items-center min-w-0">
         <SearchBar />
       </div>
+      <div className="flex-1 sm:hidden" />
 
-      {/* mobile search button */}
-      <Button
-        variant="ghost"
-        size="icon-sm"
+      {/* Search — icon button below `sm`; opens the full-screen palette */}
+      <button
+        type="button"
         aria-label="Search"
         onClick={onCommandOpen}
-        className="md:hidden"
+        className={cn(ICON_BUTTON, "sm:hidden")}
       >
-        <Search size={14} strokeWidth={1.75} />
-      </Button>
+        <Search size={18} strokeWidth={1.75} />
+      </button>
 
       {/* Right cluster */}
-      <div className="flex items-center gap-2 shrink-0">
-        {/* Notification bell — prominent */}
+      <div className="flex items-center gap-0.5 sm:gap-1.5 shrink-0">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link href="/help" aria-label="Help" className={ICON_BUTTON}>
+              <Help size={18} strokeWidth={1.75} />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Help</TooltipContent>
+        </Tooltip>
         <NotificationBell />
 
-        {/* Theme toggle — plain button (no Radix asChild wrapper, so the click
-            always fires and reliably flips the theme). */}
-        <button
-          type="button"
-          onClick={toggleTheme}
-          aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-          title={dark ? "Light mode" : "Dark mode"}
-          className={cn(
-            "inline-flex items-center justify-center h-9 w-9 rounded-md",
-            "text-muted-foreground hover:text-foreground hover:bg-muted",
-            "transition-colors",
-          )}
-        >
-          {mounted && dark ? (
-            <Sun size={15} strokeWidth={1.85} />
-          ) : (
-            <Moon size={15} strokeWidth={1.85} />
-          )}
-        </button>
+        {/* The theme switch lives in the account menu (one control, one behaviour). */}
+        <Separator orientation="vertical" className="!h-6 mx-1 hidden sm:block" />
 
-        <Separator orientation="vertical" className="!h-5 mx-1" />
-
-        {/* Profile */}
-        <ProfileMenu />
+        <ProfileMenu onCommandOpen={onCommandOpen} />
       </div>
     </header>
   );

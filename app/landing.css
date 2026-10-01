@@ -1,0 +1,717 @@
+/* ═══════════════════════════════════════════════════════════════
+   Blue-IQ public site — design tokens and components
+   ---------------------------------------------------------------
+   Single source of truth for the marketing pages, scoped to `.lp`
+   so the app shell keeps its own system.
+
+   The page is deliberately quiet: one sans family, a cool neutral
+   ramp, and one blue accent. The product interface is the artwork,
+   so risk colours appear only inside product panels.
+   ═══════════════════════════════════════════════════════════════ */
+
+@theme inline {
+  --color-lp-paper: var(--lp-paper);
+  --color-lp-sheet: var(--lp-sheet);
+  --color-lp-wash: var(--lp-wash);
+  --color-lp-line: var(--lp-line);
+  --color-lp-line-strong: var(--lp-line-strong);
+  --color-lp-ink: var(--lp-ink);
+  --color-lp-ink-2: var(--lp-ink-2);
+  --color-lp-ink-3: var(--lp-ink-3);
+  --color-lp-accent: var(--lp-accent);
+  --color-lp-accent-strong: var(--lp-accent-strong);
+  --color-lp-accent-wash: var(--lp-accent-wash);
+  --color-lp-on-accent: var(--lp-on-accent);
+  --color-lp-accent-bright: var(--lp-accent-bright);
+  --color-lp-tint: var(--lp-tint);
+  --color-lp-sky: var(--lp-sky);
+  --color-lp-night: var(--lp-night);
+  --color-lp-night-line: var(--lp-night-line);
+  --color-lp-on-night: var(--lp-on-night);
+  --color-lp-on-night-2: var(--lp-on-night-2);
+  --color-lp-accent-bright: var(--lp-accent-bright);
+  --color-lp-flag: var(--lp-flag);
+  --color-lp-flag-wash: var(--lp-flag-wash);
+  --color-lp-watch: var(--lp-watch);
+  --color-lp-watch-wash: var(--lp-watch-wash);
+  --color-lp-ok: var(--lp-ok);
+  --color-lp-ok-wash: var(--lp-ok-wash);
+
+  --font-lp-ref: var(--lp-font-ref);
+
+  --radius-lp-sm: var(--lp-radius-sm);
+  --radius-lp: var(--lp-radius);
+  --radius-lp-lg: var(--lp-radius-lg);
+  --radius-lp-xl: var(--lp-radius-xl);
+}
+
+/* ─── Tokens ──────────────────────────────────────────────────── */
+.lp {
+  color-scheme: light;
+
+  /* Surfaces and ink, matched to www.blue-iq.ai */
+  --lp-paper: #FFFFFF;        /* page */
+  --lp-sheet: #FFFFFF;        /* product surfaces, menus */
+  --lp-tint: #F1F5FE;         /* alternate section */
+  --lp-sky: #DFE9FF;          /* hero surface: a clear light blue */
+  --lp-wash: #EDF1F8;         /* inset rows, hover */
+  --lp-line: #E3E8F2;         /* hairline */
+  --lp-line-strong: #C9D1E0;  /* control border */
+  --lp-ink-3: #5E6883;        /* muted text */
+  --lp-ink-2: #3A4460;        /* body text */
+  --lp-ink: #0A1230;          /* headings, primary buttons */
+
+  /* The one accent */
+  --lp-accent: #2456E6;
+  --lp-accent-strong: #1A41B8;
+  --lp-accent-wash: #E8EEFF;
+  --lp-on-accent: #FFFFFF;
+  --lp-accent-bright: #6E9BFF; /* accent as text on night */
+
+  /* Night: the hero and the closing block */
+  --lp-night: #08102B;
+  --lp-night-line: #1E2A52;
+  --lp-on-night: #FFFFFF;
+  --lp-on-night-2: #AEB8D6;
+
+  /* Risk — product panels only */
+  --lp-flag: #B92B1A;
+  --lp-flag-wash: #FCEAE7;
+  --lp-watch: #8F5600;
+  --lp-watch-wash: #FBF0DA;
+  --lp-ok: #18703F;
+  --lp-ok-wash: #E3F3EA;
+
+  /* Type */
+  --lp-font: var(--font-geist), "Helvetica Neue", Arial, sans-serif;
+  --lp-font-ref: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+
+  /* Scale: 12 / 14 / 16 / 18 / 22 / 30, then fluid headings.
+     Re-points Tailwind's text-* variables, which the app shell shrinks. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.875rem;
+  --lp-text-h2: clamp(1.875rem, 3.6vw, 2.75rem);
+  --lp-text-h1: clamp(2.5rem, 5.4vw, 4rem);
+
+  /* Shape + motion */
+  --lp-radius-sm: 6px;
+  --lp-radius: 10px;
+  --lp-radius-lg: 14px;
+  --lp-radius-xl: 24px;
+  --lp-dur-fast: 150ms;
+  --lp-dur: 220ms;
+  --lp-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --lp-shadow-window: 0 1px 2px rgb(21 24 30 / 0.04), 0 24px 56px -28px rgb(21 24 30 / 0.28);
+
+  /* Focus ring + skip link pick up the accent */
+  --brand-primary-600: var(--lp-accent);
+
+  background: var(--lp-paper);
+  color: var(--lp-ink-2);
+  font-family: var(--lp-font);
+  font-size: 1rem;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+.lp ::selection {
+  background: var(--lp-accent-wash);
+  color: var(--lp-ink);
+}
+
+@layer components {
+  /* ─── Layout ────────────────────────────────────────────────── */
+  .lp-wrap {
+    width: 100%;
+    max-width: 75rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .lp-wrap { padding-inline: 2.5rem; }
+  }
+  .lp-section { padding-block: clamp(4rem, 8vw, 7rem); }
+
+  /* ─── Type ──────────────────────────────────────────────────── */
+  .lp-h1 {
+    font-size: var(--lp-text-h1);
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.045em;
+    color: var(--lp-ink);
+    text-wrap: balance;
+  }
+  .lp-h2 {
+    font-size: var(--lp-text-h2);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+    color: var(--lp-ink);
+    text-wrap: balance;
+  }
+  .lp-h3 {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.018em;
+    color: var(--lp-ink);
+  }
+  .lp-lede {
+    font-size: var(--text-lg);
+    line-height: 1.55;
+    color: var(--lp-ink-2);
+    max-width: 34rem;
+  }
+  /* Clause references and figures, set in mono so they read as data. */
+  .lp-ref {
+    font-family: var(--lp-font-ref);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--lp-ink-3);
+  }
+
+  /* ─── Controls ──────────────────────────────────────────────── */
+  .lp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 3rem;
+    padding-inline: 1.5rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: var(--text-base);
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color var(--lp-dur-fast) var(--lp-ease),
+      border-color var(--lp-dur-fast) var(--lp-ease),
+      color var(--lp-dur-fast) var(--lp-ease);
+  }
+  .lp-btn-primary { background: var(--lp-ink); color: var(--lp-on-accent); }
+  .lp-btn-primary:hover { background: var(--lp-accent); }
+  .lp-btn-quiet { border-color: var(--lp-line-strong); color: var(--lp-ink); }
+  .lp-btn-quiet:hover { border-color: var(--lp-ink); }
+  /* On the night surface */
+  .lp-btn-light { background: var(--lp-on-night); color: var(--lp-ink); }
+  .lp-btn-light:hover { background: var(--lp-accent-wash); }
+  .lp-btn-ghost { border-color: rgb(255 255 255 / 0.26); color: var(--lp-on-night); }
+  .lp-btn-ghost:hover { border-color: var(--lp-on-night); }
+  .lp-btn-sm { height: 2.5rem; padding-inline: 1.125rem; font-size: var(--text-sm); }
+
+  .lp-link {
+    color: var(--lp-accent);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.25em;
+    transition: text-decoration-color var(--lp-dur-fast) var(--lp-ease);
+  }
+  .lp-link:hover { text-decoration-color: currentColor; }
+
+  .lp-navlink {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--lp-ink-2);
+    transition: color var(--lp-dur-fast) var(--lp-ease);
+  }
+  .lp-navlink:hover { color: var(--lp-ink); }
+
+  /* ─── Header ────────────────────────────────────────────────── */
+  .lp-header {
+    background: var(--lp-sheet);
+    box-shadow: 0 1px 0 var(--lp-line), 0 8px 24px -20px rgb(10 18 48 / 0.35);
+    transition: background-color var(--lp-dur) var(--lp-ease), box-shadow var(--lp-dur) var(--lp-ease);
+  }
+  .lp-header[data-over-night="true"] { background: transparent; box-shadow: none; }
+  .lp-header[data-over-night="true"] .lp-navbtn { color: var(--lp-on-night-2); }
+  .lp-header[data-over-night="true"] .lp-navbtn:hover,
+  .lp-header[data-over-night="true"] .lp-navbtn[aria-expanded="true"] {
+    color: var(--lp-on-night);
+    background: rgb(255 255 255 / 0.08);
+  }
+  .lp-header[data-over-night="true"] .lp-header-icon { color: var(--lp-on-night); }
+  .lp-header-icon { color: var(--lp-ink); }
+  .lp-product-tag {
+    padding-left: 0.75rem;
+    border-left: 1px solid var(--lp-line-strong);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--lp-ink-2);
+  }
+  .lp-header[data-over-night="true"] .lp-product-tag { border-left-color: var(--lp-night-line); color: var(--lp-on-night-2); }
+
+  /* ─── Navigation menus ──────────────────────────────────────── */
+  .lp-navbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 2.5rem;
+    padding-inline: 0.875rem;
+    border-radius: 999px;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--lp-ink-2);
+    cursor: pointer;
+    transition: color var(--lp-dur-fast) var(--lp-ease), background-color var(--lp-dur-fast) var(--lp-ease);
+  }
+  .lp-navbtn:hover,
+  .lp-navbtn[aria-expanded="true"] { color: var(--lp-ink); background: var(--lp-wash); }
+  .lp-navbtn-chevron { transition: transform var(--lp-dur) var(--lp-ease); }
+  .lp-navbtn[aria-expanded="true"] .lp-navbtn-chevron { transform: rotate(180deg); }
+
+  .lp-menu {
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    left: 50%;
+    z-index: 10;
+    padding: 0.5rem;
+    background: var(--lp-sheet);
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius-lg);
+    box-shadow: 0 24px 48px -24px rgb(10 18 48 / 0.35);
+    transform: translateX(-50%);
+    animation: lp-menu-in var(--lp-dur-fast) var(--lp-ease) both;
+  }
+  .lp-menu-wide { width: 40rem; }
+  /* Anchored to the right edge: the account menu. */
+  .lp-menu-end { left: auto; right: 0; transform: none; animation-name: lp-rise; }
+  .lp-menu-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.625rem;
+    border-radius: var(--lp-radius);
+    transition: background-color var(--lp-dur-fast) var(--lp-ease);
+  }
+  .lp-menu-item:hover { background: var(--lp-tint); }
+  .lp-menu-icon { width: 2.25rem; height: 2.25rem; border-radius: 0.625rem; }
+  .lp-menu-item:hover .lp-menu-icon {
+    background: var(--lp-accent);
+    border-color: var(--lp-accent);
+    color: var(--lp-on-accent);
+  }
+  .lp-menu-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    border-radius: var(--lp-radius);
+    background: var(--lp-tint);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--lp-ink);
+    transition: color var(--lp-dur-fast) var(--lp-ease);
+  }
+  .lp-menu-foot:hover { color: var(--lp-accent); }
+
+  /* ─── Product surfaces ──────────────────────────────────────── */
+  /* The app window in the hero. */
+  .lp-window {
+    background: var(--lp-sheet);
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius-lg);
+    box-shadow: var(--lp-shadow-window);
+    overflow: hidden;
+  }
+  /* A smaller product panel beside a feature. */
+  .lp-panel {
+    background: var(--lp-sheet);
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius);
+    overflow: hidden;
+  }
+  .lp-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--lp-line);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--lp-ink);
+  }
+  .lp-colhead {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--lp-ink-3);
+  }
+
+  .lp-sidelink {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.4375rem 0.625rem;
+    border-radius: var(--lp-radius-sm);
+    font-size: var(--text-sm);
+    color: var(--lp-ink-2);
+  }
+  .lp-sidelink[data-active="true"] {
+    background: var(--lp-sheet);
+    box-shadow: inset 0 0 0 1px var(--lp-line);
+    color: var(--lp-ink);
+    font-weight: 600;
+  }
+
+  /* Selectable row: clause list, version list. */
+  .lp-row {
+    display: grid;
+    align-items: center;
+    column-gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--lp-line);
+    box-shadow: inset 2px 0 0 0 transparent;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color var(--lp-dur-fast) var(--lp-ease),
+      box-shadow var(--lp-dur-fast) var(--lp-ease);
+  }
+  .lp-row:hover { background: var(--lp-paper); }
+  .lp-row[aria-pressed="true"] {
+    background: var(--lp-accent-wash);
+    box-shadow: inset 2px 0 0 0 var(--lp-accent);
+  }
+  .lp-row-clause { grid-template-columns: 2.5rem minmax(0, 1fr) auto; }
+  @media (min-width: 640px) {
+    .lp-row-clause { grid-template-columns: 2.5rem minmax(0, 1fr) 9rem 8.5rem; }
+  }
+  .lp-row-version { grid-template-columns: minmax(0, 1fr) auto; }
+
+  /* Risk tag */
+  .lp-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    width: fit-content;
+    height: 1.375rem;
+    padding-inline: 0.5rem;
+    border-radius: 999px;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .lp-tag::before {
+    content: "";
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .lp-tag[data-risk="flagged"] { background: var(--lp-flag-wash); color: var(--lp-flag); }
+  .lp-tag[data-risk="deviates"],
+  .lp-tag[data-risk="watch"] { background: var(--lp-watch-wash); color: var(--lp-watch); }
+  .lp-tag[data-risk="ok"] { background: var(--lp-ok-wash); color: var(--lp-ok); }
+
+  .lp-excerpt mark { background: var(--lp-watch-wash); color: inherit; border-radius: 2px; padding-inline: 1px; }
+  .lp-excerpt[data-risk="flagged"] mark { background: var(--lp-flag-wash); }
+  .lp-excerpt[data-risk="ok"] mark { background: var(--lp-ok-wash); }
+  .lp-del { color: var(--lp-flag); text-decoration: line-through; }
+  .lp-ins { color: var(--lp-ok); text-decoration: none; font-weight: 500; }
+  .lp-swap { animation: lp-rise var(--lp-dur) var(--lp-ease) both; }
+
+  /* Charts */
+  .lp-chart-line { fill: none; stroke: var(--lp-accent); stroke-width: 2; stroke-linejoin: round; }
+  .lp-chart-grid { stroke: var(--lp-line); stroke-width: 1; }
+  .lp-chart-guide { stroke: var(--lp-line-strong); stroke-width: 1; stroke-dasharray: 3 4; }
+  .lp-chart-node {
+    fill: var(--lp-sheet);
+    stroke: var(--lp-accent);
+    stroke-width: 2;
+    transition: fill var(--lp-dur) var(--lp-ease);
+  }
+  .lp-chart-node[data-active="true"] { fill: var(--lp-accent); }
+  .lp-chart-label { font-family: var(--lp-font-ref); font-size: 11px; fill: var(--lp-ink-3); }
+  .lp-bar-track { fill: var(--lp-wash); }
+  .lp-bar[data-risk="flagged"] { fill: var(--lp-flag); }
+  .lp-bar[data-risk="watch"] { fill: var(--lp-watch); }
+  .lp-bar[data-risk="ok"] { fill: var(--lp-ok); }
+
+  /* ─── Hero ──────────────────────────────────────────────────── */
+  /* A pale blue surface fills the section except the last stretch, so the
+     product window stands half on tint, half on white. */
+  .lp-hero { position: relative; isolation: isolate; background: var(--lp-paper); }
+  .lp-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 clamp(5rem, 14vw, 12rem) 0;
+    z-index: -2;
+    background: var(--lp-sky);
+  }
+  /* The Sonar field: a canvas over the tinted surface, behind the content. */
+  .lp-field {
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: -1;
+    width: 100%;
+    height: calc(100% - clamp(5rem, 14vw, 12rem));
+    pointer-events: none;
+  }
+  .lp-hero-title { text-align: center; }
+  .lp-hero-lede { text-align: center; margin-inline: auto; max-width: 40rem; }
+  /* The rotating word: each word slides up into place. */
+  .lp-rotator { display: inline-block; color: var(--lp-accent); }
+  .lp-rotator-word { display: inline-block; animation: lp-word 500ms var(--lp-ease) both; }
+  .lp-frame {
+    position: relative;
+    padding: 0.5rem;
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius-xl);
+    background: rgb(255 255 255 / 0.6);
+    box-shadow: 0 40px 80px -48px rgb(10 18 48 / 0.35);
+  }
+  .lp-shot-grid { display: grid; }
+  .lp-shot-finding { border-top: 1px solid var(--lp-line); }
+  @media (min-width: 1024px) {
+    .lp-shot-grid { grid-template-columns: minmax(0, 1fr) 22rem; }
+    .lp-shot-finding { border-left: 1px solid var(--lp-line); border-top: 0; }
+  }
+  .lp-shot-row { grid-template-columns: 2.25rem minmax(0, 1fr) auto; }
+  .lp-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.625rem;
+    height: 1.625rem;
+    border-radius: 999px;
+    background: var(--lp-accent-wash);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--lp-accent);
+  }
+  .lp-enter { animation: lp-enter 700ms var(--lp-ease) both; }
+  .lp-enter[data-step="1"] { animation-delay: 80ms; }
+  .lp-enter[data-step="2"] { animation-delay: 160ms; }
+  .lp-enter[data-step="3"] { animation-delay: 240ms; }
+  .lp-enter[data-step="4"] { animation-delay: 320ms; }
+
+  /* ─── Section furniture ─────────────────────────────────────── */
+  .lp-band-tint { background: var(--lp-tint); }
+  /* Night band: one dark section mid-page, so the page is not all one tone. */
+  .lp-band-night { background: var(--lp-night); color: var(--lp-on-night-2); }
+  .lp-band-night .lp-h2 { color: var(--lp-on-night); }
+  .lp-band-night .lp-head p { color: var(--lp-on-night-2); }
+  .lp-band-night .lp-choice:hover { background: rgb(255 255 255 / 0.06); }
+  .lp-band-night .lp-choice[aria-selected="true"] { background: var(--lp-sheet); border-color: var(--lp-sheet); }
+  .lp-band-night .lp-choice-title { color: var(--lp-on-night); }
+  .lp-band-night .lp-choice[aria-selected="true"] .lp-choice-title { color: var(--lp-ink); }
+  .lp-band-night .lp-choice:not([aria-selected="true"]) .lp-icon-tile {
+    background: transparent;
+    border-color: var(--lp-night-line);
+    color: var(--lp-accent-bright);
+  }
+  .lp-band-night .lp-stagepanel { background: var(--lp-night-line); border-color: var(--lp-night-line); }
+  /* Section head: headline left, one supporting sentence right. */
+  .lp-head { display: grid; gap: 1rem; align-items: end; }
+  @media (min-width: 1024px) {
+    .lp-head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 4rem; }
+  }
+  .lp-card {
+    background: var(--lp-sheet);
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius-xl);
+  }
+  .lp-icon-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--lp-line);
+    border-radius: 0.875rem;
+    background: var(--lp-sheet);
+    color: var(--lp-accent);
+    transition: background-color var(--lp-dur) var(--lp-ease), color var(--lp-dur) var(--lp-ease), border-color var(--lp-dur) var(--lp-ease);
+  }
+
+  /* Feature rows: icon, title, one sentence, ruled between. */
+  .lp-point {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    gap: 0 1rem;
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--lp-line);
+  }
+  .lp-point:first-child { border-top: 0; padding-top: 0; }
+  .lp-point svg { color: var(--lp-accent); margin-top: 0.2rem; }
+
+  /* Steps and tabs: a list of choices beside the panel they control. */
+  .lp-choice {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0 1rem;
+    width: 100%;
+    padding: 0.875rem;
+    border: 1px solid transparent;
+    border-radius: var(--lp-radius-xl);
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background-color var(--lp-dur) var(--lp-ease), border-color var(--lp-dur) var(--lp-ease), box-shadow var(--lp-dur) var(--lp-ease);
+  }
+  .lp-choice:hover { background: var(--lp-sheet); }
+  .lp-choice[aria-selected="true"] {
+    background: var(--lp-sheet);
+    border-color: var(--lp-line);
+    box-shadow: 0 16px 32px -24px rgb(10 18 48 / 0.35);
+  }
+  .lp-choice[aria-selected="true"] .lp-icon-tile {
+    background: var(--lp-accent);
+    border-color: var(--lp-accent);
+    color: var(--lp-on-accent);
+  }
+  .lp-choice-title { font-size: var(--text-lg); font-weight: 600; color: var(--lp-ink-2); }
+  .lp-choice[aria-selected="true"] .lp-choice-title { color: var(--lp-ink); }
+  .lp-choice-body { grid-column: 2; margin-top: 0.25rem; font-size: var(--text-base); color: var(--lp-ink-2); }
+  /* Progress line under the active step while it auto-advances. */
+  .lp-choice-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--lp-accent);
+    transform-origin: left;
+    animation: lp-progress var(--lp-step-ms, 5000ms) linear both;
+  }
+  .lp-stagepanel {
+    background: var(--lp-tint);
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius-xl);
+  }
+  .lp-band-tint .lp-stagepanel { background: var(--lp-sheet); }
+
+  /* Security drawings: ink line, accent fill. */
+  .lp-ill { width: 6rem; height: 4.5rem; }
+  .lp-ill-line { fill: none; stroke: var(--lp-ink); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .lp-ill-soft { fill: var(--lp-accent-wash); stroke: var(--lp-ink); stroke-width: 1.75; stroke-linejoin: round; }
+  .lp-ill-solid { fill: var(--lp-accent); }
+  .lp-ill-accent { fill: none; stroke: var(--lp-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .lp-ill-muted { fill: none; stroke: var(--lp-line-strong); stroke-width: 1.75; stroke-linecap: round; stroke-dasharray: 2 5; }
+  .lp-ill-paper { fill: var(--lp-sheet); stroke: var(--lp-ink); stroke-width: 1.75; stroke-linejoin: round; }
+  .lp-ill-stop { fill: none; stroke: var(--lp-flag); stroke-width: 2; stroke-linecap: round; }
+
+  /* ─── Closing call to action ────────────────────────────────── */
+  .lp-cta {
+    border-radius: var(--lp-radius-xl);
+    background: var(--lp-night);
+    color: var(--lp-on-night-2);
+  }
+  .lp-cta .lp-h2 { color: var(--lp-on-night); }
+
+  /* ─── Inner pages ───────────────────────────────────────────── */
+  /* Spec row: a term on the left, its detail on the right, ruled above. */
+  .lp-spec {
+    display: grid;
+    gap: 0.5rem 2.5rem;
+    padding-block: 1.5rem;
+    border-top: 1px solid var(--lp-line);
+  }
+  @media (min-width: 768px) {
+    .lp-spec { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
+  }
+  .lp-list > li { position: relative; padding-left: 1.25rem; }
+  .lp-list > li + li { margin-top: 0.5rem; }
+  .lp-list > li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.7em;
+    width: 0.5rem;
+    height: 2px;
+    background: var(--lp-accent);
+  }
+  .lp-sidenav a {
+    display: block;
+    padding: 0.375rem 0 0.375rem 0.875rem;
+    border-left: 2px solid var(--lp-line);
+    font-size: var(--text-sm);
+    color: var(--lp-ink-3);
+    transition: color var(--lp-dur-fast) var(--lp-ease), border-color var(--lp-dur-fast) var(--lp-ease);
+  }
+  .lp-sidenav a:hover { color: var(--lp-ink); border-left-color: var(--lp-accent); }
+
+  .lp-index-row { padding-block: 1rem; border-top: 1px solid var(--lp-line); }
+  .lp-index-term { font-size: var(--text-base); font-weight: 600; color: var(--lp-ink); }
+}
+
+/* ─── Motion ──────────────────────────────────────────────────── */
+@keyframes lp-enter {
+  from { transform: translateY(14px); }
+  to   { transform: translateY(0); }
+}
+@keyframes lp-word {
+  from { opacity: 0; transform: translateY(0.35em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes lp-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes lp-menu-in {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes lp-rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lp-reveal {
+  from { transform: translateY(16px); }
+  to   { transform: translateY(0); }
+}
+
+/* Reveal: a short rise on load. It never hides content, so nothing depends on the animation running. */
+.lp [data-reveal] { animation: lp-reveal 600ms var(--lp-ease) both; }
+.lp [data-reveal-stagger="1"] { animation-delay: 50ms; }
+.lp [data-reveal-stagger="2"] { animation-delay: 120ms; }
+.lp [data-reveal-stagger="3"] { animation-delay: 190ms; }
+.lp [data-reveal-stagger="4"] { animation-delay: 260ms; }
+.lp [data-reveal-stagger="5"] { animation-delay: 330ms; }
+
+/* ─── Range slider (savings calculator) ───────────────────────────
+   The filled part of the track is set per value through --range-fill. */
+.lp-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: linear-gradient(to right, var(--lp-accent) var(--range-fill, 0%), var(--lp-wash) var(--range-fill, 0%));
+}
+.lp-range::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: transparent; }
+.lp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  height: 18px;
+  width: 18px;
+  border-radius: 999px;
+  background: var(--lp-sheet);
+  border: 2px solid var(--lp-accent);
+  transition: transform var(--lp-dur-fast) var(--lp-ease);
+}
+.lp-range:hover::-webkit-slider-thumb,
+.lp-range:active::-webkit-slider-thumb { transform: scale(1.15); }
+.lp-range::-moz-range-track { height: 6px; border-radius: 999px; background: transparent; }
+.lp-range::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 999px;
+  background: var(--lp-sheet);
+  border: 2px solid var(--lp-accent);
+  cursor: pointer;
+}

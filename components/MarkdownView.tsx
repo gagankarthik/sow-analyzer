@@ -3,6 +3,7 @@
 // bold/italic — matching what the .docx exporter produces.
 
 import { parseMarkdown, type Block, type Span } from "@/lib/markdown";
+import { cn } from "@/lib/utils";
 
 function Inline({ spans }: { spans: Span[] }) {
   return (
@@ -25,13 +26,13 @@ export function MarkdownView({ markdown, className }: { markdown: string; classN
   const flush = () => {
     if (!run) return;
     const items = run.items.map((b, i) => (
-      <li key={i} className="leading-[1.6]"><Inline spans={b.spans} /></li>
+      <li key={i} className="leading-[1.65]"><Inline spans={b.spans} /></li>
     ));
     out.push(
       run.type === "bullet" ? (
-        <ul key={out.length} className="my-2 ml-5 list-disc space-y-1 text-[13.5px] text-foreground/80 marker:text-[var(--brand-primary-400)]">{items}</ul>
+        <ul key={out.length} className="my-3 ml-5 list-disc space-y-1.5 text-base text-[var(--ink-700)] marker:text-[var(--brand-primary-600)]">{items}</ul>
       ) : (
-        <ol key={out.length} className="my-2 ml-5 list-decimal space-y-1 text-[13.5px] text-foreground/80 marker:text-muted-foreground">{items}</ol>
+        <ol key={out.length} className="my-3 ml-5 list-decimal space-y-1.5 text-base text-[var(--ink-700)] marker:font-medium marker:text-muted-foreground">{items}</ol>
       ),
     );
     run = null;
@@ -45,14 +46,14 @@ export function MarkdownView({ markdown, className }: { markdown: string; classN
     }
     flush();
     if (b.type === "heading") {
-      if (b.level === 1) out.push(<h1 key={out.length} className="mt-2 mb-3 text-[22px] font-bold tracking-tight text-foreground leading-tight" style={{ fontFamily: "var(--font-display)" }}><Inline spans={b.spans} /></h1>);
-      else if (b.level === 2) out.push(<h2 key={out.length} className="mt-6 mb-2 text-[16px] font-semibold tracking-tight text-foreground"><Inline spans={b.spans} /></h2>);
-      else out.push(<h3 key={out.length} className="mt-4 mb-1.5 text-[14px] font-semibold text-foreground"><Inline spans={b.spans} /></h3>);
+      if (b.level === 1) out.push(<h1 key={out.length} className="mt-1 mb-4 border-b border-border pb-4 text-2xl font-semibold leading-tight tracking-tight text-foreground"><Inline spans={b.spans} /></h1>);
+      else if (b.level === 2) out.push(<h2 key={out.length} className="mt-7 mb-2 text-lg font-semibold tracking-tight text-foreground"><Inline spans={b.spans} /></h2>);
+      else out.push(<h3 key={out.length} className="mt-4 mb-1.5 text-base font-semibold text-foreground"><Inline spans={b.spans} /></h3>);
     } else {
-      out.push(<p key={out.length} className="my-2 text-[13.5px] leading-[1.65] text-foreground/80"><Inline spans={b.spans} /></p>);
+      out.push(<p key={out.length} className="my-2.5 text-base leading-[1.7] text-[var(--ink-700)]"><Inline spans={b.spans} /></p>);
     }
   }
   flush();
 
-  return <div className={className}>{out}</div>;
+  return <div className={cn("max-w-[72ch] break-words", className)}>{out}</div>;
 }

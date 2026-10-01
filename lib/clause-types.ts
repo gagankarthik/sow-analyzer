@@ -19,7 +19,7 @@ export const CLAUSE_TYPES: ClauseType[] = [
     label: "Payment milestones",
     blurb: "Amounts tied to accepted deliverables, with invoice triggers.",
     prompt:
-      "Define payment milestones tied to deliverable acceptance — amounts or percentages, what triggers each invoice, and net payment terms.",
+      "Define payment milestones tied to deliverable acceptance: amounts or percentages, what triggers each invoice, and net payment terms.",
   },
   {
     id: "auto-renewal",
@@ -40,7 +40,7 @@ export const CLAUSE_TYPES: ClauseType[] = [
     label: "Liability cap",
     blurb: "Caps, carve-outs, and mutual limitations of liability.",
     prompt:
-      "Set a limitation of liability — the cap (e.g. fees paid in the prior 12 months), mutual application, and standard carve-outs (confidentiality, indemnity, willful misconduct).",
+      "Set a limitation of liability: the cap (e.g. fees paid in the prior 12 months), mutual application, and standard carve-outs (confidentiality, indemnity, willful misconduct).",
   },
   {
     id: "termination-notice",
@@ -61,7 +61,7 @@ export const CLAUSE_TYPES: ClauseType[] = [
     label: "Penalty clause",
     blurb: "Service credits or penalties for missed commitments.",
     prompt:
-      "Define penalties or service credits for missed milestones or service levels — the trigger, the amount or percentage, and any cap on total penalties.",
+      "Define penalties or service credits for missed milestones or service levels: the trigger, the amount or percentage, and any cap on total penalties.",
   },
   {
     id: "acceptance-criteria",
@@ -101,7 +101,7 @@ export const CLAUSE_TYPES: ClauseType[] = [
   {
     id: "other",
     label: "Other",
-    blurb: "Anything else — captured from your notes to Sonar.",
+    blurb: "Anything else, taken from your notes to Sonar.",
     prompt:
       "Include any additional standard provisions appropriate to a professional-services SOW that the parties would expect.",
   },

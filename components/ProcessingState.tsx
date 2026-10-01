@@ -34,58 +34,54 @@ export function ProcessingState({
   const currentIdx = Math.max(0, ORDER.indexOf(status));
 
   return (
-    <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 p-5 md:p-6">
-      <div className="flex items-center gap-3">
-        <SonarMark size="sm" pulse />
+    <div
+      role="status"
+      className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 md:p-6"
+    >
+      <div className="flex items-start gap-3">
+        <SonarMark size="sm" className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-semibold text-foreground flex items-center gap-2">
-            {title ?? "Sonar is analyzing this document"}
-            <Loader2 size={14} className="animate-spin text-[var(--ai-ink)]" />
+          <div className="flex items-start gap-2 text-lg font-semibold leading-snug text-foreground">
+            <span className="min-w-0">{title ?? "Sonar is analyzing this document"}</span>
+            <Loader2 size={15} className="mt-1 shrink-0 animate-spin text-[var(--ai-ink)]" />
           </div>
-          <div className="text-[12.5px] text-muted-foreground">
+          <div className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">
             {subtitle ??
-              "Results appear automatically as each stage completes — no need to refresh."}
+              "Results appear as each stage completes. You do not need to refresh."}
           </div>
         </div>
       </div>
 
-      {/* Stage chips */}
-      <div className="mt-4 flex flex-wrap gap-1.5">
+      {/* Stage chips — done / active / pending read from icon + text, not colour alone */}
+      <ol className="mt-4 flex flex-wrap gap-1.5">
         {STAGES.map((s, i) => {
           const stageIdx = i + 1; // PENDING occupies index 0
           const done = currentIdx > stageIdx;
           const active = currentIdx === stageIdx || (status === "PENDING" && i === 0);
           return (
-            <span
+            <li
               key={s.key}
+              aria-current={active ? "step" : undefined}
               className={cn(
-                "inline-flex items-center gap-1 text-[10.5px] font-medium px-2 py-1 rounded-full border transition-colors",
+                "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
                 done
-                  ? "bg-[var(--success-soft)] border-transparent text-[var(--success)]"
+                  ? "border-transparent bg-[var(--success-soft)] text-[var(--success)]"
                   : active
-                    ? "bg-card border-[var(--ai-border)] text-[var(--ai-ink)]"
-                    : "bg-card/60 border-border text-muted-foreground/70",
+                    ? "border-[var(--ai-ink)] bg-card text-[var(--ai-text)]"
+                    : "border-border bg-card text-muted-foreground",
               )}
-              style={
-                !done && !active
-                  ? { animation: `pulse-stage 2.6s ease-in-out ${i * 0.3}s infinite` }
-                  : undefined
-              }
             >
-              {done && <CheckCircle2 size={10} />}
-              {active && <Loader2 size={9} className="animate-spin" />}
+              {done && <CheckCircle2 size={12} />}
+              {active && <Loader2 size={12} className="animate-spin" />}
               {s.label}
-            </span>
+            </li>
           );
         })}
-      </div>
+      </ol>
 
       {/* Indeterminate progress bar */}
-      <div className="mt-4 h-1.5 rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full w-1/3 rounded-full bar-indeterminate"
-          style={{ background: "linear-gradient(90deg,#2563EB,#7C3AED,#22D3EE)" }}
-        />
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[var(--ai-border)]">
+        <div className="bar-indeterminate h-full w-1/3 rounded-full bg-[var(--ai-ink)]" />
       </div>
     </div>
   );

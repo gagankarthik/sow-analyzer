@@ -1,64 +1,68 @@
-"use client";
+import { RISK_BANDS, RISK_COLOR, RISK_LABEL, riskBand } from "@/lib/chart-theme";
 
-import { useEffect, useState } from "react";
-
-/** Animated semicircular risk gauge. `score` is a 0-100 risk index (higher =
- *  more risk). The arc sweeps in on mount and is colored by band. */
-
-const BANDS = [
-  { max: 25, color: "var(--success)", label: "Low risk" },
-  { max: 50, color: "var(--warning)", label: "Moderate" },
-  { max: 75, color: "#C2410C", label: "Elevated" },
-  { max: 101, color: "var(--danger)", label: "High risk" },
-];
-function bandFor(score: number) {
-  return BANDS.find((b) => score < b.max) ?? BANDS[BANDS.length - 1];
-}
-
-export function RiskGauge({ score, size = 168 }: { score: number; size?: number }) {
-  const [mounted, setMounted] = useState(false);
-  const [shown, setShown] = useState(0);
-
-  useEffect(() => {
-    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) { setShown(score); setMounted(true); return; }
-    const raf = requestAnimationFrame(() => setMounted(true));
-    const start = performance.now();
-    let id = 0;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / 900);
-      setShown(Math.round(score * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) id = requestAnimationFrame(tick);
-    };
-    id = requestAnimationFrame(tick);
-    return () => { cancelAnimationFrame(raf); cancelAnimationFrame(id); };
-  }, [score]);
-
-  const stroke = 13;
-  const r = size / 2 - stroke;
-  const cx = size / 2;
-  const cy = size / 2;
-  const circ = Math.PI * r;
-  const clamped = Math.min(100, Math.max(0, score));
-  const offset = mounted ? circ * (1 - clamped / 100) : circ;
-  const b = bandFor(clamped);
-  const path = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+/** Risk index meter. `score` is a 0–100 index (higher = more risk), drawn on a
+ *  straight 0–100 scale so a low score is as readable as a high one: the fill
+ *  length is proportional, the four bands are visible behind it, and the band
+ *  boundaries (25 / 50 / 75) are printed underneath.
+ *
+ *  `size` is an optional max width in px; by default the meter fills its column. */
+export function RiskGauge({ score, size }: { score: number; size?: number }) {
+  const value = Math.round(Math.min(100, Math.max(0, Number.isFinite(score) ? score : 0)));
+  const level = riskBand(value);
+  const color = RISK_COLOR[level];
 
   return (
-    <div className="relative inline-flex flex-col items-center" style={{ width: size }}>
-      <svg width={size} height={cy + stroke} viewBox={`0 0 ${size} ${cy + stroke}`} className="overflow-visible">
-        <path d={path} fill="none" stroke="var(--ink-200)" strokeWidth={stroke} strokeLinecap="round" />
-        <path
-          d={path} fill="none" stroke={b.color} strokeWidth={stroke} strokeLinecap="round"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 0.9s cubic-bezier(0.2,0.8,0.2,1)" }}
+    <div
+      className="@container w-full min-w-0"
+      style={size ? { maxWidth: size } : undefined}
+      role="img"
+      aria-label={`Risk index ${value} out of 100, in the ${RISK_LABEL[level].toLowerCase()} band. Bands: low under 25, medium 25 to 49, high 50 to 74, critical 75 and above.`}
+    >
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[40px] font-semibold leading-none tracking-[-0.02em] text-foreground">{value}</span>
+        <span className="text-sm text-muted-foreground">out of 100</span>
+      </div>
+      <div className="mt-2 flex items-center gap-1.5 text-sm font-medium text-foreground">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: color }} />
+        {RISK_LABEL[level]} band
+      </div>
+
+      <div className="relative mt-5 h-2.5">
+        {/* Bands, tinted with their own level colour. */}
+        <div className="absolute inset-0 flex overflow-hidden rounded-sm">
+          {RISK_BANDS.map((b) => (
+            <span
+              key={b.level}
+              className="h-full"
+              style={{ width: `${b.to - b.from}%`, background: `color-mix(in srgb, ${RISK_COLOR[b.level]} 20%, var(--card))` }}
+            />
+          ))}
+        </div>
+        {/* Proportional fill from zero. */}
+        <span className="absolute inset-y-0 left-0 rounded-l-sm" style={{ width: `${value}%`, background: color }} />
+        {/* Band boundaries. */}
+        {RISK_BANDS.slice(1).map((b) => (
+          <span key={b.level} className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-[var(--card)]" style={{ left: `${b.from}%` }} />
+        ))}
+        {/* Score marker. */}
+        <span
+          className="absolute -bottom-1 -top-1 w-[3px] -translate-x-1/2 rounded-full bg-[var(--ink-900)] ring-2 ring-[var(--card)]"
+          style={{ left: `clamp(1.5px, ${value}%, calc(100% - 1.5px))` }}
         />
-      </svg>
-      <div className="absolute inset-x-0 flex flex-col items-center" style={{ top: cy - 34 }}>
-        <span className="numeric leading-none" style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 40, letterSpacing: "-0.03em", color: b.color }}>
-          {shown}
-        </span>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] mt-1" style={{ color: b.color }}>{b.label}</span>
+      </div>
+
+      <div className="relative mt-1.5 h-4 text-xs tabular-nums text-muted-foreground">
+        <span className="absolute left-0">0</span>
+        {RISK_BANDS.slice(1).map((b) => (
+          <span key={b.level} className="absolute -translate-x-1/2" style={{ left: `${b.from}%` }}>{b.from}</span>
+        ))}
+        <span className="absolute right-0">100</span>
+      </div>
+      {/* Band names — only where each quarter is wide enough to hold one. */}
+      <div className="mt-0.5 hidden text-xs text-[var(--ink-600)] @[300px]:flex">
+        {RISK_BANDS.map((b) => (
+          <span key={b.level} className="flex-1 text-center">{RISK_LABEL[b.level]}</span>
+        ))}
       </div>
     </div>
   );

@@ -35,9 +35,6 @@ yarn-error.log*
 # ...but the no-secrets template SHOULD be committed.
 !.env.example
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowRight, Plus, Minus, GitBranch, Clock } from "@/components/ui/icons";
 import { categoryLabel } from "@/lib/clause-categories";
 import type { ApiTimeline, ApiTimelineState } from "@/lib/types";
@@ -33,12 +33,12 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
   const currentCount = Object.keys(current).length;
   const futureCount = future ? Object.keys(future).length : 0;
 
-  const currentDiff = useMemo(() => diffStates(initial, current), [initial, current]);
-  const futureDiff = useMemo(() => (future ? diffStates(current, future) : null), [current, future]);
+  const currentDiff = diffStates(initial, current);
+  const futureDiff = future ? diffStates(current, future) : null;
 
   const hasEvolved = currentDiff.added.length + currentDiff.removed.length + currentDiff.modified.length > 0;
 
-  const [view, setView] = useState<View>(hasEvolved ? "current" : "current");
+  const [view, setView] = useState<View>("current");
 
   const activeState: ApiTimelineState = view === "initial" ? initial : view === "expected" && future ? future : current;
   // Per-clause change tag relative to the initial state.
@@ -54,49 +54,41 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
   );
 
   return (
-    <section className="rounded-xl border border-border bg-card p-5 md:p-6 shadow-xs">
-      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Clock size={15} className="text-[var(--brand-primary-600)]" />
-          <h3 className="text-[14px] font-semibold tracking-tight text-foreground">Contract evolution</h3>
-        </div>
-        {/* Segmented control */}
-        <div className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
-          <SegBtn active={view === "initial"} onClick={() => setView("initial")} label="Initial" />
-          <SegBtn active={view === "current"} onClick={() => setView("current")} label="Current" />
-          {hasExpected && <SegBtn active={view === "expected"} onClick={() => setView("expected")} label="Expected" />}
-        </div>
+    <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+      <div className="mb-4 flex items-center gap-2">
+        <Clock size={16} className="shrink-0 text-[var(--brand-primary-600)]" />
+        <h3 className="text-lg font-semibold tracking-tight text-foreground">Contract evolution</h3>
       </div>
 
-      {/* State flow */}
-      <div className="flex items-center gap-2 mb-5">
+      {/* State flow — doubles as the view switch */}
+      <div role="group" aria-label="Contract state. Select a state to list its clauses." className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <StateNode label="Initial" count={initialCount} active={view === "initial"} onClick={() => setView("initial")} />
-        <ArrowRight size={16} className="text-muted-foreground shrink-0" />
+        <ArrowRight size={16} aria-hidden className="hidden shrink-0 self-center text-muted-foreground sm:block" />
         <StateNode label="Current" count={currentCount} active={view === "current"} onClick={() => setView("current")} />
         {hasExpected && (
           <>
-            <ArrowRight size={16} className="text-muted-foreground shrink-0" />
+            <ArrowRight size={16} className="hidden shrink-0 self-center text-muted-foreground sm:block" />
             <StateNode label="Expected" count={futureCount} active={view === "expected"} onClick={() => setView("expected")} hint="pending amendments" />
           </>
         )}
       </div>
 
       {/* Diff summary */}
-      <div className="mb-4 rounded-lg bg-muted/40 border border-border px-4 py-2.5">
+      <div className="mb-4 rounded-lg border border-border bg-[var(--panel)] px-4 py-3">
         {!hasEvolved ? (
-          <p className="text-[12.5px] text-muted-foreground">
+          <p className="text-sm text-[var(--ink-600)]">
             {amendments.length > 0
               ? "Amendments are linked but introduced no clause-level changes yet."
-              : "This is the original contract — no amendments have modified it."}
+              : "This is the original contract. No amendments have modified it."}
           </p>
         ) : (
-          <div className="flex items-center gap-3 flex-wrap text-[12px]">
-            <span className="text-muted-foreground">Since the original:</span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+            <span className="text-[var(--ink-600)]">Since the original:</span>
             {currentDiff.added.length > 0 && <Tag tone="add">+{currentDiff.added.length} added</Tag>}
             {currentDiff.removed.length > 0 && <Tag tone="remove">−{currentDiff.removed.length} removed</Tag>}
             {currentDiff.modified.length > 0 && <Tag tone="mod">~{currentDiff.modified.length} modified</Tag>}
             {futureDiff && (futureDiff.added.length + futureDiff.modified.length + futureDiff.removed.length > 0) && (
-              <span className="text-muted-foreground ml-1">· {futureDiff.added.length + futureDiff.modified.length + futureDiff.removed.length} pending in Expected</span>
+              <span className="text-[var(--ink-600)]">· {futureDiff.added.length + futureDiff.modified.length + futureDiff.removed.length} pending in Expected</span>
             )}
           </div>
         )}
@@ -105,9 +97,9 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
       {/* Amendment chain */}
       {amendments.length > 0 && (
         <div className="mb-4 flex items-center gap-2 flex-wrap">
-          <GitBranch size={12} className="text-muted-foreground" />
+          <GitBranch size={14} className="shrink-0 text-muted-foreground" />
           {amendments.map((a) => (
-            <span key={a.docId} className="inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full border border-border bg-card text-foreground">
+            <span key={a.docId} className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-sm text-foreground">
               {a.title || a.docType || "Amendment"}
               {a.lifecycle && <span className="text-muted-foreground">· {a.lifecycle}</span>}
             </span>
@@ -117,18 +109,18 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
 
       {/* Clause list for selected state */}
       {clauses.length === 0 ? (
-        <p className="text-[12.5px] text-muted-foreground">No clauses captured for this state.</p>
+        <p className="text-sm text-[var(--ink-600)]">No clauses captured for this state.</p>
       ) : (
-        <ul className="space-y-1.5 max-h-[360px] overflow-y-auto pr-1">
+        <ul className="max-h-[360px] space-y-1.5 overflow-y-auto pr-1">
           {clauses.map((c) => {
             const tag = changeTag(c.number);
             return (
-              <li key={c.number} className="flex items-start gap-3 px-3 py-2 rounded-md border border-border bg-card hover:bg-muted/30 transition-colors">
-                <span className="font-mono text-[11px] text-muted-foreground shrink-0 mt-0.5 min-w-[2.5rem] text-right">{c.number}</span>
+              <li key={c.number} className="flex items-start gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+                <span className="mt-0.5 min-w-[2rem] shrink-0 font-mono text-xs text-muted-foreground">{c.number}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12.5px] font-medium text-foreground truncate">{c.title || c.number}</span>
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{categoryLabel(c.category)}</span>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="min-w-0 break-words text-sm font-medium text-foreground">{c.title || c.number}</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-[var(--ink-600)]">{categoryLabel(c.category)}</span>
                     {tag === "added" && <Tag tone="add">added</Tag>}
                     {tag === "modified" && <Tag tone="mod">modified</Tag>}
                   </div>
@@ -142,42 +134,35 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
   );
 }
 
-function SegBtn({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${active ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"}`}
-    >
-      {label}
-    </button>
-  );
-}
-
 function StateNode({ label, count, active, onClick, hint }: { label: string; count: number; active: boolean; onClick: () => void; hint?: string }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`flex-1 min-w-0 rounded-lg border p-3 text-left transition-colors ${active ? "border-[var(--brand-primary-400)] bg-[var(--brand-primary-50)]" : "border-border bg-card hover:bg-muted/30"}`}
+      aria-pressed={active}
+      className={`min-w-0 flex-1 rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)]" : "border-border bg-card hover:bg-[var(--panel)]"}`}
     >
-      <div className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${active ? "text-[var(--brand-primary-700)]" : "text-muted-foreground"}`}>{label}</div>
-      <div className="mt-1 flex items-baseline gap-1">
-        <span className="text-[20px] font-bold tabular-nums leading-none text-foreground" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}>{count}</span>
-        <span className="text-[11px] text-muted-foreground">clauses</span>
+      <div className={`text-sm font-semibold ${active ? "text-[var(--brand-primary-700)]" : "text-[var(--ink-600)]"}`}>{label}</div>
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
+        <span className="text-2xl font-semibold leading-none tabular-nums tracking-tight text-foreground">{count}</span>
+        <span className="text-sm text-muted-foreground">clauses{hint ? `, ${hint}` : ""}</span>
       </div>
-      {hint && <div className="mt-0.5 text-[10px] text-muted-foreground truncate">{hint}</div>}
     </button>
   );
 }
 
 function Tag({ tone, children }: { tone: "add" | "remove" | "mod"; children: React.ReactNode }) {
   const cls = {
-    add:    "bg-[var(--success-soft)] text-[var(--success)]",
-    remove: "bg-[var(--danger-soft)] text-[var(--danger)]",
-    mod:    "bg-[var(--warning-soft)] text-[var(--warning)]",
+    // Change tags are not risk levels, so they stay off the risk colours:
+    // brand tint for additions, neutral for removals and edits. The sign or
+    // word in the tag carries the meaning.
+    add:    "bg-[var(--brand-primary-50)] text-[var(--brand-primary-800)]",
+    remove: "bg-[var(--ink-100)] text-[var(--ink-700)]",
+    mod:    "bg-[var(--ink-100)] text-[var(--ink-700)]",
   }[tone];
-  const icon = tone === "add" ? <Plus size={9} /> : tone === "remove" ? <Minus size={9} /> : null;
+  const icon = tone === "add" ? <Plus size={11} /> : tone === "remove" ? <Minus size={11} /> : null;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cls}`}>
+    <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>
       {icon}{children}
     </span>
   );

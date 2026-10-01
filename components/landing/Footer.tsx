@@ -1,120 +1,100 @@
-"use client";
-
 import Link from "next/link";
-import { ShieldCheck, Globe2 } from "@/components/ui/icons";
 import { Logo } from "@/components/landing/primitives";
 
-/* ──────────────────────────────────────────────── */
-/*  Footer                                           */
-/* ──────────────────────────────────────────────── */
+const COLUMNS = [
+  {
+    title: "Product",
+    items: [
+      { label: "Platform overview", href: "/product" },
+      { label: "Clause extraction", href: "/product#extraction" },
+      { label: "Playbook scoring", href: "/product#scoring" },
+      { label: "Amendment tracking", href: "/product#amendments" },
+      { label: "SOW drafting", href: "/product#drafting" },
+      { label: "Workflow and insights", href: "/product#workflow" },
+    ],
+  },
+  {
+    title: "Solutions",
+    items: [
+      { label: "Legal", href: "/solutions#legal" },
+      { label: "Procurement", href: "/solutions#procurement" },
+      { label: "Finance", href: "/solutions#finance" },
+      { label: "Sales operations", href: "/solutions#sales" },
+      { label: "Legal operations", href: "/solutions#legal-ops" },
+      { label: "Compliance", href: "/solutions#compliance" },
+    ],
+  },
+  {
+    title: "Resources",
+    items: [
+      { label: "Savings calculator", href: "/calculator" },
+      { label: "Create an account", href: "/signup" },
+      { label: "Log in", href: "/login" },
+    ],
+  },
+  {
+    title: "Company",
+    items: [
+      { label: "Blue-IQ", href: "https://www.blue-iq.ai/" },
+      { label: "Security and privacy", href: "/security" },
+      { label: "Data processing", href: "/legal/dpa" },
+      { label: "Sub-processors", href: "/legal/subprocessors" },
+    ],
+  },
+];
+
 export function Footer() {
   return (
-    <footer className="relative border-t border-border bg-[var(--paper)] px-5 md:px-10 pt-14 md:pt-16 pb-8">
-      <div className="mx-auto max-w-[1120px]">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-10">
-          {/* Brand + newsletter */}
-          <div className="flex flex-col gap-5 lg:col-span-5">
+    <footer className="lp border-t border-lp-line pt-14 pb-8 md:pt-20">
+      <div className="lp-wrap">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-16">
+          <div>
             <Logo height={28} />
-            <p className="max-w-sm text-[13.5px] leading-relaxed text-muted-foreground">
-              Contract intelligence for SOWs, MSAs, and NDAs. Sonar extracts every clause and scores the risk.
+            <p className="mt-5 max-w-xs text-base text-lp-ink-2">
+              Govern is Blue-IQ&apos;s contract review product. It reads SOWs, MSAs and amendments
+              and rates every clause against your playbook.
             </p>
-            <span className="inline-flex w-fit items-center gap-1.5 text-[11.5px] text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--led-low)]" /> All systems normal
-            </span>
           </div>
 
-          {/* Link columns */}
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:col-span-7">
-            <FooterCol
-              title="Product"
-              items={[
-                { label: "Overview", href: "/dashboard" },
-                { label: "SOW Analyzer", href: "/library" },
-                { label: "Amendments", href: "/projects" },
-                { label: "Workflow", href: "/workflow" },
-                { label: "Insights", href: "/insights" },
-                { label: "Playbook", href: "/settings/playbook" },
-              ]}
-            />
-            <FooterCol
-              title="Workspace"
-              items={[
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Projects", href: "/projects" },
-                { label: "Clause library", href: "/settings/clauses" },
-                { label: "Settings", href: "/settings" },
-              ]}
-            />
-            <FooterCol
-              title="Get started"
-              items={[
-                { label: "Create account", href: "/signup" },
-                { label: "Sign in", href: "/login" },
-                { label: "Savings calculator", href: "/calculator" },
-                { label: "Open workspace", href: "/dashboard" },
-              ]}
-            />
-            <FooterCol
-              title="Legal & trust"
-              items={[
-                { label: "Privacy policy", href: "/legal/privacy" },
-                { label: "Terms of service", href: "/legal/terms" },
-                { label: "Security", href: "/legal/security" },
-                { label: "Data processing", href: "/legal/dpa" },
-                { label: "Sub-processors", href: "/legal/subprocessors" },
-              ]}
-            />
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4">
+            {COLUMNS.map((col) => (
+              <nav key={col.title} aria-label={col.title}>
+                <h2 className="text-sm font-semibold text-lp-ink">{col.title}</h2>
+                <ul className="mt-4 flex flex-col gap-2.5">
+                  {col.items.map((it) => (
+                    <li key={it.label}>
+                      <Link href={it.href} className="lp-navlink font-normal">
+                        {it.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
           </div>
         </div>
 
-        {/* Legal row */}
-        <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-border pt-6 md:flex-row md:items-center">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span className="font-mono text-[11px] text-muted-foreground/80">© 2026 Blue-IQ Inc.</span>
-            <Link href="/legal/privacy" className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground">Privacy</Link>
-            <Link href="/legal/terms" className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground">Terms</Link>
-            <Link href="/legal/security" className="text-[11.5px] text-muted-foreground transition-colors hover:text-foreground">Security</Link>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-[11.5px] text-muted-foreground">
-              <Globe2 size={12} /> English · US
-            </span>
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-[11.5px] text-muted-foreground">
-              <ShieldCheck size={12} /> SOC 2 · GDPR · HIPAA
-            </span>
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-[11.5px] text-muted-foreground">
-              <ShieldCheck size={12} /> WCAG 2.1 AA · ADA
-            </span>
-          </div>
+        <div className="mt-14 flex flex-col gap-4 border-t border-lp-line pt-6 text-sm text-lp-ink-3 md:flex-row md:items-center md:justify-between">
+          <p>© 2026 Blue-IQ. All rights reserved.</p>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            <li>
+              <Link href="/legal/privacy" className="lp-navlink font-normal">
+                Privacy
+              </Link>
+            </li>
+            <li>
+              <Link href="/legal/terms" className="lp-navlink font-normal">
+                Terms
+              </Link>
+            </li>
+            <li>
+              <a href="mailto:hello@blue-iq.ai" className="lp-navlink font-normal">
+                hello@blue-iq.ai
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </footer>
-  );
-}
-
-type FooterItem = { label: string; href: string; badge?: string };
-function FooterCol({ title, items }: { title: string; items: FooterItem[] }) {
-  return (
-    <div>
-      <h4 className="mb-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-muted-foreground">{title}</h4>
-      <ul className="flex flex-col gap-2.5">
-        {items.map((it) => (
-          <li key={it.label}>
-            <Link
-              href={it.href}
-              className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {it.label}
-              {it.badge && (
-                <span className="rounded bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--brand-primary-700)]">
-                  {it.badge}
-                </span>
-              )}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }

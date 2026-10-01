@@ -1,78 +1,39 @@
-"use client";
-
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { CompositionBar } from "@/components/charts/CompositionBar";
+import { ChartEmpty } from "@/components/charts/primitives";
+import { RISK_COLOR, RISK_LABEL, RISK_ORDER_DESC } from "@/lib/chart-theme";
 
 type Counts = { low: number; medium: number; high: number; critical: number };
 
-const SEGMENTS = [
-  { key: "critical", label: "Critical", color: "var(--danger)" },
-  { key: "high", label: "High", color: "var(--warning)" },
-  { key: "medium", label: "Medium", color: "var(--ink-400)" },
-  { key: "low", label: "Low", color: "var(--success)" },
-] as const;
+function joinList(items: string[]): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}`;
+}
 
-/** Donut of clause-risk distribution across the portfolio, with a center
- *  total and a legend. Animates in (Recharts default). */
+/** Clause-risk distribution. Kept under its original name, but drawn as one
+ *  stacked bar with a labelled key rather than a donut: when every clause is
+ *  low risk a donut is just a solid ring, and its legend repeated 0% rows.
+ *  Levels with no clauses are named in one sentence instead of being drawn. */
 export function RiskDonut({ counts }: { counts: Counts }) {
   const total = counts.low + counts.medium + counts.high + counts.critical;
-  const data = SEGMENTS.map((s) => ({ ...s, value: counts[s.key] })).filter((d) => d.value > 0);
 
   if (total === 0) {
-    return (
-      <div className="flex h-[200px] flex-col items-center justify-center text-center">
-        <p className="text-[13px] font-medium text-foreground">No risk-scored clauses yet</p>
-        <p className="text-[12px] text-muted-foreground mt-0.5">Process a contract to populate risk.</p>
-      </div>
-    );
+    return <ChartEmpty className="min-h-[120px]" text="No risk-scored clauses yet. Process a contract to see the risk mix." />;
   }
 
-  return (
-    <div className="flex items-center gap-6">
-      <div className="relative h-[180px] w-[180px] shrink-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="label"
-              innerRadius={58}
-              outerRadius={86}
-              paddingAngle={data.length > 1 ? 2 : 0}
-              stroke="none"
-              startAngle={90}
-              endAngle={-270}
-            >
-              {data.map((d) => (
-                <Cell key={d.key} fill={d.color} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span
-            className="numeric leading-none text-foreground"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 30, letterSpacing: "-0.025em" }}
-          >
-            {total.toLocaleString()}
-          </span>
-          <span className="text-[11px] text-muted-foreground mt-0.5">clauses</span>
-        </div>
-      </div>
+  const segments = RISK_ORDER_DESC.map((level) => ({
+    key: level,
+    label: RISK_LABEL[level],
+    value: counts[level],
+    color: RISK_COLOR[level],
+  }));
+  const absent = RISK_ORDER_DESC.filter((level) => counts[level] === 0).map((level) => RISK_LABEL[level].toLowerCase());
 
-      <ul className="flex-1 space-y-2.5 min-w-0">
-        {SEGMENTS.map((s) => {
-          const value = counts[s.key];
-          const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-          return (
-            <li key={s.key} className="flex items-center gap-2.5">
-              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-              <span className="text-[12.5px] text-foreground flex-1">{s.label}</span>
-              <span className="text-[12px] text-muted-foreground tabular-nums">{value}</span>
-              <span className="text-[11px] text-muted-foreground tabular-nums w-9 text-right">{pct}%</span>
-            </li>
-          );
-        })}
-      </ul>
+  return (
+    <div className="min-w-0">
+      <CompositionBar segments={segments} />
+      {absent.length > 0 && (
+        <p className="mt-3 text-xs text-muted-foreground">No {joinList(absent)} risk clauses.</p>
+      )}
     </div>
   );
 }

@@ -44,7 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Read the session once on mount. The state updates happen after the awaited
+  // lookup, not synchronously in the effect body.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async session read on mount
     void refresh();
   }, [refresh]);
 

@@ -3,120 +3,149 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { AuthError } from "@/lib/auth/cognito";
+import { safeRedirectPath } from "@/lib/auth/redirect";
 import {
   AuthHeading,
-  Field,
-  FormError,
-  PasswordInput,
+  EMAIL_PATTERN,
+  FormAlert,
+  FormNotice,
+  PasswordField,
+  SubmitButton,
+  TextField,
+  authErrorCode,
+  authLinkClass,
+  commonAuthMessage,
+  focusField,
 } from "@/components/auth/fields";
-import { Loader2 } from "@/components/ui/icons";
+
+// Set by the confirm and sign-up screens when they hand over to sign in.
+const NOTICES: Record<string, string> = {
+  verified: "Email verified. Sign in to continue.",
+  created: "Account created. Sign in to continue.",
+};
+
+const WRONG_CREDENTIALS = new Set(["NotAuthorizedException", "UserNotFoundException"]);
+
+function emailProblem(email: string): string | undefined {
+  if (!email.trim()) return "Enter your email address.";
+  if (!EMAIL_PATTERN.test(email.trim())) return "Enter an email address like name@company.com.";
+  return undefined;
+}
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  // Only allow same-origin relative paths to prevent open-redirect
-  // (e.g. ?redirect=//evil.com or ?redirect=https://evil.com).
-  const rawRedirect = params.get("redirect");
-  const redirectTo =
-    rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
-      ? rawRedirect
-      : "/dashboard";
+  // Only same-origin paths are followed, so the link cannot be used to bounce a
+  // freshly signed-in user to another site (see lib/auth/redirect).
+  const redirectTo = safeRedirectPath(params.get("redirect"));
+  const notice = NOTICES[params.get("notice") ?? ""];
   const { signIn } = useAuth();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(params.get("email") ?? "");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [checked, setChecked] = useState({ email: false, password: false });
+  const [formError, setFormError] = useState<React.ReactNode>(null);
   const [loading, setLoading] = useState(false);
+
+  const cleanEmail = email.trim().toLowerCase();
+  const resetHref = cleanEmail ? `/reset?email=${encodeURIComponent(cleanEmail)}` : "/reset";
+  const emailError = emailProblem(email);
+  const passwordError = password ? undefined : "Enter your password.";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    if (!email.trim() || !password) {
-      setError("Enter your email and password.");
-      return;
-    }
+    setFormError(null);
+    setChecked({ email: true, password: true });
+    if (emailError) return focusField("email");
+    if (passwordError) return focusField("password");
+
     setLoading(true);
     try {
-      await signIn(email.trim().toLowerCase(), password);
+      await signIn(cleanEmail, password);
       // Hard navigation (not router.replace): the session cookie was just set,
       // but the client router may hold a cached middleware redirect from when
       // this page loaded unauthenticated. A full navigation re-runs the proxy
       // gate with the cookie present, so we land on the dashboard first try.
       window.location.assign(redirectTo);
     } catch (err) {
-      if (err instanceof AuthError && err.code === "UserNotConfirmedException") {
-        router.push(`/confirm?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+      const code = authErrorCode(err);
+      if (code === "UserNotConfirmedException") {
+        router.push(`/confirm?email=${encodeURIComponent(cleanEmail)}`);
         return;
       }
-      setError(err instanceof Error ? err.message : "Unable to sign in.");
+      if (WRONG_CREDENTIALS.has(code)) {
+        setFormError("That email and password do not match. Check both and try again.");
+      } else if (code === "PasswordResetRequiredException") {
+        setFormError(
+          <>
+            This account needs a new password before you can sign in.{" "}
+            <Link href={resetHref} className="font-semibold underline underline-offset-4">
+              Reset your password
+            </Link>
+          </>,
+        );
+      } else {
+        setFormError(
+          commonAuthMessage(err, err instanceof Error ? err.message : "We could not sign you in. Try again."),
+        );
+      }
       setLoading(false);
+      focusField("password");
     }
   }
 
   return (
     <>
-      <AuthHeading
-        title="Sign in to Blue-IQ"
-        subtitle="Welcome back. Enter your credentials to access your workspace."
-      />
+      <AuthHeading title="Sign in" subtitle="Use the email and password for your Blue-IQ Govern account." />
 
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        <FormError message={error} />
+      {notice && <FormNotice className="mb-6">{notice}</FormNotice>}
 
-        <Field label="Email" htmlFor="email">
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            placeholder="you@company.com"
-            className="h-10"
-          />
-        </Field>
+      <form onSubmit={onSubmit} noValidate>
+        <TextField
+          id="email"
+          label="Email"
+          type="email"
+          name="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => setChecked((c) => ({ ...c, email: email.trim() !== "" }))}
+          error={checked.email ? emailError : undefined}
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder="name@company.com"
+          required
+        />
 
-        <Field
+        <PasswordField
+          id="password"
           label="Password"
-          htmlFor="password"
+          name="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={checked.password ? passwordError : undefined}
+          autoComplete="current-password"
+          required
           hint={
-            <Link
-              href={`/reset${email ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : ""}`}
-              className="text-[11.5px] font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]"
-            >
+            <Link href={resetHref} className={`${authLinkClass} -my-3 inline-flex h-11 items-center text-sm`}>
               Forgot password?
             </Link>
           }
-        >
-          <PasswordInput
-            id="password"
-            value={password}
-            onChange={setPassword}
-            autoComplete="current-password"
-            placeholder="••••••••"
-          />
-        </Field>
+        />
 
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={loading}
-          className="h-10 w-full text-[13.5px]"
-        >
-          {loading ? <Loader2 size={15} className="animate-spin" /> : "Sign in"}
-        </Button>
+        <div className="pt-3">
+          <SubmitButton loading={loading} loadingLabel="Signing in">
+            Sign in
+          </SubmitButton>
+        </div>
+        <FormAlert message={formError} />
       </form>
 
-      <p className="mt-6 text-center text-[13px] text-muted-foreground">
-        New to Blue-IQ?{" "}
-        <Link
-          href="/signup"
-          className="font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]"
-        >
-          Create an account
+      <p className="text-base text-[var(--ink-600)]">
+        No account yet?{" "}
+        <Link href="/signup" className={authLinkClass}>
+          Create one
         </Link>
       </p>
     </>
@@ -125,7 +154,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="h-64" />}>
+    <Suspense fallback={<div className="h-96" />}>
       <LoginForm />
     </Suspense>
   );

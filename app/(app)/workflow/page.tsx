@@ -1,30 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SonarMark } from "@/components/ui/SonarMark";
 import { MotionReveal } from "@/components/MotionReveal";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Plus,
-  Filter,
-  MoreHorizontal,
+  Search,
   Kanban,
 } from "@/components/ui/icons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DOC_TYPE_META, docTypeShort } from "@/lib/doc-types";
-import { listDocuments } from "@/lib/api";
+import { LastUpdated } from "@/components/ui/LastUpdated";
+import { useDocuments, isProcessing } from "@/lib/queries/documents";
+import { ROLE_META } from "@/components/team/roles";
 
 const DOC_TYPE_KEYS = Object.keys(DOC_TYPE_META) as (keyof typeof DOC_TYPE_META)[];
 import type { ApiDocument, Lifecycle } from "@/lib/types";
@@ -63,147 +56,166 @@ const STAGE_ACCENT: Record<Lifecycle, { dot: string; soft: string; ink: string }
   expired:     { dot: "bg-[var(--danger)]",     soft: "bg-[var(--danger-soft)]",    ink: "text-[var(--danger)]" },
 };
 
-const PROCESSING_STATUSES = new Set([
-  "PENDING",
-  "PARSING",
-  "CLASSIFYING",
-  "EMBEDDING",
-  "GRAPHING",
-  "DIFFING",
-  "TIMELINING",
-  "PERSISTING",
-]);
-
 export default function WorkflowPage() {
-  const [docs, setDocs] = useState<ApiDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    listDocuments()
-      .then(setDocs)
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  // The shared documents query (polls while anything is processing; kept in
+  // step with every upload / edit / delete elsewhere in the app). It holds
+  // exactly the documents the server lets this user see; the board is read-only,
+  // so it is the same for owners, editors and viewers.
+  const { data, isLoading: loading, isError, error: loadError, isFetching, dataUpdatedAt, refetch } = useDocuments();
+  const docs = useMemo(() => data ?? [], [data]);
+  const failed = isError && !data;
+  const error = isError ? (loadError instanceof Error ? loadError.message : "The request failed.") : null;
 
   const [docTypeFilter, setDocTypeFilter] = useState<string>("All");
-  const visibleDocs = docTypeFilter === "All" ? docs : docs.filter((d) => d.docType === docTypeFilter);
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [sortKey, setSortKey] = useState<"createdAt" | "title">("createdAt");
 
-  const totals = STAGES.reduce<Record<Lifecycle, number>>(
-    (acc, s) => {
-      acc[s] = visibleDocs.filter((d) => d.lifecycle === s).length;
-      return acc;
-    },
-    {} as Record<Lifecycle, number>,
-  );
+  const term = q.trim().toLowerCase();
+  const visibleDocs = docs
+    .filter((d) => {
+      if (docTypeFilter !== "All" && d.docType !== docTypeFilter) return false;
+      if (statusFilter === "READY" && d.status !== "READY") return false;
+      if (statusFilter === "FAILED" && d.status !== "FAILED") return false;
+      if (statusFilter === "processing" && !isProcessing(d.status)) return false;
+      if (term && !`${d.title ?? ""} ${(d.parties ?? []).join(" ")}`.toLowerCase().includes(term)) return false;
+      return true;
+    })
+    .sort((a, b) =>
+      sortKey === "title"
+        ? (a.title || "").localeCompare(b.title || "")
+        : String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")),
+    );
 
+  const activeFilters = (term ? 1 : 0) + (docTypeFilter !== "All" ? 1 : 0) + (statusFilter !== "All" ? 1 : 0);
+  const clearFilters = () => { setQ(""); setDocTypeFilter("All"); setStatusFilter("All"); };
   const totalDocs = visibleDocs.length;
+  const noMatches = !loading && docs.length > 0 && visibleDocs.length === 0;
 
   return (
     <>
       <PageHeader
-        eyebrow="Pipeline · live view"
         title="Workflow"
-        subtitle="Documents organized by lifecycle stage — track progress from draft through to active and renewal."
         actions={
           <>
-            <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
-              <SelectTrigger size="sm" className="h-8 w-[150px] text-[12.5px]"><Filter size={13} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All types</SelectItem>
-                {DOC_TYPE_KEYS.map((t) => <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button variant="ai" size="md" className="gap-1.5 pl-1.5">
-              <SonarMark size="xs" />
-              Ask Sonar
+            <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
+            <Button asChild className="h-10 md:h-9">
+              <Link href="/projects/upload">
+                <Plus size={15} strokeWidth={2.25} /> New document
+              </Link>
             </Button>
-            <Link
-              href="/projects/new"
-              className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
-            >
-              <Plus size={13} /> New document
-            </Link>
           </>
         }
       />
 
-      <div className="app-container py-6 md:py-8 space-y-3">
-        {/* Stage summary strip */}
-        <MotionReveal>
-        <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {STAGES.map((s, i) => {
-            const accent = STAGE_ACCENT[s];
-            const count = totals[s] ?? 0;
-            return (
-              <MotionReveal key={s} delay={Math.min(i * 0.04, 0.2)}>
-              <div
-                className="rounded-2xl border border-border bg-card p-4 shadow-xs hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", accent.dot)} />
-                  <span className="text-[11px] font-medium text-foreground truncate">
-                    {STAGE_LABEL[s]}
-                  </span>
-                </div>
-                <div className="mt-2 flex items-baseline gap-1.5">
-                  {loading ? (
-                    <Skeleton className="h-6 w-8" />
-                  ) : (
-                    <span
-                      className="numeric tabular-nums text-foreground leading-none"
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontWeight: 700,
-                        fontSize: 22,
-                        letterSpacing: "-0.02em",
-                      }}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </div>
-                {/* Mini share-of-pipeline bar */}
-                <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={cn("h-full", accent.dot)}
-                    style={{
-                      width:
-                        totalDocs > 0
-                          ? `${Math.max(2, (count / totalDocs) * 100)}%`
-                          : "0%",
-                    }}
-                  />
-                </div>
-              </div>
-              </MotionReveal>
-            );
-          })}
-        </section>
-        </MotionReveal>
+      <div className="app-container flex flex-col gap-4 py-6 md:gap-6 md:py-8">
+        {error && (
+          <div role="alert" className="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-4 text-sm text-[var(--danger)]">
+            <span className="min-w-0 flex-1 break-words">
+              {failed ? "Failed to load documents: " : "Couldn\u2019t refresh, so this board may be out of date: "}{error}
+            </span>
+            <button type="button" onClick={() => refetch()} className="shrink-0 rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]">Try again</button>
+          </div>
+        )}
 
-        {/* Kanban board */}
+        {/* Filter bar: full-width search, then a chip row that scrolls sideways on a phone. */}
+        <section aria-label="Filters" className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 md:flex-row md:items-start">
+            <div className="relative w-full md:w-[260px] md:shrink-0">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                aria-label="Search documents"
+                placeholder="Search by title or party…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                className="h-10 border-[var(--ink-300)] bg-card pl-9 pr-3 placeholder:text-[var(--ink-400)]"
+              />
+            </div>
+            <div className={FILTER_ROW}>
+              <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
+                <SelectTrigger aria-label="Filter by document type" className={FILTER_TRIGGER}><span className={FILTER_PREFIX}>Type</span><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  {DOC_TYPE_KEYS.map((t) => <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger aria-label="Filter by processing status" className={FILTER_TRIGGER}><span className={FILTER_PREFIX}>Status</span><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="READY">Ready</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="FAILED">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortKey} onValueChange={(v) => setSortKey(v as "createdAt" | "title")}>
+                <SelectTrigger aria-label="Sort documents" className={FILTER_TRIGGER}><span className={FILTER_PREFIX}>Sort</span><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="createdAt">Newest</SelectItem>
+                  <SelectItem value="title">Title</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1 text-sm md:min-h-0">
+            <span className="tabular-nums text-[var(--ink-600)]" aria-live="polite">
+              {loading ? "Loading…" : failed ? "Documents not loaded" : `Showing ${totalDocs} of ${docs.length} document${docs.length === 1 ? "" : "s"}`}
+            </span>
+            {activeFilters > 0 && (
+              <>
+                <span className="rounded-full bg-[var(--brand-primary-50)] px-2 py-0.5 text-xs font-semibold text-[var(--brand-primary-700)]">
+                  {activeFilters} filter{activeFilters === 1 ? "" : "s"} active
+                </span>
+                <button type="button" onClick={clearFilters} className="inline-flex min-h-10 items-center rounded font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:min-h-0">
+                  Clear filters
+                </button>
+              </>
+            )}
+          </div>
+        </section>
+
+        {failed ? null : noMatches ? (
+          <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center md:py-16">
+            <Kanban size={24} className="mb-3 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">No documents match these filters</h2>
+            <p className="mt-1.5 max-w-xs text-sm text-[var(--ink-600)]">Try a different search or clear the filters to see the whole pipeline.</p>
+            <Button variant="outline" size="lg" className="mt-5" onClick={clearFilters}>Clear filters</Button>
+          </div>
+        ) : !loading && !error && docs.length === 0 ? (
+          <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center md:py-16">
+            <Kanban size={24} className="mb-3 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-foreground">No documents yet</h2>
+            <p className="mt-1.5 max-w-xs text-sm text-[var(--ink-600)]">Documents you upload, and the documents of projects shared with you, appear here in their lifecycle stage.</p>
+            <Button asChild variant="outline" size="lg" className="mt-5">
+              <Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />Upload a document</Link>
+            </Button>
+          </div>
+        ) : (
+        /* Kanban board — fixed-width columns that scroll sideways and snap on touch. */
         <MotionReveal delay={0.05}>
-        <section className="overflow-x-auto pb-2">
-          <div className="grid grid-cols-8 gap-4 min-w-[1760px]">
-            {STAGES.map((s) => {
-              const stageItems = visibleDocs.filter((d) => d.lifecycle === s);
-              const accent = STAGE_ACCENT[s];
-              return (
-                <div
-                  key={s}
-                  className="flex flex-col min-h-[720px] rounded-2xl border border-border bg-card shadow-xs"
-                >
-                  {/* Column header */}
-                  <div className="px-4 py-3.5 border-b border-border flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className={cn("h-2 w-2 rounded-full shrink-0", accent.dot)} />
-                      <span className="text-[13.5px] font-semibold text-foreground truncate">
-                        {STAGE_LABEL[s]}
-                      </span>
+          <section aria-label="Documents by stage">
+            <p className="mb-2 text-xs text-muted-foreground xl:hidden">Swipe sideways to see every stage.</p>
+            <div
+              tabIndex={0}
+              role="group"
+              aria-label="Stage columns, scroll horizontally"
+              className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] sm:mx-0 sm:scroll-px-0 sm:px-0 md:snap-proximity md:gap-4"
+            >
+              {STAGES.map((s) => {
+                const stageItems = visibleDocs.filter((d) => d.lifecycle === s);
+                const accent = STAGE_ACCENT[s];
+                return (
+                  <div
+                    key={s}
+                    className="flex max-h-[70vh] min-h-[280px] w-[82vw] max-w-[300px] shrink-0 snap-start flex-col rounded-xl border border-border bg-[var(--panel)] sm:w-[280px]"
+                  >
+                    <div className="flex items-center gap-2 rounded-t-xl border-b border-border bg-card px-4 py-3">
+                      <span className={cn("h-2 w-2 shrink-0 rounded-full", accent.dot)} />
+                      <h3 className="text-base font-semibold text-foreground">{STAGE_LABEL[s]}</h3>
                       <span
                         className={cn(
-                          "inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-semibold tabular-nums",
+                          "ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums",
                           accent.soft,
                           accent.ink,
                         )}
@@ -211,67 +223,38 @@ export default function WorkflowPage() {
                         {loading ? "…" : stageItems.length}
                       </span>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-xs">
-                          <MoreHorizontal />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52">
-                        <DropdownMenuLabel className="eyebrow">
-                          {STAGE_LABEL[s]}
-                        </DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          <Plus /> Add document
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <SonarMark size="xs" /> Ask Sonar to summarize
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>Hide column</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
 
-                  {/* Cards */}
-                  <div className="flex-1 p-3 space-y-3 overflow-y-auto">
-                    {loading ? (
-                      <div className="space-y-2">
-                        {Array.from({ length: 2 }).map((_, i) => (
-                          <Skeleton key={i} className="h-28 w-full rounded-2xl" />
-                        ))}
-                      </div>
-                    ) : stageItems.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-10 text-center rounded-2xl border border-dashed border-border bg-muted/30">
-                        <div className="h-10 w-10 rounded-2xl bg-card flex items-center justify-center mb-2 shadow-xs">
-                          <Kanban size={15} className="text-muted-foreground" />
-                        </div>
-                        <p className="text-xs text-muted-foreground">
+                    <div className="flex-1 space-y-2 overflow-y-auto p-2">
+                      {loading ? (
+                        Array.from({ length: 2 }).map((_, i) => (
+                          <Skeleton key={i} className="h-28 w-full rounded-lg" />
+                        ))
+                      ) : stageItems.length === 0 ? (
+                        <p className="rounded-lg border border-dashed border-[var(--ink-300)] px-3 py-8 text-center text-sm text-muted-foreground">
                           No documents in this stage
                         </p>
-                      </div>
-                    ) : (
-                      stageItems.map((doc) => (
-                        <KanbanCard key={doc.docId} doc={doc} />
-                      ))
-                    )}
+                      ) : (
+                        stageItems.map((doc) => (
+                          <KanbanCard key={doc.docId} doc={doc} />
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+                );
+              })}
+            </div>
+          </section>
         </MotionReveal>
-
-        {error && (
-          <div className="rounded-2xl border border-[var(--danger-soft)] bg-[var(--danger-soft)]/30 p-4 text-[13px] text-[var(--danger)]">
-            Failed to load documents: {error}
-          </div>
         )}
       </div>
     </>
   );
 }
+
+// Filter bar: full-width search, then a chip row that scrolls sideways on a phone and wraps from md.
+const FILTER_ROW = "-mx-4 flex min-w-0 items-center gap-2 overflow-x-auto px-4 scrollbar-none md:mx-0 md:flex-1 md:flex-wrap md:overflow-visible md:px-0";
+const FILTER_TRIGGER = "w-auto shrink-0 gap-2 border-[var(--ink-300)] bg-card text-sm data-[size=default]:h-10";
+const FILTER_PREFIX = "shrink-0 text-xs font-medium text-muted-foreground";
 
 function getStatusIndicator(status: string) {
   if (status === "READY")
@@ -287,41 +270,50 @@ function KanbanCard({ doc }: { doc: ApiDocument }) {
   return (
     <Link
       href={`/projects/${doc.docId}`}
-      className="block group rounded-2xl border border-border bg-card hover:border-[var(--brand-primary-300)] hover:shadow-md transition-all duration-200 p-4"
+      className="group block rounded-lg border border-border bg-card p-3 shadow-xs transition-[box-shadow,border-color] duration-150 hover:border-[var(--brand-primary-300)] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
     >
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="font-mono text-[11px] text-muted-foreground tracking-wide truncate">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="truncate font-mono text-xs text-muted-foreground">
           {doc.docId.slice(0, 8).toUpperCase()}
         </div>
-        <Badge variant="secondary" size="sm" className="shrink-0 text-[10.5px]">
+        <Badge variant="secondary" size="sm" className="shrink-0 text-xs">
           {doc.docType}
         </Badge>
       </div>
 
-      <div className="text-[14.5px] font-semibold text-foreground leading-snug line-clamp-2 mb-3 group-hover:text-[var(--brand-primary-700)] transition-colors">
+      <div className="mb-3 line-clamp-2 break-words text-base font-semibold leading-snug text-foreground transition-colors group-hover:text-[var(--brand-primary-700)]">
         {doc.title || "Untitled"}
       </div>
 
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between gap-2">
         <span
           className={cn(
-            "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium",
+            "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
             statusIndicator.cls,
           )}
         >
           {statusIndicator.label}
         </span>
-        <span className="text-[11px] text-muted-foreground">
-          {doc.parties?.length > 0
-            ? `${doc.parties.length} part${doc.parties.length === 1 ? "y" : "ies"}`
-            : "—"}
+        <span className="text-xs text-muted-foreground">
+          {/* Parties come from the analysis: nothing is claimed before it is READY. */}
+          {doc.status !== "READY"
+            ? ""
+            : doc.parties?.length > 0
+              ? `${doc.parties.length} part${doc.parties.length === 1 ? "y" : "ies"}`
+              : "No parties extracted"}
         </span>
       </div>
 
       {doc.parties?.length > 0 && (
-        <div className="text-[10.5px] text-muted-foreground truncate">
+        <div className="mt-2 truncate text-xs text-muted-foreground">
           {doc.parties[0]}
           {doc.parties.length > 1 && ` +${doc.parties.length - 1} more`}
+        </div>
+      )}
+
+      {doc.role && doc.role !== "owner" && (
+        <div className="mt-2 truncate border-t border-border pt-2 text-xs text-[var(--ink-600)]">
+          Shared with you{doc.ownerEmail ? ` by ${doc.ownerEmail}` : ""} · {ROLE_META[doc.role].label}
         </div>
       )}
     </Link>

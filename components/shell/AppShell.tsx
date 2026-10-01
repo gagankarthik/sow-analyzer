@@ -9,8 +9,9 @@ import { CopilotPanel } from "./CopilotPanel";
 import { AnalysisDisclaimer } from "@/components/ui/AnalysisDisclaimer";
 import { recordRecentDoc } from "@/lib/recent";
 import { useUIStore } from "@/lib/stores/ui";
-import { hydrateProjects } from "@/lib/projects-store";
+import { hydrateProjects, startProjectsSync } from "@/lib/projects-store";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { clearSessionCookie } from "@/lib/auth/session";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -21,12 +22,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const setCopilotOpen = useUIStore((s) => s.setCopilotOpen);
   const [mobileNav, setMobileNav] = useState(false);
 
-  // Load the tenant's projects from the backend once signed in (migrates any
-  // legacy browser-localStorage projects to the cloud the first time), so the
-  // grouping is the same on every browser/device.
-  const { status } = useAuth();
+  // Load the projects the signed-in user can see (their own and the ones shared
+  // with them), then keep them fresh: re-read on window focus, on reconnect and
+  // once a minute, so a project created, shared or changed on another device or
+  // by a teammate appears here. Keyed on the user, so signing in as someone else
+  // in the same tab never shows the previous person's list.
+  const { status, user } = useAuth();
+  const userId = user?.sub;
   useEffect(() => {
-    if (status === "authenticated") void hydrateProjects();
+    if (status !== "authenticated") return;
+    void hydrateProjects(userId);
+    return startProjectsSync();
+  }, [status, userId]);
+
+  // Second line behind the proxy: no Cognito session means no workspace. The
+  // stale cookie is dropped first, or the proxy would bounce /login straight
+  // back here.
+  useEffect(() => {
+    if (status !== "unauthenticated") return;
+    clearSessionCookie();
+    const back = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.replace(`/login?redirect=${back}`);
   }, [status]);
 
   // Global keyboard shortcuts: ⌘K palette, ⌘/ copilot, and the "go to"
@@ -92,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Keyboard users can jump straight to content, bypassing the nav (WCAG 2.4.1). */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[var(--brand-primary-600)] focus:px-4 focus:py-2 focus:text-[13px] focus:font-semibold focus:text-white focus:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[var(--brand-primary-600)] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
       >
         Skip to main content
       </a>

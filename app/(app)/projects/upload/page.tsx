@@ -1,27 +1,90 @@
 "use client";
 
-import Link from "next/link";
+import { useId, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
-import { ChevronLeft } from "@/components/ui/icons";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCw } from "@/components/ui/icons";
+import { can, projectOwnerEmail, refreshProjects, useProjects, useProjectsSync } from "@/lib/projects-store";
+import { ROLE_META } from "@/components/team/roles";
+
+const NO_PROJECT = "none";
+
+/** `?project=<id>` preselects a project (read once; the picker renders client-side only). */
+function projectFromUrl(): string {
+  if (typeof window === "undefined") return NO_PROJECT;
+  return new URLSearchParams(window.location.search).get("project") || NO_PROJECT;
+}
 
 export default function UploadPage() {
+  const pickerId = useId();
+  const projects = useProjects();
+  const sync = useProjectsSync();
+  const loading = sync.status === "idle" || sync.status === "loading";
+  const failed = sync.status === "error";
+
+  // Only projects the signed-in user may upload to (owner or editor). The
+  // server checks again when the upload starts.
+  const uploadable = useMemo(
+    () => projects.filter((p) => can(p.role, "upload")).sort((a, b) => a.name.localeCompare(b.name)),
+    [projects],
+  );
+  const readOnlyCount = projects.length - uploadable.length;
+
+  const [picked, setPicked] = useState<string>(projectFromUrl);
+  // A project that was deleted, or where the role changed, falls back to "No project".
+  const choice = uploadable.some((p) => p.id === picked) ? picked : NO_PROJECT;
+  const project = uploadable.find((p) => p.id === choice);
+  const owner = project && project.role !== "owner" ? projectOwnerEmail(project) : undefined;
+
   return (
     <>
       <PageHeader
-        eyebrow="Upload"
+        back={{ href: "/projects", label: "Back to projects" }}
         title="Add a document"
-        subtitle="Drop a SOW or MSA to start a contract — or an amendment to add to an existing one. Blue-IQ extracts every clause, scores risk, and files amendments under the right contract automatically."
-        actions={
-          <Link href="/projects" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-muted">
-            <ChevronLeft size={14} />Back to projects
-          </Link>
-        }
+        subtitle="Upload a SOW, MSA or amendment for analysis."
       />
 
       <div className="app-container py-6 md:py-8">
-        <div className="mx-auto max-w-2xl">
-          <UploadDropzone defaultDocType="SOW" />
+        <div className="max-w-3xl space-y-4">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
+            <label htmlFor={pickerId} className="mb-1.5 block text-sm font-medium text-foreground">Project</label>
+            <Select value={choice} onValueChange={setPicked} disabled={loading}>
+              <SelectTrigger id={pickerId} className="w-full border-[var(--ink-300)] text-base data-[size=default]:h-10 sm:max-w-sm">
+                <SelectValue placeholder={loading ? "Loading your projects" : undefined} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_PROJECT}>No project</SelectItem>
+                {uploadable.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name || "Untitled project"}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+              {loading
+                ? "Loading the projects you can upload to."
+                : project
+                  ? `Files you add next go into ${project.name} and are shared with everyone on it.${owner ? ` It is owned by ${owner}; you are ${ROLE_META[project.role ?? "viewer"].label.toLowerCase()}.` : ""}`
+                  : "Files you add next belong to no project. Only you can see them until you file them in one."}
+              {!loading && readOnlyCount > 0 && (
+                <> {readOnlyCount === 1 ? "One project is" : `${readOnlyCount} projects are`} not listed because you are a viewer there.</>
+              )}
+            </p>
+            {failed && (
+              <div role="alert" className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-3 py-2.5">
+                <AlertTriangle size={15} className="shrink-0 text-[var(--warning)]" />
+                <p className="min-w-0 flex-1 basis-48 break-words text-sm text-foreground">
+                  Your projects could not be loaded, so only &ldquo;No project&rdquo; is offered.{sync.error ? ` ${sync.error}` : ""}
+                </p>
+                <Button variant="outline" className="h-10 md:h-9" onClick={() => void refreshProjects()}>
+                  <RefreshCw size={14} />Try again
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <UploadDropzone defaultDocType="SOW" projectId={project?.id} />
         </div>
       </div>
     </>

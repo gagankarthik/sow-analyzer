@@ -64,7 +64,7 @@ export function PipelineStepper({
             {showLabels && (
               <span
                 className={cn(
-                  "mt-2 text-[11px] font-medium whitespace-nowrap transition-colors",
+                  "mt-2 text-xs font-medium whitespace-nowrap transition-colors",
                   done && "text-foreground",
                   active && "text-[var(--brand-primary-700)]",
                   isFailedHere && "text-[var(--danger)]",
@@ -99,7 +99,6 @@ function Node({ done, active, failed }: { done: boolean; active: boolean; failed
   if (active) {
     return (
       <span className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center">
-        <span className="absolute inset-0 rounded-full bg-[var(--brand-primary-400)] opacity-40 animate-ping" />
         <span className="relative inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary-600)] ring-4 ring-[var(--brand-primary-100)]">
           <span className="h-2 w-2 rounded-full bg-white" />
         </span>

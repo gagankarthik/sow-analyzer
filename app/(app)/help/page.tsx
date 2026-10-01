@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { SonarMark } from "@/components/ui/SonarMark";
+import { Button } from "@/components/ui/button";
 import {
-  Upload, Search, ShieldCheck, GitBranch, BookMarked, Sparkles, FileText,
+  Upload, ShieldCheck, GitBranch, BookMarked, Sonar, Library, Kanban, DraftSow,
   ArrowRight, Mail, BarChart3,
 } from "@/components/ui/icons";
 
@@ -12,19 +12,19 @@ import {
    shortcuts, and where to get more help. */
 
 const QUICK_START = [
-  { icon: Upload, title: "Upload a contract", body: "Go to a project and drop a SOW, MSA, NDA, licence, DPA, BAA, or compliance document (PDF, DOCX, or scanned image). Sonar starts analysing on upload." },
-  { icon: Sparkles, title: "Review the analysis", body: "Open the project to see extracted clauses, risk scores, key findings, and how each clause compares to your playbook." },
-  { icon: GitBranch, title: "Track amendments", body: "Add an amendment and Sonar diffs it against the original, recalculating the contract's total value automatically." },
-  { icon: BarChart3, title: "Watch the portfolio", body: "The Dashboard and Insights roll up value, risk, and what needs attention across every contract you've analysed." },
+  { icon: Upload, title: "Upload a contract", body: "Go to a project and drop a SOW, MSA, NDA, licence, DPA, BAA, or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analysing on upload." },
+  { icon: Sonar, title: "Review the analysis", body: "Open the project to see the extracted clauses, the risk level given to each one, and the key findings." },
+  { icon: GitBranch, title: "Track amendments", body: "Add an amendment to the project. When the analysis can match it to the contract it amends, the changes are listed against the original, and the contract value is updated from the figures the amendment states." },
+  { icon: BarChart3, title: "Watch the portfolio", body: "The Dashboard and Insights add up extracted value and clause risk across your analysed documents, and say how many documents are not yet included." },
 ];
 
 const AREAS = [
-  { icon: FileText, title: "Library", body: "Every uploaded document, searchable and filterable by type, lifecycle, and status." },
-  { icon: GitBranch, title: "Workflow", body: "A board of your documents by lifecycle stage — draft through to active and renewal." },
-  { icon: BarChart3, title: "Insights", body: "Portfolio analytics: value vs. risk, risk by category and document type, and your estimated savings." },
-  { icon: BookMarked, title: "Playbook", body: "Your firm's standard positions. Each clause is scored against these, and deviations are flagged." },
-  { icon: Sparkles, title: "Draft SOW", body: "Answer a short questionnaire and Sonar drafts an editable statement of work you can export to Word." },
-  { icon: ShieldCheck, title: "Security & legal", body: "Our security posture and policies — SOC 2, GDPR, HIPAA, WCAG 2.1 AA, and ADA aligned." },
+  { icon: Library, title: "Library", body: "Every uploaded document, searchable and filterable by type, lifecycle, and status." },
+  { icon: Kanban, title: "Workflow", body: "A board of your documents by lifecycle stage, from draft through to active and renewal." },
+  { icon: BarChart3, title: "Insights", body: "What needs attention first, where risk and extracted value sit, which dates are coming up, and what is missing from your documents." },
+  { icon: BookMarked, title: "Playbook", body: "Your standard position for each clause type. Every clause is graded against it, and you can edit the rules; changes apply the next time a document is analysed." },
+  { icon: DraftSow, title: "Draft SOW", body: "Answer a short questionnaire and Sonar drafts an editable statement of work you can export to Word." },
+  { icon: ShieldCheck, title: "Security & legal", body: "How your documents are protected, and the policies that apply." },
 ];
 
 const SHORTCUTS: [string, string][] = [
@@ -34,105 +34,100 @@ const SHORTCUTS: [string, string][] = [
   ["g then d / p / l / w", "Go to Dashboard / Projects / Library / Workflow"],
 ];
 
+const SECTION_HEADING = "text-lg font-semibold tracking-tight text-foreground";
+
 export default function HelpPage() {
   return (
     <>
-      <PageHeader
-        eyebrow="Support"
-        title="Help & getting started"
-        subtitle="Everything you need to get value from Blue-IQ — from your first upload to keyboard shortcuts."
-      />
+      <PageHeader title="Help & getting started" />
 
-      <div className="app-container space-y-8 py-6 md:py-8">
-        {/* Quick start */}
-        <section>
-          <h2 className="mb-4 text-[15px] font-semibold tracking-tight text-foreground">Quick start</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {QUICK_START.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <div key={s.title} className="rounded-2xl border border-border bg-card p-5 shadow-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]">
-                      <Icon size={16} strokeWidth={1.85} />
-                    </span>
-                    <span className="font-mono text-[11px] text-muted-foreground">Step {i + 1}</span>
-                  </div>
-                  <h3 className="mt-3 text-[14px] font-semibold text-foreground">{s.title}</h3>
-                  <p className="mt-1 text-[12.5px] leading-[1.55] text-muted-foreground">{s.body}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Areas of the app */}
-        <section>
-          <h2 className="mb-4 text-[15px] font-semibold tracking-tight text-foreground">Around the workspace</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {AREAS.map((a) => {
-              const Icon = a.icon;
-              return (
-                <div key={a.title} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
-                  <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                    <Icon size={16} strokeWidth={1.75} />
-                  </span>
-                  <div className="min-w-0">
-                    <h3 className="text-[13.5px] font-semibold text-foreground">{a.title}</h3>
-                    <p className="mt-0.5 text-[12.5px] leading-[1.5] text-muted-foreground">{a.body}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Shortcuts + support */}
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-xs lg:col-span-7">
-            <div className="mb-4 flex items-center gap-2">
-              <Search size={15} className="text-[var(--brand-primary-600)]" />
-              <h2 className="text-[14px] font-semibold tracking-tight text-foreground">Keyboard shortcuts</h2>
+      {/* Two columns from lg: the guide on the left, support + shortcuts held in a narrower rail. */}
+      <div className="app-container grid grid-cols-1 gap-6 py-6 md:gap-8 md:py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
+        <div className="min-w-0 space-y-6 md:space-y-8">
+          {/* Quick start — one ordered list, not four cards */}
+          <section aria-labelledby="quick-start">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <h2 id="quick-start" className={SECTION_HEADING}>Quick start</h2>
+              <Link
+                href="/onboarding"
+                className="inline-flex min-h-10 items-center gap-1 rounded-sm text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+              >
+                Open the setup guide<ArrowRight size={14} strokeWidth={2} />
+              </Link>
             </div>
-            <ul className="divide-y divide-border">
+            <ol className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+              {QUICK_START.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <li key={s.title} className="flex items-start gap-3.5 p-4 md:gap-4 md:p-5">
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-base font-semibold tabular-nums text-[var(--brand-primary-700)]" aria-hidden>
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                        {s.title}
+                        <Icon size={15} strokeWidth={1.85} className="shrink-0 text-muted-foreground" />
+                      </h3>
+                      <p className="mt-1 max-w-[68ch] text-sm leading-relaxed text-[var(--ink-600)]">{s.body}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+
+          {/* Areas of the app */}
+          <section aria-labelledby="workspace-areas">
+            <h2 id="workspace-areas" className={`mb-3 ${SECTION_HEADING}`}>Around the workspace</h2>
+            <ul className="grid grid-cols-1 gap-x-8 rounded-xl border border-border bg-card px-4 shadow-xs sm:grid-cols-2 md:px-5">
+              {AREAS.map((a) => {
+                const Icon = a.icon;
+                return (
+                  <li key={a.title} className="flex items-start gap-3 border-b border-border py-4 last:border-b-0 sm:[&:nth-last-child(2)]:border-b-0">
+                    <Icon size={16} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--ink-600)]" />
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold text-foreground">{a.title}</h3>
+                      <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">{a.body}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </div>
+
+        <aside className="min-w-0 space-y-6 md:space-y-8">
+          {/* Support — the focal block and the page's one primary action */}
+          <section aria-labelledby="support" className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
+            <h2 id="support" className="text-xl font-semibold tracking-tight">Still stuck?</h2>
+            <p className="mt-2 text-base leading-relaxed text-[var(--navy-foreground)]">
+              Ask Sonar in any project for help with a specific clause, or email our team.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <Button size="lg" asChild>
+                <a href="mailto:support@blue-iq.ai"><Mail size={15} />Email support</a>
+              </Button>
+              <Link
+                href="/legal/security"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/25 px-4 text-base font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sidebar-ring)]"
+              >
+                <ShieldCheck size={15} />Security &amp; legal<ArrowRight size={14} />
+              </Link>
+            </div>
+          </section>
+
+          <section aria-labelledby="shortcuts">
+            <h2 id="shortcuts" className={`mb-3 ${SECTION_HEADING}`}>Keyboard shortcuts</h2>
+            <ul className="divide-y divide-border rounded-xl border border-border bg-card px-4 shadow-xs md:px-5">
               {SHORTCUTS.map(([keys, what]) => (
-                <li key={keys} className="flex items-center justify-between gap-4 py-2.5">
-                  <span className="text-[13px] text-muted-foreground">{what}</span>
-                  <kbd className="rounded-md border border-border bg-muted/60 px-2 py-0.5 font-mono text-[11px] text-foreground">{keys}</kbd>
+                <li key={keys} className="flex flex-col gap-1.5 py-3">
+                  <span className="text-sm text-[var(--ink-600)]">{what}</span>
+                  <kbd className="w-fit rounded-md border border-[var(--ink-300)] bg-[var(--panel)] px-2 py-0.5 font-mono text-xs text-foreground">{keys}</kbd>
                 </li>
               ))}
             </ul>
-          </div>
-
-          <div className="flex flex-col rounded-2xl border border-border bg-card p-6 shadow-xs lg:col-span-5">
-            <div className="flex items-center gap-2.5">
-              <SonarMark size="md" tile />
-              <div>
-                <h2 className="text-[14px] font-semibold tracking-tight text-foreground">Still stuck?</h2>
-                <p className="text-[12px] text-muted-foreground">We&apos;re happy to help.</p>
-              </div>
-            </div>
-            <p className="mt-4 text-[13px] leading-[1.6] text-muted-foreground">
-              Ask Sonar in any project for help with a specific clause, or reach our team directly —
-              we usually reply within a business day.
-            </p>
-            <div className="mt-auto flex flex-col gap-2 pt-5">
-              <a
-                href="mailto:support@blue-iq.ai"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--brand-primary-600)] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)]"
-              >
-                <Mail size={15} /> Email support
-              </a>
-              <Link
-                href="/legal/security"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border px-4 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
-              >
-                <ShieldCheck size={15} /> Security &amp; legal
-                <ArrowRight size={13} />
-              </Link>
-            </div>
-          </div>
-        </section>
+          </section>
+        </aside>
       </div>
     </>
   );

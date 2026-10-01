@@ -1,100 +1,114 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ArrowRight, Briefcase, Upload, Sparkles } from "@/components/ui/icons";
+import { ArrowRight, AlertCircle, Loader2 } from "@/components/ui/icons";
 import { createProject } from "@/lib/projects-store";
-import { useAuth } from "@/components/auth/AuthProvider";
+
+const FIELD =
+  "h-11 border-[var(--ink-300)] bg-card text-base placeholder:text-[var(--ink-400)]";
 
 export default function NewProjectPage() {
   const router = useRouter();
-  const { user } = useAuth();
   const [name, setName] = useState("");
   const [client, setClient] = useState("");
   const [creating, setCreating] = useState(false);
+  // Show the "required" message only after the user has left the field or tried to submit.
+  const [touched, setTouched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canCreate = name.trim().length > 0 && !creating;
+  const nameError = touched && name.trim().length === 0;
 
-  function create() {
+  // The project exists once the server has stored it: only then move on. You
+  // become its owner; the server takes that from your session.
+  async function create() {
+    setTouched(true);
     if (!canCreate) return;
     setCreating(true);
-    const project = createProject(name, client, user?.email);
-    router.push(`/projects/${project.id}`);
+    setError(null);
+    try {
+      const project = await createProject(name, client);
+      router.push(`/projects/${project.id}`);
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "The server did not accept the request.");
+      setCreating(false);
+    }
   }
 
   return (
     <>
       <PageHeader
-        eyebrow="New project"
-        title="Name your project"
-        subtitle="Create a project, then upload the SOW (and any related contracts) inside it. Blue-IQ analyzes each document and rolls the risk up to the project."
-        actions={
-          <Link href="/projects" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:bg-muted">
-            <ChevronLeft size={14} />Back to projects
-          </Link>
-        }
+        back={{ href: "/projects", label: "Back to projects" }}
+        title="New project"
       />
 
-      <div className="app-container py-8 md:py-12">
-        <div className="mx-auto max-w-xl">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-xs md:p-8">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]">
-              <Briefcase size={22} strokeWidth={1.75} />
-            </span>
-
-            <div className="mt-6 space-y-5">
-              <div className="space-y-1.5">
-                <label htmlFor="project-name" className="text-[13px] font-medium text-foreground">
-                  Project name <span className="text-[var(--danger)]">*</span>
-                </label>
-                <Input
-                  id="project-name"
-                  autoFocus
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") create(); }}
-                  placeholder="e.g. Acme Corp — Master Services 2026"
-                  className="h-11 text-[14px]"
-                />
-                <p className="text-[11.5px] text-muted-foreground">Use the counterparty and engagement so it&apos;s easy to find later.</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <label htmlFor="project-client" className="text-[13px] font-medium text-foreground">
-                  Client / counterparty <span className="text-muted-foreground">(optional)</span>
-                </label>
-                <Input
-                  id="project-client"
-                  value={client}
-                  onChange={(e) => setClient(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") create(); }}
-                  placeholder="e.g. Acme Corp"
-                  className="h-11 text-[14px]"
-                />
-              </div>
+      <div className="app-container py-6 md:py-8">
+        <form
+          noValidate
+          onSubmit={(e) => { e.preventDefault(); void create(); }}
+          className="max-w-xl rounded-xl border border-border bg-card p-4 shadow-xs sm:p-6"
+        >
+          <div className="space-y-5">
+            <div className="space-y-1.5">
+              <label htmlFor="project-name" className="block text-sm font-medium text-foreground">
+                Project name <span className="text-[var(--danger)]" aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
+              </label>
+              <Input
+                id="project-name"
+                autoFocus
+                required
+                aria-invalid={nameError}
+                aria-describedby={nameError ? "project-name-error" : "project-name-hint"}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={() => setTouched(true)}
+                placeholder="e.g. Acme Corp: Master Services 2026"
+                className={FIELD}
+              />
+              {nameError ? (
+                <p id="project-name-error" role="alert" className="flex items-center gap-1.5 text-xs font-medium text-[var(--danger)]">
+                  <AlertCircle size={13} className="shrink-0" />Enter a project name.
+                </p>
+              ) : (
+                <p id="project-name-hint" className="text-xs text-muted-foreground">
+                  Use the counterparty and engagement so it&apos;s easy to find later.
+                </p>
+              )}
             </div>
 
-            <div className="mt-7 flex items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
-                <Upload size={13} /> Upload SOWs in the next step
-              </span>
-              <Button variant="primary" size="lg" disabled={!canCreate} onClick={create}>
-                Create project <ArrowRight size={15} />
-              </Button>
+            <div className="space-y-1.5">
+              <label htmlFor="project-client" className="block text-sm font-medium text-foreground">
+                Client / counterparty <span className="font-normal text-muted-foreground">(optional)</span>
+              </label>
+              <Input
+                id="project-client"
+                value={client}
+                onChange={(e) => setClient(e.target.value)}
+                placeholder="e.g. Acme Corp"
+                className={FIELD}
+              />
             </div>
           </div>
 
-          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/50 px-4 py-3">
-            <Sparkles size={14} className="mt-0.5 shrink-0 text-[var(--ai-ink)]" />
-            <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-              After you create the project, drop in your SOW and Blue-IQ extracts every clause, scores risk, and surfaces key findings — usually within 90 seconds.
+          {error && (
+            <p role="alert" className="mt-5 flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">
+              <AlertCircle size={15} className="mt-0.5 shrink-0" />
+              <span className="min-w-0 break-words">The project was not created. {error}</span>
             </p>
+          )}
+
+          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">You will own the project. You upload documents and invite people in the next step.</p>
+            <Button type="submit" size="lg" disabled={creating} className="w-full sm:w-auto">
+              {creating ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />Creating project</> : <>Create project <ArrowRight size={15} /></>}
+            </Button>
           </div>
-        </div>
+        </form>
       </div>
     </>
   );

@@ -3,140 +3,178 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { confirmSignUp, resendConfirmationCode } from "@/lib/auth/cognito";
-import { AuthHeading, Field, FormError } from "@/components/auth/fields";
-import { Loader2, Mail, AlertTriangle } from "@/components/ui/icons";
+import {
+  AuthHeading,
+  CodeField,
+  FormAlert,
+  FormNotice,
+  SubmitButton,
+  authErrorCode,
+  authLinkClass,
+  commonAuthMessage,
+  focusField,
+  primaryPillClass,
+  secondaryPillClass,
+  useCooldown,
+} from "@/components/auth/fields";
+
+const RESEND_WAIT_SECONDS = 30;
 
 function ConfirmForm() {
   const router = useRouter();
   const params = useSearchParams();
-  // The email is fixed by the sign-up redirect (/confirm?email=…) — it's the
-  // account we're verifying, so it's shown read-only, never edited here.
+  // The email comes from sign up (or from a sign-in attempt on an unverified
+  // account). It is the account being verified, so it is shown, not edited.
   const email = (params.get("email") ?? "").trim().toLowerCase();
+  // Sign up has just sent a code; a redirect from sign in has not.
+  const codeJustSent = params.get("sent") === "1";
+  const loginHref = `/login?email=${encodeURIComponent(email)}`;
+
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<React.ReactNode>(null);
+  const [resent, setResent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const cooldown = useCooldown(RESEND_WAIT_SECONDS, codeJustSent);
 
-  // No email in the URL — there's nothing to verify against. Send them back
-  // rather than offer an editable field.
   if (!email) {
     return (
       <>
         <AuthHeading
           title="Verify your email"
-          subtitle="We couldn't tell which account to verify."
+          subtitle="This link is missing the email address to verify. Start again from sign up, or sign in if you already verified."
         />
-        <FormError message="Start from sign-up so we know which email to confirm." />
-        <p className="mt-6 text-center text-[13px] text-muted-foreground">
-          <Link
-            href="/signup"
-            className="font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]"
-          >
-            Back to sign up
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link href="/signup" className={primaryPillClass}>
+            Go to sign up
           </Link>
-        </p>
+          <Link href="/login" className={`${secondaryPillClass} w-full`}>
+            Sign in
+          </Link>
+        </div>
       </>
     );
   }
 
+  const alreadyVerified = (
+    <>
+      This email is already verified.{" "}
+      <Link href={loginHref} className="font-semibold underline underline-offset-4">
+        Sign in
+      </Link>
+    </>
+  );
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    if (!code.trim()) return setError("Enter the verification code from your email.");
+    setFormError(null);
+    setResent(false);
+    if (code.length !== 6) {
+      setCodeError(code ? "The code has 6 digits." : "Enter the 6-digit code from the email.");
+      return focusField("code");
+    }
+
     setLoading(true);
     try {
       await confirmSignUp(email, code);
-      toast.success("Email verified. You can sign in now.");
-      router.push(`/login?email=${encodeURIComponent(email)}`);
+      // Verifying does not create a session, so the next step is sign in.
+      router.push(`${loginHref}&notice=verified`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to verify your email.");
+      const errorCode = authErrorCode(err);
+      if (errorCode === "CodeMismatchException") {
+        setCodeError("That code is not correct. Check the email and try again.");
+        focusField("code");
+      } else if (errorCode === "ExpiredCodeException") {
+        setCodeError("That code has expired. Send a new code below.");
+        focusField("code");
+      } else if (errorCode === "NotAuthorizedException") {
+        // Cognito's answer when the account is no longer waiting on a code.
+        setFormError(alreadyVerified);
+      } else {
+        setFormError(
+          commonAuthMessage(err, err instanceof Error ? err.message : "We could not verify your email. Try again."),
+        );
+      }
       setLoading(false);
     }
   }
 
   async function onResend() {
     setResending(true);
-    setError(null);
+    setFormError(null);
+    setCodeError(null);
+    setResent(false);
     try {
       await resendConfirmationCode(email);
-      toast.success("A new code is on its way.");
+      setResent(true);
+      setCode("");
+      cooldown.start();
+      focusField("code");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't resend the code.");
+      setFormError(
+        authErrorCode(err) === "InvalidParameterException"
+          ? alreadyVerified
+          : commonAuthMessage(err, err instanceof Error ? err.message : "We could not send a new code. Try again."),
+      );
     } finally {
       setResending(false);
     }
   }
 
+  const waiting = cooldown.left > 0;
+
   return (
     <>
       <AuthHeading
         title="Verify your email"
-        subtitle="Enter the 6-digit code we emailed you to activate your account."
+        subtitle={
+          <>
+            {codeJustSent ? "We sent a 6-digit code to " : "Enter the 6-digit code we emailed to "}
+            <span className="break-all font-medium text-foreground">{email}</span>
+            {codeJustSent ? ". Enter it below to finish creating your account." : ", or send a new one below."}{" "}
+            <Link href="/signup" className={authLinkClass}>
+              Use a different email
+            </Link>
+          </>
+        }
       />
 
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        <FormError message={error} />
+      <form onSubmit={onSubmit} noValidate>
+        <CodeField
+          value={code}
+          onChange={(next) => {
+            setCode(next);
+            setCodeError(null);
+          }}
+          error={codeError ?? undefined}
+          help="It can take a minute to arrive. Check your spam folder too."
+          autoFocus
+          required
+        />
 
-        {/* Read-only — the account being verified, not an editable field. */}
-        <div className="space-y-1.5">
-          <span className="text-[12.5px] font-medium text-foreground">Email</span>
-          <div className="flex h-10 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 text-[13.5px] text-foreground">
-            <Mail size={14} className="shrink-0 text-muted-foreground" aria-hidden />
-            <span className="truncate" title={email}>{email}</span>
-          </div>
+        <div className="pt-3">
+          <SubmitButton loading={loading} loadingLabel="Verifying">
+            Verify email
+          </SubmitButton>
         </div>
-
-        <Field label="Verification code" htmlFor="code">
-          <Input
-            id="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="123456"
-            className="h-10 tracking-[0.4em] font-mono text-center"
-          />
-        </Field>
-
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={loading}
-          className="h-10 w-full text-[13.5px]"
-        >
-          {loading ? <Loader2 size={15} className="animate-spin" /> : "Verify & continue"}
-        </Button>
+        <FormAlert message={formError} />
       </form>
 
-      {/* Spam warning — the #1 reason the code looks "missing". */}
-      <div
-        role="note"
-        className="mt-4 flex items-start gap-2 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-3 py-2.5 text-[12px] leading-relaxed text-muted-foreground"
-      >
-        <AlertTriangle size={14} className="mt-0.5 shrink-0 text-[var(--warning)]" aria-hidden />
-        <span>
-          The code can take a minute to arrive.{" "}
-          <span className="font-medium text-foreground">Check your spam or junk folder</span> — if
-          it&apos;s still not there, resend below.
-        </span>
-      </div>
-
-      <div className="mt-5 flex items-center justify-between text-[12.5px]">
-        <button
-          type="button"
-          onClick={onResend}
-          disabled={resending}
-          className="font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] disabled:opacity-50"
-        >
-          {resending ? "Sending…" : "Resend code"}
-        </button>
-        <Link href="/login" className="text-muted-foreground hover:text-foreground">
-          Back to sign in
-        </Link>
+      <div className="border-t border-border pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <p className="text-base text-[var(--ink-600)]">No code in your inbox?</p>
+          <button
+            type="button"
+            onClick={onResend}
+            disabled={waiting || resending}
+            className={`${secondaryPillClass} h-11 px-5 text-sm tabular-nums`}
+          >
+            {resending ? "Sending" : waiting ? `Resend in ${cooldown.left}s` : "Resend code"}
+          </button>
+        </div>
+        <div className="mt-4 min-h-11">{resent && <FormNotice>New code sent. Use the most recent email.</FormNotice>}</div>
       </div>
     </>
   );
@@ -144,7 +182,7 @@ function ConfirmForm() {
 
 export default function ConfirmPage() {
   return (
-    <Suspense fallback={<div className="h-64" />}>
+    <Suspense fallback={<div className="h-96" />}>
       <ConfirmForm />
     </Suspense>
   );

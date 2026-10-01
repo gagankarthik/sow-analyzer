@@ -1,12 +1,15 @@
 "use client";
 
-// Shared definition of the compliance frameworks Sonar can grade against. The
-// settings page edits which are enabled; the dashboard reads the same source to
-// show live coverage. Each pack maps to clause-category enum values the pipeline
-// already classifies.
+// Display copy for the compliance frameworks Sonar can grade against: name,
+// region, a one-line description, and the clause categories each one looks for.
+// This is reference text maintained here, not tenant data: WHICH packs are
+// enabled comes from the API (see lib/queries/compliance.ts), and the grading
+// itself happens in the backend. The API does not return pack definitions, so
+// the `checks` list below cannot be verified against the backend from here.
 
-import { useSyncExternalStore } from "react";
+import { useMemo } from "react";
 import type { DocType } from "@/lib/types";
+import { useCompliancePacks } from "@/lib/queries/compliance";
 
 export type PackIconKey = "gdpr" | "hipaa" | "soc2" | "ccpa" | "iso";
 
@@ -18,7 +21,6 @@ export interface CompliancePack {
   blurb: string;
   docTypes: DocType[];
   checks: string[];
-  defaultOn: boolean;
 }
 
 export const COMPLIANCE_PACKS: CompliancePack[] = [
@@ -30,7 +32,6 @@ export const COMPLIANCE_PACKS: CompliancePack[] = [
     blurb: "EU data-protection obligations for processors and controllers.",
     docTypes: ["DPA", "COMPLIANCE"],
     checks: ["DataProcessing", "DataResidency", "SubProcessors", "BreachNotification", "DataRetention", "DataProtection", "AuditRights"],
-    defaultOn: true,
   },
   {
     id: "hipaa",
@@ -40,7 +41,6 @@ export const COMPLIANCE_PACKS: CompliancePack[] = [
     blurb: "Safeguards for protected health information in business-associate agreements.",
     docTypes: ["BAA", "COMPLIANCE"],
     checks: ["BreachNotification", "SecurityControls", "DataRetention", "DataProtection", "SubProcessors", "AuditRights"],
-    defaultOn: true,
   },
   {
     id: "soc2",
@@ -50,7 +50,6 @@ export const COMPLIANCE_PACKS: CompliancePack[] = [
     blurb: "Security, availability, and confidentiality controls for service organisations.",
     docTypes: ["COMPLIANCE"],
     checks: ["SecurityControls", "AuditRights", "DataRetention", "BreachNotification", "DataProcessing"],
-    defaultOn: true,
   },
   {
     id: "ccpa",
@@ -60,7 +59,6 @@ export const COMPLIANCE_PACKS: CompliancePack[] = [
     blurb: "Consumer-privacy rights and data-handling disclosures.",
     docTypes: ["DPA", "COMPLIANCE"],
     checks: ["DataProcessing", "DataResidency", "DataRetention", "DataProtection"],
-    defaultOn: false,
   },
   {
     id: "iso27001",
@@ -70,61 +68,22 @@ export const COMPLIANCE_PACKS: CompliancePack[] = [
     blurb: "Information-security management system requirements.",
     docTypes: ["COMPLIANCE"],
     checks: ["SecurityControls", "AuditRights", "DataRetention", "BreachNotification"],
-    defaultOn: false,
   },
 ];
 
-export const PACKS_STORAGE_KEY = "biq-compliance-packs";
-
-export function packDefaults(): Record<string, boolean> {
-  return Object.fromEntries(COMPLIANCE_PACKS.map((p) => [p.id, p.defaultOn]));
-}
-
-export function readEnabledPacks(): Record<string, boolean> {
-  if (typeof window === "undefined") return packDefaults();
-  try {
-    const raw = localStorage.getItem(PACKS_STORAGE_KEY);
-    return raw ? { ...packDefaults(), ...JSON.parse(raw) } : packDefaults();
-  } catch {
-    return packDefaults();
-  }
-}
-
-// Cached snapshot so useSyncExternalStore gets a stable reference between reads
-// (it only changes when the stored string actually changes).
-const SERVER_PACKS = packDefaults();
-let cachedRaw: string | null | undefined;
-let cachedVal: Record<string, boolean> = SERVER_PACKS;
-
-function packsSnapshot(): Record<string, boolean> {
-  if (typeof window === "undefined") return SERVER_PACKS;
-  let raw: string | null = null;
-  try {
-    raw = localStorage.getItem(PACKS_STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
-  if (raw !== cachedRaw) {
-    cachedRaw = raw;
-    cachedVal = raw ? { ...packDefaults(), ...(JSON.parse(raw) as Record<string, boolean>) } : packDefaults();
-  }
-  return cachedVal;
-}
-
-function subscribePacks(cb: () => void) {
-  if (typeof window === "undefined") return () => {};
-  const h = (e: StorageEvent) => {
-    if (e.key === PACKS_STORAGE_KEY) cb();
-  };
-  window.addEventListener("storage", h);
-  return () => window.removeEventListener("storage", h);
-}
-
-const useClientMounted = () => useSyncExternalStore(() => () => {}, () => true, () => false);
-
-/** Read-only view of enabled packs for consumers like the dashboard. */
+/**
+ * Which packs the tenant has enabled, read from the API (`/tenant/compliance`).
+ *
+ * `mounted` is true only once the API has answered. Until then — and if the
+ * request fails — `enabled` is empty: there is no client-side default, so a
+ * pack never looks switched on unless the backend says it is. (This used to
+ * read a localStorage copy that fell back to "GDPR, HIPAA and SOC 2 are on".)
+ */
 export function useEnabledPacks(): { enabled: Record<string, boolean>; mounted: boolean } {
-  const enabled = useSyncExternalStore(subscribePacks, packsSnapshot, () => SERVER_PACKS);
-  const mounted = useClientMounted();
-  return { enabled, mounted };
+  const { data } = useCompliancePacks();
+  const enabled = useMemo(() => {
+    const on = new Set(data?.packs ?? []);
+    return Object.fromEntries(COMPLIANCE_PACKS.map((p) => [p.id, on.has(p.id)]));
+  }, [data]);
+  return { enabled, mounted: !!data };
 }

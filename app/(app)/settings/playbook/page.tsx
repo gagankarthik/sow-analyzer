@@ -1,207 +1,252 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SonarMark } from "@/components/ui/SonarMark";
-import { MotionReveal } from "@/components/MotionReveal";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LastUpdated } from "@/components/ui/LastUpdated";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Edit3,
-  Plus,
-  History,
-  ShieldCheck,
-  Download,
-  FileText,
-} from "@/components/ui/icons";
-import { listDocuments } from "@/lib/api";
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  FilterChips,
+  FilterSummary,
+  NoResults,
+  SettingsLayout,
+  SettingsSearch,
+  SettingsSection,
+} from "@/components/settings/SettingsNav";
+import { RuleCard } from "@/components/playbook/RuleCard";
+import { RuleDialog, type RuleDialogTarget } from "@/components/playbook/RuleDialog";
+import { AlertTriangle, Plus, RefreshCw } from "@/components/ui/icons";
+import { categoryLabel } from "@/lib/clause-categories";
+import { useDocuments } from "@/lib/queries/documents";
+import { usePlaybook, useRevertPlaybookRule } from "@/lib/queries/playbook";
+import { RULE_FAMILIES, foundCustomTypes, ruleFamily, type PlaybookRule } from "@/lib/playbook";
 
-const PLAYBOOK_SECTIONS = [
-  {
-    id: "liability",
-    section: "G. Liability",
-    description:
-      "Define your standard liability cap, carve-outs, and consequential damage exclusions.",
-  },
-  {
-    id: "payment",
-    section: "B. Payment",
-    description:
-      "Set your default payment terms, late-interest rate, and early-pay discount policy.",
-  },
-  {
-    id: "termination",
-    section: "I. Termination",
-    description:
-      "Specify notice periods, early-termination fees, and cure-window requirements.",
-  },
-  {
-    id: "ip",
-    section: "E. IP",
-    description:
-      "Configure foreground IP assignment, background IP carve-outs, and retained licenses.",
-  },
-  {
-    id: "confidentiality",
-    section: "H. Confidentiality",
-    description:
-      "Define survival periods, permitted disclosures, and trade-secret protections.",
-  },
+type SourceFilter = "all" | "custom" | "default";
+type CheckFilter = "all" | "auto" | "manual";
+const ALL_TYPES = "all";
+
+const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
+  { value: "all", label: "All rules" },
+  { value: "custom", label: "Your rules" },
+  { value: "default", label: "Built-in defaults" },
+];
+const CHECK_OPTIONS: { value: CheckFilter; label: string }[] = [
+  { value: "all", label: "Any" },
+  { value: "auto", label: "Automatic check" },
+  { value: "manual", label: "No automatic check" },
 ];
 
+const typeName = (r: PlaybookRule) => (r.isCustomType ? r.clauseType : categoryLabel(r.clauseType));
+
 export default function PlaybookPage() {
-  const [readyCount, setReadyCount] = useState<number | null>(null);
-  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const { data: playbook, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = usePlaybook();
+  // Custom clause types found in the user's documents, offered when adding a rule.
+  const { data: docs } = useDocuments();
+  const revert = useRevertPlaybookRule();
 
-  useEffect(() => {
-    listDocuments()
-      .then((docs) => {
-        setTotalCount(docs.length);
-        setReadyCount(docs.filter((d) => d.status === "READY").length);
-      })
-      .catch(() => {
-        setTotalCount(0);
-        setReadyCount(0);
+  const [q, setQ] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [checkFilter, setCheckFilter] = useState<CheckFilter>("all");
+  const [typeFilter, setTypeFilter] = useState(ALL_TYPES);
+  const [dialog, setDialog] = useState<RuleDialogTarget | null>(null);
+  const [confirm, setConfirm] = useState<PlaybookRule | null>(null);
+
+  const rules = useMemo(() => playbook?.rules ?? [], [playbook]);
+  const foundTypes = useMemo(() => foundCustomTypes(docs ?? []), [docs]);
+
+  const visible = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return rules.filter((r) => {
+      if (sourceFilter === "custom" && r.source !== "custom") return false;
+      if (sourceFilter === "default" && r.source === "custom") return false;
+      if (checkFilter === "auto" && !r.hasAutomaticCheck) return false;
+      if (checkFilter === "manual" && r.hasAutomaticCheck) return false;
+      if (typeFilter !== ALL_TYPES && r.ruleId !== typeFilter) return false;
+      if (!term) return true;
+      const haystack = [r.label, typeName(r), r.ruleId, r.standard, r.rationale, r.fallback, ...r.requiredPhrases, ...r.forbiddenPhrases].join(" ");
+      return haystack.toLowerCase().includes(term);
+    });
+  }, [rules, q, sourceFilter, checkFilter, typeFilter]);
+
+  const filtering = q.trim() !== "" || sourceFilter !== "all" || checkFilter !== "all" || typeFilter !== ALL_TYPES;
+  const clearFilters = () => { setQ(""); setSourceFilter("all"); setCheckFilter("all"); setTypeFilter(ALL_TYPES); };
+  const groups = RULE_FAMILIES
+    .map((f) => ({ ...f, rules: visible.filter((r) => ruleFamily(r) === f.id) }))
+    .filter((g) => g.rules.length > 0);
+  const autoCount = rules.filter((r) => r.hasAutomaticCheck).length;
+
+  async function confirmRevert() {
+    const rule = confirm;
+    if (!rule) return;
+    setConfirm(null);
+    try {
+      await revert.mutateAsync(rule.ruleId);
+      toast.success(rule.hasBuiltInDefault ? "Reverted to the built-in default" : "Rule removed", {
+        description: "This applies the next time a document is analysed or re-analysed.",
       });
-  }, []);
+    } catch (e) {
+      // The rule is back in the list exactly as it was (see useRevertPlaybookRule).
+      toast.error(rule.hasBuiltInDefault ? "Couldn't revert the rule" : "Couldn't remove the rule", {
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    }
+  }
 
-  const eyebrow =
-    totalCount === null
-      ? "Loading…"
-      : `${PLAYBOOK_SECTIONS.length} sections · ${readyCount} document${readyCount === 1 ? "" : "s"} indexed · draft`;
+  const openAdd = () => setDialog({ mode: "add", foundTypes, takenRuleIds: rules.map((r) => r.ruleId) });
 
   return (
     <>
       <PageHeader
-        eyebrow={eyebrow}
         title="Playbook"
-        subtitle="Your firm's negotiation defaults. Every clause Blue-IQ analyzes is compared against these rules — deviations surface automatically."
-        actions={
-          <>
-            <Button variant="outline" size="md">
-              <History size={12} className="mr-1.5" /> Version history
-            </Button>
-            <Button variant="outline" size="md">
-              <Download size={12} className="mr-1.5" /> Export as PDF
-            </Button>
-            <Button variant="primary" size="md">
-              <Plus size={12} className="mr-1.5" /> New section
-            </Button>
-          </>
-        }
+        subtitle="The standard positions your documents are graded against, clause type by clause type."
+        back={{ href: "/settings", label: "Settings" }}
+        actions={<LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />}
       />
 
-      <div className="app-container py-6 md:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* TOC */}
-          <aside className="lg:col-span-3">
-            <div className="lg:sticky lg:top-[120px]">
-              <div className="eyebrow mb-3">Sections</div>
-              <ul className="flex flex-col gap-0.5">
-                {PLAYBOOK_SECTIONS.map((s, i) => (
-                  <li key={s.id}>
-                    <a
-                      href={`#${s.id}`}
-                      className="group flex items-center gap-2 h-8 px-3 -mx-3 rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-                    >
-                      <span className="font-mono text-[10.5px] text-muted-foreground/70 w-5">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <span className="truncate">{s.section}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Sonar suggestion card */}
-              <Card ai inset="md" className="mt-6 rounded-2xl">
-                <div className="flex items-start gap-2.5">
-                  <SonarMark size="sm" />
-                  <div>
-                    <div className="eyebrow text-[var(--ai-ink)] mb-1">Sonar</div>
-                    <p className="text-[11.5px] text-foreground leading-snug">
-                      {readyCount !== null && readyCount > 0
-                        ? `Sonar has indexed ${readyCount} document${readyCount === 1 ? "" : "s"}. Ask it to suggest standards based on your approved contracts.`
-                        : "Sonar learns from your approved contracts. Add standards to guide future reviews."}
-                    </p>
-                    <button className="mt-2 text-[11px] font-medium text-[var(--ai-ink)] hover:underline">
-                      Ask Sonar to suggest standards →
-                    </button>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Doc index status */}
-              {totalCount !== null && (
-                <div className="mt-4 rounded-2xl border border-border bg-card shadow-xs p-4">
-                  <div className="eyebrow mb-2">Document index</div>
-                  <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                    <FileText size={12} />
-                    <span>
-                      <span className="font-semibold text-foreground">{readyCount}</span> of{" "}
-                      <span className="font-semibold text-foreground">{totalCount}</span> docs ready
-                    </span>
-                  </div>
-                  {totalCount === 0 && (
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      Upload documents in Projects to enable AI-powered playbook inference.
-                    </p>
-                  )}
-                </div>
+      <SettingsLayout>
+        {/* Focal block: how many rules, and exactly when a change takes effect. */}
+        <div className="grid grid-cols-1 gap-4 rounded-xl bg-[var(--brand-primary-600)] p-5 text-white md:grid-cols-12 md:gap-8">
+          <div className="min-w-0 md:col-span-4">
+            <div className="text-sm font-medium text-[var(--brand-primary-100)]">Rules in your playbook</div>
+            <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
+              <span className="text-4xl font-semibold leading-none tracking-tight tabular-nums">{playbook ? rules.length : "—"}</span>
+              {playbook && (
+                <span className="text-base text-[var(--brand-primary-100)]">
+                  {playbook.customRuleCount === 0 ? "all built-in defaults" : `${playbook.customRuleCount} yours`}
+                </span>
               )}
             </div>
-          </aside>
-
-          {/* Content */}
-          <div className="lg:col-span-9 space-y-8">
-            {PLAYBOOK_SECTIONS.map((s, i) => (
-              <MotionReveal key={s.id} delay={Math.min(i * 0.04, 0.2)}>
-              <section id={s.id} className="scroll-mt-[120px]">
-                <Card inset="none" className="overflow-hidden rounded-2xl">
-                  <div className="px-6 py-5 border-b border-border flex items-center justify-between gap-3">
-                    <div>
-                      <div className="eyebrow flex items-center gap-1.5">
-                        <ShieldCheck size={10} />
-                        Section
-                      </div>
-                      <h3 className="mt-0.5 text-[18px] font-semibold tracking-tight text-foreground">
-                        {s.section}
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="neutral" dot size="sm">
-                        empty
-                      </Badge>
-                      <Button variant="ghost" size="sm">
-                        <Edit3 size={11} className="mr-1" />
-                        Edit
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="px-6 py-10 flex flex-col items-center justify-center text-center gap-4">
-                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--ai-surface)] border border-[var(--ai-border)]">
-                      <ShieldCheck size={20} className="text-[var(--ai-ink)]" />
-                    </span>
-                    <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed">
-                      {s.description}
-                    </p>
-                    <p className="text-[12px] text-muted-foreground italic">
-                      No standards defined yet
-                    </p>
-                    <Button variant="outline" size="sm">
-                      <Plus size={11} className="mr-1" />
-                      Add standard
-                    </Button>
-                  </div>
-                </Card>
-              </section>
-              </MotionReveal>
-            ))}
+            {playbook && (
+              <p className="mt-2 text-sm text-[var(--brand-primary-100)]">
+                {autoCount} with an automatic check · {rules.length - autoCount} flagged for you to compare
+              </p>
+            )}
+          </div>
+          <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--brand-primary-100)] md:col-span-8">
+            {playbook ? (
+              <>
+                <p><span className="font-semibold text-white">A change applies the next time a document is analysed or re-analysed.</span> Documents already analysed keep the result they were given.</p>
+                <p>A document is graded against the playbook of the workspace it was uploaded into: a document someone else uploaded and shared with you was graded against their playbook, not this one.</p>
+                <p>A clause whose type has no rule here is reported as &ldquo;no rule&rdquo;. That is not a pass: nothing was checked.</p>
+              </>
+            ) : isError ? (
+              <p>The playbook couldn&apos;t be loaded, so its rules are unknown.</p>
+            ) : (
+              <p>Loading the playbook…</p>
+            )}
           </div>
         </div>
-      </div>
+
+        {isLoading ? (
+          <div className="space-y-4" aria-busy="true" aria-label="Loading the playbook">
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
+        ) : !playbook ? (
+          <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-12 text-center">
+            <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-card text-[var(--danger)]"><AlertTriangle size={18} /></span>
+            <h2 className="text-lg font-semibold text-foreground">Couldn&apos;t load the playbook</h2>
+            <p className="mt-1 max-w-md break-words text-sm leading-relaxed text-[var(--ink-700)]">
+              {error instanceof Error ? error.message : "The request failed."} No rules are shown because none were received.
+            </p>
+            <Button variant="outline" size="lg" className="mt-5" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw size={14} className={isFetching ? "animate-spin motion-reduce:animate-none" : undefined} />Try again
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* Search, filters and the page's one primary action */}
+            <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-xs sm:p-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <SettingsSearch id="playbook-search" label="Search rules" placeholder="Rule, clause type or wording" value={q} onChange={setQ} />
+                <Button size="lg" className="w-full md:w-auto" onClick={openAdd}><Plus size={15} />Add a rule</Button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                <div className="min-w-0 lg:col-span-5"><FilterChips label="Source" options={SOURCE_OPTIONS} value={sourceFilter} onChange={setSourceFilter} /></div>
+                <div className="min-w-0 lg:col-span-4"><FilterChips label="Check" options={CHECK_OPTIONS} value={checkFilter} onChange={setCheckFilter} /></div>
+                <div className="min-w-0 lg:col-span-3">
+                  <label htmlFor="playbook-type" className="mb-1.5 block text-sm font-medium text-[var(--ink-600)]">Clause type</label>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger id="playbook-type" className="h-10! w-full bg-card text-sm sm:h-8!"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_TYPES}>All clause types</SelectItem>
+                      {[...rules].sort((a, b) => typeName(a).localeCompare(typeName(b))).map((r) => (
+                        <SelectItem key={r.ruleId} value={r.ruleId}>{typeName(r)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <FilterSummary shown={visible.length} total={rules.length} noun="rules" active={filtering} onClear={clearFilters} />
+            </div>
+
+            {rules.length === 0 ? (
+              <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-12 text-center">
+                <h2 className="text-lg font-semibold text-foreground">The playbook has no rules</h2>
+                <p className="mt-1 max-w-md text-sm leading-relaxed text-[var(--ink-600)]">
+                  The API returned an empty playbook, so no clause is being checked. Add a rule for a custom clause type to start.
+                </p>
+              </div>
+            ) : visible.length === 0 ? (
+              <NoResults noun="rules" onClear={clearFilters} />
+            ) : (
+              groups.map((g) => (
+                <SettingsSection
+                  key={g.id}
+                  id={`family-${g.id}`}
+                  title={<>{g.label} <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{g.rules.length}</span></>}
+                  description={g.description}
+                  flush
+                >
+                  <ul className="divide-y divide-border">
+                    {g.rules.map((r) => (
+                      <li key={r.ruleId}>
+                        <RuleCard
+                          rule={r}
+                          reverting={revert.isPending && revert.variables === r.ruleId}
+                          onEdit={() => setDialog({ mode: "edit", rule: r })}
+                          onRevert={() => setConfirm(r)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </SettingsSection>
+              ))
+            )}
+          </>
+        )}
+      </SettingsLayout>
+
+      <RuleDialog target={dialog} onClose={() => setDialog(null)} />
+
+      <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirm?.hasBuiltInDefault ? `Revert “${confirm.label}” to the built-in default?` : `Remove the rule “${confirm?.label ?? ""}”?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirm?.hasBuiltInDefault
+                ? "Your wording, thresholds and wording checks for this clause type are deleted and the built-in default applies again."
+                : "This clause type has no built-in default. Without this rule, its clauses are reported as “no rule”: nothing is checked."}
+              {" "}Documents already analysed keep their current result until they are analysed again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep my rule</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmRevert}>
+              {confirm?.hasBuiltInDefault ? "Revert to default" : "Remove rule"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

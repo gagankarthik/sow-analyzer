@@ -7,7 +7,7 @@ type CardProps = React.ComponentProps<"div"> & {
   inset?: "none" | "sm" | "md" | "lg"
   /** Hover-lift micro-interaction. */
   lift?: boolean
-  /** Apply AI surface treatment (violet wash + border). */
+  /** Sonar surface: brand-blue tint and border. */
   ai?: boolean
 }
 
@@ -24,19 +24,19 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card relative flex flex-col gap-4 rounded-lg bg-card text-card-foreground border border-border shadow-xs",
+        "group/card relative flex flex-col gap-4 rounded-xl bg-card text-card-foreground border border-border shadow-xs",
         // padding presets
         inset === "sm" && "p-4 gap-3",
         inset === "md" && "p-5",
         inset === "lg" && "p-6",
-        inset === "none" && "overflow-hidden py-4 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg",
+        inset === "none" && "overflow-hidden py-4 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         size === "sm" && "gap-3 py-3",
-        // ai surface
+        // Sonar surface
         ai &&
-          "bg-[var(--ai-surface)] border-[var(--ai-border)] shadow-[var(--shadow-ai)]",
+          "bg-[var(--ai-surface)] border-[var(--ai-border)]",
         // lift
         lift &&
-          "transition-shadow transition-colors hover:shadow-sm hover:border-[var(--border-strong)]",
+          "transition-[box-shadow,border-color] duration-150 hover:shadow-md hover:border-[var(--brand-primary-300)]",
         className,
       )}
       {...props}
@@ -67,9 +67,9 @@ function CardHeader({
         {...props}
       >
         <div className="min-w-0">
-          {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
+          {eyebrow && <div className="mb-1 text-sm font-medium text-muted-foreground">{eyebrow}</div>}
           {title && (
-            <h3 className="h-3 text-[17px] text-foreground">
+            <h3 className="text-xl font-semibold leading-tight tracking-[-0.015em] text-foreground">
               {title}
             </h3>
           )}
@@ -99,7 +99,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-title"
       className={cn(
-        "font-heading text-[15px] leading-snug font-semibold tracking-tight",
+        "font-heading text-base leading-snug font-semibold tracking-tight",
         className,
       )}
       {...props}
@@ -145,7 +145,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-footer"
       className={cn(
-        "flex items-center rounded-b-lg border-t bg-muted/40 p-4",
+        "flex items-center rounded-b-xl border-t bg-muted/40 p-4",
         className,
       )}
       {...props}

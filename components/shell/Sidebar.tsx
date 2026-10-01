@@ -6,9 +6,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useUIStore } from "@/lib/stores/ui";
 import {
-  LayoutDashboard, FileText, Kanban, BarChart3, Briefcase, Sparkles,
-  Settings, Info, ChevronsLeft, ChevronsRight, Wand2, CalendarClock,
+  LayoutDashboard, Kanban, BarChart3, Briefcase, Sonar,
+  Settings, Library, DraftSow, CalendarClock,
 } from "@/components/ui/icons";
 
 type NavItem = {
@@ -23,27 +24,23 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Projects", href: "/projects", icon: Briefcase },
-  { label: "Library", href: "/library", icon: FileText },
+  { label: "Library", href: "/library", icon: Library },
   { label: "Workflow", href: "/workflow", icon: Kanban },
   { label: "Renewals", href: "/renewals", icon: CalendarClock },
-  { label: "Draft SOW", href: "/draft", icon: Wand2 },
-  { label: "Sonar", action: "copilot", icon: Sparkles },
-  { label: "Insights", href: "/insights", icon: BarChart3 }
-];
-
-// Pinned at the foot of the rail — always reachable, never scrolls away.
-const systemItems: NavItem[] = [
+  { label: "Draft SOW", href: "/draft", icon: DraftSow },
+  { label: "Sonar", action: "copilot", icon: Sonar },
+  { label: "Insights", href: "/insights", icon: BarChart3 },
   { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Help", href: "/help", icon: Info },
 ];
 
+// Every routable destination in the rail, so the longest-prefix match below
+// decides the one active item. (Help lives in the top bar.)
 const ALL_HREFS = NAV_ITEMS.filter((i) => i.href).map((i) => i.href as string);
 
 function bestMatchHref(pathname: string): string | null {
   let best: string | null = null;
   for (const href of ALL_HREFS) {
-    const matches =
-      href === "/dashboard" ? pathname === "/dashboard" : pathname === href || pathname.startsWith(href + "/");
+    const matches = pathname === href || pathname.startsWith(href + "/");
     if (matches && (best === null || href.length > best.length)) best = href;
   }
   return best;
@@ -67,16 +64,19 @@ export function Sidebar({
   onOpenCopilot?: () => void;
 } = {}) {
   const pathname = usePathname() ?? "";
-  const [collapsed, setCollapsed] = useState(false);
+  // Collapse state is shared with the top bar, which holds the toggle button.
+  const collapsed = useUIStore((s) => s.sidebarCollapsed);
+  const setCollapsed = useUIStore((s) => s.setSidebarCollapsed);
+  const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // Read the persisted state after mount (not during render) so the server and
     // first client paint agree, then sync — avoids a hydration mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- deferred client-only read
     setCollapsed(readCollapsed());
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deferred client-only read
     setMounted(true);
-  }, []);
+  }, [setCollapsed]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -94,11 +94,11 @@ export function Sidebar({
         (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
       if (typing) return;
       e.preventDefault();
-      setCollapsed((v) => !v);
+      toggleSidebar();
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [toggleSidebar]);
 
   const activeHref = bestMatchHref(pathname);
   const isActive = (href?: string) => !!href && href === activeHref;
@@ -114,7 +114,7 @@ export function Sidebar({
         aria-hidden
         onClick={onMobileClose}
         className={cn(
-          "lg:hidden fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm transition-opacity duration-200",
+          "lg:hidden fixed inset-0 z-40 bg-foreground/40 transition-opacity duration-200",
           mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
       />
@@ -135,18 +135,21 @@ export function Sidebar({
           href="/"
           aria-label="Blue-IQ home"
           className={cn(
-            "h-14 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/40",
-            collapsed ? "px-0 justify-center" : "px-4 gap-3",
+            "h-16 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/60",
+            collapsed ? "px-5 lg:px-0 lg:justify-center" : "px-5",
           )}
         >
-          <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-primary-600)] shadow-sm" aria-hidden>
-            <Image src="/logo-icon.svg" alt="" width={22} height={22} priority className="block h-[22px] w-[22px] select-none pointer-events-none brightness-0 invert" />
-          </span>
-          {!collapsed && (
-            <span className="min-w-0 flex-1 leading-tight">
-              <span className="block truncate text-[15px] font-semibold tracking-tight text-foreground">Blue-IQ</span>
-            </span>
-          )}
+          {collapsed ? (
+            <Image src="/logo-icon.svg" alt="" width={28} height={28} priority className="hidden select-none lg:block" />
+          ) : null}
+          <Image
+            src="/logo.svg"
+            alt="Blue-IQ"
+            width={113}
+            height={28}
+            priority
+            className={cn("select-none", collapsed && "lg:hidden")}
+          />
         </Link>
 
         {/* Nav — flat list */}
@@ -158,50 +161,6 @@ export function Sidebar({
           </ul>
         </nav>
 
-        {/* Foot cluster — system links, collapse */}
-        <div className="mt-auto border-t border-sidebar-border">
-          <div className={cn("py-2", collapsed ? "px-2.5" : "px-3")}>
-            <ul className="flex flex-col gap-1">
-              {systemItems.map((item) => (
-                <NavRow
-                  key={item.label}
-                  item={item}
-                  active={item.href === "/settings" ? pathname.startsWith("/settings") : false}
-                  collapsed={collapsed}
-                  onAction={onAction}
-                />
-              ))}
-            </ul>
-          </div>
-
-          {/* Collapse toggle (desktop only) */}
-          <div className={cn("border-t border-sidebar-border hidden lg:block", collapsed ? "p-2.5" : "px-3 py-2")}>
-            {mounted && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setCollapsed((v) => !v)}
-                    aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                    aria-pressed={collapsed}
-                    className={cn(
-                      "inline-flex items-center rounded-lg text-muted-foreground transition-colors hover:text-foreground hover:bg-sidebar-accent",
-                      collapsed ? "h-9 w-full justify-center" : "h-9 w-full gap-2.5 px-2.5 justify-start",
-                    )}
-                  >
-                    {collapsed ? <ChevronsRight size={16} /> : (
-                      <>
-                        <ChevronsLeft size={16} />
-                        <span className="text-[13px]">Collapse</span>
-                        <kbd className="ml-auto rounded border border-border bg-muted/60 px-1.5 font-mono text-[10px] text-muted-foreground/80">[</kbd>
-                      </>
-                    )}
-                  </button>
-                </TooltipTrigger>
-                {collapsed && <TooltipContent side="right">Expand sidebar · [</TooltipContent>}
-              </Tooltip>
-            )}
-          </div>
-        </div>
       </aside>
     </>
   );
@@ -220,26 +179,22 @@ function NavRow({
 
   const inner = (
     <>
-      {/* Active accent bar (expanded only) */}
-      {active && !collapsed && (
-        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--brand-primary-600)]" />
-      )}
       <Icon
         size={18}
         strokeWidth={active ? 2 : 1.75}
-        className={cn("shrink-0 transition-colors", active && "text-[var(--brand-primary-700)]")}
+        className="shrink-0"
       />
       {!collapsed && <span className="flex-1 truncate text-left">{item.label}</span>}
     </>
   );
 
   const cls = cn(
-    "group/nav relative flex items-center h-9 rounded-lg text-[13.5px] transition-all duration-150 w-full",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-    collapsed ? "w-9 mx-auto justify-center" : "gap-3 px-2.5",
+    "group/nav relative flex items-center h-10 rounded-lg text-base transition-colors duration-150 w-full",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+    collapsed ? "w-10 mx-auto justify-center" : "gap-3 px-3",
     active
-      ? "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] font-semibold"
-      : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/70",
+      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm"
+      : "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
   );
 
   const node = item.href ? (

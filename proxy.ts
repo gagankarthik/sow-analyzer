@@ -4,41 +4,49 @@
 // the JWT signature (that would mean a network call on every navigation); real
 // enforcement is the Cognito JWT authorizer on the API Gateway, so a forged
 // cookie buys nothing — the backend rejects requests without a valid token.
+// The route handlers under /api verify the token themselves (lib/auth/verify).
 
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, isTokenValid } from "@/lib/auth/session";
 
-// Routes reachable without authentication.
-const PUBLIC_ROUTES = new Set([
-  "/",
-  "/login",
-  "/signup",
-  "/confirm",
-  "/reset",
-  "/calculator",
-]);
+// The signed-in workspace: one entry per top-level folder in app/(app). A new
+// folder there must be added here (and to app/robots.ts). AppShell also sends
+// signed-out visitors to /login, so a missed entry still does not open a page.
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/draft",
+  "/help",
+  "/insights",
+  "/library",
+  "/notifications",
+  "/onboarding",
+  "/projects",
+  "/renewals",
+  "/settings",
+  "/workflow",
+];
 
-function isPublic(pathname: string): boolean {
-  if (PUBLIC_ROUTES.has(pathname)) return true;
-  // marketing/legal pages, if added later
-  if (pathname.startsWith("/legal")) return true;
-  return false;
+// Screens a signed-in user has no reason to sit on.
+const SIGNED_OUT_ONLY = new Set(["/login", "/signup"]);
+
+function isProtected(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const authed = isTokenValid(token);
-  const publicRoute = isPublic(pathname);
 
-  // Authenticated users shouldn't sit on the auth screens.
-  if (authed && (pathname === "/login" || pathname === "/signup")) {
+  if (authed && SIGNED_OUT_ONLY.has(pathname)) {
     return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   }
 
-  // Unauthenticated users hitting a protected route get bounced to login,
-  // preserving where they were headed.
-  if (!authed && !publicRoute) {
+  // Signed-out visitors to the workspace go to login, keeping where they were
+  // headed. Everything else passes through: the marketing and legal pages, the
+  // metadata routes (robots.txt, sitemap.xml, manifest, social image), and any
+  // unknown path, which gets the 404 page rather than a sign-in screen.
+  if (!authed && isProtected(pathname)) {
     const url = new URL("/login", req.nextUrl);
     url.searchParams.set("redirect", pathname + req.nextUrl.search);
     return NextResponse.redirect(url);
@@ -48,6 +56,6 @@ export default function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except API routes and static assets.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.svg$|.*\\.png$).*)"],
+  // Skip API routes, build assets and files served by extension (public/).
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)"],
 };

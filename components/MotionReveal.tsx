@@ -1,27 +1,14 @@
-"use client";
-
-import { motion } from "framer-motion";
-
-/** Fade + slide-up on scroll into view (once). Respects reduced motion via
- *  Framer's built-in handling. Wrap any section to give it a polished entrance. */
+/** Section wrapper. It used to fade each section up as it scrolled into view,
+ *  which left content invisible until JavaScript ran (and in background tabs).
+ *  Content now renders immediately; the name and props stay so callers are
+ *  unchanged. `delay` is accepted and ignored. */
 export function MotionReveal({
   children,
-  delay = 0,
   className,
 }: {
   children: React.ReactNode;
   delay?: number;
   className?: string;
 }) {
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5, ease: [0.2, 0.8, 0.2, 1], delay }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className={className}>{children}</div>;
 }

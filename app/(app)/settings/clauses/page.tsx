@@ -1,217 +1,207 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { SonarMark } from "@/components/ui/SonarMark";
-import { MotionReveal } from "@/components/MotionReveal";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LastUpdated } from "@/components/ui/LastUpdated";
 import {
-  Search,
-  Plus,
-  Filter,
-  Briefcase,
-  FileText,
-} from "@/components/ui/icons";
-import { listDocuments } from "@/lib/api";
+  FilterChips,
+  FilterSummary,
+  NoResults,
+  SettingsLayout,
+  SettingsSearch,
+  SettingsSection,
+} from "@/components/settings/SettingsNav";
+import { FileText, RefreshCw, XCircle } from "@/components/ui/icons";
+import { useDocuments, useClassifications, isProcessing } from "@/lib/queries/documents";
+import { categoryLabel, clauseSpecificType } from "@/lib/clause-categories";
+import { RISK_LABEL, RISK_ORDER_DESC } from "@/lib/chart-theme";
+import type { RiskLevel } from "@/lib/types";
 
-const CLAUSE_CATEGORIES = [
-  {
-    id: "liability",
-    title: "Liability",
-    description:
-      "Caps, carve-outs, and mutual exclusions extracted from processed documents.",
-  },
-  {
-    id: "termination",
-    title: "Termination",
-    description:
-      "Convenience termination periods, early-termination fees, and cure windows.",
-  },
-  {
-    id: "payment",
-    title: "Payment",
-    description:
-      "Payment terms, late-interest clauses, and early-pay discount provisions.",
-  },
-  {
-    id: "sla",
-    title: "SLA",
-    description:
-      "Uptime targets, credit ladders, measurement windows, and exclusions.",
-  },
-];
+const RISK_RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2, critical: 3 };
+const RISK_TEXT: Record<RiskLevel, string> = {
+  critical: "text-[var(--danger)]",
+  high: "text-[var(--warning)]",
+  medium: "text-[var(--ink-700)]",
+  low: "text-[var(--success)]",
+};
 
+type CategoryRow = {
+  key: string;
+  label: string;
+  /** Clauses in this category across all analysed documents. */
+  clauses: number;
+  /** Documents that contain at least one clause in this category. */
+  docs: number;
+  /** Highest risk level the analysis gave any clause in it; null if none was rated. */
+  peak: RiskLevel | null;
+  /** Clauses rated high or critical. */
+  highRisk: number;
+  /** Finer-grained clause types the API reported inside this category. */
+  types: string[];
+};
+
+type RiskFilter = "all" | RiskLevel | "unrated";
+
+/**
+ * Clause library: an index of the clauses Sonar actually extracted from this
+ * workspace's analysed documents, grouped by the category the backend assigned.
+ * Every number is a count over the classification responses — there is no
+ * fixed category list, so a category the backend starts sending tomorrow shows
+ * up here on its own.
+ */
 export default function ClauseLibraryPage() {
+  const docsQuery = useDocuments();
+  const docs = useMemo(() => docsQuery.data ?? [], [docsQuery.data]);
+  const { byDoc, version, loadingCount, failedCount, readyCount } = useClassifications(docs);
+  const processingCount = docs.filter((d) => isProcessing(d.status)).length;
+
+  const rows = useMemo<CategoryRow[]>(() => {
+    const m = new Map<string, { clauses: number; docs: Set<string>; peak: RiskLevel | null; highRisk: number; types: Set<string> }>();
+    byDoc.forEach((c, docId) => {
+      for (const cl of c.clauses) {
+        const e = m.get(cl.category) ?? { clauses: 0, docs: new Set<string>(), peak: null, highRisk: 0, types: new Set<string>() };
+        e.clauses += 1;
+        e.docs.add(docId);
+        if (cl.riskRated !== false) {
+          if (e.peak === null || RISK_RANK[cl.riskLevel] > RISK_RANK[e.peak]) e.peak = cl.riskLevel;
+          if (cl.riskLevel === "high" || cl.riskLevel === "critical") e.highRisk += 1;
+        }
+        const specific = clauseSpecificType(cl);
+        if (specific) e.types.add(categoryLabel(specific));
+        m.set(cl.category, e);
+      }
+    });
+    return [...m.entries()]
+      .map(([key, v]) => ({ key, label: categoryLabel(key), clauses: v.clauses, docs: v.docs.size, peak: v.peak, highRisk: v.highRisk, types: [...v.types].sort() }))
+      .sort((a, b) => b.clauses - a.clauses || a.label.localeCompare(b.label));
+    // `version` changes whenever a classification changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [byDoc, version]);
+
+  const totalClauses = rows.reduce((s, r) => s + r.clauses, 0);
+  const analysedDocs = byDoc.size;
+
   const [q, setQ] = useState("");
-  const [readyCount, setReadyCount] = useState<number | null>(null);
-  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [risk, setRisk] = useState<RiskFilter>("all");
+  const term = q.trim().toLowerCase();
+  const visible = rows.filter(
+    (r) =>
+      (risk === "all" || (risk === "unrated" ? r.peak === null : r.peak === risk)) &&
+      (!term || r.label.toLowerCase().includes(term) || r.key.toLowerCase().includes(term) || r.types.some((t) => t.toLowerCase().includes(term))),
+  );
+  const filtering = term !== "" || risk !== "all";
+  const clearFilters = () => { setQ(""); setRisk("all"); };
+  const riskOptions: { value: RiskFilter; label: string }[] = [
+    { value: "all", label: "All" },
+    ...RISK_ORDER_DESC.filter((r) => rows.some((x) => x.peak === r)).map((r) => ({ value: r as RiskFilter, label: `${RISK_LABEL[r]} peak` })),
+    ...(rows.some((x) => x.peak === null) ? [{ value: "unrated" as RiskFilter, label: "Not rated" }] : []),
+  ];
 
-  useEffect(() => {
-    listDocuments()
-      .then((docs) => {
-        setTotalCount(docs.length);
-        setReadyCount(docs.filter((d) => d.status === "READY").length);
-      })
-      .catch(() => {
-        setTotalCount(0);
-        setReadyCount(0);
-      });
-  }, []);
+  const loadingDocs = docsQuery.isLoading;
+  const docsFailed = docsQuery.isError && !docsQuery.data;
+  const stillLoading = loadingDocs || (readyCount > 0 && loadingCount > 0 && rows.length === 0);
 
-  const eyebrow =
-    totalCount === null
-      ? "Loading…"
-      : readyCount !== null && readyCount > 0
-        ? `${readyCount} document${readyCount === 1 ? "" : "s"} indexed · clause extraction pending`
-        : "0 clauses · upload documents to get started";
+  // One sentence, each part a count from the queries above.
+  const status = loadingDocs
+    ? "Loading…"
+    : docsFailed
+      ? "Not available"
+      : [
+          `${totalClauses.toLocaleString()} clause${totalClauses === 1 ? "" : "s"} in ${rows.length} categor${rows.length === 1 ? "y" : "ies"}`,
+          `from ${analysedDocs} of ${docs.length} document${docs.length === 1 ? "" : "s"}`,
+          processingCount > 0 ? `${processingCount} still processing` : "",
+          loadingCount > 0 ? `${loadingCount} loading` : "",
+          failedCount > 0 ? `${failedCount} couldn’t be read` : "",
+        ].filter(Boolean).join(" · ");
 
   return (
     <>
       <PageHeader
-        eyebrow={eyebrow}
         title="Clause library"
-        subtitle="The shared building blocks. Pull pre-approved language into any draft in one click."
-        actions={
-          <>
-            <Button variant="outline" size="md" disabled>
-              <Filter size={12} className="mr-1.5" /> Filter
-            </Button>
-            <Button variant="primary" size="md">
-              <Plus size={12} className="mr-1.5" /> New clause
-            </Button>
-          </>
-        }
+        subtitle="Every clause Sonar extracted from your analysed documents, grouped by category."
+        back={{ href: "/settings", label: "Settings" }}
+        actions={<LastUpdated updatedAt={docsQuery.dataUpdatedAt} isFetching={docsQuery.isFetching} onRefresh={() => docsQuery.refetch()} failed={docsQuery.isError} />}
       />
 
-      <div className="app-container py-6 md:py-8 space-y-6">
-        {/* Search */}
-        <MotionReveal>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[240px] max-w-[480px]">
-            <Search
-              size={14}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-            />
-            <Input
-              type="text"
-              placeholder="Search by title or category…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              className="h-10 rounded-lg border border-border bg-card pl-9 pr-4 focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)]"
-              disabled
-            />
-          </div>
-          <div className="flex-1" />
-          <Button variant="ai" size="md" className="gap-1.5 pl-2" disabled>
-            <SonarMark size="sm" />
-            Suggest gaps in coverage
-          </Button>
-        </div>
-
-        {/* Category chips */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            data-active="true"
-            className="text-[11.5px] px-3.5 py-1.5 rounded-full border border-border text-muted-foreground transition-all duration-200 data-[active=true]:bg-[var(--brand-primary-600)] data-[active=true]:border-[var(--brand-primary-600)] data-[active=true]:text-white"
-          >
-            All <span className="opacity-70 ml-0.5">0</span>
-          </button>
-          {CLAUSE_CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              className="text-[11.5px] px-3.5 py-1.5 rounded-full border border-border text-muted-foreground transition-all duration-200 hover:text-foreground hover:border-[var(--border-strong)]"
-            >
-              {cat.title} <span className="opacity-70 ml-0.5">0</span>
-            </button>
-          ))}
-        </div>
-        </MotionReveal>
-
-        {/* Status banner */}
-        {totalCount !== null && totalCount > 0 && (
-          <MotionReveal>
-            <div className="rounded-2xl border border-[var(--ai-border)] bg-[var(--ai-surface)]/40 shadow-xs p-5 md:p-6 flex items-start gap-3">
-              <SonarMark size="sm" />
-              <div>
-                <div className="text-[13px] font-medium text-foreground">
-                  {readyCount} document{readyCount === 1 ? "" : "s"} ready for clause extraction
-                </div>
-                <p className="mt-0.5 text-[12px] text-muted-foreground">
-                  Sonar will extract and categorize clauses as your documents are processed. Clauses will appear here automatically.
-                </p>
+      <SettingsLayout>
+        <SettingsSection title="Clause categories" description={status}>
+          {stillLoading ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+            </div>
+          ) : docsFailed ? (
+            <div role="alert" className="flex flex-col items-center rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-10 text-center">
+              <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={22} strokeWidth={1.75} /></span>
+              <h3 className="text-lg font-semibold text-foreground">Couldn&apos;t load your documents</h3>
+              <p className="mt-1.5 max-w-sm break-words text-sm leading-relaxed text-[var(--ink-600)]">
+                {docsQuery.error instanceof Error ? docsQuery.error.message : "The request failed."}
+              </p>
+              <Button variant="outline" size="lg" className="mt-5" onClick={() => docsQuery.refetch()}><RefreshCw size={14} />Try again</Button>
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--ink-300)] bg-[var(--panel)] px-4 py-10 text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-100)]">
+                <FileText size={20} className="text-[var(--brand-primary-700)]" />
               </div>
+              <h3 className="text-xl font-semibold tracking-tight text-foreground">No clauses yet</h3>
+              <p className="mt-2 max-w-sm text-base leading-relaxed text-[var(--ink-600)]">
+                {docs.length === 0
+                  ? "Upload a document and its clauses appear here once it has been analysed."
+                  : processingCount > 0
+                    ? `${processingCount} document${processingCount === 1 ? " is" : "s are"} still being analysed. Clauses appear here as each one finishes.`
+                    : failedCount > 0
+                      ? "The analysis for your documents couldn’t be read. Refresh to try again."
+                      : "None of your documents has an analysis with clauses."}
+              </p>
+              {docs.length === 0 && (
+                <Button variant="outline" size="lg" className="mt-5" asChild>
+                  <Link href="/projects/new">Add a document</Link>
+                </Button>
+              )}
             </div>
-          </MotionReveal>
-        )}
+          ) : (
+            <div className="flex flex-col gap-4">
+              <SettingsSearch id="clause-search" label="Search categories" placeholder="Category or clause type" value={q} onChange={setQ} />
+              {riskOptions.length > 2 && <FilterChips label="Highest risk found" value={risk} onChange={setRisk} options={riskOptions} />}
+              <FilterSummary shown={visible.length} total={rows.length} noun="categories" active={filtering} onClear={clearFilters} />
 
-        {/* Empty state hero */}
-        <MotionReveal>
-          <div className="flex flex-col items-center justify-center py-14 px-6 text-center bg-card border border-border shadow-xs rounded-2xl">
-            <div className="h-12 w-12 rounded-2xl bg-[var(--brand-primary-100)] flex items-center justify-center mb-4">
-              <FileText size={20} className="text-[var(--brand-primary-600)]" />
+              {visible.length === 0 ? (
+                <NoResults noun="categories" onClear={clearFilters} />
+              ) : (
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                  {visible.map((cat) => (
+                    <li key={cat.key || "__uncategorised"} className="min-w-0 rounded-lg border border-border bg-[var(--panel)] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="min-w-0 break-words text-base font-semibold text-foreground">{cat.label}</h3>
+                        <span className="shrink-0 text-xl font-semibold leading-none tabular-nums text-foreground">{cat.clauses.toLocaleString()}</span>
+                      </div>
+                      <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink-600)]">
+                        clause{cat.clauses === 1 ? "" : "s"} in {cat.docs} document{cat.docs === 1 ? "" : "s"}
+                      </p>
+                      <p className="mt-2 text-xs">
+                        {cat.peak === null ? (
+                          <span className="text-muted-foreground">Risk not assessed</span>
+                        ) : (
+                          <>
+                            <span className={`font-semibold ${RISK_TEXT[cat.peak]}`}>Highest risk: {RISK_LABEL[cat.peak].toLowerCase()}</span>
+                            {cat.highRisk > 0 && <span className="text-muted-foreground"> · {cat.highRisk} high or critical</span>}
+                          </>
+                        )}
+                      </p>
+                      {cat.types.length > 0 && (
+                        <p className="mt-2 break-words text-xs text-muted-foreground">Types: {cat.types.join(", ")}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <h3 className="text-[15px] font-semibold text-foreground mb-2">
-              Your clause library is empty
-            </h3>
-            <p className="text-[13px] text-muted-foreground max-w-sm leading-relaxed mb-5">
-              {totalCount === 0
-                ? "Upload documents in Projects and Sonar will extract and categorize clauses automatically."
-                : "Sonar is indexing your documents. Clauses will appear here as processing completes."}
-            </p>
-            {totalCount === 0 && (
-              <Button variant="primary" size="md" asChild>
-                <Link href="/projects">Go to Projects</Link>
-              </Button>
-            )}
-          </div>
-        </MotionReveal>
-
-        {/* Browse templates */}
-        <MotionReveal>
-        <section>
-          <div className="mb-4">
-            <h2 className="text-[16px] font-semibold text-foreground tracking-tight">
-              Browse templates
-            </h2>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              Common clause categories — content will appear as your documents are processed.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {CLAUSE_CATEGORIES.map((cat, i) => (
-              <MotionReveal key={cat.id} delay={Math.min(i * 0.04, 0.2)}>
-                <Card inset="lg" className="group h-full rounded-2xl opacity-75 hover:opacity-100 hover:shadow-md transition-all duration-200">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-muted border border-border">
-                      <Briefcase size={14} className="text-muted-foreground" />
-                    </span>
-                    <Badge variant="neutral" size="sm">
-                      {cat.title}
-                    </Badge>
-                  </div>
-                  <h3 className="text-[14.5px] font-semibold tracking-tight text-foreground leading-snug">
-                    {cat.title}
-                  </h3>
-                  <p className="mt-2 text-[12px] text-muted-foreground leading-relaxed">
-                    {cat.description}
-                  </p>
-                  <div className="mt-4 pt-3 border-t border-border">
-                    <span className="text-[11.5px] text-muted-foreground italic">
-                      No clauses extracted yet
-                    </span>
-                  </div>
-                </Card>
-              </MotionReveal>
-            ))}
-          </div>
-        </section>
-        </MotionReveal>
-      </div>
+          )}
+        </SettingsSection>
+      </SettingsLayout>
     </>
   );
 }

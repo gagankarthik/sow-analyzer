@@ -3,6 +3,7 @@
 // Thin client calls to the SOW route handlers. Errors carry an optional `code`
 // ("no_key") so the UI can distinguish a missing API key from other failures.
 
+import { getIdToken } from "../auth/cognito";
 import type { SowAnswers } from "./types";
 
 export interface SowError extends Error {
@@ -10,9 +11,14 @@ export interface SowError extends Error {
 }
 
 async function postMarkdown(path: string, body: unknown): Promise<string> {
+  // The route handlers verify this token; without it they answer 401.
+  const token = await getIdToken().catch(() => null);
   const res = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(body),
   });
   const data = (await res.json().catch(() => ({}))) as { markdown?: string; error?: string; code?: string };

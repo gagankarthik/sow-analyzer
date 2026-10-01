@@ -1,111 +1,112 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, Sparkles, FileText, ChevronLeft } from "@/components/ui/icons";
-import { PixelArt } from "@/components/landing/PixelArt";
+import { ChevronLeft, FileText } from "@/components/ui/icons";
+import { NOINDEX } from "@/lib/seo";
+
+// Sign-in, sign-up, confirm and reset have nothing to rank for.
+export const metadata: Metadata = { title: "Account", robots: NOINDEX };
+
+/* Sign-in, sign-up, confirm and reset share this frame: the form on a plain
+   side, and (desktop only) a navy panel showing what the product returns. */
+
+const SAMPLE = [
+  {
+    ref: "7.2",
+    title: "Limitation of liability",
+    finding: "Cap is 3 months of fees. Playbook asks for 12.",
+    label: "High risk",
+    tone: "bg-[var(--danger-soft)] text-[var(--danger)]",
+  },
+  {
+    ref: "4.2",
+    title: "Service levels",
+    finding: "No credit for missed response times.",
+    label: "Deviates",
+    tone: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  },
+  {
+    ref: "9.3",
+    title: "Ownership of deliverables",
+    finding: "Matches your standard position.",
+    label: "Within playbook",
+    tone: "bg-[var(--success-soft)] text-[var(--success)]",
+  },
+];
+
+const footerLinkClass = "rounded py-1 transition-colors hover:text-foreground";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-background">
-      {/* Brand / marketing panel — desktop only. Matches the landing's
-          near-black band with coral/periwinkle pixel accents. */}
-      <aside
-        className="relative hidden lg:flex flex-col justify-between overflow-hidden p-12 text-white xl:p-16"
-        style={{ background: "#1B1B19" }}
-      >
-        {/* corner accent dots */}
-        <span aria-hidden className="absolute right-10 top-12 h-2.5 w-2.5 rounded-[3px]" style={{ background: "#FF6B81" }} />
-        <span aria-hidden className="absolute right-16 top-12 h-2.5 w-2.5 rounded-[3px]" style={{ background: "#8E95E8" }} />
-
-        {/* subtle grid texture */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(245,244,240,.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(245,244,240,.6) 1px, transparent 1px)",
-            backgroundSize: "44px 44px",
-          }}
-        />
-
-        <div className="relative">
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-              <Image src="/logo-icon.svg" alt="" width={24} height={24} priority />
-            </span>
-            <span className="leading-tight">
-              <span className="block text-[15px] font-semibold tracking-tight">Blue-IQ</span>
-              <span className="block font-mono text-[10.5px] text-white/60">Contract Intelligence</span>
-            </span>
+    <div className="grid min-h-screen bg-card lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+      <main className="flex min-w-0 flex-col px-5 py-5 sm:px-10 sm:py-8">
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/" aria-label="Blue-IQ home" className="rounded">
+            <Image src="/logo.svg" alt="Blue-IQ" width={113} height={28} priority />
+          </Link>
+          <Link
+            href="/"
+            className="-mr-3 inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <ChevronLeft size={16} aria-hidden />
+            Back to home
           </Link>
         </div>
 
-        <div className="relative max-w-md">
-          <div className="pix-bob mb-8 inline-block">
-            <PixelArt name="reader" color="#FB7AA0" size={88} />
-          </div>
-          <h2 className="text-[30px] font-semibold leading-[1.12] tracking-tight xl:text-[34px]">
-            Turn every contract into an{" "}
-            <span className="relative whitespace-nowrap">
-              answer
-              <span aria-hidden className="absolute -bottom-1 left-0 h-[0.1em] w-full rounded-full" style={{ background: "#FF6B81" }} />
-            </span>
-            .
-          </h2>
-          <p className="mt-5 text-[14.5px] leading-relaxed text-white/65">
-            Sonar reads your SOWs, MSAs, and amendments — extracting clauses,
-            flagging deviations from your playbook, and tracing every change so
-            your team moves faster with less risk.
-          </p>
+        <div className="flex flex-1 flex-col items-center justify-center py-10 sm:py-14">
+          <div className="w-full max-w-[26rem]">{children}</div>
+        </div>
 
-          <ul className="mt-8 space-y-3">
-            {[
-              { icon: FileText, text: "Clause-level extraction across every document type", c: "#FB7AA0" },
-              { icon: Sparkles, text: "Playbook deviations surfaced automatically", c: "#8E95E8" },
-              { icon: ShieldCheck, text: "SOC 2, GDPR, HIPAA · WCAG 2.1 AA · ADA aligned", c: "#FB7AA0" },
-            ].map(({ icon: Icon, text, c }) => (
-              <li key={text} className="flex items-center gap-3 text-[13.5px] text-white/85">
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md" style={{ background: "#262521", color: c }}>
-                  <Icon size={14} />
+        <nav aria-label="Legal" className="flex gap-5 text-sm text-muted-foreground">
+          <Link href="/legal/terms" className={footerLinkClass}>
+            Terms
+          </Link>
+          <Link href="/legal/privacy" className={footerLinkClass}>
+            Privacy
+          </Link>
+        </nav>
+      </main>
+
+      <aside
+        aria-label="What Blue-IQ Govern does"
+        className="m-3 hidden flex-col justify-center rounded-3xl bg-[var(--navy)] px-12 py-16 text-white lg:flex xl:px-20"
+      >
+        <div className="max-w-md">
+          <p className="text-sm font-medium text-[var(--navy-foreground)]">Blue-IQ Govern</p>
+          <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em]">
+            Every clause, scored against your playbook.
+          </h2>
+          <p className="mt-4 text-lg text-[var(--navy-foreground)]">
+            Upload an SOW, MSA or amendment and see which terms need attention before anyone signs.
+          </p>
+        </div>
+
+        {/* a sample of what a review returns */}
+        <div className="mt-12 max-w-lg overflow-hidden rounded-2xl border border-[var(--navy-border)] bg-card text-foreground xl:ml-8">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5">
+            <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+              <FileText size={16} className="shrink-0 text-[var(--brand-primary-600)]" aria-hidden />
+              <span className="truncate">master-services-agreement.pdf</span>
+            </span>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">38 clauses</span>
+          </div>
+          <ul>
+            {SAMPLE.map((row) => (
+              <li
+                key={row.ref}
+                className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-start gap-3 border-b border-border px-5 py-3.5 last:border-b-0"
+              >
+                <span className="pt-0.5 font-mono text-xs text-muted-foreground">{row.ref}</span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">{row.title}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{row.finding}</span>
                 </span>
-                {text}
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.tone}`}>{row.label}</span>
               </li>
             ))}
           </ul>
         </div>
-
-        <div className="relative flex items-center gap-3 text-[12px] text-white/55">
-          <ShieldCheck size={14} />
-          <span>Encrypted at rest &amp; in transit · AES-256 · TLS 1.3</span>
-        </div>
       </aside>
-
-      {/* Form panel */}
-      <main className="flex flex-col px-5 py-6 sm:px-8 sm:py-8">
-        {/* Back to home — present on every auth page */}
-        <Link
-          href="/"
-          className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-[var(--border-strong)] hover:text-foreground"
-        >
-          <ChevronLeft size={15} />
-          Back to home
-        </Link>
-
-        <div className="flex flex-1 flex-col items-center justify-center py-8">
-        <div className="w-full max-w-[400px]">
-          {/* Mobile brand */}
-          <Link href="/" className="lg:hidden mb-8 inline-flex items-center gap-2.5">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--brand-primary-50)]">
-              <Image src="/logo-icon.svg" alt="" width={22} height={22} priority />
-            </span>
-            <span className="leading-tight">
-              <span className="block text-[15px] font-semibold tracking-tight text-foreground">Blue-IQ</span>
-              <span className="block text-[10.5px] font-mono text-muted-foreground">Contract Intelligence</span>
-            </span>
-          </Link>
-          {children}
-        </div>
-        </div>
-      </main>
     </div>
   );
 }

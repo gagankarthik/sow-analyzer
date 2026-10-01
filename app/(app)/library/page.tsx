@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -56,11 +56,13 @@ import {
   Trash2,
   Pencil,
   Loader2,
+  AlertTriangle,
 } from "@/components/ui/icons";
-import { SonarMark } from "@/components/ui/SonarMark";
 import { MotionReveal } from "@/components/MotionReveal";
-import { listDocuments, deleteDocument, updateDocument } from "@/lib/api";
-import { useProjects, removeDocFromAllProjects } from "@/lib/projects-store";
+import { LastUpdated } from "@/components/ui/LastUpdated";
+import { useDocuments, useDeleteDocument, useUpdateAnyDocument, isProcessing } from "@/lib/queries/documents";
+import { can, useProjects } from "@/lib/projects-store";
+import { ROLE_META } from "@/components/team/roles";
 import type { ApiDocument, DocType, Lifecycle } from "@/lib/types";
 import { STATUS_TONE } from "@/lib/status-tone";
 import { formatDate } from "@/lib/format";
@@ -83,22 +85,26 @@ const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
   expired: "Expired",
 };
 
-const PROCESSING_STATUSES = new Set([
-  "PENDING", "PARSING", "CLASSIFYING", "EMBEDDING",
-  "GRAPHING", "DIFFING", "TIMELINING", "PERSISTING",
-]);
-
 type SortKey = "title" | "docType" | "lifecycle" | "createdAt" | "latestVersion";
 
 export default function LibraryPage() {
-  const [docs, setDocs] = useState<ApiDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // The shared documents query: polls while anything is processing, refetches
+  // on focus, and is invalidated by every upload / edit / delete in the app — so
+  // this list and its counts match the dashboard, workflow and notifications.
+  const { data, isLoading: loading, isError, error: loadError, isFetching, dataUpdatedAt, refetch } = useDocuments();
+  const docs = useMemo(() => data ?? [], [data]);
+  // An error with nothing loaded is a failed page; with data it is a stale list.
+  const failed = isError && !data;
+  const error = isError ? (loadError instanceof Error ? loadError.message : "The request failed.") : null;
+  const deleteMut = useDeleteDocument();
+  const updateMut = useUpdateAnyDocument();
 
-  // Projects live in localStorage and group documents by docId. We join each
-  // document to the project that contains it to surface its name and let the
-  // search match on it. useProjects() is backed by useSyncExternalStore, which
-  // returns an empty list on the server so there's no hydration mismatch.
+  // The list holds exactly what the server lets this user see: their own uploads
+  // plus the documents of projects shared with them — nothing is filtered for
+  // access here. Each document is joined to the (visible) project that contains
+  // it, to surface its name and let the search match on it. useProjects() is
+  // backed by useSyncExternalStore, which returns an empty list on the server so
+  // there's no hydration mismatch.
   const projects = useProjects();
   const projectByDocId = useMemo(() => {
     const map = new Map<string, string>();
@@ -112,6 +118,7 @@ export default function LibraryPage() {
   const [docTypeFilter, setDocTypeFilter] = useState<string>("All");
   const [lifecycleFilter, setLifecycleFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [projectFilter, setProjectFilter] = useState<string>("All");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "createdAt",
     dir: "desc",
@@ -119,21 +126,14 @@ export default function LibraryPage() {
 
   // Delete state
   const [deleteTarget, setDeleteTarget] = useState<ApiDocument | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const deleting = deleteMut.isPending;
 
   // Edit state
   const [editTarget, setEditTarget] = useState<ApiDocument | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editLifecycle, setEditLifecycle] = useState<Lifecycle>("draft");
   const [editDocType, setEditDocType] = useState<DocType>("OTHER");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    listDocuments()
-      .then(setDocs)
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const saving = updateMut.isPending;
 
   function openEdit(doc: ApiDocument) {
     setEditTarget(doc);
@@ -144,28 +144,24 @@ export default function LibraryPage() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    setDeleting(true);
     try {
-      await deleteDocument(deleteTarget.docId);
-      removeDocFromAllProjects(deleteTarget.docId);
-      setDocs((prev) => prev.filter((d) => d.docId !== deleteTarget.docId));
-      toast.success("Document deleted", { description: deleteTarget.title });
+      // Removes it from every project and refreshes the shared list.
+      await deleteMut.mutateAsync(deleteTarget.docId);
+      toast.success("Document deleted", { description: deleteTarget.title || "Untitled" });
       setDeleteTarget(null);
     } catch (e) {
       toast.error("Delete failed", {
         description: e instanceof Error ? e.message : "Please try again.",
       });
-    } finally {
-      setDeleting(false);
     }
   }
 
   async function handleSave() {
     if (!editTarget) return;
-    setSaving(true);
     try {
       const patch: { title?: string; lifecycle?: string; docType?: string } = {};
-      if (editTitle.trim() !== editTarget.title) patch.title = editTitle.trim();
+      // The API rejects an empty title, so clearing the field keeps the current one.
+      if (editTitle.trim() && editTitle.trim() !== editTarget.title) patch.title = editTitle.trim();
       if (editLifecycle !== editTarget.lifecycle) patch.lifecycle = editLifecycle;
       if (editDocType !== editTarget.docType) patch.docType = editDocType;
 
@@ -174,18 +170,13 @@ export default function LibraryPage() {
         return;
       }
 
-      const updated = await updateDocument(editTarget.docId, patch);
-      setDocs((prev) =>
-        prev.map((d) => (d.docId === updated.docId ? updated : d)),
-      );
+      await updateMut.mutateAsync({ id: editTarget.docId, patch });
       toast.success("Document updated");
       setEditTarget(null);
     } catch (e) {
       toast.error("Update failed", {
         description: e instanceof Error ? e.message : "Please try again.",
       });
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -194,15 +185,16 @@ export default function LibraryPage() {
     if (q) {
       const s = q.toLowerCase();
       arr = arr.filter((d) =>
-        d.title?.toLowerCase().includes(s) ||
+        (d.title || "Untitled").toLowerCase().includes(s) ||
         (projectByDocId.get(d.docId)?.toLowerCase().includes(s) ?? false),
       );
     }
     if (docTypeFilter !== "All") arr = arr.filter((d) => d.docType === docTypeFilter);
     if (lifecycleFilter !== "All") arr = arr.filter((d) => d.lifecycle === lifecycleFilter);
+    if (projectFilter !== "All") arr = arr.filter((d) => projectByDocId.get(d.docId) === projectFilter);
     if (statusFilter === "READY") arr = arr.filter((d) => d.status === "READY");
     else if (statusFilter === "FAILED") arr = arr.filter((d) => d.status === "FAILED");
-    else if (statusFilter === "processing") arr = arr.filter((d) => PROCESSING_STATUSES.has(d.status));
+    else if (statusFilter === "processing") arr = arr.filter((d) => isProcessing(d.status));
 
     arr = [...arr].sort((a, b) => {
       const av = (a[sort.key] ?? "") as string | number;
@@ -212,7 +204,7 @@ export default function LibraryPage() {
       return 0;
     });
     return arr;
-  }, [docs, q, docTypeFilter, lifecycleFilter, statusFilter, sort, projectByDocId]);
+  }, [docs, q, docTypeFilter, lifecycleFilter, statusFilter, projectFilter, sort, projectByDocId]);
 
   function toggleSort(key: SortKey) {
     setSort((s) =>
@@ -225,264 +217,354 @@ export default function LibraryPage() {
     setDocTypeFilter("All");
     setLifecycleFilter("All");
     setStatusFilter("All");
+    setProjectFilter("All");
   }
 
   const lifecycles = ["All", ...Array.from(new Set(docs.map((d) => d.lifecycle))).sort()];
 
+  const projectNames = Array.from(new Set(docs.map((d) => projectByDocId.get(d.docId)).filter((p): p is string => !!p))).sort();
+  const activeFilters = [q.trim() !== "", docTypeFilter !== "All", lifecycleFilter !== "All", statusFilter !== "All", projectFilter !== "All"].filter(Boolean).length;
+
+  const empty = !loading && !failed && filtered.length === 0;
+  const processingCount = docs.filter((d) => isProcessing(d.status)).length;
+
   return (
     <>
       <PageHeader
-        eyebrow={`${docs.length} document${docs.length === 1 ? "" : "s"} · contract library`}
         title="Contract library"
-        subtitle="The system of record. Every SOW, MSA, and amendment — searchable down to a single clause."
+        subtitle="Every SOW, MSA and amendment in one place."
         actions={
-          <Link
-            href="/projects/new"
-            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
-          >
-            <Plus size={13} strokeWidth={2.5} />
-            New document
-          </Link>
+          <>
+            <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
+            <Button asChild className="h-10 md:h-9">
+              <Link href="/projects/upload">
+                <Plus size={15} strokeWidth={2.25} />
+                New document
+              </Link>
+            </Button>
+          </>
         }
       />
 
-      <div className="app-container py-6 md:py-8 space-y-6">
-        {/* Filters */}
-        <MotionReveal>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[240px] max-w-[420px]">
+      <div className="app-container flex flex-col gap-4 py-6 md:gap-6 md:py-8">
+        {/* Filter bar: full-width search, then a chip row that scrolls sideways on a phone. */}
+        <section aria-label="Filters" className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 md:flex-row md:items-start">
+            <div className="relative w-full md:w-[260px] md:shrink-0">
               <Search
-                size={14}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
               />
               <Input
-                type="text"
+                type="search"
+                aria-label="Search documents"
                 placeholder="Search by title or project…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="h-10 rounded-lg border border-border bg-card pl-9 pr-4 focus-visible:border-[var(--brand-primary-400)] focus-visible:ring-4 focus-visible:ring-[var(--brand-primary-100)]"
+                className="h-10 border-[var(--ink-300)] bg-card pl-9 pr-3 placeholder:text-[var(--ink-400)]"
               />
             </div>
 
-            <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
-              <SelectTrigger className="h-10 w-[160px] rounded-lg">
-                <span className="text-muted-foreground text-[12px]">Type</span>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All types</SelectItem>
-                {DOC_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className={FILTER_ROW}>
+              <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
+                <SelectTrigger aria-label="Filter by document type" className={FILTER_TRIGGER}>
+                  <span className={FILTER_PREFIX}>Type</span>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  {DOC_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-              <SelectTrigger className="h-10 w-[170px] rounded-lg">
-                <span className="text-muted-foreground text-[12px]">Lifecycle</span>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {lifecycles.map((l) => (
-                  <SelectItem key={l} value={l} className="capitalize">
-                    {l === "All" ? "All stages" : LIFECYCLE_LABEL[l as Lifecycle] ?? l}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
+                <SelectTrigger aria-label="Filter by lifecycle stage" className={FILTER_TRIGGER}>
+                  <span className={FILTER_PREFIX}>Stage</span>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {lifecycles.map((l) => (
+                    <SelectItem key={l} value={l} className="capitalize">
+                      {l === "All" ? "All" : LIFECYCLE_LABEL[l as Lifecycle] ?? l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-10 w-[170px] rounded-lg">
-                <span className="text-muted-foreground text-[12px]">Status</span>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All statuses</SelectItem>
-                <SelectItem value="READY">Ready</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="FAILED">Failed</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger aria-label="Filter by processing status" className={FILTER_TRIGGER}>
+                  <span className={FILTER_PREFIX}>Status</span>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="READY">Ready</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="FAILED">Failed</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={sort.key} onValueChange={(v) => setSort({ key: v as SortKey, dir: v === "title" ? "asc" : "desc" })}>
-              <SelectTrigger className="h-10 w-[150px] rounded-lg">
-                <span className="text-muted-foreground text-[12px]">Sort</span>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">Newest</SelectItem>
-                <SelectItem value="title">Title</SelectItem>
-                <SelectItem value="docType">Type</SelectItem>
-                <SelectItem value="lifecycle">Lifecycle</SelectItem>
-                <SelectItem value="latestVersion">Versions</SelectItem>
-              </SelectContent>
-            </Select>
+              {projectNames.length > 0 && (
+                <Select value={projectFilter} onValueChange={setProjectFilter}>
+                  <SelectTrigger aria-label="Filter by project" className={cn(FILTER_TRIGGER, "max-w-[240px]")}>
+                    <span className={FILTER_PREFIX}>Project</span>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All</SelectItem>
+                    {projectNames.map((p) => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
-            <div className="flex-1" />
-
-            <Button variant="ai" size="md" className="h-10 rounded-lg gap-1.5 pl-2">
-              <SonarMark size="sm" />
-              Ask Sonar to analyze
-            </Button>
+              <Select value={sort.key} onValueChange={(v) => setSort({ key: v as SortKey, dir: v === "title" ? "asc" : "desc" })}>
+                <SelectTrigger aria-label="Sort documents" className={FILTER_TRIGGER}>
+                  <span className={FILTER_PREFIX}>Sort</span>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="createdAt">Newest</SelectItem>
+                  <SelectItem value="title">Title</SelectItem>
+                  <SelectItem value="docType">Type</SelectItem>
+                  <SelectItem value="lifecycle">Lifecycle</SelectItem>
+                  <SelectItem value="latestVersion">Versions</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </MotionReveal>
 
-        {/* Table */}
-        <MotionReveal delay={0.05}>
-        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xs">
-            <Table className="min-w-[820px]">
-              <TableHeader className="bg-card">
-                <TableRow className="hover:bg-transparent h-9 border-b border-border">
-                  <ThSort label="Title" onClick={() => toggleSort("title")} dir={sort.key === "title" ? sort.dir : undefined} />
-                  <TableHead className="eyebrow">Project</TableHead>
-                  <ThSort label="Type" onClick={() => toggleSort("docType")} dir={sort.key === "docType" ? sort.dir : undefined} />
-                  <ThSort label="Lifecycle" onClick={() => toggleSort("lifecycle")} dir={sort.key === "lifecycle" ? sort.dir : undefined} />
-                  <TableHead className="eyebrow">Status</TableHead>
-                  <TableHead className="eyebrow text-right">Parties</TableHead>
-                  <TableHead className="eyebrow text-right">Version</TableHead>
-                  <ThSort label="Created" onClick={() => toggleSort("createdAt")} dir={sort.key === "createdAt" ? sort.dir : undefined} />
-                  <TableHead className="w-24" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <TableRow key={i} className="h-11">
-                      <TableCell colSpan={9}><Skeleton className="h-6 w-full" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="p-0">
-                      <div className="flex flex-col items-center justify-center py-16 text-center">
-                        <div className="h-14 w-14 rounded-2xl bg-[var(--brand-primary-50)] flex items-center justify-center mb-4">
-                          <FileText size={22} className="text-[var(--brand-primary-600)]" />
-                        </div>
-                        <h3 className="text-[15px] font-semibold text-foreground mb-1.5">
-                          {docs.length === 0 ? "No documents yet" : "No documents match"}
-                        </h3>
-                        <p className="text-[12.5px] text-muted-foreground max-w-xs mb-5">
-                          {docs.length === 0
-                            ? "Upload your first document to get started."
-                            : "Try clearing your filters or adjusting your search."}
-                        </p>
-                        {docs.length === 0 ? (
-                          <Link
-                            href="/projects/new"
-                            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-[13px] font-semibold transition-colors"
-                          >
-                            <Plus size={13} strokeWidth={2.5} />
-                            Upload a document
-                          </Link>
-                        ) : (
-                          <Button variant="primary" size="md" onClick={clearFilters}>
-                            Clear filters
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filtered.map((doc) => {
-                    const lifecycle = doc.lifecycle as Lifecycle;
-                    const tone = STATUS_TONE[lifecycle] ?? STATUS_TONE.draft;
-                    const statusBadge = getStatusBadge(doc.status);
-                    return (
-                      <TableRow key={doc.docId} className="group h-11 text-[13px] hover:bg-muted/50">
-                        <TableCell>
-                          <Link href={`/projects/${doc.docId}`} className="block min-w-0">
-                            <div className="text-[13px] font-medium text-foreground truncate max-w-[280px] group-hover:text-[var(--brand-primary-700)] transition-colors">
-                              {doc.title || "Untitled"}
-                            </div>
-                            <div className="text-[10.5px] font-mono text-muted-foreground">
-                              {doc.docId.slice(0, 8).toUpperCase()}
-                            </div>
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-[13px] text-muted-foreground">
-                          <span className="block truncate max-w-[200px]">
-                            {projectByDocId.get(doc.docId) ?? "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <DocTypeBadge type={doc.docType} />
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${tone.text}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
-                            {LIFECYCLE_LABEL[lifecycle] ?? lifecycle}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10.5px] font-medium ${statusBadge.cls}`}>
-                            {statusBadge.label}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right text-[13px] text-muted-foreground tabular-nums">
-                          {doc.parties?.length ?? 0}
-                        </TableCell>
-                        <TableCell className="text-right text-[13px] text-muted-foreground tabular-nums">
-                          v{doc.latestVersion}
-                        </TableCell>
-                        <TableCell className="text-[12px] text-muted-foreground font-mono">
-                          {formatDate(doc.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button asChild variant="ghost" size="icon-sm">
-                                  <Link href={`/projects/${doc.docId}`}><ArrowUpRight /></Link>
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Open</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  onClick={() => openEdit(doc)}
-                                >
-                                  <Pencil size={13} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Edit</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="text-muted-foreground hover:text-[var(--danger)] hover:bg-[var(--danger-soft)]"
-                                  onClick={() => setDeleteTarget(doc)}
-                                >
-                                  <Trash2 size={13} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Delete</TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-border text-[12px] text-muted-foreground">
-            <span className="font-mono">
-              {loading ? "Loading…" : `showing ${filtered.length} of ${docs.length}`}
+          <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1 text-sm md:min-h-0">
+            <span className="tabular-nums text-[var(--ink-600)]" aria-live="polite">
+              {loading ? "Loading…" : failed ? "Documents not loaded" : `Showing ${filtered.length} of ${docs.length} document${docs.length === 1 ? "" : "s"}`}
             </span>
+            {processingCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-[var(--ink-600)]">
+                <Loader2 size={13} className="animate-spin motion-reduce:animate-none" />
+                {processingCount} processing, updating automatically
+              </span>
+            )}
+            {activeFilters > 0 && (
+              <>
+                <span className="rounded-full bg-[var(--brand-primary-50)] px-2 py-0.5 text-xs font-semibold text-[var(--brand-primary-700)]">
+                  {activeFilters} filter{activeFilters === 1 ? "" : "s"} active
+                </span>
+                <button type="button" onClick={clearFilters} className="inline-flex min-h-10 items-center rounded font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:min-h-0">
+                  Clear filters
+                </button>
+              </>
+            )}
           </div>
-        </div>
-        </MotionReveal>
+        </section>
 
         {error && (
-          <div className="rounded-2xl border border-[var(--danger-soft)] bg-[var(--danger-soft)]/30 p-4 text-[13px] text-[var(--danger)]">
-            Failed to load documents: {error}
+          <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-4 text-sm text-[var(--danger)]">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span className="min-w-0 flex-1 break-words">
+              {failed ? "Failed to load documents: " : "Couldn\u2019t refresh, so this list may be out of date: "}{error}
+            </span>
+            <button type="button" onClick={() => refetch()} className="shrink-0 rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]">Try again</button>
           </div>
+        )}
+
+        {!failed && (
+        <MotionReveal delay={0.05}>
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+            {loading ? (
+              <div className="divide-y divide-border">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="px-4 py-3"><Skeleton className="h-10 w-full md:h-6" /></div>
+                ))}
+              </div>
+            ) : empty ? (
+              <div className="flex flex-col items-center justify-center px-4 py-12 text-center md:py-16">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-50)]">
+                  <FileText size={22} className="text-[var(--brand-primary-600)]" />
+                </div>
+                <h3 className="mb-1.5 text-lg font-semibold text-foreground">
+                  {docs.length === 0 ? "No documents yet" : "No documents match these filters"}
+                </h3>
+                <p className="mb-5 max-w-xs text-sm text-[var(--ink-600)]">
+                  {docs.length === 0
+                    ? "Documents you upload appear here, along with the documents of any project that is shared with you."
+                    : "Try clearing your filters or adjusting your search."}
+                </p>
+                {docs.length === 0 ? (
+                  <Button asChild variant="outline" size="lg">
+                    <Link href="/projects/upload">
+                      <Plus size={15} strokeWidth={2.25} />
+                      Upload a document
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="lg" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Phone: one stacked row per document, actions always visible. */}
+                <ul className="divide-y divide-border md:hidden">
+                  {filtered.map((doc) => {
+                    const project = projectByDocId.get(doc.docId);
+                    return (
+                      <li key={doc.docId} className="px-4 py-3">
+                        <div className="flex items-start gap-2">
+                          <Link href={`/projects/${doc.docId}`} className="min-w-0 flex-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
+                            <span className="block break-words text-base font-semibold leading-snug text-foreground">
+                              {doc.title || "Untitled"}
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                              {project ? `${project} · ` : ""}
+                              <span className="font-mono">{doc.docId.slice(0, 8).toUpperCase()}</span>
+                            </span>
+                            <SharedLine doc={doc} />
+                          </Link>
+                          <div className="-mr-2 -mt-1.5 flex shrink-0 items-center">
+                            {can(doc.role, "edit") && (
+                              <Button variant="ghost" size="icon-lg" aria-label={`Edit ${doc.title || "document"}`} onClick={() => openEdit(doc)}>
+                                <Pencil size={16} />
+                              </Button>
+                            )}
+                            {can(doc.role, "delete_document") && (
+                              <Button
+                                variant="ghost"
+                                size="icon-lg"
+                                aria-label={`Delete ${doc.title || "document"}`}
+                                className="text-[var(--danger)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]"
+                                onClick={() => setDeleteTarget(doc)}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                          <DocTypeBadge type={doc.docType} />
+                          <LifecycleLabel lifecycle={doc.lifecycle as Lifecycle} />
+                          <StatusBadge status={doc.status} />
+                        </div>
+                        <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+                          {formatDate(doc.createdAt)} · v{doc.latestVersion}{doc.status === "READY" ? ` · ${doc.parties?.length ?? 0} part${(doc.parties?.length ?? 0) === 1 ? "y" : "ies"}` : ""}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {/* Tablet and up: sortable table; low-priority columns appear as width allows. */}
+                <div className="hidden md:block">
+                  <Table className="min-w-[680px]">
+                    <TableHeader className="bg-[var(--panel)]">
+                      <TableRow className="h-10 border-b border-border odd:bg-transparent hover:bg-transparent">
+                        <ThSort label="Title" onClick={() => toggleSort("title")} dir={sort.key === "title" ? sort.dir : undefined} />
+                        <TableHead className={cn(TH, "hidden lg:table-cell")}>Project</TableHead>
+                        <ThSort label="Type" onClick={() => toggleSort("docType")} dir={sort.key === "docType" ? sort.dir : undefined} />
+                        <ThSort label="Lifecycle" onClick={() => toggleSort("lifecycle")} dir={sort.key === "lifecycle" ? sort.dir : undefined} />
+                        <TableHead className={TH}>Status</TableHead>
+                        <TableHead className={cn(TH, "hidden text-right xl:table-cell")}>Parties</TableHead>
+                        <TableHead className={cn(TH, "hidden text-right xl:table-cell")}>Version</TableHead>
+                        <ThSort label="Created" onClick={() => toggleSort("createdAt")} dir={sort.key === "createdAt" ? sort.dir : undefined} />
+                        <TableHead className={cn(TH, "w-28 text-right")}><span className="sr-only">Actions</span></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((doc) => (
+                        <TableRow key={doc.docId} className="group border-b border-border text-sm odd:bg-transparent hover:bg-[var(--panel)]">
+                          <TableCell className="max-w-[320px] whitespace-normal py-2.5">
+                            <Link href={`/projects/${doc.docId}`} className="block min-w-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
+                              <span className="line-clamp-2 break-words text-base font-semibold text-foreground transition-colors group-hover:text-[var(--brand-primary-700)]">
+                                {doc.title || "Untitled"}
+                              </span>
+                              <span className="block font-mono text-xs text-muted-foreground">
+                                {doc.docId.slice(0, 8).toUpperCase()}
+                              </span>
+                              <span className="block truncate text-xs text-muted-foreground lg:hidden">
+                                {projectByDocId.get(doc.docId) ?? ""}
+                              </span>
+                              <SharedLine doc={doc} />
+                            </Link>
+                          </TableCell>
+                          <TableCell className="hidden text-sm text-[var(--ink-600)] lg:table-cell">
+                            <span className="block max-w-[200px] truncate">
+                              {projectByDocId.get(doc.docId) ?? "—"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <DocTypeBadge type={doc.docType} />
+                          </TableCell>
+                          <TableCell>
+                            <LifecycleLabel lifecycle={doc.lifecycle as Lifecycle} />
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={doc.status} />
+                          </TableCell>
+                          <TableCell className="hidden text-right text-sm tabular-nums text-[var(--ink-600)] xl:table-cell">
+                            {/* Parties are extracted by the analysis: unknown until it is READY. */}
+                            {doc.status === "READY" ? doc.parties?.length ?? 0 : "—"}
+                          </TableCell>
+                          <TableCell className="hidden text-right text-sm tabular-nums text-[var(--ink-600)] xl:table-cell">
+                            v{doc.latestVersion}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm tabular-nums text-[var(--ink-600)]">
+                            {formatDate(doc.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-0.5 text-muted-foreground">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button asChild variant="ghost" size="icon">
+                                    <Link href={`/projects/${doc.docId}`} aria-label={`Open ${doc.title || "document"}`}><ArrowUpRight /></Link>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Open</TooltipContent>
+                              </Tooltip>
+                              {can(doc.role, "edit") && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={`Edit ${doc.title || "document"}`}
+                                      onClick={() => openEdit(doc)}
+                                    >
+                                      <Pencil size={15} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit</TooltipContent>
+                                </Tooltip>
+                              )}
+                              {can(doc.role, "delete_document") && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={`Delete ${doc.title || "document"}`}
+                                      className="hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]"
+                                      onClick={() => setDeleteTarget(doc)}
+                                    >
+                                      <Trash2 size={15} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Delete</TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </div>
+        </MotionReveal>
         )}
       </div>
 
@@ -492,20 +574,20 @@ export default function LibraryPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete document?</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong>{deleteTarget?.title || "This document"}</strong> and all its
-              versions, clauses, and analytics will be permanently removed. This cannot
-              be undone.
+              <strong className="break-words font-semibold text-foreground">{deleteTarget?.title || "This document"}</strong> and all its
+              versions, clauses, and analytics will be permanently removed, for everyone it
+              is shared with. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting} className="h-10 md:h-9">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white"
+              className="h-10 bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90 md:h-9"
             >
               {deleting ? (
-                <><Loader2 size={13} className="animate-spin mr-1.5" />Deleting…</>
+                <><Loader2 size={14} className="mr-1.5 animate-spin" />Deleting…</>
               ) : (
                 "Delete permanently"
               )}
@@ -516,24 +598,25 @@ export default function LibraryPage() {
 
       {/* Edit dialog */}
       <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit document</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-foreground">Title</label>
+              <label htmlFor="edit-doc-title" className="block text-sm font-medium text-foreground">Title</label>
               <Input
+                id="edit-doc-title"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 placeholder="Document title"
-                className="h-9 text-[13px]"
+                className="h-10 border-[var(--ink-300)]"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-foreground">Document type</label>
+              <label htmlFor="edit-doc-type" className="block text-sm font-medium text-foreground">Document type</label>
               <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}>
-                <SelectTrigger className="h-9 text-[13px]">
+                <SelectTrigger id="edit-doc-type" className="w-full border-[var(--ink-300)] text-base data-[size=default]:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -544,9 +627,9 @@ export default function LibraryPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-foreground">Lifecycle stage</label>
+              <label htmlFor="edit-doc-lifecycle" className="block text-sm font-medium text-foreground">Lifecycle stage</label>
               <Select value={editLifecycle} onValueChange={(v) => setEditLifecycle(v as Lifecycle)}>
-                <SelectTrigger className="h-9 text-[13px]">
+                <SelectTrigger id="edit-doc-lifecycle" className="w-full border-[var(--ink-300)] text-base data-[size=default]:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -558,12 +641,12 @@ export default function LibraryPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" size="md" onClick={() => setEditTarget(null)} disabled={saving}>
+            <Button variant="outline" className="h-10 md:h-9" onClick={() => setEditTarget(null)} disabled={saving}>
               Cancel
             </Button>
-            <Button variant="primary" size="md" onClick={handleSave} disabled={saving}>
+            <Button className="h-10 md:h-9" onClick={handleSave} disabled={saving}>
               {saving ? (
-                <><Loader2 size={13} className="animate-spin mr-1.5" />Saving…</>
+                <><Loader2 size={14} className="mr-1.5 animate-spin" />Saving…</>
               ) : (
                 "Save changes"
               )}
@@ -572,6 +655,43 @@ export default function LibraryPage() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+const FILTER_ROW = "-mx-4 flex min-w-0 items-center gap-2 overflow-x-auto px-4 scrollbar-none md:mx-0 md:flex-1 md:flex-wrap md:overflow-visible md:px-0";
+const FILTER_TRIGGER =
+  "w-auto shrink-0 gap-2 border-[var(--ink-300)] bg-card text-sm data-[size=default]:h-10";
+const FILTER_PREFIX = "shrink-0 text-xs font-medium text-muted-foreground";
+const TH = "h-10 text-xs font-semibold text-[var(--ink-600)] whitespace-nowrap";
+
+/** For a document someone else uploaded: who it comes from and this user's
+ *  role on it. A viewer has no edit or delete control on the row; this says why. */
+function SharedLine({ doc }: { doc: ApiDocument }) {
+  if (!doc.role || doc.role === "owner") return null;
+  return (
+    <span className="mt-0.5 block truncate text-xs text-[var(--ink-600)]">
+      Shared with you{doc.ownerEmail ? ` by ${doc.ownerEmail}` : ""} · {ROLE_META[doc.role].label}
+      {doc.role === "viewer" ? ", read-only" : ""}
+    </span>
+  );
+}
+
+function LifecycleLabel({ lifecycle }: { lifecycle: Lifecycle }) {
+  const tone = STATUS_TONE[lifecycle] ?? STATUS_TONE.draft;
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium ${tone.text}`}>
+      <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
+      {LIFECYCLE_LABEL[lifecycle] ?? lifecycle}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const badge = getStatusBadge(status);
+  return (
+    <span className={`inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${badge.cls}`}>
+      {badge.label}
+    </span>
   );
 }
 
@@ -587,17 +707,22 @@ function ThSort({
   label: string; onClick: () => void; dir?: "asc" | "desc"; align?: "left" | "right";
 }) {
   return (
-    <TableHead className={cn("eyebrow", align === "right" && "text-right")}>
+    <TableHead
+      aria-sort={dir === "asc" ? "ascending" : dir === "desc" ? "descending" : "none"}
+      className={cn(TH, align === "right" && "text-right")}
+    >
       <button
+        type="button"
         onClick={onClick}
         className={cn(
-          "inline-flex items-center gap-1 hover:text-foreground transition-colors",
-          align === "right" && "justify-end w-full",
+          "inline-flex h-10 items-center gap-1 rounded transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]",
+          dir && "text-foreground",
+          align === "right" && "w-full justify-end",
         )}
       >
         {label}
-        {dir === "asc" && <ArrowUp size={10} />}
-        {dir === "desc" && <ArrowDown size={10} />}
+        {dir === "asc" && <ArrowUp size={12} />}
+        {dir === "desc" && <ArrowDown size={12} />}
       </button>
     </TableHead>
   );

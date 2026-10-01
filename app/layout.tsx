@@ -1,31 +1,14 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Geist, Geist_Mono, Inter, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
-import { Analytics } from "@vercel/analytics/next"
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const sourceSerif = Source_Serif_4({
-  variable: "--font-serif-pro",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-// Geist — clean geometric sans used across the landing page (display + body).
+// Geist for display and body, Geist Mono for references and figures.
 const geistSans = Geist({
   variable: "--font-geist",
   subsets: ["latin"],
@@ -38,47 +21,25 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://blue-iq.vercel.app";
 
+const DEFAULT_TITLE = "Blue-IQ | Contract review for SOWs, MSAs and amendments";
+
+// Site-wide defaults. Each public page sets its own title, description and
+// canonical through `pageMetadata` (lib/seo.ts); the share image comes from
+// app/opengraph-image.tsx.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: {
-    default: "Blue-IQ — AI contract & SOW review software",
-    template: "%s · Blue-IQ",
-  },
-  description:
-    "Blue-IQ reads your SOWs, MSAs, and amendments, pulls out every clause, scores the risk against your playbook, and tracks how contract value changes over time — so review takes minutes instead of weeks.",
-  applicationName: "Blue-IQ",
-  keywords: [
-    "contract intelligence",
-    "SOW analysis",
-    "statement of work software",
-    "clause extraction",
-    "contract review software",
-    "AI contract analysis",
-    "contract risk scoring",
-    "amendment tracking",
-    "contract lifecycle management",
-    "legal operations",
-  ],
-  authors: [{ name: "Blue-IQ" }],
-  creator: "Blue-IQ",
-  alternates: { canonical: "/" },
+  title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
   openGraph: {
     type: "website",
-    siteName: "Blue-IQ",
-    title: "Blue-IQ — AI contract & SOW review software",
-    description:
-      "Extract every clause, score the risk against your playbook, and watch contract value change across amendments. Review SOWs and MSAs in minutes.",
-    url: "/",
+    siteName: SITE_NAME,
     locale: "en_US",
+    title: DEFAULT_TITLE,
+    description: SITE_DESCRIPTION,
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Blue-IQ — AI contract & SOW review software",
-    description:
-      "Extract every clause, score the risk, and track contract value across amendments. SOW and MSA review in minutes.",
-  },
+  twitter: { card: "summary_large_image", title: DEFAULT_TITLE, description: SITE_DESCRIPTION },
   robots: { index: true, follow: true },
 };
 
@@ -100,7 +61,8 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${jetbrainsMono.variable} ${sourceSerif.variable} ${geistSans.variable} ${geistMono.variable}`}
+      data-scroll-behavior="smooth"
+      className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
         {/* `beforeInteractive` injects this in <head> before hydration so the

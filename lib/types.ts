@@ -1,3 +1,6 @@
+import type { KeyDate } from "./key-dates"
+import type { ClausePlaybookResult, PlaybookSummary } from "./playbook"
+
 // Processing pipeline status
 export type DocStatus = "PENDING" | "PARSING" | "CLASSIFYING" | "EMBEDDING" | "GRAPHING" | "DIFFING" | "TIMELINING" | "PERSISTING" | "READY" | "FAILED"
 export type DocType = "SOW" | "MSA" | "AMENDMENT" | "NDA" | "LICENSE" | "DPA" | "BAA" | "COMPLIANCE" | "OTHER"
@@ -22,13 +25,23 @@ export interface ApiDocument {
   createdAt: string
   updatedAt: string
   errorMessage?: string
-  // Analysis aggregates (written by the persist stage; present once READY)
+  // Access (set by the API on every document it returns).
+  /** What the signed-in user may do with this document: `owner` if they
+   *  uploaded it, else their role in a project that lists it. */
+  role?: ProjectRole
+  /** Email of the person who uploaded it, when the server recorded one. */
+  ownerEmail?: string | null
+  /** The projects this document is filed in that the signed-in user can see. */
+  projectIds?: string[]
+  // Analysis aggregates (written by the persist stage; present once READY).
+  // null = the analysis did not measure it. It is never a stand-in for 0 / "low".
   summary?: string
   clauseCount?: number
-  highRiskCount?: number
-  findingsCount?: number
-  overallRisk?: RiskLevel
-  riskCounts?: { low: number; medium: number; high: number; critical: number }
+  highRiskCount?: number | null
+  findingsCount?: number | null
+  overallRisk?: RiskLevel | null
+  /** Clauses per assessed level; `unrated` counts clauses with no risk level. */
+  riskCounts?: { low: number; medium: number; high: number; critical: number; unrated?: number }
   // Commercial aggregates (validated; written by persist for cheap list/dashboard reads)
   contractValue?: number | null
   baseValue?: number | null
@@ -41,7 +54,8 @@ export interface ApiDocument {
   // Term / renewal dates (written by persist; power the obligations & renewals view)
   termEndDate?: string | null
   renewalDate?: string | null
-  autoRenews?: boolean
+  /** null = the analysis could not tell whether the term renews by itself. */
+  autoRenews?: boolean | null
   renewalNoticeDays?: number | null
   // Compliance-pack coverage aggregates (written by persist when packs are enabled)
   complianceCoveragePct?: number | null
@@ -68,16 +82,51 @@ export interface ApiUploadUrl {
   uploadUrl: string
   key: string
   docId: string
+  /** The project the upload was filed in by the server, if one was asked for. */
+  projectId?: string | null
 }
 
+/** Body of every non-2xx API response. */
 export interface ApiError {
   error: string
+  /** Machine-readable reason: "forbidden", "unauthenticated", "not_found", … */
+  code?: string
+}
+
+// ── Access model (enforced by the API; see the backend's shared/access.py) ──
+
+/** A person's role on a project, and through it on the project's documents. */
+export type ProjectRole = "owner" | "editor" | "viewer"
+
+export interface ProjectMember {
+  email: string
+  role: ProjectRole
+  /** `invited` until that person has opened the app with this email address. */
+  status: "invited" | "active"
+  sub?: string | null
+  invitedAt?: string
+}
+
+export interface StoredProject {
+  id: string
+  name: string
+  client?: string | null
+  createdAt: string
+  updatedAt?: string | null
+  docIds: string[]
+  /** Email of the project's owner, when the server recorded one. */
+  ownerEmail?: string | null
+  /** The signed-in user's role on this project, as decided by the server. */
+  role: ProjectRole
+  /** Everyone on the project. The owner is listed with role `owner`. */
+  members: ProjectMember[]
 }
 
 // ─────────────────────────────────────────────────────────────
-// Shared UI domain types (relocated from the former lib/data.ts mock module).
-// These describe the shapes the design-system components expect; real data is
-// mapped into them from ApiDocument via apiDocToProject().
+// Shared value types used across API shapes and UI.
+// (The old mock `Project` / `Clause` / `Amendment` shapes — with invented
+// fields such as health, margin, ARR, owner and trend — were removed: nothing
+// in the API provides them, so nothing may render them.)
 // ─────────────────────────────────────────────────────────────
 
 /** Lifecycle stage, aliased for components that predate the Lifecycle name. */
@@ -85,80 +134,6 @@ export type Status = Lifecycle
 
 export type RiskLevel = "low" | "medium" | "high" | "critical"
 export type FindingSeverity = "info" | "low" | "medium" | "high" | "critical"
-export type Confidence = 1 | 2 | 3 | 4
-export type Persona = "Legal" | "Sales" | "Finance" | "Procurement" | "PM"
-
-export type Project = {
-  id: string
-  code: string
-  name: string
-  client: string
-  clientIndustry: string
-  value: number
-  arr: number
-  margin: number
-  status: Status
-  health: number // 0-100
-  owner: { name: string; initials: string; role: Persona }
-  team: { initials: string; name: string }[]
-  signed: string | null
-  starts: string
-  ends: string
-  renewalDate: string
-  daysInStage: number
-  riskScore: RiskLevel
-  amendments: number
-  trend: number[] // 7-pt sparkline
-  region: string
-  tags: string[]
-}
-
-export type Clause = {
-  id: string
-  number: string
-  title: string
-  body: string
-  category:
-    | "Deliverables"
-    | "Milestones"
-    | "Payment"
-    | "SLA"
-    | "IP"
-    | "Termination"
-    | "Liability"
-    | "Confidentiality"
-    | "Indemnity"
-    | "Compliance"
-  risk: RiskLevel
-  confidence: Confidence
-  aiSummary: string
-  aiSuggestion?: string
-  deviation?: { from: string; severity: "minor" | "moderate" | "material" }
-  playbookRef?: string
-}
-
-export type AmendmentChange = {
-  clauseRef: string
-  type: "added" | "removed" | "modified"
-  before?: string
-  after?: string
-}
-
-export type Amendment = {
-  id: string
-  number: string // A-01
-  title: string
-  date: string
-  by: string
-  rationale: string
-  status: "pending" | "approved" | "rejected" | "active"
-  impact: {
-    valueDelta: number
-    timelineDeltaDays: number
-    scopeDelta: "expanded" | "reduced" | "modified" | "clarified"
-  }
-  changes: AmendmentChange[]
-}
 
 // ─────────────────────────────────────────────────────────────
 // Processed artefact shapes (fetched from /classification, /diff)
@@ -168,9 +143,58 @@ export interface ApiClause {
   number: string
   title: string
   body: string
+  /** Category key as sent by the backend. Any string is valid — not only the
+   *  known enum values — and "" means the API sent no category. */
   category: string
   riskLevel: RiskLevel
+  /** False when the API sent no risk level for this clause. `riskLevel` is then
+   *  only a placeholder ("low") kept for older call sites and must not be shown
+   *  or counted as an assessed "low". */
+  riskRated?: boolean
   summary: string
+  /** Optional finer-grained clause type, preferred over `category` for display
+   *  when the API provides it. */
+  specificType?: string | null
+  customType?: string | null
+  // ── Fields added by the newer analysis. All optional: a document analysed
+  // before they existed simply does not have them (shown as "not assessed" /
+  // left out, never filled in).
+  /** Stable id within the document ("c007"); what key dates and playbook
+   *  results point at. */
+  id?: string | null
+  /** Normalised key of the clause type ("non-solicitation"). */
+  specificTypeKey?: string | null
+  /** True when the type is outside the fixed category list. */
+  typeIsCustom?: boolean
+  /** The analysis flagged this clause for a person to check. */
+  needsReview?: boolean
+  /** "unclassified" = the analysis could not type this clause. */
+  classificationStatus?: "classified" | "unclassified" | "pending" | null
+  /** Heading(s) this clause sits under. */
+  section?: string | null
+  /** Number of the clause this one is nested under ("7" for "7.1"). */
+  parent?: string | null
+  /** Page the clause starts on, when the file has pages. */
+  page?: number | null
+  /** Lettered / deeper-numbered items inside the clause body. */
+  subclauses?: ApiSubclause[]
+  /** Playbook grading of this clause; null = not graded (older analysis). */
+  playbook?: ClausePlaybookResult | null
+}
+
+/** An item inside a clause ("7.1(b)"), addressed by offsets into its body. */
+export interface ApiSubclause {
+  ref: string
+  label: string
+  start: number
+  end: number
+}
+
+/** The analysis's own report on how complete it is. */
+export interface ApiExtractionReport {
+  /** Share of the document's text accounted for by its clauses, 0 to 1. */
+  coverageRatio: number | null
+  unclassifiedCount: number | null
 }
 
 export interface ApiKeyFinding {
@@ -301,6 +325,17 @@ export interface ApiClassification {
   amendment?: ApiAmendmentInfo
   confidence?: ApiConfidence
   validation?: ApiValidation
+  // ── Added by the newer analysis; undefined for documents analysed before it.
+  /** Every dated event / obligation in the document (the full list). Undefined
+   *  = analysed before key dates existed; [] = analysed, none found. */
+  keyDates?: KeyDate[]
+  /** Document-level playbook counts; undefined = clauses were not graded. */
+  playbook?: PlaybookSummary
+  /** The analysis says a person should check this document. */
+  needsReview?: boolean
+  /** Why, in the analysis's own sentences. */
+  reviewReasons?: string[]
+  extraction?: ApiExtractionReport
 }
 
 // Timeline / amendment-replay shapes (fetched from /timeline)
@@ -319,6 +354,12 @@ export interface ApiAmendmentChainItem {
   lifecycle: string | null
   effectiveDate: string | null
   title: string | null
+  /** Signed change in contract value (negative = a reduction); null when the
+   *  amendment does not change the value or it is not known. Absent on
+   *  timelines built before the field existed. */
+  valueDelta?: number | null
+  /** Whether the amendment's lifecycle stage counts as in force. */
+  inForce?: boolean
 }
 
 export interface ApiTimeline {
@@ -346,33 +387,12 @@ export interface ApiDiffChange {
   field: string
   before: string
   after: string
-  impactScore: number
+  /** 0–100 as scored by the backend; null when the API sent no score. */
+  impactScore: number | null
   impactRationale: string
 }
 
 export interface ApiDiff {
   changes: ApiDiffChange[]
   impactSummary: string
-}
-
-export type ActivityItem = {
-  id: string
-  ts: string
-  actor: { name: string; initials: string }
-  verb: string
-  object: string
-  kind: "edit" | "sign" | "comment" | "ai" | "approval" | "alert"
-}
-
-export type UpcomingEvent = {
-  id: string
-  type: "renewal" | "milestone" | "deadline" | "review" | "signature"
-  title: string
-  client: string
-  date: string // ISO
-  daysAway: number
-  value?: number
-  owner: string
-  ownerInitials: string
-  severity: "info" | "warn" | "danger" | "success" | "ai"
 }

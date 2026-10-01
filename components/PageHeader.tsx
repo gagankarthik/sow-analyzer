@@ -3,6 +3,7 @@ import { ChevronLeft } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 type Props = {
+  /** @deprecated No longer rendered; titles stand on their own. */
   eyebrow?: string;
   title: string;
   subtitle?: React.ReactNode;
@@ -14,7 +15,6 @@ type Props = {
 };
 
 export function PageHeader({
-  eyebrow,
   title,
   subtitle,
   actions,
@@ -31,32 +31,26 @@ export function PageHeader({
             {back && (
               <Link
                 href={back.href}
-                className="-mb-0.5 inline-flex w-fit items-center gap-1 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="-mb-0.5 inline-flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 <ChevronLeft size={15} strokeWidth={2} />
                 {back.label}
               </Link>
             )}
-            {eyebrow && (
-              <div className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground leading-[1.4]">
-                {eyebrow}
-              </div>
-            )}
             <h1
-              className="text-[clamp(22px,2.4vw,32px)] font-bold tracking-tight text-foreground leading-[1.2] break-words"
-              style={{ fontFamily: "var(--font-display)" }}
+              className="text-[clamp(24px,2.6vw,32px)] font-semibold tracking-[-0.025em] text-foreground leading-[1.15] break-words"
             >
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[13.5px] md:text-[14px] text-muted-foreground max-w-[68ch] leading-[1.55]">
+              <p className="text-base text-[var(--ink-600)] max-w-[68ch] leading-[1.55]">
                 {subtitle}
               </p>
             )}
           </div>
 
           {actions && (
-            <div className="shrink-0 flex flex-wrap items-center gap-2 lg:pt-1">
+            <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:pt-1">
               {actions}
             </div>
           )}

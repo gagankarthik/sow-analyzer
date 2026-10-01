@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MotionReveal } from "@/components/MotionReveal";
+import { SettingsLayout, SettingsSection } from "@/components/settings/SettingsNav";
 import {
-  ArrowRight,
   BookMarked,
   Briefcase,
+  ChevronRight,
   Database,
   Globe2,
   Lock,
@@ -34,18 +33,18 @@ type NavGroup = {
 const groups: NavGroup[] = [
   {
     label: "Contract intelligence",
-    desc: "Standards, libraries, and rules that AI uses to evaluate every clause.",
+    desc: "Standards, libraries, and rules Sonar uses to evaluate every clause.",
     items: [
-      { icon: BookMarked, title: "Playbook", desc: "Edit your firm's clause standards and deviation thresholds.", href: "/settings/playbook" },
-      { icon: Briefcase, title: "Clause library", desc: "Reusable clause blocks across the team.", href: "/settings/clauses" },
-      { icon: ShieldCheck, title: "Compliance packs", desc: "GDPR, SOC2, HIPAA clause coverage rules.", href: "/settings/compliance" },
+      { icon: BookMarked, title: "Playbook", desc: "Your firm's clause standards, section by section. Not editable yet.", href: "/settings/playbook" },
+      { icon: Briefcase, title: "Clause library", desc: "Every clause extracted from your documents, by category.", href: "/settings/clauses" },
+      { icon: ShieldCheck, title: "Compliance packs", desc: "Clause coverage rules for the regulations you choose.", href: "/settings/compliance" },
     ],
   },
   {
     label: "Workspace",
     desc: "People, permissions, and external systems your contracts flow through.",
     items: [
-      { icon: Users, title: "Team & roles", desc: "See everyone with access and what each role can do.", href: "/settings/team" },
+      { icon: Users, title: "Team & roles", desc: "Invite people to your projects, set their role and remove them.", href: "/settings/team" },
       { icon: Lock, title: "Approval routing", desc: "Define routing rules by contract value and risk.", href: "#", soon: true },
       { icon: Globe2, title: "Integrations", desc: "DocuSign, Salesforce, Workday, Slack, MS Teams.", href: "#", soon: true },
     ],
@@ -64,114 +63,65 @@ export default function SettingsPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Workspace · plan: Enterprise"
         title="Settings"
-        subtitle="Configure the rules and integrations that govern Blue-IQ across your firm."
+        subtitle="The rules and integrations that govern Blue-IQ across your firm."
       />
 
-      <div className="app-container py-6 md:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left nav */}
-          <aside className="lg:col-span-3">
-            <div className="lg:sticky lg:top-[120px] space-y-6">
-              {groups.map((g) => (
-                <div key={g.label}>
-                  <div className="eyebrow mb-2">{g.label}</div>
-                  <ul className="flex flex-col gap-0.5">
-                    {g.items.map((it) => (
-                      <li key={it.title}>
-                        {it.soon ? (
-                          <span className="flex items-center gap-2 h-8 px-3 -mx-3 rounded-full text-[13px] text-muted-foreground/50 cursor-not-allowed select-none">
-                            <span className="truncate">{it.title}</span>
-                            <span className="font-mono text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">soon</span>
-                          </span>
-                        ) : (
-                          <Link
-                            href={it.href}
-                            className="group flex items-center gap-2 h-8 px-3 -mx-3 rounded-full text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-                          >
-                            <span className="truncate">{it.title}</span>
-                          </Link>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+      <SettingsLayout>
+        {groups.map((g) => (
+          <SettingsSection key={g.label} title={g.label} description={g.desc} flush>
+            <ul className="divide-y divide-border">
+              {g.items.map((it) => (
+                <li key={it.title}>
+                  <SettingsRow item={it} />
+                </li>
               ))}
-            </div>
-          </aside>
-
-          {/* Content */}
-          <div className="lg:col-span-9 space-y-8">
-            {groups.map((g) => (
-              <MotionReveal key={g.label}>
-              <section>
-                <div className="mb-4">
-                  <h2 className="text-[18px] font-semibold text-foreground tracking-tight">
-                    {g.label}
-                  </h2>
-                  <p className="mt-1 text-[13px] text-muted-foreground">{g.desc}</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {g.items.map((it, i) => {
-                    const Icon = it.icon;
-
-                    if (it.soon) {
-                      return (
-                        <MotionReveal key={it.title} delay={Math.min(i * 0.04, 0.2)} className="block">
-                          <Card inset="lg" className="h-full rounded-2xl opacity-60">
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-muted border border-border">
-                                <Icon size={15} className="text-muted-foreground" />
-                              </span>
-                              <Badge variant="neutral" size="sm">Coming soon</Badge>
-                            </div>
-                            <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
-                              {it.title}
-                            </h3>
-                            <p className="mt-1 text-[12.5px] text-muted-foreground leading-relaxed">
-                              {it.desc}
-                            </p>
-                            <div className="mt-4 inline-flex items-center text-[12px] font-medium text-muted-foreground/50">
-                              Not yet available
-                            </div>
-                          </Card>
-                        </MotionReveal>
-                      );
-                    }
-
-                    return (
-                      <MotionReveal key={it.title} delay={Math.min(i * 0.04, 0.2)}>
-                        <Link href={it.href} className="block group h-full">
-                          <Card lift inset="lg" className="h-full rounded-2xl hover:shadow-md transition-all duration-200">
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-muted border border-border">
-                                <Icon size={15} className="text-muted-foreground" />
-                              </span>
-                            </div>
-                            <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
-                              {it.title}
-                            </h3>
-                            <p className="mt-1 text-[12.5px] text-muted-foreground leading-relaxed">
-                              {it.desc}
-                            </p>
-                            <div className="mt-4 inline-flex items-center text-[12px] font-medium text-muted-foreground group-hover:text-[var(--brand-primary-600)] transition-colors">
-                              Configure
-                              <ArrowRight size={11} className="ml-1" />
-                            </div>
-                          </Card>
-                        </Link>
-                      </MotionReveal>
-                    );
-                  })}
-                </div>
-              </section>
-              </MotionReveal>
-            ))}
-          </div>
-        </div>
-      </div>
+            </ul>
+          </SettingsSection>
+        ))}
+      </SettingsLayout>
     </>
+  );
+}
+
+function SettingsRow({ item }: { item: NavItem }) {
+  const Icon = item.icon;
+
+  const body = (
+    <>
+      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--panel)]">
+        <Icon size={16} className={item.soon ? "text-muted-foreground" : "text-[var(--ink-700)]"} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-base font-semibold text-foreground">{item.title}</span>
+        <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground">
+          {item.desc}
+        </span>
+      </span>
+    </>
+  );
+
+  if (item.soon) {
+    return (
+      <div className="flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5">
+        {body}
+        <Badge variant="neutral" size="md" className="shrink-0 text-xs">
+          Coming soon
+        </Badge>
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50 sm:gap-4 sm:px-5"
+    >
+      {body}
+      <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-[var(--brand-primary-600)] group-hover:text-[var(--brand-primary-700)]">
+        <span className="hidden sm:inline">Configure</span>
+        <ChevronRight size={16} />
+      </span>
+    </Link>
   );
 }
