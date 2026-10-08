@@ -33,7 +33,7 @@ export function attentionSentence(c: Contract): string {
   const r = attentionReasons(c);
   if (r.length === 0) return "Needs a look.";
   const [first, ...rest] = r;
-  return `${first}${rest.length ? `, and ${rest.map((s) => s.charAt(0).toLowerCase() + s.slice(1)).join(", and ")}` : ""}.`;
+  return `${first}${rest.length ? `, and ${rest.map((s) => (s.startsWith("Sonar") ? s : s.charAt(0).toLowerCase() + s.slice(1))).join(", and ")}` : ""}.`;
 }
 
 export const contractHref = (id: string) => `/contracts/${encodeURIComponent(id)}`;

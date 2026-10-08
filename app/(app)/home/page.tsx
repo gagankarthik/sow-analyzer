@@ -10,6 +10,7 @@
 // first load shows a retry; a failed refresh keeps the last figures and
 // says so; an empty workspace says what to do; a manual refresh confirms.
 
+import { LeaderHome } from "./_components/LeaderHome";
 import { ViewsCard } from "./_components/ViewsCard";
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -244,6 +245,10 @@ function Home() {
           </section>
         )}
 
+        {isLeader ? (
+          <LeaderHome contracts={contracts} attention={view.attention} summary={view.summary} currency={view.primary} />
+        ) : (
+          <>
         <KpiStrip items={kpis} />
 
         {/* Two independent columns: the work on the left, the figures on
@@ -289,6 +294,8 @@ function Home() {
             <TrendGlance kind="cycle" />
           </div>
         </div>
+          </>
+        )}
       </>
     );
   }

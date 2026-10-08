@@ -116,7 +116,15 @@ function ContractView({ contract: c, isError, onRefresh }: {
             <span>{c.owner ? <>Owned by <span className="font-medium text-foreground">{personName(c.owner)}</span></> : "No owner yet"}</span>
             {created && <span aria-hidden>·</span>}
             {created && <span>Created {created}</span>}
-            {c.huronRecordId && byEdition(true, false) && <><span aria-hidden>·</span><span>Huron <span className="font-mono text-xs text-foreground">{c.huronRecordId}</span></span></>}
+            {/* System references as tags: the record in Huron, Workday and the purchase order. */}
+            {[
+              byEdition(c.huronRecordId ? `Huron ${c.huronRecordId}` : null, null),
+              c.workdayRef ? `Workday ${c.workdayRef}` : null,
+              byEdition(null, c.poNumber ? `PO ${c.poNumber}` : null),
+            ].filter((t): t is string => !!t).map((t) => (
+              <span key={t} className="rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-xs text-[var(--ink-800)]">{t}</span>
+            ))}
+            {c.rounds > 0 && <span className="rounded-md bg-[var(--ink-100)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-800)]">Round {c.rounds + 1}</span>}
             {analysing && (
               <span className="inline-flex items-center gap-1.5 text-[var(--ai-ink)]"><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Sonar is reading the latest version</span>
             )}

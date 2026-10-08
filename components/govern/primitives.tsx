@@ -4,7 +4,7 @@
 
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ds/Avatar";
-import { Clock, Building2, Users, UserRound, PenLine, CircleDashed } from "@/components/ui/icons";
+import { AlertTriangle, Clock, Building2, Users, UserRound, PenLine, CircleDashed } from "@/components/ui/icons";
 import { SLA_LABEL, TIER_HINT, TIER_LABEL, WAITING_ON_LABEL, WAITING_ON_SHORT, daysLabel } from "@/lib/govern/labels";
 import type { SlaStatus, Tier, WaitingOn, WaitingOnKind } from "@/lib/govern/types";
 
@@ -37,7 +37,9 @@ export function TierBadge({ tier, className }: { tier: Tier; className?: string 
         className,
       )}
     >
-      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+      {tier === "unacceptable"
+        ? <AlertTriangle size={12} aria-hidden />
+        : <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />}
       {TIER_LABEL[tier]}
     </span>
   );

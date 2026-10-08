@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PRE_SIGNATURE_STAGES, STAGES, STAGE_LABEL } from "@/lib/govern/labels";
 import type { Contract, Stage } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
+import { formatCompact } from "@/lib/govern/metrics";
 import { ContractCard } from "./ContractCard";
 
 /** Per-stage dot: a navy ramp along the road to signature, green once signed
@@ -26,6 +27,8 @@ export interface StageSummary {
   averageDays: number | null;
   overdue: number;
   late: number;
+  /** Total value of the stage's agreements ("$1.2M"), when they share one currency. */
+  valueText: string | null;
 }
 
 /** Count, average days and overdue/late counts for each stage's open contracts. */
@@ -37,7 +40,15 @@ export function summariseStage(stage: Stage, contracts: Contract[]): StageSummar
     averageDays: open.length ? Math.round((open.reduce((s, c) => s + c.daysInStage, 0) / open.length) * 10) / 10 : null,
     overdue: open.filter((c) => c.slaStatus === "red").length,
     late: open.filter((c) => c.slaStatus === "amber").length,
+    valueText: stageValue(contracts),
   };
+}
+
+function stageValue(contracts: Contract[]): string | null {
+  const valued = contracts.filter((c) => c.value !== null && c.value > 0);
+  const currencies = new Set(valued.map((c) => c.currency || "USD"));
+  if (valued.length === 0 || currencies.size !== 1) return null;
+  return formatCompact(valued.reduce((s, c) => s + (c.value ?? 0), 0), [...currencies][0]);
 }
 
 function daysText(avg: number | null): string {
@@ -125,13 +136,14 @@ export function PipelineStrip({
 /* ── Board lanes ─────────────────────────────────────────────────────────── */
 
 export function StageHeader({ summary, className }: { summary: StageSummary; className?: string }) {
-  const { stage, contracts, averageDays, overdue } = summary;
+  const { stage, contracts, averageDays, overdue, valueText } = summary;
   return (
     <div className={cn("flex items-start gap-2", className)}>
       <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", STAGE_DOT[stage])} aria-hidden />
       <div className="min-w-0 flex-1">
         <h3 className="truncate text-sm font-semibold text-foreground">{STAGE_LABEL[stage]}</h3>
         <p className="mt-0.5 text-xs tabular-nums text-[var(--ink-600)]">
+          {valueText && <span className="font-semibold text-foreground">{valueText} · </span>}
           {contracts.length === 0 ? "Empty" : daysText(averageDays)}
           {overdue > 0 && <span className="font-semibold text-[var(--danger)]"> · {overdue} overdue</span>}
         </p>
