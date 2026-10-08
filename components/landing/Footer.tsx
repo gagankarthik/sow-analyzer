@@ -103,6 +103,13 @@ export function Footer() {
               acting. Blue-IQ accepts no liability for decisions made from this analysis.
             </p>
           </div>
+          <p className="mt-4 text-sm leading-relaxed">
+            Blue-IQ is a software company, not a law firm. Nothing on this website is legal advice, and using this
+            site or any of its resources does not create an attorney-client relationship between you and Blue-IQ. Your
+            use of this website is subject to our{" "}
+            <Link href="/legal/terms" className="lp-link">Terms of Service</Link> and{" "}
+            <Link href="/legal/privacy" className="lp-link">Privacy Policy</Link>.
+          </p>
           <div className="lp-footer-end">
             <p>© 2026 Blue-IQ. All rights reserved.</p>
             <a href="#main-content" className="lp-footer-top" aria-label="Back to top">

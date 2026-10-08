@@ -1,5 +1,5 @@
 /* Shapes behind the navy footer: the same flat geometry as the hero (quarter
-   circles, squares, a ring, a dot field), drawn in navy tints a few steps
+   circles, squares, a ring), drawn in navy tints a few steps
    lighter than the footer so they read as texture, never as decoration that
    competes with the links. */
 export function FooterBackdrop() {
@@ -11,12 +11,6 @@ export function FooterBackdrop() {
       aria-hidden="true"
       focusable="false"
     >
-      <defs>
-        <pattern id="lp-footer-matrix" width="240" height="48" patternUnits="userSpaceOnUse">
-          <path d="M0 47.5 H240 M120 0 V48 M180 0 V48 M239.5 0 V48" fill="none" stroke="#15203A" strokeWidth="1" />
-        </pattern>
-      </defs>
-      <rect x="0" y="0" width="1440" height="640" fill="url(#lp-footer-matrix)" />
       {/* top right: a quarter circle with a square beneath */}
       <path d="M1440 0 L1440 260 A260 260 0 0 1 1180 0 Z" fill="#13203A" />
       <rect x="1300" y="260" width="140" height="140" fill="#101B31" />

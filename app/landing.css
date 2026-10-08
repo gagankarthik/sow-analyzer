@@ -975,23 +975,61 @@
   }
 }
 
-/* Cookie notice: a small light card, bottom left, styled like a finding. */
+/* Cookie notice: a plain full-width bar at the bottom, white with a hairline. */
 @layer components {
   .lp-cookie {
-    position: fixed; left: 1rem; bottom: 1rem; z-index: 40; width: min(24rem, calc(100vw - 2rem));
-    padding: 1rem 1rem 1rem 1.125rem; border: 1px solid var(--lp-line); border-left: 3px solid var(--lp-accent);
-    border-radius: 0.75rem; background: #FFFFFF; color: var(--lp-ink);
-    box-shadow: 0 12px 32px -16px rgba(10, 13, 20, 0.22);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: #FFFFFF; border-top: 1px solid var(--lp-line); color: var(--lp-ink-2);
+    box-shadow: 0 -8px 24px -20px rgba(10, 13, 20, 0.25);
   }
-  .lp-cookie-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem 0.625rem; padding-right: 2rem; position: relative; }
-  .lp-cookie-title { font-size: var(--text-sm); font-weight: 600; }
-  .lp-cookie-chip { padding: 0.125rem 0.5rem; border-radius: 9999px; background: #E7F5EF; color: #0E6B4B; font-size: 0.75rem; font-weight: 600; }
-  .lp-cookie-x {
-    position: absolute; top: -0.375rem; right: -0.5rem; display: inline-flex; width: 2.25rem; height: 2.25rem;
-    align-items: center; justify-content: center; border-radius: 9999px; color: var(--lp-ink-2);
+  .lp-cookie-row {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem;
+    padding-block: 0.875rem calc(0.875rem + env(safe-area-inset-bottom)); font-size: var(--text-sm); line-height: 1.5;
   }
-  .lp-cookie-x:hover { background: var(--lp-subtle); color: var(--lp-ink); }
-  .lp-cookie-body { margin-top: 0.5rem; font-size: var(--text-sm); line-height: 1.5; color: var(--lp-ink-2); }
-  .lp-cookie-actions { display: flex; align-items: center; gap: 1rem; margin-top: 0.875rem; }
-  .lp-cookie-link { font-size: var(--text-sm); font-weight: 600; color: var(--lp-accent); text-decoration: underline; text-underline-offset: 0.2em; }
+  .lp-cookie-link { font-weight: 600; color: var(--lp-ink); text-decoration: underline; text-underline-offset: 0.2em; }
+  .lp-cookie-link:hover { color: var(--lp-accent); }
+  .lp-cookie .lp-btn { min-width: 5rem; }
+}
+
+/* Header v5: plain solid links (no pill); the open menu is marked by an
+   accent rule on the header's bottom edge. */
+@layer components {
+  .lp-navgroup { gap: 0.25rem; padding: 0; border: 0; border-radius: 0; background: transparent; align-self: stretch; }
+  .lp-header[data-raised="true"] .lp-navgroup { background: transparent; }
+  .lp-navgroup .lp-navbtn {
+    position: relative; align-self: stretch; min-height: 0; padding-inline: 0.875rem; border-radius: 0;
+    color: var(--lp-ink); background: transparent;
+  }
+  .lp-navgroup .lp-navbtn:hover,
+  .lp-navgroup .lp-navbtn[aria-expanded="true"] { background: transparent; box-shadow: none; color: var(--lp-accent); }
+  .lp-navgroup .lp-navbtn::after {
+    content: ""; position: absolute; left: 0.875rem; right: 0.875rem; bottom: -1px; height: 2px;
+    background: var(--lp-accent); transform: scaleX(0); transition: transform 180ms ease-out;
+  }
+  .lp-navgroup .lp-navbtn[aria-expanded="true"]::after { transform: scaleX(1); }
+
+  /* Dropdown: tinted intro panel, items with a clear hover, a short reveal. */
+  .lp-sheet { background: #FFFFFF; animation: lp-sheet-in 160ms ease-out; }
+  @keyframes lp-sheet-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .lp-sheet-grid { grid-template-columns: minmax(0, 3.2fr) minmax(0, 8.8fr); gap: 2.5rem; padding-block: 1.5rem 1.75rem; }
+  .lp-sheet-intro { display: flex; flex-direction: column; padding: 1.5rem; border-radius: 0.75rem; background: var(--lp-canvas); }
+  .lp-sheet-intro .lp-sheet-foot { margin-top: auto; padding-top: 1.25rem; }
+  .lp-sheet-label { padding-bottom: 0.5rem; margin-inline: 0.75rem; padding-inline: 0; border-bottom: 1px solid var(--lp-line); color: var(--lp-ink); }
+  .lp-menu-item { position: relative; padding: 0.875rem 2.25rem 0.875rem 0.75rem; border-radius: 0.625rem; }
+  .lp-menu-item:hover { background: #F5F7FB; }
+  .lp-menu-item:hover .lp-menu-title { color: var(--lp-accent); }
+  .lp-menu-arrow {
+    position: absolute; top: 50%; right: 0.75rem; color: var(--lp-accent); opacity: 0;
+    transform: translate(-4px, -50%); transition: opacity 150ms ease-out, transform 150ms ease-out;
+  }
+  .lp-menu-item:hover .lp-menu-arrow,
+  .lp-menu-item:focus-visible .lp-menu-arrow { opacity: 1; transform: translate(0, -50%); }
+  @media (prefers-reduced-motion: reduce) {
+    .lp-sheet { animation: none; }
+    .lp-navgroup .lp-navbtn::after, .lp-menu-arrow { transition: none; }
+  }
+}
+
+@layer components {
+  .lp-navgroup .lp-navbtn:focus-visible { outline-offset: -14px; border-radius: 0.75rem; }
 }

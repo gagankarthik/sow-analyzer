@@ -238,10 +238,10 @@ function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void
   return (
     <div id={menuId(menu.label)} className="lp-sheet hidden lg:block">
       <div className="lp-wrap lp-sheet-grid">
-        <div>
+        <div className="lp-sheet-intro">
           <p className="lp-sheet-title">{menu.label}</p>
           <p className="mt-2 text-sm text-lp-ink-2">{menu.intro}</p>
-          <Link href={menu.foot.href} className="lp-sheet-foot mt-5" onClick={onNavigate}>
+          <Link href={menu.foot.href} className="lp-sheet-foot" onClick={onNavigate}>
             {menu.foot.label}
             <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
           </Link>
@@ -275,12 +275,13 @@ function MenuLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void 
     <Link href={item.href} className="lp-menu-item" onClick={onNavigate}>
       {area ? <IconBadge icon={item.icon} area={area} /> : null}
       <span className="min-w-0">
-        <span className="flex flex-wrap items-center gap-x-2 text-sm font-semibold text-lp-ink">
+        <span className="lp-menu-title flex flex-wrap items-center gap-x-2 text-sm font-semibold text-lp-ink">
           {item.label}
           {item.feature ? <ComingSoonBadge feature={item.feature} /> : null}
         </span>
         <span className="mt-0.5 block text-sm text-lp-ink-2">{item.description}</span>
       </span>
+      <ArrowRight size={16} strokeWidth={2} className="lp-menu-arrow" aria-hidden="true" />
     </Link>
   );
 }
