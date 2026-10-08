@@ -47,11 +47,11 @@ export function Editions() {
               onClick={() => setActive(id)}
               className="lp-eswitch-tab"
             >
-              <span className="lp-eswitch-name">{EDITIONS[id].name}</span>
-              <span className="lp-eswitch-sub">{EDITIONS[id].tagline}</span>
+              {EDITIONS[id].name}
             </button>
           ))}
         </div>
+        <p className="lp-eswitch-caption" aria-live="polite">{EDITIONS[active].tagline}</p>
 
         {EDITION_IDS.map((id) => {
           const e = EDITIONS[id];
