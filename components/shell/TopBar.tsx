@@ -1,5 +1,6 @@
 "use client";
 
+import { SonarIcon } from "@/components/ui/brand-icons";
 import { docTypeLabel } from "@/lib/doc-types";
 import { AGREEMENT_TYPE_LABEL, STAGE_LABEL } from "@/lib/govern/labels";
 import { useContracts, useGovernMe } from "@/lib/govern/queries";
@@ -616,7 +617,7 @@ function ProfileMenu() {
 /*  TopBar                                          */
 /* ──────────────────────────────────────────────── */
 
-export function TopBar({ onMenuClick }: Props) {
+export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
   const sidebarCollapsed = useUIStore((st) => st.sidebarCollapsed);
   const toggleSidebar = useUIStore((st) => st.toggleSidebar);
 
@@ -663,6 +664,18 @@ export function TopBar({ onMenuClick }: Props) {
         <div className="flex min-w-0 justify-end w-[min(440px,55vw)]">
           <SearchBar />
         </div>
+        {/* Sonar, the assistant: next to search, with a turning rainbow edge. */}
+        {onCopilotToggle && (
+          <button
+            type="button"
+            onClick={onCopilotToggle}
+            aria-label="Ask Sonar"
+            className="sonar-button mx-1 inline-flex h-9 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
+          >
+            <SonarIcon size={16} strokeWidth={1.75} className="text-[var(--brand-primary-600)]" />
+            <span className="hidden sm:inline">Ask Sonar</span>
+          </button>
+        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <Link href="/help" aria-label="Help" className={ICON_BUTTON}>

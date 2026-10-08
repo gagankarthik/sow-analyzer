@@ -905,3 +905,30 @@ html { scroll-behavior: smooth; }
 .dt-bulk button:disabled { opacity: 0.5; }
 .dt-bulk button:focus-visible, .dt-bulk a:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
 
+/* Sonar loader: the spark breathes and the two waves pulse outward in turn. */
+@keyframes sonar-wave { 0%, 100% { opacity: 0.18; } 35% { opacity: 1; } }
+@keyframes sonar-spark { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.sonar-wave { animation: sonar-wave 1.6s ease-in-out infinite; }
+.sonar-wave-2 { animation-delay: 0.3s; }
+.sonar-spark { transform-box: fill-box; transform-origin: center; animation: sonar-spark 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sonar-wave, .sonar-spark { animation: none; opacity: 1; }
+}
+
+/* Sonar's button: a rainbow edge that slowly turns, inside a white pill. */
+@property --sonar-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes sonar-ring { to { --sonar-angle: 360deg; } }
+.sonar-button { position: relative; isolation: isolate; }
+.sonar-button, .sonar-rainbow {
+  border: 1.5px solid transparent; border-radius: 9999px;
+  background:
+    linear-gradient(var(--sonar-fill, var(--card)), var(--sonar-fill, var(--card))) padding-box,
+    conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;
+  animation: sonar-ring 6s linear infinite;
+}
+.sonar-button:hover {
+  background:
+    linear-gradient(var(--ink-50), var(--ink-50)) padding-box,
+    conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;
+}
+@media (prefers-reduced-motion: reduce) { .sonar-button, .sonar-rainbow { animation: none; } }

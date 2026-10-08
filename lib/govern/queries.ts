@@ -56,8 +56,11 @@ export function useContracts(includeClosed = false): UseQueryResult<{ contracts:
   return useQuery({
     queryKey: governKeys.contracts(includeClosed),
     queryFn: () => listContracts(includeClosed),
-    staleTime: 20_000,
-    refetchInterval: MINUTE,
+    staleTime: 15_000,
+    // Other people's changes show within half a minute; a person's own
+    // changes show at once (each mutation writes its result into the cache).
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     retry: retryTransient,
   });

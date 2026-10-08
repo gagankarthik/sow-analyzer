@@ -76,7 +76,7 @@ export function Lifecycle() {
           <span className="lp-loop-turn lp-loop-turn-left" aria-hidden="true">
             <ChevronUp size={16} strokeWidth={2} />
           </span>
-          <span className="lp-loop-core" aria-hidden="true">
+          <span className="lp-loop-core sonar-rainbow" aria-hidden="true">
             <SonarMark size="sm" />
             Sonar checks every version
           </span>

@@ -482,7 +482,7 @@
     .lp-loop-core {
       position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%);
       display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.125rem;
-      border: 1px solid var(--lp-line); border-radius: 9999px; background: var(--lp-canvas);
+      --sonar-fill: var(--lp-canvas);
       font-size: var(--text-base); font-weight: 500; color: var(--lp-ink); white-space: nowrap;
     }
   }

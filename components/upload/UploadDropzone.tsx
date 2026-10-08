@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { docTypesFor } from "@/lib/doc-types";
 import { useEditionFeature } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
@@ -30,6 +31,15 @@ import { intakeSummary } from "./contract-intake";
 const ACCEPTED = ".pdf,.docx,.txt";
 const MAX_BYTES = 50 * 1024 * 1024;
 const isAccepted = (f: File) => /\.(pdf|docx|txt)$/i.test(f.name);
+
+/** What a file's name says it is, when that is clearly not an agreement. */
+function suspectKind(name: string): string | null {
+  const n = name.toLowerCase();
+  if (/(^|[^a-z])(resume|résumé|cv|curriculum[ _-]?vitae)([^a-z]|$)/.test(n)) return "a résumé";
+  if (/(^|[^a-z])(invoice|receipt|payslip|pay[ _-]?stub)([^a-z]|$)/.test(n)) return "an invoice or receipt";
+  if (/(^|[^a-z])(photo|img|screenshot|selfie)([^a-z]|$)/.test(n)) return "a picture";
+  return null;
+}
 
 /** The name sent to the backend: unsupported characters become "_". */
 function uploadName(name: string): string {
@@ -149,18 +159,26 @@ export function UploadDropzone({
   }, []);
   const [dragOver, setDragOver] = useState(false);
   const [reject, setReject] = useState<string | null>(null);
+  // Files whose name says they are not an agreement wait here for a decision.
+  const [held, setHeld] = useState<{ item: QueueItem; kind: string }[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const typeId = useId();
 
   const addFiles = useCallback((files: FileList | null) => {
     if (!files) return;
     const accepted: QueueItem[] = [];
+    const suspects: { item: QueueItem; kind: string }[] = [];
     let rejected = 0;
     let wrongSize = 0;
     Array.from(files).forEach((f) => {
       if (!isAccepted(f)) rejected++;
       else if (f.size === 0 || f.size > MAX_BYTES) wrongSize++;
-      else accepted.push({ id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, file: f, docType, projectId });
+      else {
+        const item = { id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, file: f, docType, projectId };
+        const kind = suspectKind(f.name);
+        if (kind) suspects.push({ item, kind });
+        else accepted.push(item);
+      }
     });
     const notes: string[] = [];
     if (governIntake) {
@@ -177,6 +195,7 @@ export function UploadDropzone({
     if (wrongSize > 0) notes.push(`${wrongSize} file${wrongSize === 1 ? "" : "s"} skipped. Files must not be empty or larger than 50 MB.`);
     setReject(notes.length ? notes.join(" ") : null);
     if (accepted.length) setQueue((q) => [...accepted, ...q]);
+    if (suspects.length) setHeld((h) => [...suspects, ...h]);
     if (inputRef.current) inputRef.current.value = "";
   }, [docType, projectId, governIntake]);
 
@@ -219,6 +238,25 @@ export function UploadDropzone({
         </div>
       )}
 
+      {held.map(({ item, kind }) => (
+        <div key={item.id} role="alert" className="flex flex-col gap-3 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-start gap-2.5 text-sm text-foreground">
+            <AlertCircle size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" aria-hidden />
+            <span>
+              <span className="font-semibold">&ldquo;{item.file.name}&rdquo; looks like {kind}, not an agreement.</span>{" "}
+              Govern reviews contracts such as licenses, research agreements, NDAs, SOWs and MSAs.
+            </span>
+          </p>
+          <span className="flex shrink-0 gap-2">
+            <Button variant="outline" size="sm" onClick={() => setHeld((h) => h.filter((x) => x.item.id !== item.id))}>Don&apos;t upload</Button>
+            <Button size="sm" onClick={() => {
+              setHeld((h) => h.filter((x) => x.item.id !== item.id));
+              setQueue((q) => [item, ...q]);
+            }}>Upload anyway</Button>
+          </span>
+        </div>
+      ))}
+
       {queue.length > 0 && (
         <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-xs">
           {queue.map((item) => (
@@ -251,7 +289,7 @@ export function UploadDropzone({
   );
 }
 
-type Phase = "uploading" | "processing" | "ready" | "failed";
+type Phase = "uploading" | "processing" | "ready" | "failed" | "not_agreement";
 
 function UploadItem({
   item, onRemove, onDocCreated, onDocReady, linkOnReady, onStatus, retryToken, onUploadAnother,
@@ -376,7 +414,14 @@ function UploadItem({
               notFound = 0;
               safe(() => setDocStatus(d.document.status));
               if (d.document.status === "READY") { safe(() => setPhase("ready")); cbRef.current.onDocReady?.(id); cbRef.current.invalidateDocuments(); }
-              else if (d.document.status === "FAILED") { cbRef.current.invalidateDocuments(); safe(() => { setPhase("failed"); setErrorMsg(d.document.errorMessage || "Sonar couldn't read this document. Re-analyze it, or upload it again."); }); }
+              else if (d.document.status === "FAILED") {
+                cbRef.current.invalidateDocuments();
+                const notAgreement = (d.document as { errorCode?: string }).errorCode === "not_agreement";
+                safe(() => {
+                  setPhase(notAgreement ? "not_agreement" : "failed");
+                  setErrorMsg(d.document.errorMessage || "Sonar couldn't read this document. Re-analyze it, or upload it again.");
+                });
+              }
               else timerRef.current = setTimeout(poll, 4000);
             })
             .catch((e: unknown) => {
@@ -433,7 +478,7 @@ function UploadItem({
             )}
             <span className="ml-auto flex shrink-0 items-center gap-1">
               <PhaseBadge phase={phase} status={docStatus} />
-              {(phase === "ready" || phase === "failed") && (
+              {(phase === "ready" || phase === "failed" || phase === "not_agreement") && (
                 <button type="button" onClick={dismiss} className="-my-2 -mr-2 inline-flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]" aria-label="Remove from queue"><X size={16} /></button>
               )}
             </span>
@@ -467,6 +512,23 @@ function UploadItem({
             />
           )}
 
+          {phase === "not_agreement" && docId && (
+            <div className="mt-2 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2.5">
+              <p className="text-sm leading-snug text-foreground">{errorMsg}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                  void deleteDocument(docId).then(() => { cbRef.current.invalidateDocuments(); onRemove(); }).catch(() => toast.error("Couldn't delete the file", { description: "Try again." }));
+                }}>Delete this file</Button>
+                <Button size="sm" onClick={() => {
+                  setPhase("processing"); setDocStatus("PENDING");
+                  void reprocessDocument(docId, { force: true })
+                    .then(() => setAttempt((a) => a + 1))
+                    .catch((e: unknown) => { setPhase("not_agreement"); toast.error("Couldn't start the analysis", { description: e instanceof Error ? e.message : "Try again." }); });
+                }}>Analyze anyway</Button>
+              </div>
+            </div>
+          )}
+
           {phase === "failed" && (
             <div className="mt-2 space-y-2">
               {errorMsg && <p className="break-words text-sm leading-snug text-[var(--danger)]">{errorMsg.length > 160 ? errorMsg.slice(0, 160) + "…" : errorMsg}</p>}
@@ -483,11 +545,13 @@ function PhaseBadge({ phase, status }: { phase: Phase; status: string }) {
   if (phase === "uploading") return <Pill tone="brand"><Loader2 size={12} className="animate-spin" />Uploading</Pill>;
   if (phase === "processing") return <Pill tone="brand"><Loader2 size={12} className="animate-spin" />{status.charAt(0) + status.slice(1).toLowerCase()}</Pill>;
   if (phase === "ready") return <Pill tone="success"><CheckCircle2 size={12} />Ready</Pill>;
+  if (phase === "not_agreement") return <Pill tone="warning"><AlertCircle size={12} />Not an agreement</Pill>;
   return <Pill tone="danger"><AlertCircle size={12} />Failed</Pill>;
 }
 
-function Pill({ tone, children }: { tone: "brand" | "success" | "danger"; children: React.ReactNode }) {
+function Pill({ tone, children }: { tone: "brand" | "success" | "danger" | "warning"; children: React.ReactNode }) {
   const cls = {
+    warning: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
     brand: "bg-structure-soft text-structure-soft-fg",
     success: "bg-[var(--success-soft)] text-[var(--success-fg)]",
     danger: "bg-[var(--danger-soft)] text-[var(--danger)]",

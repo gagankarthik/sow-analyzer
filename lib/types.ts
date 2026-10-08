@@ -25,6 +25,8 @@ export interface ApiDocument {
   createdAt: string
   updatedAt: string
   errorMessage?: string
+  /** Why processing stopped: "not_agreement" when the file is not a contract. */
+  errorCode?: string
   // Access (set by the API on every document it returns).
   /** What the signed-in user may do with this document: `owner` if they
    *  uploaded it, else their role in a project that lists it. */

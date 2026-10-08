@@ -439,7 +439,7 @@ export default function LibraryPage() {
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
                           <DocTypeBadge type={doc.docType} />
                           <LifecycleLabel lifecycle={doc.lifecycle as Lifecycle} />
-                          <StatusBadge status={doc.status} />
+                          <StatusBadge status={doc.status} code={doc.errorCode} />
                         </div>
                         <p className="mt-2 text-xs tabular-nums text-muted-foreground">
                           {formatDate(doc.createdAt)} · v{doc.latestVersion}{doc.status === "READY" ? ` · ${doc.parties?.length ?? 0} part${(doc.parties?.length ?? 0) === 1 ? "y" : "ies"}` : ""}
@@ -494,7 +494,7 @@ export default function LibraryPage() {
                             <LifecycleLabel lifecycle={doc.lifecycle as Lifecycle} />
                           </TableCell>
                           <TableCell>
-                            <StatusBadge status={doc.status} />
+                            <StatusBadge status={doc.status} code={doc.errorCode} />
                           </TableCell>
                           <TableCell className="hidden text-right text-sm tabular-nums text-[var(--ink-600)] xl:table-cell">
                             {/* Parties are extracted by the analysis: unknown until it is READY. */}
@@ -671,8 +671,10 @@ function LifecycleLabel({ lifecycle }: { lifecycle: Lifecycle }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const badge = getStatusBadge(status);
+function StatusBadge({ status, code }: { status: string; code?: string }) {
+  const badge = status === "FAILED" && code === "not_agreement"
+    ? { label: "Not an agreement", cls: "bg-[var(--warning-soft)] text-[var(--warning-fg)]" }
+    : getStatusBadge(status);
   return (
     <span className={`inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${badge.cls}`}>
       {badge.label}

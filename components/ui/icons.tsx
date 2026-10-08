@@ -51,7 +51,6 @@ import {
   LineChart as LLineChart,
   Link2 as LLink2,
   ListChecks as LListChecks,
-  Loader2 as LLoader2,
   Lock as LLock,
   LogOut as LLogOut,
   Mail as LMail,
@@ -90,7 +89,7 @@ import {
   AmendmentIcon, ClauseIcon, ComplianceIcon, DashboardIcon, DraftIcon, HelpIcon,
   InfoIcon, InsightsIcon, LibraryIcon, NotificationsIcon, PlaybookIcon, ProjectsIcon,
   RenewalsIcon, RiskIcon, SettingsIcon, SonarIcon, TeamIcon, UploadIcon, WorkflowIcon,
-  withBrandStroke,
+  withBrandStroke, SpinnerIcon,
 } from "@/components/ui/brand-icons";
 
 export type { LucideIcon } from "lucide-react";
@@ -152,7 +151,8 @@ export const Globe2 = /*#__PURE__*/ withBrandStroke(LGlobe2, "Globe2");
 export const Layers = /*#__PURE__*/ withBrandStroke(LLayers, "Layers");
 export const LayoutGrid = /*#__PURE__*/ withBrandStroke(LLayoutGrid, "LayoutGrid");
 export const LineChart = /*#__PURE__*/ withBrandStroke(LLineChart, "LineChart");
-export const Loader2 = /*#__PURE__*/ withBrandStroke(LLoader2, "Loader2");
+// Every pending state spins the brand spinner (a ring with one arc).
+export const Loader2 = SpinnerIcon;
 export const Lock = /*#__PURE__*/ withBrandStroke(LLock, "Lock");
 export const LogOut = /*#__PURE__*/ withBrandStroke(LLogOut, "LogOut");
 export const Mail = /*#__PURE__*/ withBrandStroke(LMail, "Mail");

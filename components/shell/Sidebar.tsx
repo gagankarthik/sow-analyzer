@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUIStore } from "@/lib/stores/ui";
 import {
-  LayoutDashboard, Kanban, BarChart3, Briefcase, Sonar,
+  LayoutDashboard, Kanban, BarChart3, Briefcase,
   Settings, Library, DraftSow, CalendarClock, House, Gauge, ChevronLeft, ChevronRight, ListChecks, FileText,
 } from "@/components/ui/icons";
 import { SETTINGS_ITEMS } from "@/components/settings/SettingsNav";
@@ -42,7 +42,6 @@ const NAV_BY_EDITION: Record<Edition, NavItem[]> = {
     { label: "Library", href: "/library", icon: Library },
     { label: "Reports", href: "/reports", icon: Gauge },
     { label: "Insights", href: "/insights", icon: BarChart3 },
-    { label: "Sonar", action: "copilot", icon: Sonar },
     { label: "Settings", href: "/settings", icon: Settings, drill: true },
   ],
   workforce: [
@@ -56,7 +55,6 @@ const NAV_BY_EDITION: Record<Edition, NavItem[]> = {
     { label: "Library", href: "/library", icon: Library },
     { label: "Reports", href: "/reports", icon: Gauge },
     { label: "Insights", href: "/insights", icon: BarChart3 },
-    { label: "Sonar", action: "copilot", icon: Sonar },
     { label: "Settings", href: "/settings", icon: Settings, drill: true },
   ],
 };

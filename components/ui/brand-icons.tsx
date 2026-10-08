@@ -114,9 +114,19 @@ export const DraftIcon = createIcon(
 export const SonarIcon = createIcon(
   "SonarIcon",
   <>
-    <path d="M21 12a9 9 0 1 1-9-9" />
-    <path d="M7 12a5 5 0 1 1 5 5" />
-    <circle cx="12" cy="12" r="0.75" fill="currentColor" />
+    {/* An AI spark that sends out sonar waves: Sonar reads and checks. */}
+    <path d="M8 11.25c.55 2.6 1.6 3.65 4.2 4.2-2.6.55-3.65 1.6-4.2 4.2-.55-2.6-1.6-3.65-4.2-4.2 2.6-.55 3.65-1.6 4.2-4.2Z" fill="currentColor" fillOpacity="0.18" />
+    <path d="M8 7.75a7.7 7.7 0 0 1 7.7 7.7" />
+    <path d="M8 3.75a11.7 11.7 0 0 1 11.7 11.7" />
+  </>,
+);
+
+/** Loading: a ring with one bright arc, spun with `animate-spin`. */
+export const SpinnerIcon = createIcon(
+  "SpinnerIcon",
+  <>
+    <circle cx="12" cy="12" r="9" opacity="0.22" />
+    <path d="M21 12a9 9 0 0 0-9-9" />
   </>,
 );
 

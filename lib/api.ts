@@ -442,8 +442,12 @@ export async function getDocFile(docId: string): Promise<ApiDocFile> {
 }
 
 // Re-run the analysis pipeline on the stored upload (re-extract + re-validate).
-export async function reprocessDocument(docId: string): Promise<{ reprocessing: boolean; docId: string }> {
-  return request<{ reprocessing: boolean; docId: string }>(`/documents/${docId}/reprocess`, { method: "POST" })
+export async function reprocessDocument(docId: string, opts: { force?: boolean } = {}): Promise<{ reprocessing: boolean; docId: string }> {
+  // `force`: analyze a document the agreement check doubted ("Analyze anyway").
+  return request<{ reprocessing: boolean; docId: string }>(`/documents/${docId}/reprocess`, {
+    method: "POST",
+    ...(opts.force ? { body: JSON.stringify({ force: true }) } : {}),
+  })
 }
 
 // Get the diff (change list) vs the parent document — only available for amendments
