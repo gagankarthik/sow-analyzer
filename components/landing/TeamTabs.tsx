@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState, type KeyboardEvent } from "react";
-import { ArrowRight } from "@/components/ui/icons";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { QueueCard, type QueueItem } from "@/components/landing/ProductCards";
 import { SOLUTION_SECTIONS, type SolutionSectionId } from "@/components/landing/site-nav";
 import { useHashTab } from "@/components/landing/use-hash-tab";
@@ -67,6 +67,23 @@ const TEAM_CONTENT: Record<SolutionSectionId, { body: string; points: string[]; 
   },
 };
 
+/* The benefit, in one line, per office. */
+const HEADLINE: Record<SolutionSectionId, string> = {
+  "research-administration": "See every agreement, and who holds it",
+  commercialization: "Negotiate licenses from your positions",
+  "sponsored-programs": "Clear publication and IP terms on arrival",
+  "legal-affairs": "Only the exceptions reach legal",
+  "finance-leadership": "Know the money without asking for a report",
+};
+
+const PANEL: Record<SolutionSectionId, string> = {
+  "research-administration": "lp-panel-blue",
+  commercialization: "lp-panel-violet",
+  "sponsored-programs": "lp-panel-teal",
+  "legal-affairs": "lp-panel-navy",
+  "finance-leadership": "lp-panel-coral",
+};
+
 export function TeamTabs() {
   const [selected, setSelected] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -94,7 +111,7 @@ export function TeamTabs() {
       ))}
       <div className="lp-wrap">
         <h2 id="teams-title" className="lp-h2">
-          Every office works from <span className="lp-serif">the same record.</span>
+          Contract work your teams <span className="lp-serif">actually finish.</span>
         </h2>
 
         <div role="tablist" aria-label="Teams" className="lp-pills mt-8">
@@ -119,21 +136,23 @@ export function TeamTabs() {
           ))}
         </div>
 
-        <div role="tabpanel" id="team-panel" aria-labelledby={`team-tab-${team.id}`} className="lp-team">
-          <div>
-            <h3 className="lp-h3">{team.label}</h3>
-            <p className="mt-3 text-lp-ink-2">{content.body}</p>
-            <ul className="lp-list mt-5">
-              {content.points.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
-            <Link href={`/solutions#${team.id}`} className="lp-link mt-6 inline-flex items-center gap-1">
-              Govern for {team.label.toLowerCase()}
-              <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+        <div role="tabpanel" id="team-panel" aria-labelledby={`team-tab-${team.id}`} className="lp-show">
+          <div className="lp-show-copy">
+            <h3 className="lp-show-title">{HEADLINE[team.id]}</h3>
+            <p className="lp-show-body">{content.body}</p>
+            <Link href={`/solutions#${team.id}`} className="lp-trust-link">
+              Learn more <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
             </Link>
+            <div className="lp-show-arrows">
+              <button type="button" className="lp-arrow" aria-label="Previous team" onClick={() => select(selected - 1)}>
+                <ArrowLeft size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+              <button type="button" className="lp-arrow" aria-label="Next team" onClick={() => select(selected + 1)}>
+                <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+            </div>
           </div>
-          <div className="lp-team-panel">
+          <div className={`lp-show-panel ${PANEL[team.id]}`}>
             <QueueCard heading={content.queue} items={content.items} />
           </div>
         </div>

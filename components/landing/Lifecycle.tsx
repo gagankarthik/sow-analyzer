@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
 import {
   IconApprove,
@@ -41,16 +42,15 @@ const STAGES: Stage[] = [
 
 export function Lifecycle() {
   return (
-    <section className="lp-section" aria-labelledby="lifecycle-title">
+    <section id="journey" className="lp-section scroll-mt-20" aria-labelledby="lifecycle-title">
       <div className="lp-wrap">
         <div className="lp-panel">
         <div className="lp-section-head lp-center-head">
           <h2 id="lifecycle-title" className="lp-h2">
-            How a contract <span className="lp-serif">moves.</span>
+            Every agreement, <span className="lp-serif">in one place.</span>
           </h2>
           <p className="lp-lede mx-auto mt-5">
-            The same eight steps every contract page shows. One owner and one next step at each, and a clock
-            against its target.
+            Draft, review, redline, approve, sign and track, on one record, with Sonar checking every version.
           </p>
         </div>
 
@@ -82,6 +82,12 @@ export function Lifecycle() {
         <p className="lp-track-return">
           Obligations and renewals bring the next agreement back to draft.
         </p>
+        <div className="mt-10 flex justify-center">
+          <Link href="/product" className="lp-btn lp-btn-dark lp-btn-lg">
+            Explore the platform
+            <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+          </Link>
+        </div>
         </div>
       </div>
     </section>
