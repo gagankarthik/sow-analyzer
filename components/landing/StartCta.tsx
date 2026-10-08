@@ -2,14 +2,21 @@ import Link from "next/link";
 import { ArrowRight } from "@/components/ui/icons";
 
 /* Closing call to action, shared by the public pages: the offer and one
-   action on a blue-to-violet wash, with a campus skyline (halls, a clock
-   tower, a domed library, chapel spires and trees) along the bottom edge. */
+   action on a blue-to-violet wash, with a campus skyline (a clock tower,
+   halls, a domed library, chapel spires and trees) in the open space to the
+   right of the copy, on wide screens. */
 
 export function StartCta() {
   return (
     <section id="start" className="lp-section scroll-mt-20" aria-labelledby="start-title">
       <div className="lp-wrap">
         <div className="lp-cta2">
+          <svg className="lp-cta2-shapes" viewBox="0 0 320 320" aria-hidden="true" focusable="false">
+            <path d="M320 0 V200 A200 200 0 0 1 120 0 Z" fill="#CDDCFD" />
+            <rect x="200" y="200" width="120" height="120" fill="#DDD4FB" />
+            <circle cx="150" cy="250" r="16" fill="#B9CFF9" />
+          </svg>
+
           <div className="lp-cta2-copy">
             <h2 id="start-title" className="lp-cta2-title">
               See your own agreement, <span className="lp-serif">reviewed before the call.</span>
@@ -39,7 +46,7 @@ export function StartCta() {
 
 function CampusSkyline() {
   return (
-    <svg className="lp-cta2-skyline" viewBox="0 0 1200 170" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+    <svg className="lp-cta2-skyline" viewBox="470 0 730 170" preserveAspectRatio="xMaxYMax meet" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id="lp-skyline-ink" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#B4C8F6" />
