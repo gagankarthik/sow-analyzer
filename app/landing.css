@@ -1171,4 +1171,27 @@
   .lp-emark-caption span:first-child { text-align: right; padding-right: 1rem; border-right: 1px solid var(--lp-line-strong); }
   .lp-emark-caption span:last-child { padding-left: 1rem; }
   .lp-emark-caption b { font-weight: 600; color: var(--lp-ink); }
+
+  /* Editions switch (home page) */
+  .lp-eswitch {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; width: 100%; max-width: 34rem; margin: 3rem auto 0;
+    padding: 0.3rem; border: 1px solid var(--lp-line); border-radius: 14px; background: var(--lp-subtle);
+  }
+  .lp-eswitch-tab {
+    display: flex; flex-direction: column; align-items: center; gap: 0.1rem; min-height: 3.5rem; padding: 0.6rem 0.75rem;
+    border-radius: 10px; color: var(--lp-ink-2); transition: background-color var(--lp-dur) var(--lp-ease), color var(--lp-dur) var(--lp-ease);
+  }
+  .lp-eswitch-tab:hover { color: var(--lp-ink); }
+  .lp-eswitch-tab[aria-selected="true"] { background: var(--lp-surface); color: var(--lp-ink); box-shadow: 0 1px 3px rgba(11, 18, 32, 0.08), 0 1px 2px rgba(11, 18, 32, 0.04); }
+  .lp-eswitch-name { font-size: var(--text-base); font-weight: 600; }
+  .lp-eswitch-sub { font-size: 0.8125rem; text-align: center; }
+  .lp-eswitch-tab[aria-selected="true"] .lp-eswitch-sub { color: var(--lp-soft-ink); }
+  .lp-epanel { display: grid; gap: 2.5rem; margin-top: 2rem; padding: 2rem; border: 1px solid var(--lp-line); border-radius: 24px; background: var(--lp-surface); }
+  .lp-epanel[hidden] { display: none; }
+  @media (min-width: 900px) { .lp-epanel { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 4rem; padding: 2.75rem; } }
+  .lp-epanel-intro { display: flex; flex-direction: column; align-items: flex-start; }
+  .lp-epanel-intro .lp-edition-name { margin-top: 0; }
+  .lp-epanel-features { display: grid; gap: 0.6rem; margin-top: 0.6rem; color: var(--lp-ink-2); }
+  .lp-epanel-features b { font-weight: 600; color: var(--lp-ink); }
+  .lp-edition-label.mt-0 { margin-top: 0; }
 }
