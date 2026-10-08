@@ -1,49 +1,42 @@
 "use client";
 
-// Requirement 3: the one recommended next step, as a sentence and a single
-// button. For a send-back it lists the clauses and the language you want;
-// for an escalation it names the office.
+// Requirement 3: the one recommended next step. The banner on the contract
+// page carries the sentence; these are its two halves: the detail (for a
+// send-back, the clauses and the language you want; for an escalation, the
+// office) and the actions (one primary button, the menu, the redline).
 
-import { ArrowRight, Building2, CheckCircle2, Hourglass } from "@/components/ui/icons";
+import { Building2, CheckCircle2 } from "@/components/ui/icons";
 import { TierBadge } from "@/components/govern/primitives";
 import { ContractActionsMenu, NextStepButton, RedlineButton } from "@/components/govern/actions";
 import { latestSentBackClauses, latestSentBackNote } from "@/lib/govern/redline-docx";
-import { NEXT_ACTION_LABEL, OFFICE_LABEL } from "@/lib/govern/labels";
+import { OFFICE_LABEL } from "@/lib/govern/labels";
 import { useGovernFeature } from "@/lib/govern/queries";
 import type { ContractDetail } from "@/lib/govern/types";
 import { SuggestedLanguage } from "./SectionParts";
 
 const MAX_CLAUSES = 4;
 
-export function NextStepPanel({ contract: c, onUploadRevision }: { contract: ContractDetail; onUploadRevision: () => void }) {
+function redlineFor(c: ContractDetail) {
   const step = c.nextStep;
-  const isObligationsOn = useGovernFeature("obligations");
-  const calm = step.action === "wait" || step.action === "none";
-  const clauses = step.clauses.slice(0, MAX_CLAUSES);
   // A redline is useful while sending back, and while the other side has it.
-  const redline = step.action === "send_back" && step.clauses.length
+  return step.action === "send_back" && step.clauses.length
     ? { clauses: step.clauses.map((cl) => ({ clauseType: cl.clauseType, label: cl.label, suggestedLanguage: cl.suggestedLanguage })), note: null }
     : c.state === "sent_back"
       ? { clauses: latestSentBackClauses(c), note: latestSentBackNote(c) }
       : null;
+}
+
+/** What the next step involves; null when there is nothing to add to the headline. */
+export function NextStepDetail({ contract: c }: { contract: ContractDetail }) {
+  const step = c.nextStep;
+  const isObligationsOn = useGovernFeature("obligations");
+  const clauses = step.clauses.slice(0, MAX_CLAUSES);
+  const signedNote = step.action === "none" && c.state === "signed";
+  if (!step.detail && !(step.action === "escalate" && step.office) && clauses.length === 0 && !signedNote) return null;
 
   return (
-    <section
-      aria-labelledby="next-step-heading"
-      className="flex flex-col gap-5 rounded-xl border border-border bg-card p-5 md:p-6"
-    >
-      <div className="flex flex-col gap-2">
-        <h2 id="next-step-heading" className="text-lg font-semibold flex items-start gap-2.5 leading-snug tracking-[-0.02em] text-foreground">
-          <span className="mt-1 shrink-0" aria-hidden>
-            {calm ? <Hourglass size={20} className="text-[var(--ink-500)]" /> : <ArrowRight size={20} className="text-[var(--brand-primary-600)]" />}
-          </span>
-          <span>
-            <span className="sr-only">{calm ? "Where things stand: " : "Recommended next step: "}</span>
-            {step.headline || NEXT_ACTION_LABEL[step.action]}
-          </span>
-        </h2>
-        {step.detail && <p className="max-w-[36rem] text-base leading-relaxed text-[var(--ink-700)]">{step.detail}</p>}
-      </div>
+    <div className="flex flex-col gap-4 border-t border-border pt-4">
+      {step.detail && <p className="max-w-[44rem] text-sm leading-relaxed text-[var(--ink-700)]">{step.detail}</p>}
 
       {step.action === "escalate" && step.office && (
         <p className="inline-flex w-fit items-center gap-2 rounded-lg border border-structure-border bg-structure-soft px-3 py-2 text-sm font-medium text-structure-soft-fg">
@@ -69,16 +62,21 @@ export function NextStepPanel({ contract: c, onUploadRevision }: { contract: Con
         </ol>
       )}
 
-      {step.action === "none" && c.state === "signed" && (
+      {signedNote && (
         <p className="inline-flex items-center gap-2 text-sm text-[var(--success)]"><CheckCircle2 size={15} />{isObligationsOn ? "Signed. Its obligations are tracked under Money." : "Signed."}</p>
       )}
+    </div>
+  );
+}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
-        <NextStepButton contract={c} size="lg" onUploadRevision={onUploadRevision} quietWhenNone className="min-w-0 max-sm:flex-1" />
-        <ContractActionsMenu contract={c} size="lg" align="start" />
-        {redline && <RedlineButton contract={c} clauses={redline.clauses} note={redline.note} size="lg" variant="ghost" />}
-        {calm && <span className="text-sm text-[var(--ink-600)]">Other actions are in the menu.</span>}
-      </div>
-    </section>
+/** The one primary action for this step, the full actions menu and the redline. */
+export function NextStepActions({ contract: c, onUploadRevision }: { contract: ContractDetail; onUploadRevision: () => void }) {
+  const redline = redlineFor(c);
+  return (
+    <>
+      <NextStepButton contract={c} size="lg" onUploadRevision={onUploadRevision} quietWhenNone className="min-w-0 max-sm:flex-1" />
+      <ContractActionsMenu contract={c} size="lg" align="end" />
+      {redline && <RedlineButton contract={c} clauses={redline.clauses} note={redline.note} size="lg" variant="ghost" />}
+    </>
   );
 }

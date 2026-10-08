@@ -28,12 +28,14 @@ import { documentKeys } from "@/lib/queries/documents";
 import HomePage from "@/app/(app)/home/page";
 import WorkflowPage from "@/app/(app)/workflow/page";
 import ContractPage from "@/app/(app)/contracts/[id]/page";
+import ContractsPage from "@/app/(app)/contracts/page";
 import ValueReportPage from "@/app/(app)/reports/value/page";
 import BottlenecksPage from "@/app/(app)/reports/bottlenecks/page";
 import { SHOWCASE_SCREENS, type ShowcaseScreenId } from "./screens";
 
 const PAGES: Record<ShowcaseScreenId, ComponentType> = {
   board: WorkflowPage,
+  contracts: ContractsPage,
   home: HomePage,
   contract: ContractPage,
   matrix: ContractPage,

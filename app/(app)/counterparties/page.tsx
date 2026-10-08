@@ -106,7 +106,7 @@ export default function CounterpartiesPage() {
           columns={columns}
           rows={rows}
           getRowId={(r) => r.key}
-          getRowHref={(r) => `/contracts?q=${encodeURIComponent(r.name)}`}
+          getRowHref={(r) => `/contracts?view=all&q=${encodeURIComponent(r.name)}`}
           defaultSort={{ columnId: "contracts", direction: "desc" }}
           pageSize={25}
           densityKey="counterparties-density"

@@ -889,3 +889,14 @@ html { scroll-behavior: smooth; }
 .ds-avatar-stack > * { position: relative; transition: transform 150ms ease-out; box-shadow: 0 0 0 2px var(--surface-raised, #fff); }
 .ds-avatar-stack > *:hover, .ds-avatar-stack > *:focus-visible { transform: translateY(-2px); z-index: 10; }
 @media (prefers-reduced-motion: reduce) { .ds-avatar-stack > * { transition: none; } }
+
+/* Floating bulk-action bar: actions sit as plain white text buttons on the
+   dark bar, whatever button variant the page passed. */
+.dt-bulk button, .dt-bulk a {
+  height: 2.25rem; padding-inline: 0.75rem; border-radius: 0.5rem; border: 0;
+  background: transparent; color: #fff; font-weight: 600; box-shadow: none;
+}
+.dt-bulk button:hover:not(:disabled), .dt-bulk a:hover { background: rgb(255 255 255 / 0.1); }
+.dt-bulk button:disabled { opacity: 0.5; }
+.dt-bulk button:focus-visible, .dt-bulk a:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+

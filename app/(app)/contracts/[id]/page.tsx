@@ -1,8 +1,9 @@
 "use client";
 
-// The contract page (Requirement 3). Above the fold it answers, in one look:
-// who has it, how long it has waited, what blocks signature, and the one
-// thing to do next. The sections below hold the detail behind each answer.
+// The contract page (Requirement 3). The banner says whose turn it is and the
+// one thing to do next, with every step and person one click away. Below it,
+// the working sections on the left (matrix review, blockers, rounds, money,
+// activity) and the contract's documents, properties and timing on the right.
 
 import { useRef } from "react";
 import Link from "next/link";
@@ -14,16 +15,20 @@ import { StatePanel } from "@/components/ui/StatePanel";
 import { ExternalLink, Loader2 } from "@/components/ui/icons";
 import { ActivityFeed, CommentBox } from "@/components/govern/ActivityFeed";
 import { BLOCKING_TIERS, AGREEMENT_TYPE_LABEL, STATE_LABEL } from "@/lib/govern/labels";
-import { useContract, useGovernFeature } from "@/lib/govern/queries";
+import { useContract, useGovernFeature, useGovernMe } from "@/lib/govern/queries";
+import { StatusBanner } from "@/components/govern/StatusBanner";
+import { ContractDocuments, ContractProperties, shortDate } from "@/components/govern/ContractFacts";
+import { AvatarStack } from "@/components/ds/Avatar";
+import { contractPeople } from "@/lib/govern/people";
+import { personName } from "@/lib/govern/labels";
 import { isForbidden, isNotFound } from "@/lib/api";
 import type { ContractDetail } from "@/lib/govern/types";
-import { BlockersPreview, BlockersSection } from "./_components/BlockersSection";
+import { BlockersSection } from "./_components/BlockersSection";
 import { ContractTabList, useHashTab, type ContractTab } from "./_components/ContractTabs";
 import { DetailsSection } from "./_components/DetailsSection";
 import { MatrixSection } from "./_components/MatrixSection";
 import { MoneySection } from "./_components/MoneySection";
-import { ContractJourney } from "./_components/ContractJourney";
-import { NextStepPanel } from "./_components/NextStepPanel";
+import { NextStepActions, NextStepDetail } from "./_components/NextStepPanel";
 import { RoundsSection } from "./_components/RoundsSection";
 import { Section } from "./_components/SectionParts";
 import { StatusPanel } from "./_components/StatusPanel";
@@ -81,38 +86,43 @@ function ContractView({ contract: c, isError, onRefresh }: {
     }, 30);
   }
 
+  const me = useGovernMe().data?.email?.toLowerCase() ?? null;
   const party = c.sponsor || c.counterparty;
   const openBlockers = c.blockers.filter((b) => b.status === "open").length;
   const toLook = c.review?.clauses.filter((cl) => BLOCKING_TIERS.has(cl.tier) || cl.tier === "review").length ?? 0;
   const gaps = c.captureGaps?.length ?? 0;
   const analysing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
+  const created = shortDate(c.createdAt);
 
   return (
     <>
       <PageHeader
-        back={{ href: "/workflow", label: "Workflow" }}
+        back={{ href: "/contracts", label: "Contracts" }}
         title={c.title || "Untitled agreement"}
         subtitle={[AGREEMENT_TYPE_LABEL[c.agreementType], party, c.piName ? `PI ${c.piName}` : null, c.department].filter(Boolean).join(" · ")}
         actions={
           <>
+            <AvatarStack people={contractPeople(c)} max={5} className="me-1" />
             <Button asChild variant="outline" size="lg" className="md:h-9">
-              <Link href={`/projects/${encodeURIComponent(c.currentDocId)}`}><ExternalLink size={14} />Open document analysis</Link>
+              <Link href={`/projects/${encodeURIComponent(c.currentDocId)}`}><ExternalLink size={14} />Open document</Link>
             </Button>
           </>
         }
         meta={
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[var(--ink-600)]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-[var(--ink-600)]">
             <span className="rounded-md bg-[var(--ink-100)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-800)]">{STATE_LABEL[c.state]}</span>
+            <span>{c.owner ? <>Owned by <span className="font-medium text-foreground">{personName(c.owner)}</span></> : "No owner yet"}</span>
+            {created && <span aria-hidden>·</span>}
+            {created && <span>Created {created}</span>}
+            {c.huronRecordId && <><span aria-hidden>·</span><span>Huron <span className="font-mono text-xs text-foreground">{c.huronRecordId}</span></span></>}
             {analysing && (
               <span className="inline-flex items-center gap-1.5 text-[var(--ai-ink)]"><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Sonar is reading the latest version</span>
             )}
-            {c.huronRecordId && <span>Huron <span className="font-mono text-xs text-foreground">{c.huronRecordId}</span></span>}
-            {c.workdayRef && <span>Workday <span className="font-mono text-xs text-foreground">{c.workdayRef}</span></span>}
           </div>
         }
       />
 
-      <div className="app-container flex flex-col gap-8 py-6 md:py-8">
+      <div className="app-container flex flex-col gap-10 py-6 md:py-8">
         {isError && (
           <p role="alert" className="rounded-xl border border-[color-mix(in_srgb,var(--danger)_30%,transparent)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
             Couldn&rsquo;t refresh, so this page may be out of date.{" "}
@@ -120,46 +130,52 @@ function ContractView({ contract: c, isError, onRefresh }: {
           </p>
         )}
 
-        {/* Where the agreement is in its journey, draft to signed. */}
-        <ContractJourney contract={c} onOpen={(section) => goTo(section)} />
+        {/* The banner: whose turn, the next step, the action; steps on demand. */}
+        <StatusBanner
+          contract={c}
+          me={me}
+          action={<NextStepActions contract={c} onUploadRevision={() => goTo("rounds", () => uploadRef.current)} />}
+        >
+          <NextStepDetail contract={c} />
+        </StatusBanner>
 
-        {/* Above the fold: next step + blockers on the left, where it is on the right. */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <div className="flex min-w-0 flex-col gap-5 lg:col-span-7">
-            <NextStepPanel contract={c} onUploadRevision={() => goTo("rounds", () => uploadRef.current)} />
-            <BlockersPreview contract={c} onSeeAll={() => goTo("blockers")} />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-10">
+          <div ref={tabsRef} className="flex min-w-0 scroll-mt-4 flex-col gap-6 lg:col-span-8">
+            <ContractTabList
+              value={tab}
+              onChange={setTab}
+              tabs={[
+                { id: "matrix", label: "Matrix review", badge: toLook, tone: "warn" },
+                { id: "blockers", label: "Blockers", badge: openBlockers, tone: "warn" },
+                { id: "rounds", label: "Rounds & versions", badge: c.versions.length },
+                { id: "details", label: "Details", badge: gaps, tone: "warn" },
+                { id: "money", label: "Money", badge: isObligationsOn ? c.obligationsDue || null : null, tone: "warn" },
+                { id: "activity", label: "Activity", badge: c.activity.length },
+              ]}
+            />
+            <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} tabIndex={-1} className="focus-visible:outline-none">
+              {tab === "blockers" && <BlockersSection contract={c} />}
+              {tab === "matrix" && <MatrixSection contract={c} />}
+              {tab === "rounds" && <RoundsSection contract={c} uploadRef={uploadRef} />}
+              {tab === "details" && <DetailsSection contract={c} />}
+              {tab === "money" && <MoneySection contract={c} />}
+              {tab === "activity" && (
+                <Section title="Activity" description="Every assignment, action, comment and stage change, with who and when.">
+                  <CommentBox contractId={c.contractId} />
+                  <ActivityFeed entries={c.activity} />
+                </Section>
+              )}
+            </div>
           </div>
-          <div className="min-w-0 lg:col-span-5">
+
+          <aside aria-label="About this contract" className="flex min-w-0 flex-col gap-8 lg:col-span-4">
             <StatusPanel contract={c} onShowMissing={() => goTo("details", () => document.getElementById("missing-details"))} />
-          </div>
-        </div>
-
-        <div ref={tabsRef} className="flex scroll-mt-4 flex-col gap-6">
-          <ContractTabList
-            value={tab}
-            onChange={setTab}
-            tabs={[
-              { id: "blockers", label: "Blockers", badge: openBlockers, tone: "warn" },
-              { id: "matrix", label: "Matrix review", badge: toLook, tone: "warn" },
-              { id: "rounds", label: "Rounds & versions", badge: c.versions.length },
-              { id: "details", label: "Details", badge: gaps, tone: "warn" },
-              { id: "money", label: "Money", badge: isObligationsOn ? c.obligationsDue || null : null, tone: "warn" },
-              { id: "activity", label: "Activity", badge: c.activity.length },
-            ]}
-          />
-          <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} tabIndex={-1} className="focus-visible:outline-none">
-            {tab === "blockers" && <BlockersSection contract={c} />}
-            {tab === "matrix" && <MatrixSection contract={c} />}
-            {tab === "rounds" && <RoundsSection contract={c} uploadRef={uploadRef} />}
-            {tab === "details" && <DetailsSection contract={c} />}
-            {tab === "money" && <MoneySection contract={c} />}
-            {tab === "activity" && (
-              <Section title="Activity" description="Every assignment, action, comment and stage change, with who and when.">
-                <CommentBox contractId={c.contractId} />
-                <ActivityFeed entries={c.activity} />
-              </Section>
-            )}
-          </div>
+            <ContractDocuments contract={c} versions={c.versions} />
+            <ContractProperties
+              contract={c}
+              edit={<button type="button" onClick={() => goTo("details")} className="text-sm font-medium text-[var(--brand-primary-700)] hover:underline">Edit</button>}
+            />
+          </aside>
         </div>
       </div>
     </>

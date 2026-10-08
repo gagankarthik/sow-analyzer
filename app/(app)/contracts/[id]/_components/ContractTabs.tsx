@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 export const CONTRACT_TABS = ["blockers", "matrix", "rounds", "details", "money", "activity"] as const;
 export type ContractTab = (typeof CONTRACT_TABS)[number];
 
-const DEFAULT_TAB: ContractTab = "blockers";
+const DEFAULT_TAB: ContractTab = "matrix";
 
 function subscribe(onChange: () => void) {
   window.addEventListener("hashchange", onChange);

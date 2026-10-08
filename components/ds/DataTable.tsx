@@ -93,6 +93,8 @@ export type DataTableProps<T> = {
   getRowLabel?: (row: T) => string;
   /** Row click without navigation (opens a drawer). Prefer getRowHref. */
   onRowClick?: (row: T) => void;
+  /** The row whose preview or drawer is open: shown as selected. */
+  activeRowId?: string | null;
   /** Secondary actions (a row menu). Rendered above the link layer. */
   rowActions?: (row: T) => React.ReactNode;
 
@@ -154,6 +156,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     getRowHref,
     getRowLabel,
     onRowClick,
+    activeRowId,
     rowActions,
     defaultSort = null,
     sort: controlledSort,
@@ -316,22 +319,24 @@ export function DataTable<T>(props: DataTableProps<T>) {
       )}
 
       {selection && selectedRows.length > 0 && (
+        // Floating action bar, bottom centre: what you can do to the selection.
         <div
           role="region"
           aria-label="Selected rows"
-          className="sticky top-2 z-(--z-sticky) flex flex-wrap items-center gap-x-3 gap-y-2 rounded-container border border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] px-3 py-2 shadow-raised"
+          className="fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center gap-x-1 gap-y-2 rounded-xl bg-[var(--ink-900,#111827)] px-2 py-1.5 text-white shadow-[0_16px_40px_-12px_rgba(10,13,20,0.5)]"
         >
-          <span className="text-body font-semibold text-fg-primary" aria-live="polite">
-            {formatValue(selectedRows.length)} selected
-          </span>
           <button
             type="button"
             onClick={() => selection.onChange(new Set())}
-            className="text-body font-medium text-fg-link underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-focus"
+            aria-label="Clear selection"
+            className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-body font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white"
           >
-            Clear
+            <span aria-hidden className="inline-flex size-4 items-center justify-center rounded border border-white/70 text-[10px] leading-none">–</span>
+            <span aria-live="polite">{formatValue(selectedRows.length)} selected</span>
           </button>
-          {bulkActions && <div className="ms-auto flex flex-wrap items-center gap-2">{bulkActions(selectedRows)}</div>}
+          {bulkActions && (
+            <div className="dt-bulk flex flex-wrap items-center gap-1 border-l border-white/20 ps-2">{bulkActions(selectedRows)}</div>
+          )}
         </div>
       )}
 
@@ -483,6 +488,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
             className={cn(
               "group/row relative transition-colors duration-(--duration-instant)",
               clickable && "cursor-pointer hover:bg-surface-hover focus-within:bg-surface-hover",
+              activeRowId === id && "bg-[var(--brand-primary-50)] hover:bg-[var(--brand-primary-50)]",
             )}
             onClick={!href && onRowClick ? () => onRowClick(row) : undefined}
             aria-selected={selection ? selection.selected.has(id) : undefined}

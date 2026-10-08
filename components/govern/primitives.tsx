@@ -5,7 +5,7 @@
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ds/Avatar";
 import { Clock, Building2, Users, UserRound, PenLine, CircleDashed } from "@/components/ui/icons";
-import { SLA_LABEL, TIER_HINT, TIER_LABEL, WAITING_ON_LABEL, daysLabel } from "@/lib/govern/labels";
+import { SLA_LABEL, TIER_HINT, TIER_LABEL, WAITING_ON_LABEL, WAITING_ON_SHORT, daysLabel } from "@/lib/govern/labels";
 import type { SlaStatus, Tier, WaitingOn, WaitingOnKind } from "@/lib/govern/types";
 
 export const TIER_TONE: Record<Tier, string> = {
@@ -94,20 +94,22 @@ const WAITING_ICON: Record<WaitingOnKind, typeof Clock> = {
 };
 
 /** Who holds the contract right now, in plain words. */
-export function WaitingOnChip({ waitingOn, className }: { waitingOn: WaitingOn; className?: string }) {
+/** `short`: the one-word form for dense tables ("Other side", "Reviewer"); the full sentence is the tooltip. */
+export function WaitingOnChip({ waitingOn, short = false, className }: { waitingOn: WaitingOn; short?: boolean; className?: string }) {
   // Unknown kinds fall back to a neutral icon instead of breaking the page.
   const Icon = WAITING_ICON[waitingOn.kind] ?? CircleDashed;
   const external = waitingOn.kind === "counterparty";
   return (
     <span
+      title={short ? waitingOn.label || WAITING_ON_LABEL[waitingOn.kind] : undefined}
       className={cn(
-        "inline-flex h-6 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs font-medium",
+        "inline-flex h-6 max-w-full items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs font-medium",
         external ? "border-[var(--ink-300)] text-[var(--ink-700)]" : "border-structure-border bg-structure-soft text-structure-soft-fg",
         className,
       )}
     >
       <Icon size={12} aria-hidden className="shrink-0" />
-      <span className="truncate">{waitingOn.label || WAITING_ON_LABEL[waitingOn.kind]}</span>
+      <span className="truncate">{short ? WAITING_ON_SHORT[waitingOn.kind] ?? waitingOn.kind : waitingOn.label || WAITING_ON_LABEL[waitingOn.kind]}</span>
     </span>
   );
 }

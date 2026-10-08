@@ -4,8 +4,9 @@ import { FEATURED_CONTRACT_ID } from "@/lib/govern/__fixtures__/showcase";
  *  contract-page tab to open (via the URL hash the page already reads). */
 export const SHOWCASE_SCREENS = {
   board: { pathname: "/workflow", params: {} },
+  contracts: { pathname: "/contracts", params: {} },
   home: { pathname: "/home", params: {} },
-  contract: { pathname: `/contracts/${FEATURED_CONTRACT_ID}`, params: { id: FEATURED_CONTRACT_ID }, tab: "blockers" },
+  contract: { pathname: `/contracts/${FEATURED_CONTRACT_ID}`, params: { id: FEATURED_CONTRACT_ID }, tab: "matrix" },
   matrix: { pathname: `/contracts/${FEATURED_CONTRACT_ID}`, params: { id: FEATURED_CONTRACT_ID }, tab: "matrix" },
   reports: { pathname: "/reports/value", params: {} },
   bottlenecks: { pathname: "/reports/bottlenecks", params: {} },
