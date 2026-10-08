@@ -41,7 +41,7 @@ export function ViewTabs<T extends string>({
             onClick={() => onChange(v.id)}
             onKeyDown={(e) => onKey(e, i)}
             className={cn(
-              "-mb-px h-10 shrink-0 border-b-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]",
+              "-mb-px h-10 shrink-0 border-b-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 focus-visible:ring-offset-background active:opacity-80",
               active ? "border-[var(--brand-primary-600)] font-semibold text-foreground" : "border-transparent text-[var(--ink-600)] hover:text-foreground",
             )}
           >

@@ -2,15 +2,6 @@
 
 import { openCookieSettings } from "@/lib/cookie-consent";
 
-/* Reopens the cookie settings panel, so a choice can be changed at any time. */
-export function CookieSettingsLink() {
-  return (
-    <button type="button" className="lp-navlink" onClick={openCookieSettings}>
-      Cookie settings
-    </button>
-  );
-}
-
 /* "Your Privacy Choices" with the standard opt-out icon (a toggle with a
    tick and a cross). It opens the same settings panel, where optional
    cookies can be switched off at any time. */

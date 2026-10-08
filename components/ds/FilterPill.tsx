@@ -34,7 +34,7 @@ export function FilterPill({
         <PopoverPrimitive.Trigger
           type="button"
           className={cn(
-            "inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]",
+            "inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]",
             active
               ? "border-[var(--brand-primary-300)] bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]"
               : "border-border bg-card text-[var(--ink-700)] hover:border-[var(--ink-300)]",
@@ -59,7 +59,7 @@ export function FilterPill({
             type="button"
             onClick={() => onChange([])}
             aria-label={`Clear ${label} filter`}
-            className="inline-flex h-9 items-center rounded-e-lg border border-s-0 border-[var(--brand-primary-300)] bg-[var(--brand-primary-50)] pe-2.5 ps-1 text-[var(--brand-primary-700)] hover:text-[var(--brand-primary-900,var(--brand-primary-700))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+            className="inline-flex h-9 items-center rounded-e-lg border border-s-0 border-[var(--brand-primary-300)] bg-[var(--brand-primary-50)] pe-2.5 ps-1 text-[var(--brand-primary-700)] hover:text-[var(--brand-primary-900,var(--brand-primary-700))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]"
           >
             <X size={14} aria-hidden />
           </button>
@@ -80,7 +80,7 @@ export function FilterPill({
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={`Search ${label.toLowerCase()}`}
                 aria-label={`Search ${label.toLowerCase()}`}
-                className="h-9 w-full rounded-lg border border-border bg-card pl-8 pr-2 text-sm outline-none focus-visible:border-[var(--brand-primary-500)]"
+                className="h-9 w-full rounded-lg border border-border bg-card pl-8 pr-2 text-sm outline-none hover:border-[var(--ink-500)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)]"
               />
             </div>
           )}
