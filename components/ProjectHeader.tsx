@@ -15,8 +15,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ChevronLeft, FileText, MoreHorizontal, Trash2, Copy, Layers, Loader2,
-  Sparkles, CheckCircle2, ExternalLink, Building2, Eye,
+  ChevronLeft, FileText, MoreHorizontal, Trash2, Copy, Layers, Loader2, Sonar, CheckCircle2, ExternalLink, Building2, Eye,
 } from "@/components/ui/icons";
 import type { DocHeaderModel } from "@/lib/api";
 import { useDeleteDocument } from "@/lib/queries/documents";
@@ -124,7 +123,7 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
           {/* Actions */}
           <div className="flex shrink-0 items-center gap-2">
             <Button variant="ai" size="lg" className="flex-1 md:h-9 md:flex-none" onClick={toggleCopilot}>
-              <Sparkles size={14} />Ask Sonar
+              <Sonar size={14} />Ask Sonar
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

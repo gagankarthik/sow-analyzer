@@ -135,6 +135,8 @@ const TYPE_NOUN: Record<AgreementType, string> = {
   sow: "statement of work",
   msa: "master services agreement",
   staffing: "staffing vendor agreement",
+  subcontract: "subcontractor addendum",
+  consortium: "consortium agreement",
   other: "other agreement",
 }
 

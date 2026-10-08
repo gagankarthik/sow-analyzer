@@ -120,6 +120,7 @@ export const RESEARCH_CLAUSE_TYPES: MatrixClauseTypeOption[] = [
   { id: "DataRights", label: "Data rights, confidentiality term and use of name", group: "research" },
   { id: "SponsorReporting", label: "Sponsor reporting and flow-down terms", group: "research" },
   { id: "Diligence", label: "Diligence and termination for failure to commercialise", group: "research" },
+  { id: "type.use-of-name", label: "Use of the organization's name and marks", group: "research" },
 ];
 
 export const COMMERCIAL_CLAUSE_TYPES: MatrixClauseTypeOption[] = [
@@ -139,6 +140,13 @@ export const COMMERCIAL_CLAUSE_TYPES: MatrixClauseTypeOption[] = [
   { id: "Sublicensing", label: "Sublicensing", group: "commercial" },
   { id: "Compliance", label: "Compliance with law", group: "commercial" },
   { id: "ForceMajeure", label: "Force majeure", group: "commercial" },
+  // Workforce matrix positions (services and staffing)
+  { id: "type.hours-cap", label: "Hourly caps and approval for more hours", group: "commercial" },
+  { id: "type.overtime", label: "Overtime", group: "commercial" },
+  { id: "type.co-employment", label: "Co-employment and worker status", group: "commercial" },
+  { id: "type.expenses", label: "Expense reimbursement", group: "commercial" },
+  { id: "type.flow-down", label: "Flow-down of prime agreement terms", group: "commercial" },
+  { id: "type.service-levels", label: "Service levels and penalties", group: "commercial" },
 ];
 
 export const MATRIX_CLAUSE_TYPES: MatrixClauseTypeOption[] = [...RESEARCH_CLAUSE_TYPES, ...COMMERCIAL_CLAUSE_TYPES];

@@ -6,12 +6,12 @@
 import { byEdition, editionMap } from "@/lib/edition-runtime"
 import type {
   ActivityAction, AgreementType, CaptureGap, Direction, IncomeKind, NextAction, ObligationKind,
-  Office, RejectReason, SlaStatus, Stage, State, Tier, WaitingOnKind,
+  Office, PricingModel, RejectReason, SlaStatus, Stage, State, Tier, WaitingOnKind,
 } from "./types"
 
 export const AGREEMENT_TYPES: AgreementType[] = [
   "license", "option", "sponsored_research", "clinical_trial", "grant", "mta", "data_use", "nda", "collaboration",
-  "software", "sow", "msa", "staffing", "other",
+  "consortium", "software", "sow", "msa", "staffing", "subcontract", "other",
 ]
 
 export const AGREEMENT_TYPE_LABEL: Record<AgreementType, string> = {
@@ -28,6 +28,8 @@ export const AGREEMENT_TYPE_LABEL: Record<AgreementType, string> = {
   sow: "Statement of work (SOW)",
   msa: "Master services agreement (MSA)",
   staffing: "Staffing vendor agreement",
+  subcontract: "Subcontractor addendum",
+  consortium: "Consortium agreement",
   other: "Other agreement",
 }
 
@@ -181,7 +183,13 @@ export const REJECT_REASON_LABEL: Record<RejectReason, string> = editionMap({
 })
 
 /** Obligation kinds that belong to research and licensing (hidden from Workforce pickers). */
-export const RESEARCH_OBLIGATION_KINDS: ObligationKind[] = ["sponsor_report", "royalty_report", "diligence_milestone", "publication_review"]
+export const RESEARCH_OBLIGATION_KINDS: ObligationKind[] = ["sponsor_report", "royalty_report", "diligence_milestone", "publication_review", "invention_disclosure", "royalty_audit"]
+
+export const PRICING_MODEL_LABEL: Record<PricingModel, string> = {
+  fixed_fee: "Fixed fee",
+  time_materials: "Time and materials",
+  mixed: "Fixed fee and time and materials",
+}
 
 /** Income kinds that belong to licensing and sponsored research. */
 export const RESEARCH_INCOME_KINDS: IncomeKind[] = ["royalty", "equity", "sublicense", "sponsor_funding", "subaward"]
@@ -199,6 +207,9 @@ export const OBLIGATION_KIND_LABEL: Record<ObligationKind, string> = {
   closeout: "Close-out task",
   renewal_notice: "Last day to stop renewal",
   data_return: "Get your data back",
+  invention_disclosure: "Invention disclosure",
+  royalty_audit: "Royalty records and audit",
+  deliverable_due: "Deliverable due",
   other: "Other obligation",
 }
 

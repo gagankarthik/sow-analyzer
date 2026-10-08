@@ -10,8 +10,7 @@ import { SonarMark } from "@/components/ui/SonarMark";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Files, XCircle, ChevronDown, ChevronUp, ShieldAlert,
-  AlertTriangle, Info, Building2, CalendarClock, Sparkles, FileText,
+  Files, XCircle, ChevronDown, ChevronUp, ShieldAlert, AlertTriangle, Info, Building2, CalendarClock, Sonar, FileText,
 } from "@/components/ui/icons";
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument, useClassification } from "@/lib/queries/documents";
@@ -401,7 +400,7 @@ export default function SowPage() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       {["Summarize", "Find risks"].map((q) => (
                         <button key={q} type="button" onClick={toggleCopilot} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--ai-border)] bg-card px-3 text-sm font-medium text-[var(--ai-ink)] transition-colors hover:border-[var(--ai-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)] md:h-8">
-                          <Sparkles size={13} />{q}
+                          <Sonar size={13} />{q}
                         </button>
                       ))}
                     </div>

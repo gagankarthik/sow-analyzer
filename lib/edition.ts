@@ -50,8 +50,8 @@ export const EDITION_ONLY_FEATURES: Record<Edition, string[]> = {
 /** The agreement types each edition offers, most common first. Types left
  *  out stay in the data model, so a contract of another type still shows. */
 export const EDITION_AGREEMENT_TYPES: Record<Edition, AgreementType[]> = {
-  campus: ["sponsored_research", "license", "mta", "grant", "clinical_trial", "option", "data_use", "nda", "collaboration", "software", "other"],
-  workforce: ["sow", "msa", "staffing", "nda", "software", "other"],
+  campus: ["sponsored_research", "license", "mta", "grant", "clinical_trial", "option", "data_use", "nda", "collaboration", "consortium", "software", "other"],
+  workforce: ["sow", "msa", "staffing", "subcontract", "nda", "software", "other"],
 }
 
 /** Words and fields that differ by edition. Campus speaks research

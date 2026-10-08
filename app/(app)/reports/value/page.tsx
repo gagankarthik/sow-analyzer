@@ -29,6 +29,7 @@ import {
 } from "../_components/ReportKit";
 import { amountIn, mainCurrency } from "../_components/report-data";
 import { BREAKDOWN_KEYS, BreakdownSection, breakdownName } from "./_components/BreakdownSection";
+import { SpendSection } from "./_components/SpendSection";
 import { IncomeSection, incomeByKind } from "./_components/IncomeSection";
 import { useLicensingIncome } from "./_components/licensing-income";
 
@@ -276,6 +277,11 @@ export default function ValueReportPage() {
               </Panel>
             </div>
 
+            {byEdition(false, true) && (
+              <Panel id="spend" title="Vendor spend" sub="Signed vendor agreements by how the work is priced, and committed value against purchase orders.">
+                <SpendSection contracts={contracts} currency={currency} />
+              </Panel>
+            )}
             {byEdition(true, false) && <Panel id="licensing" title="Licensing income" sub="Upfront fees, milestones, royalties, equity and sublicense income from license and option agreements.">
               <IncomeSection
                 rows={income.rows}

@@ -20,7 +20,9 @@ import { FilterPill, optionsFrom } from "@/components/ds/FilterPill";
 import { RecordDashboard } from "@/components/govern/RecordDashboard";
 import type { PanelGroup } from "@/components/govern/ViewsPanel";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, Check, Sparkles } from "@/components/ui/icons";
+import {
+  BadgeCheck, Check, Sonar,
+} from "@/components/ui/icons";
 import { updateObligation } from "@/lib/govern/api";
 import { OBLIGATION_KIND_LABEL, plural } from "@/lib/govern/labels";
 import { formatCompact } from "@/lib/govern/metrics";
@@ -143,7 +145,7 @@ function Obligations() {
       cell: (o) => o.verified ? (
         <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--success-fg)]"><BadgeCheck size={13} aria-hidden />Verified</span>
       ) : (
-        <span className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-[var(--warning-soft)] px-2 text-xs font-medium text-[var(--warning-fg)]"><Sparkles size={12} aria-hidden />Needs verification</span>
+        <span className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-[var(--warning-soft)] px-2 text-xs font-medium text-[var(--warning-fg)]"><Sonar size={12} aria-hidden />Needs verification</span>
       ),
     },
     {

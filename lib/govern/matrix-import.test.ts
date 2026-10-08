@@ -13,7 +13,7 @@ describe("matrix import", () => {
     const bytes = readFileSync(SAMPLE);
     const file = new File([bytes], "review-matrix.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const sheet = await parseMatrixFile(file);
-    expect(sheet.rows.length).toBe(22);
+    expect(sheet.rows.length).toBe(24);
     const mapping = detectMapping(sheet.headers);
     expect(mapping.clauseType).not.toBeNull();
     expect(mapping.standard).not.toBeNull();

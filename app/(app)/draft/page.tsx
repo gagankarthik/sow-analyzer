@@ -11,10 +11,7 @@ import { SonarMark } from "@/components/ui/SonarMark";
 import { MarkdownView } from "@/components/MarkdownView";
 import { MotionReveal } from "@/components/MotionReveal";
 import {
-  Wand2, Sparkles, Download, Loader2, ChevronLeft, FileSignature, Check,
-  RefreshCw, AlertTriangle, Eye, Edit3, Send, DollarSign, Repeat, Scale,
-  XCircle, Lock, CheckCircle2, Globe2, Gavel, ShieldAlert, GitBranch, Layers,
-  type LucideIcon,
+  DraftSow, Sonar, Download, Loader2, ChevronLeft, FileSignature, Check, RefreshCw, AlertTriangle, Eye, Edit3, Send, DollarSign, Repeat, Scale, XCircle, Lock, CheckCircle2, Globe2, Gavel, ShieldAlert, GitBranch, Layers, type LucideIcon,
 } from "@/components/ui/icons";
 import { CLAUSE_TYPES } from "@/lib/clause-types";
 import { PRICING_LABELS, EMPTY_ANSWERS, type SowAnswers, type SowPricingModel } from "@/lib/sow/types";
@@ -318,13 +315,13 @@ function IntakeForm({
         <div className="sticky bottom-3 z-10 md:bottom-4">
           <div className="flex flex-col gap-3 rounded-xl bg-[var(--navy)] p-3 text-white shadow-md sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
             <div className="flex min-w-0 items-center gap-2.5">
-              <Sparkles size={16} className="shrink-0 text-[var(--navy-foreground)]" />
+              <Sonar size={16} className="shrink-0 text-[var(--navy-foreground)]" />
               <p className="text-sm leading-snug text-[var(--navy-foreground)]" aria-live="polite">
                 {canDraft ? "Sonar drafts in a few seconds." : "Add at least a title and scope to begin."}
               </p>
             </div>
             <Button size="lg" disabled={!canDraft} onClick={onGenerate} className="w-full shrink-0 disabled:bg-[var(--navy-accent)] disabled:text-[var(--navy-foreground)] disabled:opacity-100 sm:w-auto">
-              {busy ? <><Loader2 size={15} className="animate-spin" />Drafting…</> : <><Wand2 size={15} />Draft with Sonar</>}
+              {busy ? <><Loader2 size={15} className="animate-spin" />Drafting…</> : <><DraftSow size={15} />Draft with Sonar</>}
             </Button>
           </div>
         </div>
@@ -458,7 +455,7 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
                     onClick={() => revise(s)}
                     className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[var(--ai-border)] bg-card px-3 text-left text-xs font-medium text-[var(--ai-text)] transition-colors hover:border-[var(--ai-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)] disabled:opacity-50 md:min-h-8"
                   >
-                    <Sparkles size={12} className="shrink-0" />{s}
+                    <Sonar size={12} className="shrink-0" />{s}
                   </button>
                 ))}
               </div>

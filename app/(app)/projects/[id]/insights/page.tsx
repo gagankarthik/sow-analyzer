@@ -11,8 +11,7 @@ import { SonarMark } from "@/components/ui/SonarMark";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProcessingState } from "@/components/ProcessingState";
 import {
-  ArrowRight, Files, XCircle, CheckCircle2, TrendingUp, ShieldAlert,
-  AlertTriangle, Info, Sparkles, FileText,
+  ArrowRight, Files, XCircle, CheckCircle2, TrendingUp, ShieldAlert, AlertTriangle, Info, Sonar, FileText,
 } from "@/components/ui/icons";
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument, useDocuments, useClassification } from "@/lib/queries/documents";
@@ -164,7 +163,7 @@ export default function ProjectInsightsPage() {
                 <p className="max-w-[58ch] text-base leading-relaxed text-[var(--ink-600)]">{classError ? "The summary couldn\u2019t be loaded." : "No summary was extracted for this document."}</p>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Button variant="ai" size="lg" className="md:h-9" onClick={toggleCopilot}><Sparkles size={14} />Ask Sonar</Button>
+                <Button variant="ai" size="lg" className="md:h-9" onClick={toggleCopilot}><Sonar size={14} />Ask Sonar</Button>
                 <Button variant="outline" size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}><FileText size={14} />View clauses</Link></Button>
               </div>
             </div>
@@ -190,7 +189,7 @@ export default function ProjectInsightsPage() {
 
           {!isReady ? (
             <div className="flex flex-col items-center px-4 py-10 text-center md:px-6">
-              <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]"><Sparkles size={18} strokeWidth={1.5} /></span>
+              <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]"><Sonar size={18} strokeWidth={1.5} /></span>
               <p className="mb-1 text-base font-semibold text-foreground">Insights appear once processing completes.</p>
               <p className="text-sm text-[var(--ink-600)]">Sonar is still analyzing this document.</p>
             </div>

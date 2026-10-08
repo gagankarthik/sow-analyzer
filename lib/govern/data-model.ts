@@ -21,6 +21,8 @@ export const AGREEMENT_TYPE_DESCRIPTION: Record<AgreementType, string> = {
   sow: "A vendor delivers defined services or deliverables for the organization, often on hourly rates.",
   msa: "The master terms that govern every statement of work with a services vendor.",
   staffing: "An agency supplies contingent or temporary workers who stay the agency's employees.",
+  subcontract: "A vendor passes part of the work to a subcontractor, who takes on the prime agreement's terms.",
+  consortium: "Several institutions carry out a shared research program under one agreement.",
   other: "Anything that is not one of the types above.",
 }
 

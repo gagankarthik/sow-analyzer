@@ -8,7 +8,7 @@ import type { GovernFeature } from "./features"
 
 export type AgreementType =
   | "sponsored_research" | "clinical_trial" | "grant" | "license" | "option" | "mta" | "data_use" | "nda"
-  | "collaboration" | "software" | "sow" | "msa" | "staffing" | "other"
+  | "collaboration" | "consortium" | "software" | "sow" | "msa" | "staffing" | "subcontract" | "other"
 export type Direction = "incoming" | "outgoing"
 export type Stage = Lifecycle
 export type State =
@@ -24,7 +24,10 @@ export type NextAction =
   | "approve" | "send_back" | "escalate" | "reject" | "send_for_signature" | "wait" | "assign" | "add_value" | "none"
 export type ObligationKind =
   | "sponsor_report" | "milestone_payment" | "royalty_report" | "diligence_milestone"
-  | "publication_review" | "term_end" | "closeout" | "renewal_notice" | "data_return" | "other"
+  | "publication_review" | "term_end" | "closeout" | "renewal_notice" | "data_return"
+  | "invention_disclosure" | "royalty_audit" | "deliverable_due" | "other"
+/** How a services agreement prices the work (Workforce spend analytics). */
+export type PricingModel = "fixed_fee" | "time_materials" | "mixed"
 export type IncomeKind =
   | "upfront" | "milestone" | "royalty" | "equity" | "sublicense" | "sponsor_funding" | "subaward" | "other"
 export type GovernRole = "admin" | "reviewer" | "leader"
@@ -166,6 +169,10 @@ export interface Contract {
   huronRecordId: string | null
   workdayRef: string | null
   workdayMatch: "auto" | "manual" | "unmatched"
+  /** Purchase order this agreement spends against (Workforce). */
+  poNumber?: string | null
+  poAmount?: number | null
+  pricingModel?: PricingModel | null
   syncConflicts: SyncConflict[]
   routing: { required: Office[]; approvals: RoutingApproval[]; reasons: string[] }
   rejection: { reasonCode: RejectReason; note: string | null; at: string; by: Person | null } | null
@@ -302,6 +309,9 @@ export interface ContractPatch {
   huronRecordId?: string | null
   workdayRef?: string | null
   workdayMatch?: "auto" | "manual" | "unmatched"
+  poNumber?: string | null
+  poAmount?: number | null
+  pricingModel?: PricingModel | null
 }
 
 export interface BlockerInput {
@@ -435,6 +445,8 @@ export interface OrganizationSettings {
   setupCompletedAt: string | null
   /** Requirement 7: the edition this customer sees; null = deployment default. */
   edition?: "campus" | "workforce" | null
+  /** Modules this organization uses (null = every module the deployment has on). */
+  enabledModules?: string[] | null
 }
 
 export interface WorkflowSettings {
@@ -505,6 +517,8 @@ export interface GovernMe {
   edition?: "campus" | "workforce"
   /** The edition the deployment falls back to when the organization has not chosen. */
   defaultEdition?: "campus" | "workforce"
+  /** Features the deployment has on, before the organization's module choice. */
+  deploymentFeatures?: Partial<Record<GovernFeature, boolean>>
   /** The agreement types this edition offers, in order, with their labels. */
   agreementTypes?: { id: AgreementType; label: string }[]
 }

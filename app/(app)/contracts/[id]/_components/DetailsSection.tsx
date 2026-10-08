@@ -17,25 +17,26 @@ import { ArrowRight, Building2, Check, CheckCircle2, CircleDashed, Coins, Extern
 import { ActionDialogHost, pendingOffices, useGovernErrorToast } from "@/components/govern/actions";
 import {
   AGREEMENT_TYPE_LABEL, CAPTURE_GAP_LABEL, DIRECTION_HINT, DIRECTION_LABEL, OFFICE_LABEL,
-  REJECT_REASON_LABEL, personName,
+  PRICING_MODEL_LABEL, REJECT_REASON_LABEL, personName,
 } from "@/lib/govern/labels";
 import { contractValueText } from "@/lib/govern/metrics";
 import { useGovernFeature, usePatchContract } from "@/lib/govern/queries";
 import { ComingSoonBadge } from "@/components/govern/ComingSoon";
-import type { ActivityEntry, AgreementType, CaptureGap, ContractDetail, ContractPatch, Direction, Person } from "@/lib/govern/types";
+import type { ActivityEntry, AgreementType, CaptureGap, ContractDetail, ContractPatch, Direction, Person, PricingModel } from "@/lib/govern/types";
 import { formatDate } from "@/lib/format";
 import { fmtMoney } from "@/lib/contract-value";
 import { cn } from "@/lib/utils";
 import { Fact, ProvenanceMark, Section } from "./SectionParts";
 
 type TextKey = "counterparty" | "sponsor" | "piName" | "department" | "college" | "currency" | "requestedDate"
-  | "effectiveDate" | "termEndDate" | "huronRecordId" | "workdayRef";
+  | "effectiveDate" | "termEndDate" | "huronRecordId" | "workdayRef" | "poNumber";
 
 const DATE_KEYS = new Set<TextKey>(["requestedDate", "effectiveDate", "termEndDate"]);
-type NumberKey = "expectedValue" | "manualValue";
+type NumberKey = "expectedValue" | "manualValue" | "poAmount";
 type WorkdayMatch = ContractDetail["workdayMatch"];
 
 interface Draft {
+  pricingModel: PricingModel | null;
   agreementType: AgreementType;
   direction: Direction;
   workdayMatch: WorkdayMatch;
@@ -45,6 +46,11 @@ interface Draft {
 
 /** Research-administration fields, shown in the Campus edition only. */
 const RESEARCH_KEYS = new Set<TextKey>(["sponsor", "piName", "college", "huronRecordId"]);
+
+/** Procurement fields, shown in the Workforce edition only. */
+const WORKFORCE_KEYS = new Set<TextKey>(["poNumber"]);
+
+const PRICING_NONE = "__none";
 
 const TEXT_FIELDS: { key: TextKey; label: string; placeholder?: string; type?: string }[] = [
   { key: "counterparty", label: "Other party", placeholder: "e.g. Acme Therapeutics, Inc." },
@@ -56,6 +62,7 @@ const TEXT_FIELDS: { key: TextKey; label: string; placeholder?: string; type?: s
   { key: "effectiveDate", label: "Start date", type: "date" },
   { key: "termEndDate", label: "End date", type: "date" },
   { key: "huronRecordId", label: "Huron record ID", placeholder: "e.g. AGR00012345" },
+  { key: "poNumber", label: "Purchase order", placeholder: "e.g. PO-2026-0412" },
   { key: "workdayRef", label: "Workday reference", get placeholder() { return byEdition("e.g. GR-2026-0412", "e.g. PO-2026-0412") } },
 ];
 
@@ -95,6 +102,7 @@ function toDraft(c: ContractDetail): Draft {
   for (const f of TEXT_FIELDS) text[f.key] = storedText(c, f.key) ?? "";
   text.currency = c.currency ?? "";
   return {
+    pricingModel: c.pricingModel ?? null,
     agreementType: c.agreementType,
     direction: c.direction,
     workdayMatch: c.workdayMatch,
@@ -102,6 +110,7 @@ function toDraft(c: ContractDetail): Draft {
     numbers: {
       expectedValue: c.expectedValue === null ? "" : String(c.expectedValue),
       manualValue: c.manualValue === null ? "" : String(c.manualValue),
+      poAmount: c.poAmount == null ? "" : String(c.poAmount),
     },
   };
 }
@@ -119,15 +128,16 @@ function diff(c: ContractDetail, d: Draft): ContractPatch | "invalid" {
   if (d.agreementType !== c.agreementType) patch.agreementType = d.agreementType;
   if (d.direction !== c.direction) patch.direction = d.direction;
   if (d.workdayMatch !== c.workdayMatch) patch.workdayMatch = d.workdayMatch;
+  if (d.pricingModel !== (c.pricingModel ?? null)) patch.pricingModel = d.pricingModel;
   for (const key of [...TEXT_FIELDS.map((f) => f.key), "currency" as const]) {
     const raw = d.text[key].trim();
     const next = key === "currency" ? raw.toUpperCase() || null : raw || null;
     if (next !== storedText(c, key)) patch[key] = next;
   }
-  for (const key of ["expectedValue", "manualValue"] as const) {
+  for (const key of ["expectedValue", "manualValue", "poAmount"] as const) {
     const n = parseAmount(d.numbers[key]);
     if (n === "invalid") return "invalid";
-    if (n !== c[key]) patch[key] = n;
+    if (n !== (c[key] ?? null)) patch[key] = n;
   }
   return patch;
 }
@@ -243,6 +253,9 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
             <Fact label="Expected value at intake">{c.expectedValue === null ? null : fmtMoney(c.expectedValue, c.currency)}</Fact>
             <Fact label="Value entered by hand">{c.manualValue === null ? null : fmtMoney(c.manualValue, c.currency)}</Fact>
             <Fact label="Fiscal year">{c.fiscalYear ? `FY${c.fiscalYear}` : null}</Fact>
+            {!terms.researchFields && <Fact label="Pricing">{c.pricingModel ? PRICING_MODEL_LABEL[c.pricingModel] : null}</Fact>}
+            {!terms.researchFields && <Fact label="Purchase order">{c.poNumber ? <span className="font-mono text-sm">{c.poNumber}</span> : null}</Fact>}
+            {!terms.researchFields && <Fact label="PO amount">{c.poAmount == null ? null : fmtMoney(c.poAmount, c.currency)}</Fact>}
             <Fact label="Date needed by" provenance={mark("requestedDate")}>{c.requestedDate ? formatDate(c.requestedDate) : null}</Fact>
             <Fact label="Start date" provenance={mark("effectiveDate")}>{c.effectiveDate ? formatDate(c.effectiveDate) : null}</Fact>
             <Fact label="End date" provenance={mark("termEndDate")}>{c.termEndDate ? formatDate(c.termEndDate) : null}</Fact>
@@ -332,7 +345,7 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
           <SelectContent>{(["incoming", "outgoing"] as Direction[]).map((d) => <SelectItem key={d} value={d}>{DIRECTION_LABEL[d]}</SelectItem>)}</SelectContent>
         </Select>
       </FormField>
-      {TEXT_FIELDS.slice(0, 5).filter((f) => terms.researchFields || !RESEARCH_KEYS.has(f.key)).map((f) => (
+      {TEXT_FIELDS.slice(0, 5).filter((f) => (terms.researchFields ? !WORKFORCE_KEYS.has(f.key) : !RESEARCH_KEYS.has(f.key))).map((f) => (
         <FormField key={f.key} label={f.key === "counterparty" && !terms.researchFields ? terms.party : f.key === "sponsor" ? terms.party : f.label} id={fieldId(f.key)}>
           <Input id={fieldId(f.key)} value={draft.text[f.key]} placeholder={f.key === "counterparty" && !terms.researchFields ? terms.partyHint : f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
         </FormField>
@@ -346,11 +359,27 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
       <FormField label="Currency" id={fieldId("currency")}>
         <Input id={fieldId("currency")} maxLength={3} value={draft.text.currency} placeholder="USD" onChange={(e) => setText("currency", e.target.value.toUpperCase())} />
       </FormField>
-      {TEXT_FIELDS.slice(5).filter((f) => terms.researchFields || !RESEARCH_KEYS.has(f.key)).map((f) => (
+      {TEXT_FIELDS.slice(5).filter((f) => (terms.researchFields ? !WORKFORCE_KEYS.has(f.key) : !RESEARCH_KEYS.has(f.key))).map((f) => (
         <FormField key={f.key} label={f.label} id={fieldId(f.key)}>
           <Input id={fieldId(f.key)} type={f.type} value={draft.text[f.key]} placeholder={f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
         </FormField>
       ))}
+      {!terms.researchFields && (
+        <>
+          <FormField label="PO amount" id={fieldId("poAmount")} hint="What the purchase order allows; spend is tracked against it.">
+            <Input id={fieldId("poAmount")} inputMode="decimal" value={draft.numbers.poAmount} placeholder="e.g. 120000" onChange={(e) => setNumber("poAmount", e.target.value)} />
+          </FormField>
+          <FormField label="Pricing" id={fieldId("pricingModel")}>
+            <Select value={draft.pricingModel ?? PRICING_NONE} onValueChange={(v) => onChange({ ...draft, pricingModel: v === PRICING_NONE ? null : v as PricingModel })}>
+              <SelectTrigger id={fieldId("pricingModel")} className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={PRICING_NONE}>Not known</SelectItem>
+                {(Object.keys(PRICING_MODEL_LABEL) as PricingModel[]).map((m) => <SelectItem key={m} value={m}>{PRICING_MODEL_LABEL[m]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </FormField>
+        </>
+      )}
       {showWorkdayMatch && (
         <FormField label="Workday match" id={fieldId("workdayMatch")}>
           <Select value={draft.workdayMatch} onValueChange={(v) => onChange({ ...draft, workdayMatch: v as WorkdayMatch })}>

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { BadgeCheck, Check, ChevronsRight, FileText, Sparkles } from "lucide-react";
+import { BadgeCheck, Check, ChevronsRight, FileText } from "lucide-react";
+import { Sonar } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ds/Avatar";
 import { shortDate } from "@/components/govern/ContractFacts";
@@ -73,7 +74,7 @@ export function ObligationPreview({ obligation: o, today, busy, readOnly = false
               </>
             ) : (
               <>
-                <Sparkles size={15} aria-hidden className="text-[var(--warning-fg)]" />
+                <Sonar size={15} aria-hidden className="text-[var(--warning-fg)]" />
                 <span>Found by Sonar. Check it against the agreement, then verify.</span>
               </>
             )}

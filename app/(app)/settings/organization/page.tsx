@@ -22,6 +22,7 @@ import { STAGE_LABEL, plural } from "@/lib/govern/labels";
 import { useContracts, useEdition, useMatrix, useSaveWorkflowSettings, useWorkflowSettings } from "@/lib/govern/queries";
 import { EDITION_LABEL } from "@/lib/edition";
 import { EditionChoice } from "@/components/govern/EditionChoice";
+import { ModulesChoice } from "@/components/govern/ModulesChoice";
 import type { OrganizationSettings, Stage } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +119,7 @@ export default function OrganizationSetupPage() {
                     },
                   )}
                 />
+                <ModulesChoice enabled={org.enabledModules ?? null} canEdit={canEdit} />
               </Step>
 
               <Step n={2} title="Governing law" done={done.law}
