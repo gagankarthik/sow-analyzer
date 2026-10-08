@@ -7,6 +7,7 @@ import { SecurityBand } from "@/components/landing/SecurityBand";
 import { TeamTabs } from "@/components/landing/TeamTabs";
 import { Industries } from "@/components/landing/Industries";
 import { Outcomes } from "@/components/landing/Outcomes";
+import { ReviewersSection } from "@/components/landing/ReviewersSection";
 import { StartCta } from "@/components/landing/StartCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationSchema, pageMetadata, SITE_DESCRIPTION, websiteSchema } from "@/lib/seo";
@@ -17,18 +18,21 @@ export const metadata: Metadata = pageMetadata({
   path: "/",
 });
 
-/* Hero with the product on its stage, every product feature, the four
-   outcomes, the lifecycle loop, what each team sees, the industries, security, then the closing
-   call to action. The header and footer link into these sections. */
+/* Each section answers one buyer question: what it is and why it differs
+   (hero), what reviewers stop doing, how a contract moves, what is on the
+   record, what leaders finally see, how each office uses it, who it is
+   built for, why security teams say yes, and how to start. The header and
+   footer link into these sections. */
 export default function LandingPage() {
   return (
     <MarketingShell>
       <JsonLd data={organizationSchema} />
       <JsonLd data={websiteSchema} />
       <Hero />
+      <ReviewersSection />
+      <Lifecycle />
       <ProductTour />
       <Outcomes />
-      <Lifecycle />
       <TeamTabs />
       <Industries />
       <SecurityBand />

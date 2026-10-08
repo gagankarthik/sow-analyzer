@@ -14,11 +14,11 @@ const AGREEMENTS: Record<IndustrySectionId, string> = {
 
 export function Industries() {
   return (
-    <section id="industries" className="lp-section lp-band scroll-mt-20" aria-labelledby="industries-title">
+    <section id="industries" className="lp-section scroll-mt-20" aria-labelledby="industries-title">
       <div className="lp-wrap lp-split">
         <div>
           <h2 id="industries-title" className="lp-h2">
-            Built for the places research agreements are signed.
+            Built for <span className="lp-serif">research agreements.</span>
           </h2>
           <p className="lp-body mt-4">
             The clause types, offices and value reporting follow how research organisations work, not a
@@ -30,13 +30,10 @@ export function Industries() {
           </Link>
         </div>
         <ul className="lp-industries">
-          {INDUSTRY_SECTIONS.map(({ id, label, icon: IndustryIcon }) => (
+          {INDUSTRY_SECTIONS.map(({ id, label }) => (
             <li key={id} id={id} className="lp-industry scroll-mt-24">
-              <IndustryIcon size={32} className="lp-spec-icon" />
-              <div>
-                <h3 className="lp-h3">{label}</h3>
-                <p className="mt-1 text-lp-ink-2">{AGREEMENTS[id]}</p>
-              </div>
+              <h3 className="lp-h3">{label}</h3>
+              <p className="mt-2 text-lp-ink-2">{AGREEMENTS[id]}</p>
             </li>
           ))}
         </ul>

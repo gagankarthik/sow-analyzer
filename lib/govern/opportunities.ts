@@ -133,6 +133,17 @@ export function findOpportunities(
     })
   }
 
+  const unverified = obligations.filter((o) => o.status === "open" && !o.verified)
+  if (unverified.length > 0) {
+    out.push({
+      id: "unverified", kind: "money", weight: 85 + unverified.length,
+      figure: String(unverified.length),
+      title: `${plural(unverified.length, "obligation")} Sonar found ${unverified.length === 1 ? "needs" : "need"} checking`,
+      detail: "Confirm each against the agreement so due dates and amounts can be relied on for reminders and reports.",
+      href: "/obligations", action: "Verify obligations",
+    })
+  }
+
   const ending = obligations.filter((o) => o.status === "open" && o.kind === "term_end" && o.dueDate
     && daysBetween(o.dueDate, today) >= 0 && daysBetween(o.dueDate, today) <= 90)
   if (ending.length > 0) {

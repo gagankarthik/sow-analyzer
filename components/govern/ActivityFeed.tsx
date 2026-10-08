@@ -47,6 +47,7 @@ const META: Partial<Record<ActivityAction, { icon: typeof Clock; tone: Tone }>> 
   conflict: { icon: Plug, tone: "warn" },
   obligation_added: { icon: ListChecks, tone: "neutral" },
   obligation_done: { icon: Coins, tone: "good" },
+  obligation_verified: { icon: Coins, tone: "good" },
   pi_requested: { icon: UserRound, tone: "neutral" },
   pi_answered: { icon: UserRound, tone: "good" },
 };

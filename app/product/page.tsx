@@ -5,6 +5,7 @@ import { StartCta } from "@/components/landing/StartCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PRODUCT_SECTIONS, type ProductSectionId } from "@/components/landing/site-nav";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
+import { IconBadge } from "@/components/landing/IconBadge";
 import { breadcrumbSchema, pageMetadata, softwareApplicationSchema } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -66,7 +67,7 @@ export default function ProductPage() {
             {PRODUCT_SECTIONS.map((section) => (
               <article key={section.id} id={section.id} className="lp-spec scroll-mt-24">
                 <h2 className="lp-h3">
-                  <section.icon size={32} className="lp-spec-icon" />
+                  <IconBadge icon={section.icon} area={section.id} />
                   <span className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
                     {section.label}
                     {"feature" in section ? <ComingSoonBadge feature={section.feature} /> : null}

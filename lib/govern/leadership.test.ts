@@ -57,7 +57,7 @@ describe("riskExposure", () => {
 describe("obligationsByMonth", () => {
   it("groups open, dated obligations into the next three months", () => {
     const o = (id: string, dueDate: string | null, amount: number | null, status: "open" | "done" = "open"): PortfolioObligation => ({
-      id, kind: "other", title: id, dueDate, amount, status, source: "manual", completedAt: null,
+      id, kind: "other", title: id, dueDate, amount, status, source: "manual", completedAt: null, verified: true, verifiedAt: null, verifiedBy: null,
       contractId: "c", contractTitle: null, counterparty: null, agreementType: null, stage: null, currency: "USD", owner: null,
     })
     const rows = obligationsByMonth([

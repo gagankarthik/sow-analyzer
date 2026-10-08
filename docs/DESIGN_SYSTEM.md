@@ -456,3 +456,34 @@ Consolidation onto `components/ds`, page by page:
 
 Migrate one page at a time, verify at 360/768/1024/1440 in both themes, then delete the
 old component once it has no callers.
+
+## Record collections (v2, from the competitive study in docs/research/ironclad-study.md)
+
+Every collection of records (contracts, counterparties, obligations, people) uses the same recipe,
+so a person who learns one list knows them all:
+
+1. **Page header**: title, one-line purpose, the primary "New …" action on the right.
+2. **KPI strip** (`KpiStrip`): four tiles, each a count or sum with a one-line context and a link
+   to the filtered view. Danger/warning tone only when the number is a problem.
+3. **Toolbar**: pill search, then one **FilterPill** per dimension (multi-select, counts per option,
+   "Stage: In review +1" when active, × to clear), "Clear all", scope switch (Open | All) on the right,
+   then **Columns** and density.
+4. **DataTable**: sortable headers, sticky header, priority columns (P2 from lg, P3 from xl),
+   cards below md, 25 rows per page with "Showing 1–25 of 135", title column capped and truncated
+   with the full text in a tooltip, chips never wrap.
+5. **Selection**: checkbox column + select-all on the page; a sticky bar "N selected · Clear" with the
+   bulk actions on the right. Bulk results always report successes and failures separately.
+6. **States**: loading skeleton, error with retry, empty with the next step, no-results with clear.
+
+## AI output is verified by a person
+
+Anything Sonar extracts that people will rely on (obligations today) carries a **Needs verification**
+chip until someone confirms it. Verification is one click (row action, bulk action, or on the record),
+is recorded in the activity log with who and when, and unverified items are counted in the KPI strip
+and in "Ways to save time and money". Never present AI-extracted facts as confirmed.
+
+## Contract journey
+
+Every contract page shows Draft → Review → Redlines → Edits → Approval → Signature → Signed, computed
+from the contract's own history (lib/govern/journey.ts). Done steps state what happened and when;
+the current step is ringed; steps the contract did not need read "Not needed" (dashed).

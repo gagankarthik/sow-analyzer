@@ -8,11 +8,11 @@ import {
   CaptureCard,
   HolderCard,
   IntegrationsCard,
-  MatrixCard,
-  NextStepCard,
+  RedlineCard,
   ValueCard,
 } from "@/components/landing/ProductCards";
 import { PRODUCT_SECTIONS, type ProductSectionId } from "@/components/landing/site-nav";
+import { IconBadge } from "@/components/landing/IconBadge";
 
 /* Everything in the Product menu as one bento grid. Each tile carries its
    product area's colour (the same code as the hero window and the app) and
@@ -25,11 +25,8 @@ const TILES: Record<ProductSectionId, { body: string; size: string; visual: Reac
     size: "lp-tile-wide",
     visual: (
       <div className="lp-tile-pair">
-        <MatrixCard rows={5} />
-        <div className="lp-tile-stack">
-          <NextStepCard />
-          <HolderCard />
-        </div>
+        <RedlineCard />
+        <HolderCard />
       </div>
     ),
   },
@@ -69,11 +66,12 @@ export function ProductTour() {
     <section id="product" className="lp-section scroll-mt-20" aria-labelledby="product-title">
       <div className="lp-wrap">
         <h2 id="product-title" className="lp-statement">
-          One record for every agreement.{" "}
-          <span className="lp-statement-muted">
-            Review, workflow and reporting share the same contract, so nobody re-keys a value or chases a status.
-          </span>
+          Review, workflow and the money, <span className="lp-serif">on one record.</span>
         </h2>
+        <p className="lp-lede mt-5">
+          The rating, the owner, the clock and the value all live on the same contract. Nobody re-keys a
+          value or chases a status in email.
+        </p>
 
         <div className="lp-bento">
           {SECTIONS.map((section) => {
@@ -86,9 +84,7 @@ export function ProductTour() {
                 aria-labelledby={`${section.id}-title`}
               >
                 <header className="lp-tile-head">
-                  <span className="lp-tile-icon" aria-hidden="true">
-                    <section.icon size={18} />
-                  </span>
+                  <IconBadge icon={section.icon} area={section.id} />
                   <h3 id={`${section.id}-title`} className="lp-tile-title">
                     {section.label}
                   </h3>

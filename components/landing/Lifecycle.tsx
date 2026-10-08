@@ -4,20 +4,21 @@ import {
   IconApprove,
   IconCalendar,
   IconCapture,
+  IconEdits,
   IconMatrix,
   IconNegotiate,
-  IconRenew,
-  IconReport,
   IconSign,
+  IconSigned,
   type Icon,
 } from "@/components/landing/icons";
+import { IconBadge } from "@/components/landing/IconBadge";
 import type { ProductSectionId } from "@/components/landing/site-nav";
 import type { GovernFeature } from "@/lib/govern/features";
 
-/* The life of an agreement as a loop: a renewal or a new agreement starts
-   the cycle again at intake. Each stage takes the colour of the product
-   area that handles it. Wide screens draw the loop; narrow screens list the
-   stages and close with a "back to intake" row. */
+/* How a contract moves: the journey exactly as each contract page shows
+   it, from draft to signed, then the obligations it creates. Each stage
+   takes the colour of the product area that handles it. Wide screens draw
+   the loop (obligations feed the next agreement); narrow screens list it. */
 
 type Stage = {
   label: string;
@@ -28,87 +29,42 @@ type Stage = {
 };
 
 const STAGES: Stage[] = [
-  {
-    label: "Intake",
-    detail: "Upload one agreement or a batch; Sonar reads it",
-    icon: IconCapture,
-    area: "capture",
-  },
-  {
-    label: "Review",
-    detail: "Every clause rated against your matrix",
-    icon: IconMatrix,
-    area: "matrix",
-  },
-  {
-    label: "Negotiate",
-    detail: "Send back with language; redlines scored again",
-    icon: IconNegotiate,
-    area: "workflow",
-  },
-  {
-    label: "Approve",
-    detail: "Routed to the office that must decide",
-    icon: IconApprove,
-    area: "workflow",
-  },
-  {
-    label: "Sign",
-    detail: "Out for signature is its own status",
-    icon: IconSign,
-    area: "workflow",
-    feature: "docusign",
-  },
-  {
-    label: "Obligations",
-    detail: "Reports and milestones tracked to their dates",
-    icon: IconCalendar,
-    area: "trends",
-    feature: "obligations",
-  },
-  {
-    label: "Renew",
-    detail: "Term ends flagged before the notice window",
-    icon: IconRenew,
-    area: "trends",
-  },
-  {
-    label: "Report",
-    detail: "Signed, pipeline and held-up value",
-    icon: IconReport,
-    area: "value",
-  },
+  { label: "Draft", detail: "Uploaded or drafted from your template; Sonar reads it", icon: IconCapture, area: "capture" },
+  { label: "Review", detail: "Every clause checked against your matrix", icon: IconMatrix, area: "matrix" },
+  { label: "Redlines", detail: "Suggested language goes back to the other side", icon: IconNegotiate, area: "workflow" },
+  { label: "Edits", detail: "Their revised version is checked again, round by round", icon: IconEdits, area: "workflow" },
+  { label: "Approval", detail: "The offices your matrix names sign off", icon: IconApprove, area: "workflow" },
+  { label: "Signature", detail: "Out for signature is its own step, with its own clock", icon: IconSign, area: "workflow", feature: "docusign" },
+  { label: "Signed", detail: "Value counts as current; the record is complete", icon: IconSigned, area: "value" },
+  { label: "Obligations", detail: "Reports, payments and term ends tracked to their dates", icon: IconCalendar, area: "trends", feature: "obligations" },
 ];
 
 export function Lifecycle() {
   return (
-    <section className="lp-section lp-band" aria-labelledby="lifecycle-title">
+    <section className="lp-section" aria-labelledby="lifecycle-title">
       <div className="lp-wrap">
-        <div className="lp-section-head">
+        <div className="lp-panel">
+        <div className="lp-section-head lp-center-head">
           <h2 id="lifecycle-title" className="lp-h2">
-            One loop from intake to renewal.{" "}
-            <span className="lp-h2-muted">
-              One owner and one next step at every stage.
-            </span>
+            How a contract <span className="lp-serif">moves.</span>
           </h2>
+          <p className="lp-lede mx-auto mt-5">
+            The same eight steps every contract page shows. One owner and one next step at each, and a clock
+            against its target.
+          </p>
         </div>
 
         <div className="relative">
           <ol className="lp-track">
             {STAGES.map(
-              ({ label, detail, icon: StageIcon, area, feature }, index) => (
+              ({ label, detail, icon: StageIcon, area, feature }) => (
                 <li key={label} className={`lp-track-stage lp-area-${area}`}>
-                  <span className="lp-track-node" aria-hidden="true">
-                    <StageIcon size={20} />
+                  <IconBadge icon={StageIcon} area={area} size="lg" className="lp-track-node" />
+                  <span className="lp-track-label">
+                    {label}
+                    {feature ? <ComingSoonBadge feature={feature} /> : null}
                   </span>
-                  <span className="lp-track-step" aria-hidden="true">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="lp-track-label">{label}</span>
                   <span className="lp-track-detail">{detail}</span>
-                  {feature ? (
-                    <ComingSoonBadge feature={feature} className="mt-2 justify-self-start" />
-                  ) : null}
                 </li>
               ),
             )}
@@ -119,13 +75,14 @@ export function Lifecycle() {
           <span className="lp-loop-turn lp-loop-turn-left" aria-hidden="true">
             <ChevronUp size={16} strokeWidth={2} />
           </span>
+          <span className="lp-loop-core" aria-hidden="true">
+            Sonar checks every version
+          </span>
         </div>
         <p className="lp-track-return">
-          <span className="lp-track-return-node" aria-hidden="true">
-            <IconRenew size={20} />
-          </span>
-          Renewals and new agreements start again at intake.
+          Obligations and renewals bring the next agreement back to draft.
         </p>
+        </div>
       </div>
     </section>
   );

@@ -245,6 +245,15 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
   const done = o.status === "done";
   const late = !done && isPastDue(o.dueDate);
 
+  async function verify() {
+    try {
+      await update.mutateAsync({ oblId: o.id, input: { verified: true } });
+      toast.success("Obligation verified");
+    } catch (e) {
+      onError(e, "verify this obligation", c.contractId);
+    }
+  }
+
   async function toggle() {
     try {
       await update.mutateAsync({ oblId: o.id, input: { status: done ? "open" : "done" } });
@@ -262,6 +271,7 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
           <span>{OBLIGATION_KIND_LABEL[o.kind]}</span>
           {o.amount !== null && <span className="tabular-nums">{fmtMoney(o.amount, c.currency)}</span>}
           {o.source === "sonar" && <span className="inline-flex items-center gap-1 text-[var(--ai-ink)]"><Sonar size={11} />Found by Sonar</span>}
+          {!o.verified && <span className="inline-flex h-5 items-center rounded bg-[var(--warning-soft)] px-1.5 font-medium text-[var(--warning-fg)]">Needs verification</span>}
           {done && o.completedAt && <span>Done {formatDate(o.completedAt)}</span>}
         </p>
       </div>
@@ -269,6 +279,11 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
         late ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "bg-[var(--ink-100)] text-[var(--ink-700)]")}>
         <Clock size={12} />{o.dueDate ? `${late ? "Overdue · " : "Due "}${formatDate(o.dueDate)}` : "No due date"}
       </span>
+      {!o.verified && !done && (
+        <Button type="button" size="sm" variant="outline" onClick={verify} disabled={update.isPending}>
+          <CheckCircle2 size={13} />Verify
+        </Button>
+      )}
       <Button type="button" size="sm" variant={done ? "ghost" : "outline"} onClick={toggle} disabled={update.isPending}>
         {update.isPending ? <Loader2 size={13} className="animate-spin" /> : done ? <RefreshCw size={13} /> : <CheckCircle2 size={13} />}
         {done ? "Undo" : "Mark done"}

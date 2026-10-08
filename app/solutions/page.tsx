@@ -49,8 +49,7 @@ export default function SolutionsPage() {
         {SOLUTION_SECTIONS.map((team) => (
           <article key={team.id} id={team.id} className="lp-spec scroll-mt-24">
             <h3 className="lp-h3">
-              <team.icon size={32} className="lp-spec-icon" />
-              <span className="mt-3 block">{team.label}</span>
+              {team.label}
             </h3>
             <p className="max-w-xl text-lp-ink-2">{TEAM_COPY[team.id]}</p>
           </article>
@@ -65,8 +64,7 @@ export default function SolutionsPage() {
           {INDUSTRY_SECTIONS.map((industry) => (
             <article key={industry.id} id={industry.id} className="lp-spec scroll-mt-24">
               <h3 className="lp-h3">
-                <industry.icon size={32} className="lp-spec-icon" />
-                <span className="mt-3 block">{industry.label}</span>
+                {industry.label}
               </h3>
               <p className="max-w-xl text-lp-ink-2">{INDUSTRY_COPY[industry.id]}</p>
             </article>

@@ -8,7 +8,7 @@ const TODAY = new Date("2026-10-08T12:00:00Z")
 function obligation(over: Partial<PortfolioObligation>): PortfolioObligation {
   return {
     id: "o1", kind: "other", title: "Report", dueDate: "2026-10-20", amount: null, status: "open",
-    source: "manual", completedAt: null, contractId: "c1", contractTitle: "Agreement", counterparty: null,
+    source: "manual", completedAt: null, verified: true, verifiedAt: null, verifiedBy: null, contractId: "c1", contractTitle: "Agreement", counterparty: null,
     agreementType: null, stage: "active", currency: "USD", owner: null, ...over,
   }
 }
@@ -52,5 +52,10 @@ describe("findOpportunities", () => {
     ], [], TODAY)
     expect(list.find((o) => o.id === "unassigned")?.figure).toBe("1")
     expect(list.find((o) => o.id === "unvalued")?.figure).toBe("1")
+  })
+
+  it("asks for Sonar-found obligations to be verified", () => {
+    const list = findOpportunities([], [obligation({ id: "s", verified: false, source: "sonar", dueDate: "2027-01-01" })], TODAY)
+    expect(list.map((o) => o.id)).toEqual(["unverified"])
   })
 })

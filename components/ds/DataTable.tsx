@@ -12,6 +12,8 @@
 //  • pagination ("Showing 1–50 of 2,431") for large sets
 //  • group-by with count + subtotal per group
 //  • loading / empty / no results / error are four distinct states
+//  • optional row selection with a sticky bulk-action bar, and a "Columns"
+//    menu to hide columns (remembered per table)
 
 import * as React from "react";
 import Link from "next/link";
@@ -19,7 +21,12 @@ import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Columns3 } from "lucide-react";
+import {
   nextSort,
+  useHiddenColumns,
   sortRows,
   useDensity,
   usePagination,
@@ -58,6 +65,8 @@ export type DataTableColumn<T> = {
   className?: string;
   /** Role in the mobile card: title (one), status (pills row), field (label: value), hidden. */
   card?: "title" | "status" | "field" | "hidden";
+  /** Can the user hide this column from the Columns menu? Default true (never the title column). */
+  hideable?: boolean;
 };
 
 export type DataTableGroupBy<T> = {
@@ -115,6 +124,12 @@ export type DataTableProps<T> = {
 
   /** Scroll height of the table body so the header can stick. */
   maxHeightClass?: string;
+  /** Row selection: pass the selected ids and a setter to show checkboxes. */
+  selection?: { selected: Set<string>; onChange: (next: Set<string>) => void };
+  /** Actions for the selected rows, shown in a bar above the table. */
+  bulkActions?: (rows: T[]) => React.ReactNode;
+  /** Persist hidden columns under this key; also shows the Columns menu. */
+  columnsKey?: string;
   /** Toolbar content shown left of the density toggle (filters summary, export). */
   toolbar?: React.ReactNode;
   className?: string;
@@ -133,7 +148,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
   const {
     caption,
     showCaption = false,
-    columns,
+    columns: allColumns,
     rows,
     getRowId,
     getRowHref,
@@ -157,7 +172,17 @@ export function DataTable<T>(props: DataTableProps<T>) {
     maxHeightClass = "max-h-[min(72vh,760px)]",
     toolbar,
     className,
+    selection,
+    bulkActions,
+    columnsKey,
   } = props;
+
+  const [hiddenIds, setColumnHidden] = useHiddenColumns(columnsKey);
+  const firstColumnId = (allColumns.find((c) => c.card === "title") ?? allColumns[0])?.id;
+  const columns = React.useMemo(
+    () => allColumns.filter((c) => c.id === firstColumnId || c.hideable === false || !hiddenIds.has(c.id)),
+    [allColumns, hiddenIds, firstColumnId],
+  );
 
   const [innerSort, setInnerSort] = React.useState<SortState>(defaultSort);
   const isControlled = controlledSort !== undefined;
@@ -229,12 +254,84 @@ export function DataTable<T>(props: DataTableProps<T>) {
   const cellPad = density === "compact" ? "px-3 py-1.5" : "px-4 py-2.5";
   const hasExpand = hiddenColumns.length > 0;
 
+  // Selection is scoped to what exists: ids that are no longer in `rows` are ignored.
+  const rowIds = React.useMemo(() => new Set(rows.map(getRowId)), [rows, getRowId]);
+  const selectedRows = selection ? rows.filter((r) => selection.selected.has(getRowId(r))) : [];
+  const pageIds = pageRows.map(getRowId);
+  const pageSelected = selection ? pageIds.filter((id) => selection.selected.has(id)).length : 0;
+  const allOnPage = pageIds.length > 0 && pageSelected === pageIds.length;
+  function setRowSelected(id: string, on: boolean) {
+    if (!selection) return;
+    const next = new Set([...selection.selected].filter((x) => rowIds.has(x)));
+    if (on) next.add(id);
+    else next.delete(id);
+    selection.onChange(next);
+  }
+  function setPageSelected(on: boolean) {
+    if (!selection) return;
+    const next = new Set([...selection.selected].filter((x) => rowIds.has(x)));
+    for (const id of pageIds) {
+      if (on) next.add(id);
+      else next.delete(id);
+    }
+    selection.onChange(next);
+  }
+
   return (
     <div className={cn("flex min-w-0 flex-col gap-3", className)}>
-      {(toolbar || densityKey) && (
+      {(toolbar || densityKey || columnsKey) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0 flex-1">{toolbar}</div>
-          {densityKey && <DensityToggle value={density} onChange={setDensity} />}
+          <div className="flex items-center gap-2">
+            {columnsKey && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 gap-1.5">
+                    <Columns3 size={14} aria-hidden />Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Show columns</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {allColumns.map((c) => {
+                    const locked = c.id === firstColumnId || c.hideable === false;
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={c.id}
+                        checked={locked || !hiddenIds.has(c.id)}
+                        disabled={locked}
+                        onCheckedChange={(on) => setColumnHidden(c.id, !on)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {c.header}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {densityKey && <DensityToggle value={density} onChange={setDensity} />}
+          </div>
+        </div>
+      )}
+
+      {selection && selectedRows.length > 0 && (
+        <div
+          role="region"
+          aria-label="Selected rows"
+          className="sticky top-2 z-(--z-sticky) flex flex-wrap items-center gap-x-3 gap-y-2 rounded-container border border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] px-3 py-2 shadow-raised"
+        >
+          <span className="text-body font-semibold text-fg-primary" aria-live="polite">
+            {formatValue(selectedRows.length)} selected
+          </span>
+          <button
+            type="button"
+            onClick={() => selection.onChange(new Set())}
+            className="text-body font-medium text-fg-link underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-focus"
+          >
+            Clear
+          </button>
+          {bulkActions && <div className="ms-auto flex flex-wrap items-center gap-2">{bulkActions(selectedRows)}</div>}
         </div>
       )}
 
@@ -261,6 +358,16 @@ export function DataTable<T>(props: DataTableProps<T>) {
               </caption>
               <thead>
                 <tr>
+                  {selection && (
+                    <th scope="col" className="sticky top-0 z-(--z-sticky) w-10 border-b border-border-default bg-surface-sunken ps-3">
+                      <Checkbox
+                        checked={allOnPage}
+                        indeterminate={pageSelected > 0 && !allOnPage}
+                        onChange={(on) => setPageSelected(on)}
+                        label={allOnPage ? `Clear selection on this page` : `Select all ${pageIds.length} on this page`}
+                      />
+                    </th>
+                  )}
                   {hasExpand && (
                     <th scope="col" className="sticky top-0 z-(--z-sticky) w-10 border-b border-border-default bg-surface-sunken xl:hidden">
                       <span className="sr-only">Details</span>
@@ -344,7 +451,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
   }
 
   function renderRows() {
-    const colCount = columns.length + (hasExpand ? 1 : 0) + (rowActions ? 1 : 0);
+    const colCount = columns.length + (hasExpand ? 1 : 0) + (rowActions ? 1 : 0) + (selection ? 1 : 0);
     return pageRows.map((row, i) => {
       const id = getRowId(row);
       const href = getRowHref?.(row);
@@ -378,7 +485,16 @@ export function DataTable<T>(props: DataTableProps<T>) {
               clickable && "cursor-pointer hover:bg-surface-hover focus-within:bg-surface-hover",
             )}
             onClick={!href && onRowClick ? () => onRowClick(row) : undefined}
+            aria-selected={selection ? selection.selected.has(id) : undefined}
           >
+            {selection && (
+              <td
+                className={cn("relative z-(--z-raised) w-10 border-b border-border-subtle ps-3 align-middle", rowHeight, selection.selected.has(id) && "bg-[var(--brand-primary-50)]")}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Checkbox checked={selection.selected.has(id)} onChange={(on) => setRowSelected(id, on)} label={`Select ${label}`} />
+              </td>
+            )}
             {hasExpand && (
               <td className={cn("relative z-(--z-raised) border-b border-border-subtle ps-2 align-middle xl:hidden", rowHeight)}>
                 <button
@@ -642,5 +758,26 @@ export function DateCell({ value, now }: { value: string | number | Date | null 
       <span aria-hidden>{formatRelative(value, now)}</span>
       <span className="sr-only">{abs}</span>
     </time>
+  );
+}
+
+
+/** Native checkbox (keyboard, screen readers and forms for free), styled to the system. */
+function Checkbox({ checked, indeterminate = false, onChange, label }: {
+  checked: boolean; indeterminate?: boolean; onChange: (on: boolean) => void; label: string;
+}) {
+  const ref = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      aria-label={label}
+      className="size-4 cursor-pointer rounded-sm accent-[var(--brand-primary-600)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+    />
   );
 }

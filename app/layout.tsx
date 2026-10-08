@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Sans } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -32,6 +32,16 @@ const instrument = Instrument_Sans({
   display: "swap",
 });
 
+// Instrument Serif italic: the public site's accent voice, one phrase per
+// headline, paired with Instrument Sans (the same family's proportions).
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: "italic",
+  display: "swap",
+});
+
 const DEFAULT_TITLE = "Blue-IQ | Contract review for SOWs, MSAs and amendments";
 
 // Site-wide defaults. Each public page sets its own title, description and
@@ -60,7 +70,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${plexSans.variable} ${plexMono.variable} ${instrument.variable}`}
+      className={`${plexSans.variable} ${plexMono.variable} ${instrument.variable} ${instrumentSerif.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
         <QueryProvider>

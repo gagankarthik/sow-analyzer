@@ -15,18 +15,31 @@ const AGREEMENT_TYPES = [
   { label: "NDAs", tone: "lp-type-7" },
 ];
 
-/* A two-tone headline and two actions, then the product: a Govern window
-   on a field made of the six product-area colours. The window's sidebar
-   uses the same colour code as the rest of the site. */
+/* What makes Govern different, in place of a logo wall. Every line is true
+   of the product today. */
+const DIFFERENCES = [
+  { claim: "Your playbook, not ours.", proof: "Clauses are checked against the matrix your office already uses, with your fallbacks." },
+  { claim: "Every finding shows its work.", proof: "Each rating cites the clause and the rule it was checked against. Same clause, same answer." },
+  { claim: "Nothing waits without an owner.", proof: "Every contract has one owner, one next step and a clock against its target." },
+  { claim: "Leaders see it without asking.", proof: "Signed, pipeline and held-up value, and where the queue backs up, on one page." },
+];
+
+/* The headline, then the product itself as the key visual: the Govern
+   window framed on a solid brand panel, inset from the top-left and cropped
+   by the panel's right and bottom edges. */
 export function Hero() {
   return (
     <section className="lp-hero" aria-labelledby="hero-title">
       <div className="lp-wrap">
-        <div className="lp-hero-copy">
-          <h1 id="hero-title" className="lp-display">
-            Contract review on your own playbook.{" "}
-            <span className="lp-display-muted">From first read to signature.</span>
-          </h1>
+        <h1 id="hero-title" className="lp-display lp-hero-title">
+          Your playbook, applied to <span className="lp-serif">every contract.</span>
+        </h1>
+        <div className="lp-hero-row">
+          <p className="lp-lede">
+            Blue-IQ Govern is the contract desk for teams that review agreements against their own rules.
+            Sonar checks every clause against your matrix, drafts the redline, and gives each contract an
+            owner, a next step and a clock. After signature, it tracks the obligations and the money.
+          </p>
           <div className="lp-hero-actions">
             <Link href="/signup" className="lp-btn lp-btn-primary lp-btn-lg">
               Request a demo
@@ -40,9 +53,9 @@ export function Hero() {
       </div>
 
       <div className="lp-wrap">
-        <div className="lp-field">
+        <div className="lp-frame">
           <div
-            className="lp-window"
+            className="lp-window lp-frame-window"
             role="img"
             aria-label="Govern reviewing a license agreement: each clause rated against the matrix, who holds it and for how long, and the recommended next step."
           >
@@ -69,11 +82,20 @@ export function Hero() {
             </div>
           </div>
         </div>
+
+        <ul className="lp-facts" aria-label="What makes Govern different">
+          {DIFFERENCES.map((d) => (
+            <li key={d.claim}>
+              <span className="lp-facts-claim">{d.claim}</span>
+              <span className="lp-facts-proof">{d.proof}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="lp-wrap">
         <div className="lp-types">
-          <h2 className="lp-types-label">One playbook for every agreement type</h2>
+          <h2 className="lp-types-label">A playbook for each kind of agreement you sign.</h2>
           <ul className="lp-types-list">
             {AGREEMENT_TYPES.map((type) => (
               <li key={type.label} className={`lp-type ${type.tone}`}>

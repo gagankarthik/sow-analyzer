@@ -209,6 +209,7 @@ export const ACTIVITY_LABEL: Record<ActivityAction, string> = {
   conflict: "Record conflict",
   obligation_added: "Obligation added",
   obligation_done: "Obligation done",
+  obligation_verified: "Obligation verified",
   pi_requested: "Asked the PI or department",
   pi_answered: "PI or department answered",
 }

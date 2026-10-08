@@ -17,6 +17,7 @@ const PROTECTED_PREFIXES = [
   "/dashboard",
   "/reports",
   "/contracts",
+  "/counterparties",
   "/draft",
   "/help",
   "/insights",

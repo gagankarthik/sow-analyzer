@@ -140,3 +140,53 @@ export function useDebouncedValue<T>(value: T, delay = 250): T {
   }, [value, delay]);
   return debounced;
 }
+
+/* ─── Column visibility ─────────────────────────────────────────── */
+
+const COLUMNS_EVENT = "ds-columns-change";
+
+function readHidden(key: string): string {
+  try {
+    return window.localStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Columns the user has hidden, remembered under `storageKey` (a comma list of
+ * column ids). Storage can be unavailable: then the choice lasts the visit.
+ */
+export function useHiddenColumns(storageKey: string | undefined): [Set<string>, (id: string, hidden: boolean) => void] {
+  const key = storageKey ? `${storageKey}:hidden` : "";
+  const [memory, setMemory] = React.useState("");
+  const subscribe = React.useCallback((onChange: () => void) => {
+    window.addEventListener("storage", onChange);
+    window.addEventListener(COLUMNS_EVENT, onChange);
+    return () => {
+      window.removeEventListener("storage", onChange);
+      window.removeEventListener(COLUMNS_EVENT, onChange);
+    };
+  }, []);
+  const stored = React.useSyncExternalStore(subscribe, () => (key ? readHidden(key) : ""), () => "");
+  const raw = stored || memory;
+  const hidden = React.useMemo(() => new Set(raw.split(",").filter(Boolean)), [raw]);
+  const setHidden = React.useCallback(
+    (id: string, isHidden: boolean) => {
+      const next = new Set(hidden);
+      if (isHidden) next.add(id);
+      else next.delete(id);
+      const value = [...next].join(",");
+      setMemory(value);
+      if (!key) return;
+      try {
+        window.localStorage.setItem(key, value);
+        window.dispatchEvent(new Event(COLUMNS_EVENT));
+      } catch {
+        /* storage blocked: the in-memory value above still applies */
+      }
+    },
+    [hidden, key],
+  );
+  return [hidden, setHidden];
+}

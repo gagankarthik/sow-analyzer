@@ -21,6 +21,7 @@ const PRIVATE = [
   "/projects",
   "/renewals",
   "/obligations",
+  "/counterparties",
   "/profile",
   "/settings",
   "/workflow",

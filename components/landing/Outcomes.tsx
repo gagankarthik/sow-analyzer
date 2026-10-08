@@ -20,7 +20,7 @@ const OUTCOMES: Outcome[] = [
   {
     id: "acceleration",
     label: "Acceleration",
-    title: "Agreements reach signature sooner",
+    title: "You see signing get faster, stage by stage",
     body: "Every agreement carries an owner and one next step, and each stage runs against its own target, so nothing waits without someone knowing.",
     area: "workflow",
     visual: <StageMeter />,
@@ -29,7 +29,7 @@ const OUTCOMES: Outcome[] = [
   {
     id: "adoption",
     label: "Adoption",
-    title: "Teams work in it from the first week",
+    title: "Your team is working in it in the first week",
     body: "Upload the agreements you already have. Sonar reads them, and reviewers work from a board and plain-word search, with no new templates to learn.",
     area: "capture",
     visual: <SetupSteps />,
@@ -38,7 +38,7 @@ const OUTCOMES: Outcome[] = [
   {
     id: "efficiency",
     label: "Efficiency",
-    title: "Reviewers read only what deviates",
+    title: "Reviewer time goes to the clauses that deviate",
     body: "Every clause is checked against your matrix, so reviewers open the few that fall outside it, with suggested language already drafted.",
     area: "matrix",
     visual: <ClauseSplit />,
@@ -47,7 +47,7 @@ const OUTCOMES: Outcome[] = [
   {
     id: "optimisation",
     label: "Optimisation",
-    title: "Leaders see where time and money stall",
+    title: "You see where time and money stall",
     body: "Trend and bottleneck reports show which stage, office or term slows signing, and value reporting shows the money held up behind it.",
     area: "trends",
     visual: <TrendLine />,
@@ -61,23 +61,21 @@ export function Outcomes() {
       <div className="lp-wrap lp-outcomes-grid">
         <div className="lp-outcomes-head">
           <h2 id="outcomes-title" className="lp-h2">
-            What changes.{" "}
-            <span className="lp-h2-muted">Faster signatures, less reading and a clear view of where work stalls.</span>
+            What leaders <span className="lp-serif">finally see.</span>
           </h2>
           <p className="lp-body mt-5">
-            Four outcomes, each delivered by something you can see in the product, not a promise on a slide.
+            Where contracts wait, how long signing takes and how much value is held up, without asking anyone
+            for a status. Each outcome comes from something you can open in the product.
           </p>
         </div>
 
         <ol className="lp-ledger">
-          {OUTCOMES.map((o, i) => (
+          {OUTCOMES.map((o) => (
             <li key={o.id} className={`lp-ledger-row lp-area-${o.area}`}>
               <div className="lp-ledger-text">
-                <p className="lp-ledger-label">
-                  <span className="lp-ledger-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                  {o.label}
-                </p>
-                <h3 className="lp-ledger-title">{o.title}</h3>
+                <h3 className="lp-ledger-title">
+                  <span className="lp-ledger-word">{o.label}.</span> {o.title}
+                </h3>
                 <p className="lp-ledger-body">{o.body}</p>
               </div>
               <figure className="lp-ledger-visual">

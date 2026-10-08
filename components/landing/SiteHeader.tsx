@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ArrowRight, ChevronDown, Menu, X } from "@/components/ui/icons";
 import { Logo } from "@/components/landing/primitives";
-import { NAV_MENUS, type NavItem, type NavMenu } from "@/components/landing/site-nav";
+import { NAV_MENUS, PRODUCT_SECTIONS, landingHref, type NavItem, type NavMenu } from "@/components/landing/site-nav";
+import { IconBadge } from "@/components/landing/IconBadge";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
 
 /* Public site header: the mark on the left, the three menus centred, the
@@ -227,11 +228,15 @@ function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void
   );
 }
 
+// Only product areas carry an icon (the area badge); teams, industries and
+// resources are words.
+const PRODUCT_AREA_BY_HREF = new Map<string, string>(PRODUCT_SECTIONS.map((s) => [landingHref(s.id), s.id]));
+
 function MenuLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
-  const ItemIcon = item.icon;
+  const area = PRODUCT_AREA_BY_HREF.get(item.href);
   return (
     <Link href={item.href} className="lp-menu-item" onClick={onNavigate}>
-      <ItemIcon size={20} className="lp-menu-icon" />
+      {area ? <IconBadge icon={item.icon} area={area} /> : null}
       <span className="min-w-0">
         <span className="flex flex-wrap items-center gap-x-2 text-sm font-semibold text-lp-ink">
           {item.label}

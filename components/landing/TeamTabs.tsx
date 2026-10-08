@@ -93,8 +93,8 @@ export function TeamTabs() {
         <span key={id} id={id} className="lp-anchor" aria-hidden="true" />
       ))}
       <div className="lp-wrap">
-        <h2 id="teams-title" className="lp-h2 max-w-2xl">
-          One record for every office that touches an agreement.
+        <h2 id="teams-title" className="lp-h2">
+          Every office works from <span className="lp-serif">the same record.</span>
         </h2>
 
         <div role="tablist" aria-label="Teams" className="lp-pills mt-8">
@@ -121,8 +121,7 @@ export function TeamTabs() {
 
         <div role="tabpanel" id="team-panel" aria-labelledby={`team-tab-${team.id}`} className="lp-team">
           <div>
-            <team.icon size={40} className="lp-spec-icon" />
-            <h3 className="lp-h3 mt-4">{team.label}</h3>
+            <h3 className="lp-h3">{team.label}</h3>
             <p className="mt-3 text-lp-ink-2">{content.body}</p>
             <ul className="lp-list mt-5">
               {content.points.map((point) => (

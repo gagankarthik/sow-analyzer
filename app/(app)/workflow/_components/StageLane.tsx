@@ -63,7 +63,7 @@ export function PipelineStrip({
 }) {
   const group = (title: string, stages: Stage[]) => (
     <div className="flex min-w-0 flex-col gap-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--ink-600)]">{title}</p>
+      <p className="text-sm font-semibold text-foreground">{title}</p>
       <ol className="flex min-w-0 items-stretch">
         {stages.map((s, i) => {
           const sum = summaries.get(s)!;

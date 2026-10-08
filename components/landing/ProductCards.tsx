@@ -351,3 +351,61 @@ export function IntegrationsCard({ className, status }: { className?: string; st
     </div>
   );
 }
+
+/* ─── Redline: one clause as review shows it ──────────────────── */
+
+/** One clause with the struck text and Sonar's suggested language, the
+ *  rule it cites, and the reviewer's two choices. An example agreement. */
+export function RedlineCard({ className }: { className?: string }) {
+  return (
+    <div className={`lp-pcard lp-pcard-main ${className ?? ""}`}>
+      <div className="lp-pcard-head">
+        <div>
+          <p className="lp-pcard-label">Example redline · §9 Indemnification</p>
+          <p className="lp-pcard-title">Exclusive license: Wearable lactate biosensor</p>
+        </div>
+        <OutcomeChip outcome="deviates" />
+      </div>
+      <p className="lp-redline">
+        Licensee shall indemnify Licensor against third-party claims arising from the Licensed Products
+        <del className="lp-redline-del">, and Licensor shall indemnify Licensee for any breach of this Agreement without limitation</del>
+        <ins className="lp-redline-ins">, and each party&rsquo;s liability shall not exceed the fees paid in the twelve months before the claim</ins>.
+      </p>
+      <p className="lp-redline-rule">
+        Rule: your matrix caps liability at fees paid; uncapped indemnity goes to Legal Affairs.
+      </p>
+      <div className="lp-redline-actions">
+        <span className="lp-pcard-button">Accept suggestion</span>
+        <span className="lp-redline-secondary">Edit language</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Clause split: what a reviewer actually opens ────────────── */
+
+/** Forty clauses checked, three to read: the review summary. Example. */
+export function ClauseSplitCard({ className }: { className?: string }) {
+  const parts = [
+    { key: "within", label: "Within the matrix", n: 34, width: "w-[85%]" },
+    { key: "fallback", label: "Acceptable fallback", n: 3, width: "w-[7.5%]" },
+    { key: "deviates", label: "For you to read", n: 3, width: "w-[7.5%]" },
+  ];
+  return (
+    <div className={`lp-pcard ${className ?? ""}`}>
+      <p className="lp-pcard-label">Example agreement · 40 clauses checked</p>
+      <p className="lp-pcard-strong">3 clauses need you. The rest match your matrix.</p>
+      <div className="lp-split-track" aria-hidden="true">
+        {parts.map((p) => <span key={p.key} className={`lp-split-seg lp-split-${p.key} ${p.width}`} />)}
+      </div>
+      <ul className="lp-split-key">
+        {parts.map((p) => (
+          <li key={p.key}>
+            <span className={`lp-split-swatch lp-split-${p.key}`} aria-hidden="true" />
+            <span className="lp-split-n">{p.n}</span> {p.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

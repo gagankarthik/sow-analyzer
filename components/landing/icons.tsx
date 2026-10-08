@@ -11,6 +11,8 @@ import {
   CircleDollarSign,
   Dna,
   FileBadge,
+  FileCheck,
+  FilePen,
   FileText,
   FileUp,
   FlaskConical,
@@ -40,7 +42,7 @@ import {
 export type IconProps = { className?: string; size?: number };
 export type Icon = (props: IconProps) => ReactNode;
 
-const STROKE = 1.75;
+const STROKE = 1.5;
 
 function icon(Glyph: LucideIcon): Icon {
   const Wrapped: Icon = ({ size = 20, className }) => (
@@ -87,3 +89,5 @@ export const IconSign = icon(PenLine);
 export const IconCalendar = icon(CalendarClock);
 export const IconRenew = icon(RefreshCw);
 export const IconReport = icon(ChartColumn);
+export const IconEdits = icon(FilePen);
+export const IconSigned = icon(FileCheck);

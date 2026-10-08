@@ -74,6 +74,10 @@ export interface Obligation {
   status: "open" | "done"
   source: "sonar" | "manual"
   completedAt: string | null
+  /** Sonar-found obligations stay unverified until a person confirms them. */
+  verified: boolean
+  verifiedAt: string | null
+  verifiedBy: Person | null
 }
 
 export interface IncomeItem {
@@ -223,7 +227,7 @@ export type ActivityAction =
   | "rejected" | "comment" | "stage_changed" | "blocker_added" | "blocker_closed" | "blocker_edited"
   | "blocker_reopened" | "rescored" | "signature_sent" | "signed" | "activated" | "closed" | "reopened"
   | "revision_received" | "field_updated" | "overdue" | "notification_sent" | "sync" | "conflict"
-  | "obligation_added" | "obligation_done" | "pi_requested" | "pi_answered"
+  | "obligation_added" | "obligation_done" | "obligation_verified" | "pi_requested" | "pi_answered"
 
 export interface ActivityEntry {
   id: string
@@ -318,6 +322,7 @@ export interface ObligationInput {
   dueDate?: string | null
   amount?: number | null
   status?: "open" | "done"
+  verified?: boolean
 }
 
 // ── Matrix ─────────────────────────────────────────────────────────────────
