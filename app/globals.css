@@ -859,3 +859,33 @@ html { scroll-behavior: smooth; }
 .docx-page em { font-style: italic; }
 .docx-page a { color: var(--brand-primary-600); text-decoration: underline; }
 .docx-page img { max-width: 100%; height: auto; }
+
+/* ─── Person avatars ────────────────────────────────────────────────────────
+   Identity colours: each person keeps one soft tint (picked from their email)
+   so a stack reads as different people at a glance. They mark who, never
+   status or risk. Every pair meets WCAG AA for the initials. */
+:root {
+  --avatar-1-bg: #DCE8FE; --avatar-1-fg: #1D4ED8;
+  --avatar-2-bg: #E9E3FD; --avatar-2-fg: #5B21B6;
+  --avatar-3-bg: #D5F2E6; --avatar-3-fg: #0B6B4A;
+  --avatar-4-bg: #FDE5D2; --avatar-4-fg: #9A3412;
+  --avatar-5-bg: #FBE0EC; --avatar-5-fg: #9D174D;
+  --avatar-6-bg: #D6EEF5; --avatar-6-fg: #0E6380;
+  --avatar-7-bg: #F6EBC8; --avatar-7-fg: #7A5300;
+  --avatar-8-bg: #E3E7EE; --avatar-8-fg: #334155;
+}
+.ds-avatar[data-tone="1"] { background: var(--avatar-1-bg); color: var(--avatar-1-fg); }
+.ds-avatar[data-tone="2"] { background: var(--avatar-2-bg); color: var(--avatar-2-fg); }
+.ds-avatar[data-tone="3"] { background: var(--avatar-3-bg); color: var(--avatar-3-fg); }
+.ds-avatar[data-tone="4"] { background: var(--avatar-4-bg); color: var(--avatar-4-fg); }
+.ds-avatar[data-tone="5"] { background: var(--avatar-5-bg); color: var(--avatar-5-fg); }
+.ds-avatar[data-tone="6"] { background: var(--avatar-6-bg); color: var(--avatar-6-fg); }
+.ds-avatar[data-tone="7"] { background: var(--avatar-7-bg); color: var(--avatar-7-fg); }
+.ds-avatar[data-tone="8"] { background: var(--avatar-8-bg); color: var(--avatar-8-fg); }
+
+/* Stack: overlapping, a white ring cuts each one out; hovering a face lifts it. */
+.ds-avatar-stack { display: inline-flex; align-items: center; isolation: isolate; }
+.ds-avatar-stack > * + * { margin-left: -0.5rem; }
+.ds-avatar-stack > * { position: relative; transition: transform 150ms ease-out; box-shadow: 0 0 0 2px var(--surface-raised, #fff); }
+.ds-avatar-stack > *:hover, .ds-avatar-stack > *:focus-visible { transform: translateY(-2px); z-index: 10; }
+@media (prefers-reduced-motion: reduce) { .ds-avatar-stack > * { transition: none; } }

@@ -3,6 +3,7 @@
 // and the reports. Colour is never the only signal: each carries its words.
 
 import { cn } from "@/lib/utils";
+import { Avatar } from "@/components/ds/Avatar";
 import { Clock, Building2, Users, UserRound, PenLine, CircleDashed } from "@/components/ui/icons";
 import { SLA_LABEL, TIER_HINT, TIER_LABEL, WAITING_ON_LABEL, daysLabel } from "@/lib/govern/labels";
 import type { SlaStatus, Tier, WaitingOn, WaitingOnKind } from "@/lib/govern/types";
@@ -111,19 +112,8 @@ export function WaitingOnChip({ waitingOn, className }: { waitingOn: WaitingOn; 
   );
 }
 
-/** Initials avatar for an owner. */
+/** Initials avatar for one person, in their identity tint (see ds/Avatar). */
 export function PersonDot({ name, email, className }: { name: string | null; email: string; className?: string }) {
   const label = (name || email).trim();
-  const initials = label.split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
-  return (
-    <span
-      title={label}
-      className={cn(
-        "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--ink-100)] text-xs font-semibold text-[var(--ink-700)] ring-1 ring-[var(--ink-200)]",
-        className,
-      )}
-    >
-      {initials || "?"}
-    </span>
-  );
+  return <Avatar name={name} email={email} size="base" title={label} className={className} />;
 }

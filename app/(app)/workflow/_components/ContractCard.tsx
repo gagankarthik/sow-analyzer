@@ -7,9 +7,11 @@
 import { memo, useState } from "react";
 import Link from "next/link";
 import { Loader2, ShieldAlert, CheckCircle2, CircleDashed, UserRound } from "@/components/ui/icons";
-import { DaysInStage, PersonDot, WaitingOnChip } from "@/components/govern/primitives";
+import { DaysInStage, WaitingOnChip } from "@/components/govern/primitives";
+import { AvatarStack } from "@/components/ds/Avatar";
+import { contractPeople } from "@/lib/govern/people";
 import { ActionDialogHost, ContractActionsMenu, NextStepButton, availableActions } from "@/components/govern/actions";
-import { AGREEMENT_TYPE_LABEL, STATE_LABEL, personName, plural } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, STATE_LABEL, plural } from "@/lib/govern/labels";
 import { formatCompact } from "@/lib/govern/metrics";
 import type { Contract } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
@@ -83,10 +85,7 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
           <dt className="sr-only">Owner</dt>
           <dd className="flex min-w-0 items-center gap-2">
             {c.owner ? (
-              <>
-                <PersonDot name={c.owner.name} email={c.owner.email} />
-                <span className="truncate text-[var(--ink-700)]">{personName(c.owner)}</span>
-              </>
+              <AvatarStack people={contractPeople(c)} size="sm" showSoloName className="text-[var(--ink-700)]" />
             ) : !canAssign ? (
               <span className="text-[var(--ink-600)]">No owner</span>
             ) : (

@@ -13,7 +13,9 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable, type DataTableColumn } from "@/components/ds/DataTable";
 import { FilterPill, optionsFrom } from "@/components/ds/FilterPill";
-import { DaysInStage, PersonDot, WaitingOnChip } from "@/components/govern/primitives";
+import { DaysInStage, WaitingOnChip } from "@/components/govern/primitives";
+import { AvatarStack } from "@/components/ds/Avatar";
+import { contractPeople } from "@/lib/govern/people";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -98,11 +100,9 @@ function Contracts() {
     },
     { id: "waiting", header: "Waiting on", card: "status", cell: (c) => <WaitingOnChip waitingOn={c.waitingOn} />, sortValue: (c) => c.waitingOn.kind },
     {
-      id: "owner", header: "Owner", priority: 2,
+      id: "owner", header: "People", priority: 2,
       sortValue: (c) => c.owner?.name?.toLowerCase() ?? c.owner?.email ?? null,
-      cell: (c) => c.owner
-        ? <span className="flex items-center gap-2"><PersonDot name={c.owner.name} email={c.owner.email} className="size-6" /><span className="truncate">{c.owner.name || c.owner.email}</span></span>
-        : <span className="text-[var(--warning-fg)]">Unassigned</span>,
+      cell: (c) => <AvatarStack people={contractPeople(c)} showSoloName />,
     },
     { id: "days", header: "In step", numeric: true, sortFirst: "desc", sortValue: (c) => c.daysInStage, cell: (c) => <DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} /> },
     { id: "value", header: "Value", numeric: true, sortFirst: "desc", sortValue: (c) => c.value, cell: (c) => contractValueText(c) },

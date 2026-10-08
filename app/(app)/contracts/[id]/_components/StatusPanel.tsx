@@ -7,6 +7,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CircleDashed, Coins, UserRound } from "@/components/ui/icons";
 import { DaysInStage, PersonDot, WaitingOnChip } from "@/components/govern/primitives";
+import { AvatarStack } from "@/components/ds/Avatar";
+import { contractPeople } from "@/lib/govern/people";
 import { ActionDialogHost, availableActions, type ActionKind } from "@/components/govern/actions";
 import { DIRECTION_LABEL, STAGE_LABEL, STATE_LABEL, daysLabel, personName, plural } from "@/lib/govern/labels";
 import { contractValueText } from "@/lib/govern/metrics";
@@ -22,6 +24,7 @@ export function StatusPanel({ contract: c, onShowMissing }: { contract: Contract
   const [dialog, setDialog] = useState<ActionKind | null>(null);
   const closed = c.state === "rejected" || c.state === "closed";
   const canAssign = availableActions(c).includes("assign");
+  const people = contractPeople(c);
   const gaps = c.captureGaps?.length ?? 0;
 
   return (
@@ -48,6 +51,12 @@ export function StatusPanel({ contract: c, onShowMissing }: { contract: Contract
             </Button>
           )}
         </div>
+        {people.length > 1 && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-[var(--ink-600)]">People</span>
+            <AvatarStack people={people} max={5} />
+          </div>
+        )}
       </div>
 
       {/* How long */}

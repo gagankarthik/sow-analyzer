@@ -33,7 +33,7 @@ export { KpiTile, StatGroup, Delta, type KpiTileProps, type DeltaProps, type Sta
 export { KeyValueList, type KeyValueItem, type KeyValueListProps } from "./KeyValueList";
 export { StatusPill, Tag, type StatusPillProps, type TagProps } from "./StatusPill";
 export { OutcomeBadge, OutcomeIcon, OUTCOME_COLOR, OUTCOME_LABEL, OUTCOME_HINT, type Outcome } from "./OutcomeBadge";
-export { Avatar, AvatarGroup, initials, type AvatarProps } from "./Avatar";
+export { Avatar, AvatarGroup, AvatarStack, avatarTone, initials, type AvatarProps, type StackPerson } from "./Avatar";
 export { Value, type ValueProps } from "./Value";
 export { ProgressMeter, BarMeter, Swatch, HatchPattern, type BarMeterSegment } from "./Meter";
 export { Timeline, ActivityFeed, type TimelineEvent } from "./Timeline";

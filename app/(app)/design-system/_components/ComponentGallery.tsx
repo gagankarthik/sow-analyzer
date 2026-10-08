@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   ActivityFeed,
   Avatar,
-  AvatarGroup,
+  AvatarStack,
   BarMeter,
   Button,
   Callout,
@@ -238,13 +238,16 @@ function DataDisplayChapter() {
           </Variant>
         </Specimen>
 
-        <Specimen name="Avatar and Legend" importPath="@/components/ds" purpose="People are never colour-coded; unassigned is a dashed ring. Legends use ink text beside a swatch.">
+        <Specimen name="Avatar and Legend" importPath="@/components/ds" purpose="Each person keeps one identity tint (never status); unassigned is a dashed ring. Stacks overlap with a white ring; hover a face for name and role. Legends use ink text beside a swatch.">
           <div className="flex flex-wrap items-center gap-3">
             <Avatar name="Avery Chen" size="lg" />
             <Avatar name="Daniel Okafor" size="md" />
             <Avatar email="raman.41@example.org" />
             <Avatar name={null} email={null} />
-            <AvatarGroup people={[{ name: "Avery Chen" }, { name: "Grace Chen" }, { name: "Tom Lindqvist" }, { name: "Priya Raman" }, { name: "Daniel Okafor" }]} />
+            <AvatarStack people={[{ name: "Avery Chen", roles: ["Owner"] }, { name: "Grace Chen", roles: ["Approved for Legal Affairs"] }, { name: "Tom Lindqvist", roles: ["Signatory"] }]} />
+            <AvatarStack people={[{ name: "Avery Chen", roles: ["Owner"] }, { name: "Grace Chen" }, { name: "Tom Lindqvist" }, { name: "Priya Raman" }, { name: "Daniel Okafor" }]} />
+            <AvatarStack people={[{ name: "Avery Chen", roles: ["Owner"] }]} showSoloName />
+            <AvatarStack people={[]} />
           </div>
           <Legend
             items={[
