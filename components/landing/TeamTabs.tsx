@@ -88,7 +88,7 @@ export function TeamTabs() {
   };
 
   return (
-    <section id="teams" className="lp-section lp-band relative scroll-mt-20" aria-labelledby="teams-title">
+    <section id="teams" className="lp-section relative scroll-mt-20" aria-labelledby="teams-title">
       {IDS.map((id) => (
         <span key={id} id={id} className="lp-anchor" aria-hidden="true" />
       ))}

@@ -11,7 +11,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { HBarChart } from "@/components/charts/HBarChart";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { ArrowRight } from "@/components/ui/icons";
 import { contractsTable, describeFilters, type CellValue, type ExportReport, type ExportTable } from "@/lib/govern/export";
 import { DIRECTION_HINT, DIRECTION_LABEL, INCOME_KIND_LABEL, STAGE_LABEL, plural } from "@/lib/govern/labels";
@@ -21,7 +20,7 @@ import {
 } from "@/lib/govern/metrics";
 import { useContracts } from "@/lib/govern/queries";
 import type { Direction } from "@/lib/govern/types";
-import { ContractRow } from "../_components/ContractRow";
+import { ContractRow } from "../../home/_components/ContractRow";
 import { ExportButtons } from "../_components/ExportButtons";
 import { LegendDot, MoneySplitBar, VALUE_FILL } from "../_components/ReportCharts";
 import {
@@ -38,7 +37,7 @@ const DIRECTIONS: Direction[] = ["incoming", "outgoing"];
 
 export default function ValueReportPage() {
   const router = useRouter();
-  const { data, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = useContracts();
+  const { data, isLoading, isError, error, refetch } = useContracts();
   const all = useMemo(() => data?.contracts ?? [], [data]);
   const [filters, setFilters] = useState<ContractFilters>(NO_FILTERS);
   const options = useMemo(() => filterOptions(all), [all]);
@@ -156,7 +155,6 @@ export default function ValueReportPage() {
         subtitle="What is signed, what is on the way, and what slow steps are holding up. Money in and money out are reported separately."
         actions={
           <>
-            <LastUpdated updatedAt={dataUpdatedAt || undefined} isFetching={isFetching} onRefresh={() => void refetch()} failed={isError && !!data} />
             <ExportButtons build={buildReport} disabled={!data || all.length === 0} />
           </>
         }
@@ -201,7 +199,7 @@ export default function ValueReportPage() {
                   const any = s.current.totals.length + s.potential.totals.length > 0;
                   return (
                     <div key={d} className="min-w-0">
-                      <h3 className="text-lg font-semibold text-foreground">{DIRECTION_LABEL[d]}</h3>
+                      <h3 className="text-base font-semibold text-foreground">{DIRECTION_LABEL[d]}</h3>
                       <p className="text-sm text-[var(--ink-600)]">{DIRECTION_HINT[d]}</p>
                       {any ? (
                         <>
@@ -303,7 +301,7 @@ export default function ValueReportPage() {
               {view.noValue.length === 0 ? (
                 <p className="text-base text-[var(--ink-600)]">Every open or active contract has a value. The totals are complete.</p>
               ) : (
-                <ul className="divide-y divide-border">
+                <ul className="-mx-4 -my-4 divide-y divide-border md:-mx-6 md:-my-6">
                   {view.noValue.map((c) => (
                     <ContractRow key={c.contractId} c={c} reason="No value recorded yet. Add the value on the contract page." />
                   ))}

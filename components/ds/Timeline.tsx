@@ -71,7 +71,7 @@ export function Timeline({
     <div className={cn("flex min-w-0 flex-col gap-6", className)}>
       {groups.map((g) => (
         <section key={g.day || "all"} aria-label={g.day || label}>
-          {g.day && <h4 className="mb-3 text-body font-semibold text-fg-primary">{g.day}</h4>}
+          {g.day && <h4 className="text-sm font-semibold mb-3 text-fg-primary">{g.day}</h4>}
           <ol className="relative flex flex-col gap-4 before:absolute before:top-2 before:bottom-2 before:start-[15px] before:w-px before:bg-border-default">
             {g.items.map((e) => (
               <TimelineItem key={e.id} event={e} />

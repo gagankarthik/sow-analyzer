@@ -16,7 +16,7 @@ import { isPermanentError } from "@/lib/api";
 import { resolveFeatures, type GovernFeature, type GovernFeatureFlags } from "./features";
 import { documentKeys } from "@/lib/queries/documents";
 import {
-  addBlocker, addObligation, createContract, getCaptureReport, getContract, getTrends, getGovernMe, getMatrix, getMatrixVersion, getSyncLog,
+  addBlocker, addObligation, createContract, listObligations, getCaptureReport, getContract, getTrends, getGovernMe, getMatrix, getMatrixVersion, getSyncLog,
   getUnmatchedContracts, getWorkflowSettings, importMatrix, listConnectors, listContracts,
   patchContract, rescoreContract, runConnectorSync, runContractAction, saveConnector, saveIncome,
   saveMatrix, saveWorkflowSettings, updateBlocker, updateObligation,
@@ -40,6 +40,7 @@ export const governKeys = {
   me: ["govern", "me"] as const,
   trends: (g: string, n: number) => ["govern", "trends", g, n] as const,
   capture: ["govern", "capture"] as const,
+  obligations: ["govern", "obligations"] as const,
 };
 
 const MINUTE = 60_000;
@@ -132,6 +133,7 @@ function useApplyContract() {
     qc.setQueryData(governKeys.contract(contract.contractId), contract);
     void qc.invalidateQueries({ queryKey: governKeys.allContracts });
     void qc.invalidateQueries({ queryKey: governKeys.unmatched });
+    void qc.invalidateQueries({ queryKey: governKeys.obligations });
     void qc.invalidateQueries({ queryKey: documentKeys.all });
   };
 }
@@ -179,6 +181,17 @@ export function useUpdateBlocker(id: string) {
   });
 }
 
+/** Every open, dated obligation across the contracts the user can see. */
+export function useObligations() {
+  return useQuery({
+    queryKey: governKeys.obligations,
+    queryFn: listObligations,
+    staleTime: MINUTE,
+    refetchOnWindowFocus: true,
+    retry: retryTransient,
+  });
+}
+
 export function useAddObligation(id: string) {
   const apply = useApplyContract();
   return useMutation({
@@ -203,9 +216,9 @@ export function useSaveIncome(id: string) {
 export function useSaveMatrix() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ playbooks, note, effectiveDate }: {
-      playbooks: Partial<Record<AgreementType, MatrixPlaybook>>; note?: string; effectiveDate?: string
-    }) => saveMatrix(playbooks, note, effectiveDate),
+    mutationFn: ({ playbooks, note, effectiveDate, homeState }: {
+      playbooks: Partial<Record<AgreementType, MatrixPlaybook>>; note?: string; effectiveDate?: string; homeState?: string | null
+    }) => saveMatrix(playbooks, note, effectiveDate, homeState),
     onSuccess: () => void qc.invalidateQueries({ queryKey: governKeys.matrix }),
   });
 }

@@ -141,7 +141,7 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
     <div className="grid gap-5">
       <DialogHeader>
         <DialogTitle className="text-lg font-semibold">Import a review matrix</DialogTitle>
-        <DialogDescription>Load OSU&apos;s existing matrix from Excel or CSV instead of typing it in.</DialogDescription>
+        <DialogDescription>Load your existing matrix from Excel or CSV instead of typing it in.</DialogDescription>
       </DialogHeader>
 
       <ol className="grid grid-cols-4 gap-2" aria-label="Import steps">

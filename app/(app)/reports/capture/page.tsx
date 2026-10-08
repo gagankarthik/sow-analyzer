@@ -9,7 +9,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { HBarChart } from "@/components/charts/HBarChart";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { CheckCircle2, ChevronRight, FileText, X } from "@/components/ui/icons";
 import { CAPTURE_GAP_LABEL, STAGE_LABEL, plural } from "@/lib/govern/labels";
 import { useCaptureReport, useContracts } from "@/lib/govern/queries";
@@ -32,7 +31,7 @@ export default function CapturePage() {
   const byId = useMemo(() => new Map((contractsQuery.data?.contracts ?? []).map((c) => [c.contractId, c])), [contractsQuery.data]);
   const [selected, setSelected] = useState<CaptureGap | null>(null);
 
-  const { data, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = report;
+  const { data, isLoading, isError, error, refetch } = report;
   const gaps = useMemo(() => [...(data?.gaps ?? [])].filter((g) => g.count > 0).sort((a, b) => b.count - a.count), [data]);
   const missed = data?.missedDocuments ?? [];
   const affected = new Set(gaps.flatMap((g) => g.contractIds)).size;
@@ -47,7 +46,6 @@ export default function CapturePage() {
         subtitle="Details Govern could not read from an agreement and nobody has entered yet, and any document that did not become a contract."
         actions={
           <>
-            <LastUpdated updatedAt={dataUpdatedAt || undefined} isFetching={isFetching} onRefresh={() => void refetch()} failed={isError && !!data} />
             <ExportButtons build={() => buildCaptureReport(data as CaptureReport, byId)} disabled={!data || allClear} />
           </>
         }
@@ -61,7 +59,7 @@ export default function CapturePage() {
           <div className="flex flex-col items-start gap-5 rounded-2xl border border-[color-mix(in_srgb,var(--success)_25%,transparent)] bg-[var(--success-soft)] px-6 py-10 md:flex-row md:items-center md:px-10 md:py-14">
             <CheckCircle2 size={48} strokeWidth={1.5} className="shrink-0 text-[var(--success)]" aria-hidden />
             <div>
-              <h2 className="text-[clamp(24px,3vw,32px)] font-semibold leading-tight tracking-[-0.02em] text-foreground">Everything captured</h2>
+              <h2 className="text-lg font-semibold leading-tight tracking-[-0.02em] text-foreground">Everything captured</h2>
               <p className="mt-2 max-w-[54ch] text-lg leading-relaxed text-[var(--ink-700)]">
                 Every document became a contract, and every contract has its value, parties, PI, department, dates and system references.
                 {" "}{reconciledText(data?.lastReconciledAt ?? null)}

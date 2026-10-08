@@ -49,7 +49,7 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
 
       {/* Title: the link that covers the card */}
       <div className="-mt-1.5">
-        <h3 className="line-clamp-2 break-words text-[15px] font-semibold leading-snug text-foreground">
+        <h3 className="text-base font-semibold line-clamp-2 break-words leading-snug text-foreground">
           <Link
             href={href}
             className="rounded-sm after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[var(--brand-primary-400)] group-hover:text-[var(--brand-primary-700)]"

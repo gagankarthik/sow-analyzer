@@ -5,7 +5,7 @@
 // on time and current (signed) value, amber for running late and held-up
 // value, red for overdue (hatched, so it never relies on hue alone next to
 // amber), grey for no target, and a mid brand step for potential value
-// that OSU is still working on. Every mark has its number in text beside it,
+// that you are still working on. Every mark has its number in text beside it,
 // and every chart has a table twin.
 
 import * as React from "react";
@@ -30,8 +30,8 @@ export const SLA_FILL: Record<SlaStatus, string> = {
 
 /** Value buckets. Potential vs held up is an adjacent pair, so held up is also hatched. */
 export const VALUE_FILL = {
-  current: "var(--success)",
-  potential: "var(--brand-primary-400)",
+  current: "var(--viz-primary)",
+  potential: "var(--viz-compare)",
   heldUp: "var(--warning)",
 } as const;
 
@@ -261,7 +261,7 @@ export function StageFlow({
               <svg className="mt-3 block w-full overflow-visible" height="18" aria-hidden>
                 <rect x="0" y="5" width="100%" height="8" rx="4" fill="var(--panel)" />
                 {q.averageDays !== null && q.averageDays > 0 && (
-                  <rect x="0" y="5" width={`${avgPct}%`} height="8" rx="4" fill={SLA_FILL[tone === "none" ? "on_track" : tone]} />
+                  <>{tone === "red" && <Hatch id={`stage-hatch-${q.stage}`} color={SLA_FILL.red} />}<rect x="0" y="5" width={`${avgPct}%`} height="8" rx="4" fill={tone === "red" ? `url(#stage-hatch-${q.stage})` : SLA_FILL[tone === "none" ? "on_track" : tone]} /></>
                 )}
                 {targetPct !== null && (
                   <line x1={`${targetPct}%`} x2={`${targetPct}%`} y1="0" y2="18" stroke="var(--ink-800)" strokeWidth="2" strokeLinecap="round" />
@@ -306,7 +306,7 @@ export function StageFlow({
         </span>
         <LegendDot color={SLA_FILL.on_track} label="Average within target" />
         <LegendDot color={SLA_FILL.amber} label="Over target" />
-        <LegendDot color={SLA_FILL.red} label={`Over ${redAfter}× target`} />
+        <LegendDot color={SLA_FILL.red} hatched label={`Over ${redAfter}× target`} />
       </div>
       <ChartDataTable {...stageTable(queues, targets)} />
     </div>

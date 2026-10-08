@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -45,7 +44,7 @@ const CHECK_OPTIONS: { value: CheckFilter; label: string }[] = [
 const typeName = (r: PlaybookRule) => (r.isCustomType ? r.clauseType : categoryLabel(r.clauseType));
 
 export default function PlaybookPage() {
-  const { data: playbook, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = usePlaybook();
+  const { data: playbook, isLoading, isError, error, isFetching, refetch } = usePlaybook();
   // Custom clause types found in the user's documents, offered when adding a rule.
   const { data: docs } = useDocuments();
   const revert = useRevertPlaybookRule();
@@ -106,32 +105,31 @@ export default function PlaybookPage() {
         title="Playbook"
         subtitle="The standard positions your documents are graded against, clause type by clause type."
         back={{ href: "/settings", label: "Settings" }}
-        actions={<LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />}
       />
 
       <SettingsLayout>
         {/* Focal block: how many rules, and exactly when a change takes effect. */}
-        <div className="grid grid-cols-1 gap-4 rounded-xl bg-[var(--navy-800)] p-5 text-white md:grid-cols-12 md:gap-8">
+        <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs md:grid-cols-12 md:gap-8">
           <div className="min-w-0 md:col-span-4">
-            <div className="text-sm font-medium text-[var(--navy-100)]">Rules in your playbook</div>
+            <div className="text-sm font-medium text-[var(--ink-600)]">Rules in your playbook</div>
             <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-              <span className="text-4xl font-semibold leading-none tracking-tight tabular-nums">{playbook ? rules.length : "—"}</span>
+              <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">{playbook ? rules.length : "—"}</span>
               {playbook && (
-                <span className="text-base text-[var(--navy-100)]">
+                <span className="text-base text-[var(--ink-600)]">
                   {playbook.customRuleCount === 0 ? "all built-in defaults" : `${playbook.customRuleCount} yours`}
                 </span>
               )}
             </div>
             {playbook && (
-              <p className="mt-2 text-sm text-[var(--navy-100)]">
+              <p className="mt-2 text-sm text-[var(--ink-600)]">
                 {autoCount} with an automatic check · {rules.length - autoCount} flagged for you to compare
               </p>
             )}
           </div>
-          <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--navy-100)] md:col-span-8">
+          <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--ink-600)] md:col-span-8">
             {playbook ? (
               <>
-                <p><span className="font-semibold text-white">A change applies the next time a document is analysed or re-analysed.</span> Documents already analysed keep the result they were given.</p>
+                <p><span className="font-semibold text-foreground">A change applies the next time a document is analysed or re-analysed.</span> Documents already analysed keep the result they were given.</p>
                 <p>A document is graded against the playbook of the workspace it was uploaded into: a document someone else uploaded and shared with you was graded against their playbook, not this one.</p>
                 <p>A clause whose type has no rule here is reported as &ldquo;no rule&rdquo;. That is not a pass: nothing was checked.</p>
               </>

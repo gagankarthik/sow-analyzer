@@ -38,7 +38,7 @@ export function NotificationsSection({
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] lg:gap-8">
         <div className="grid content-start gap-3">
-          <ChannelToggle id={`${uid}-email`} icon={<Mail size={16} />} title="Email" hint="Sent from Blue IQ to the person's OSU address." checked={n.email} disabled={readOnly} onChange={(email) => setN({ email })} />
+          <ChannelToggle id={`${uid}-email`} icon={<Mail size={16} />} title="Email" hint="Sent from Blue IQ to the person's work address." checked={n.email} disabled={readOnly} onChange={(email) => setN({ email })} />
           <ChannelToggle id={`${uid}-teams`} icon={<MessageSquare size={16} />} title="Microsoft Teams" hint="Posted to the channel behind the webhook below." checked={n.teams} disabled={readOnly} onChange={(teams) => setN({ teams })} />
 
           <div className="grid gap-1.5 rounded-lg border border-border p-3">

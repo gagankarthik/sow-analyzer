@@ -72,7 +72,7 @@ function Group({ state, items, docId }: { state: KeyDateState; items: DerivedKey
   return (
     <section aria-labelledby={headingId}>
       <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <h3 id={headingId} className="text-lg font-semibold tracking-tight text-foreground">{stateLabel(state)}</h3>
+        <h3 id={headingId} className="text-base font-semibold tracking-tight text-foreground">{stateLabel(state)}</h3>
         <span className="text-sm tabular-nums text-muted-foreground">{items.length}</span>
         <p className="basis-full text-sm text-[var(--ink-600)]">{GROUP_HINT[state]}</p>
       </div>
@@ -106,7 +106,7 @@ function Entry({ item: k, docId }: { item: DerivedKeyDate; docId: string }) {
     )}>
       <div className="px-4 py-3">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <h4 className="min-w-0 text-base font-semibold text-foreground [overflow-wrap:anywhere]">{k.label}</h4>
+          <h4 className="text-sm font-semibold min-w-0 text-foreground [overflow-wrap:anywhere]">{k.label}</h4>
           <KindTag kind={k.kind} />
           {k.amount !== null && (
             <span className="text-sm font-semibold tabular-nums text-foreground">{fmtMoney(k.amount, k.currency)}</span>

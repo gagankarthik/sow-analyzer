@@ -4,9 +4,10 @@
 // card with its owner, clock, blockers and one next step. Status changes only
 // through actions people take, so there is no drag-and-drop.
 //
-// Layout: on a wide screen the board shows two bands of four lanes (before and
-// after signature), so all eight stages fit without sideways scrolling. Below
-// that (iPad and phone) a stage picker shows one stage at a time as a grid.
+// Layout: a pipeline strip shows all eight stages in order with their counts
+// and health; selecting a stage drives the board. On a wide screen the board
+// shows the four lanes of that stage's phase (before or after signature);
+// below that it shows the selected stage's agreements as a grid.
 
 import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
@@ -14,18 +15,15 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { LastUpdated } from "@/components/ui/LastUpdated";
-import { Plus, Search } from "@/components/ui/icons";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileSignature, Plus, Search } from "@/components/ui/icons";
 import { isForbidden } from "@/lib/api";
 import { PRE_SIGNATURE_STAGES, STAGES, STAGE_LABEL, plural } from "@/lib/govern/labels";
 import { NO_FILTERS, applyFilters, byUrgency, filterOptions, isFiltering, isOpen, type ContractFilters } from "@/lib/govern/metrics";
 import { useContracts } from "@/lib/govern/queries";
 import type { Stage } from "@/lib/govern/types";
-import { cn } from "@/lib/utils";
 import { BoardFilters } from "./_components/BoardFilters";
 import { ContractCard } from "./_components/ContractCard";
-import { STAGE_DOT, StageLane, summariseStage, type StageSummary } from "./_components/StageLane";
+import { PipelineStrip, StageLane, summariseStage, type StageSummary } from "./_components/StageLane";
 
 const POST_SIGNATURE_STAGES = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
 
@@ -36,7 +34,7 @@ export default function WorkflowPage() {
   const [pickedStage, setPickedStage] = useState<Stage | null>(null);
 
   const query = useContracts(showClosed);
-  const { data, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = query;
+  const { data, isLoading, isError, error, refetch } = query;
   const all = useMemo(() => data?.contracts ?? [], [data]);
   // Typing in the search box stays smooth on a large board.
   const deferredFilters = useDeferredValue(filters);
@@ -73,7 +71,9 @@ export default function WorkflowPage() {
       subtitle="Every agreement, who has it, how long it has waited and what happens next."
       actions={
         <>
-          <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
+          <Button asChild variant="outline" size="lg" className="md:h-9">
+            <Link href="/draft"><FileSignature size={15} />Draft an SOW</Link>
+          </Button>
           <Button asChild size="lg" className="md:h-9">
             <Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />New agreement</Link>
           </Button>
@@ -105,10 +105,10 @@ export default function WorkflowPage() {
         <StatePanel
           art="empty"
           title={showClosed ? "No agreements yet" : "No open agreements"}
-          description="Upload an agreement to start. Sonar checks it against OSU's matrix and it appears here with its next step."
+          description="Upload an agreement to start. Sonar checks it against your matrix and it appears here with its next step."
         >
           <Button asChild size="lg"><Link href="/projects/upload"><Plus size={15} />Upload an agreement</Link></Button>
-          {!showClosed && <Button variant="outline" size="lg" onClick={() => setShowClosed(true)}>Show rejected &amp; closed</Button>}
+          {!showClosed && <Button variant="outline" size="lg" onClick={() => setShowClosed(true)}>Show all agreements</Button>}
         </StatePanel>
       </>
     );
@@ -154,96 +154,26 @@ export default function WorkflowPage() {
           <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center">
             <Search size={22} className="mb-3 text-[var(--ink-500)]" />
             <h2 className="text-lg font-semibold text-foreground">Nothing matches &ldquo;{filters.q || "these filters"}&rdquo;</h2>
-            <p className="mt-1.5 max-w-sm text-sm text-[var(--ink-600)]">Try a sponsor name, a PI&rsquo;s surname or a department. Rejected and closed agreements only show when you switch them on.</p>
+            <p className="mt-1.5 max-w-sm text-sm text-[var(--ink-600)]">Try a sponsor name, a PI&rsquo;s surname or a department. Closed and rejected agreements show under All.</p>
             <Button variant="outline" size="lg" className="mt-5" onClick={() => setFilters(NO_FILTERS)}>Clear search and filters</Button>
           </div>
         ) : (
           <>
-            {/* Wide screens: two bands of four lanes. */}
-            <div className="hidden flex-col gap-6 xl:flex">
-              <Band title="Before signature" stages={PRE_SIGNATURE_STAGES} summaries={summaries} loading={isLoading} tall />
-              <Band title="After signature" stages={POST_SIGNATURE_STAGES} summaries={summaries} loading={isLoading} tall={false} />
+            <PipelineStrip summaries={summaries} selected={selectedStage} onSelect={setPickedStage} loading={isLoading} />
+
+            {/* Wide screens: the four lanes of the selected stage's phase. */}
+            <div className="hidden grid-cols-4 items-stretch gap-3 xl:grid">
+              {(PRE_SIGNATURE_STAGES.includes(selectedStage) ? PRE_SIGNATURE_STAGES : POST_SIGNATURE_STAGES).map((s) => (
+                <StageLane key={s} summary={summaries.get(s)!} loading={isLoading} highlighted={s === selectedStage} />
+              ))}
             </div>
 
-            {/* iPad and phone: pick a stage, see its cards. */}
-            <div className="flex flex-col gap-4 xl:hidden">
-              <StagePicker summaries={summaries} value={selectedStage} onChange={setPickedStage} loading={isLoading} />
+            {/* iPad and phone: the selected stage's agreements. */}
+            <div className="xl:hidden">
               <StageGrid summary={summaries.get(selectedStage)!} loading={isLoading} />
             </div>
           </>
         )}
-      </div>
-    </>
-  );
-}
-
-function Band({ title, stages, summaries, loading, tall }: {
-  title: string; stages: Stage[]; summaries: Map<Stage, StageSummary>; loading: boolean; tall: boolean;
-}) {
-  return (
-    <section aria-label={title} className="flex flex-col gap-2.5">
-      <h2 className="text-sm font-semibold text-[var(--ink-800)]">{title}</h2>
-      <div className="grid grid-cols-4 gap-3">
-        {stages.map((s) => <StageLane key={s} summary={summaries.get(s)!} loading={loading} tall={tall} />)}
-      </div>
-    </section>
-  );
-}
-
-function StagePicker({ summaries, value, onChange, loading }: {
-  summaries: Map<Stage, StageSummary>; value: Stage; onChange: (s: Stage) => void; loading: boolean;
-}) {
-  const count = (s: Stage) => (loading ? "…" : String(summaries.get(s)?.contracts.length ?? 0));
-  const group = (title: string, stages: Stage[]) => (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <span className="text-sm font-semibold text-[var(--ink-800)]">{title}</span>
-      <div role="tablist" aria-label={title} className="grid grid-cols-4 gap-1 rounded-xl border border-border bg-[var(--panel)] p-1">
-        {stages.map((s) => {
-          const on = s === value;
-          const overdue = summaries.get(s)?.overdue ?? 0;
-          return (
-            <button
-              key={s}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => onChange(s)}
-              className={cn(
-                "flex min-h-14 min-w-0 flex-col items-start justify-center gap-0.5 rounded-lg px-2.5 py-1.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
-                on ? "bg-card shadow-xs ring-1 ring-border" : "hover:bg-card/60",
-              )}
-            >
-              <span className="flex w-full min-w-0 items-center gap-1.5">
-                <span className={cn("size-1.5 shrink-0 rounded-full", STAGE_DOT[s])} aria-hidden />
-                <span className={cn("truncate text-xs font-medium", on ? "text-foreground" : "text-[var(--ink-600)]")}>{STAGE_LABEL[s]}</span>
-              </span>
-              <span className="text-lg font-semibold leading-none tabular-nums text-foreground">
-                {count(s)}
-                {overdue > 0 && <span className="ml-1 text-xs font-semibold text-[var(--danger)]">· {overdue} late</span>}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      {/* Phones: a plain select. */}
-      <div className="flex flex-col gap-1.5 sm:hidden">
-        <label htmlFor="stage-select" className="text-xs font-semibold text-[var(--ink-600)]">Stage</label>
-        <Select value={value} onValueChange={(v) => onChange(v as Stage)}>
-          <SelectTrigger id="stage-select" className="h-11 w-full bg-card text-base"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {STAGES.map((s) => <SelectItem key={s} value={s}>{STAGE_LABEL[s]} ({count(s)})</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      {/* iPad: two segmented rows. */}
-      <div className="hidden grid-cols-1 gap-3 sm:grid lg:grid-cols-2">
-        {group("Before signature", PRE_SIGNATURE_STAGES)}
-        {group("After signature", POST_SIGNATURE_STAGES)}
       </div>
     </>
   );

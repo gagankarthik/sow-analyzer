@@ -101,7 +101,7 @@ export function SiteHeader() {
 
         <div className="flex items-center justify-end gap-4">
           {isSignedIn ? (
-            <Link href="/dashboard" className="lp-btn lp-btn-primary lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
+            <Link href="/home" className="lp-btn lp-btn-primary lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
               Open Govern
             </Link>
           ) : (
@@ -172,7 +172,7 @@ export function SiteHeader() {
             })}
             <div className="flex gap-3 py-5">
               {isSignedIn ? (
-                <Link href="/dashboard" onClick={closeAll} className="lp-btn lp-btn-primary flex-1">
+                <Link href="/home" onClick={closeAll} className="lp-btn lp-btn-primary flex-1">
                   Open Govern
                 </Link>
               ) : (

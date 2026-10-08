@@ -8,7 +8,7 @@ import type {
   AgreementType, AssignmentRule, NotificationEvent, Office, Reviewer, RoutingRule, Stage, WorkflowSettings,
 } from "@/lib/govern/types"
 
-export type SettingsDraft = Omit<WorkflowSettings, "teamsWebhookConfigured">
+export type SettingsDraft = Omit<WorkflowSettings, "teamsWebhookConfigured" | "organization">
 
 export function toDraft(s: WorkflowSettings): SettingsDraft {
   return {
@@ -72,7 +72,7 @@ export function multipleError(v: number): string | null {
 export function reviewerErrors(r: Reviewer, all: Reviewer[], index: number): { name?: string; email?: string } {
   const out: { name?: string; email?: string } = {}
   if (!r.name.trim()) out.name = "Enter the reviewer's name."
-  if (!validEmail(r.email)) out.email = "Enter an email address like name@osu.edu."
+  if (!validEmail(r.email)) out.email = "Enter an email address like name@example.org."
   else if (all.some((o, i) => i !== index && o.email.trim().toLowerCase() === r.email.trim().toLowerCase()))
     out.email = "Someone in the directory already has this email."
   return out
@@ -143,7 +143,7 @@ export function formatUsd(amount: number): string {
 }
 
 /**
- * "Any license worth $500,000 or more, or with a term OSU does not accept,
+ * "Any license worth $500,000 or more, or with a term you do not accept,
  * goes to Legal Affairs before signature."
  *
  * Agreement types and money direction narrow which contracts the rule looks
@@ -158,7 +158,7 @@ export function routingSentence(rule: RoutingRule): string {
 
   const triggers: string[] = []
   if (w.minValue !== undefined && Number.isFinite(w.minValue)) triggers.push(`worth ${formatUsd(w.minValue)} or more`)
-  if (w.anyUnacceptable) triggers.push("with a term OSU does not accept")
+  if (w.anyUnacceptable) triggers.push("with a term you do not accept")
   if (w.minRisk === "high") triggers.push("rated high risk or worse")
   if (w.minRisk === "critical") triggers.push("rated critical risk")
 

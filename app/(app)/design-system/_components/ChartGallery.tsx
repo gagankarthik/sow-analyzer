@@ -33,9 +33,9 @@ const VALUE_TREND = [
   { month: "Oct", value: 760_000 },
 ];
 const STAGE_WAITING = [
-  { stage: "In review", osu: 14, other: 3, office: 2 },
-  { stage: "With the other side", osu: 2, other: 11, office: 0 },
-  { stage: "Approval and signature", osu: 5, other: 1, office: 4 },
+  { stage: "In review", internal: 14, other: 3, office: 2 },
+  { stage: "With the other side", internal: 2, other: 11, office: 0 },
+  { stage: "Approval and signature", internal: 5, other: 1, office: 4 },
 ];
 const CLAUSES = [
   { key: "indemnity", label: "Indemnification" },
@@ -70,7 +70,7 @@ export function ChartGallery() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <ChartCard
           title="Are we keeping up with what arrives?"
-          takeaway="In October OSU signed 47 agreements against 44 received: the first month this year the queue shrank."
+          takeaway="In October your organisation signed 47 agreements against 44 received: the first month this year the queue shrank."
           legend={<Legend items={[{ key: "r", label: "Received", color: "var(--viz-cat-1)", shape: "line" }, { key: "s", label: "Signed", color: "var(--viz-cat-2)", shape: "line" }]} />}
           table={{ columns: ["Month", "Received", "Signed"], rows: TREND.map((t) => [t.month, t.received, t.signed]) }}
         >
@@ -96,17 +96,17 @@ export function ChartGallery() {
 
         <ChartCard
           title="Who is holding contracts in each stage?"
-          takeaway="In review is mostly waiting on OSU (14 of 19); with the other side is mostly the sponsor (11 of 13)."
+          takeaway="In review is mostly waiting on your organisation (14 of 19); with the other side is mostly the sponsor (11 of 13)."
           legend={
             <Legend
               items={[
-                { key: "osu", label: "OSU reviewer", color: "var(--viz-cat-1)" },
+                { key: "internal", label: "Reviewer", color: "var(--viz-cat-1)" },
                 { key: "other", label: "Other side", color: "var(--viz-cat-2)" },
-                { key: "office", label: "OSU office", color: "var(--viz-cat-3)" },
+                { key: "office", label: "Internal office", color: "var(--viz-cat-3)" },
               ]}
             />
           }
-          table={{ columns: ["Stage", "OSU reviewer", "Other side", "OSU office"], rows: STAGE_WAITING.map((s) => [s.stage, s.osu, s.other, s.office]) }}
+          table={{ columns: ["Stage", "Reviewer", "Other side", "Internal office"], rows: STAGE_WAITING.map((s) => [s.stage, s.internal, s.other, s.office]) }}
         >
           <BarChart
             data={STAGE_WAITING}
@@ -114,24 +114,24 @@ export function ChartGallery() {
             orientation="vertical"
             stacked
             series={[
-              { key: "osu", label: "OSU reviewer" },
+              { key: "internal", label: "Reviewer" },
               { key: "other", label: "Other side" },
-              { key: "office", label: "OSU office" },
+              { key: "office", label: "Internal office" },
             ]}
           />
         </ChartCard>
 
         <ChartCard
-          title="What share of each stage is waiting on OSU?"
-          takeaway="Approval and signature has the largest share held by OSU offices (40%)."
-          table={{ columns: ["Stage", "OSU reviewer", "Other side", "OSU office"], rows: STAGE_WAITING.map((s) => [s.stage, s.osu, s.other, s.office]) }}
+          title="What share of each stage is waiting on your organisation?"
+          takeaway="Approval and signature has the largest share held by internal offices (40%)."
+          table={{ columns: ["Stage", "Reviewer", "Other side", "Internal office"], rows: STAGE_WAITING.map((s) => [s.stage, s.internal, s.other, s.office]) }}
         >
           <StackedBar100
-            rows={STAGE_WAITING.map((s) => ({ key: s.stage, label: s.stage, values: { osu: s.osu, other: s.other, office: s.office } }))}
+            rows={STAGE_WAITING.map((s) => ({ key: s.stage, label: s.stage, values: { internal: s.internal, other: s.other, office: s.office } }))}
             series={[
-              { key: "osu", label: "OSU reviewer" },
+              { key: "internal", label: "Reviewer" },
               { key: "other", label: "Other side" },
-              { key: "office", label: "OSU office", hatch: true },
+              { key: "office", label: "Internal office", hatch: true },
             ]}
           />
         </ChartCard>

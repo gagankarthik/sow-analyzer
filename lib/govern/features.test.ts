@@ -13,8 +13,10 @@ describe("parseFeatureList", () => {
 })
 
 describe("resolveFeatures", () => {
-  it("has every later feature off by default", () => {
-    expect(Object.values(resolveFeatures(undefined)).every((on) => on === false)).toBe(true)
+  it("has obligation tracking on and every other later feature off by default", () => {
+    const flags = resolveFeatures(undefined)
+    expect(flags.obligations).toBe(true)
+    expect(Object.entries(flags).filter(([k]) => k !== "obligations").every(([, on]) => on === false)).toBe(true)
   })
 
   it("switches on what the build-time list names", () => {

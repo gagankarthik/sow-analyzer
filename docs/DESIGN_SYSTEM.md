@@ -35,6 +35,25 @@ three parts that never disagree, because two of them are generated from the firs
 
 ---
 
+## 1b. UX laws this app follows
+
+Every layout and control decision is checked against these. If a change cannot name
+the law it serves, it does not ship.
+
+| Law | Rule in Govern |
+|---|---|
+| **Jakob's law** (people expect what other apps do) | Search, help, notifications and account sit top right; navigation is a plain left list; tables, filters and dialogs behave like standard enterprise tools. |
+| **Hick's law** (more choices, slower decisions) | One primary action per view; the top bar holds only search, help, notifications and account; the sidebar is one flat list ordered by frequency, with no group headings. |
+| **Colour for meaning (Von Restorff)** | Colour marks status only (overdue, at risk, not acceptable). Navigation and decoration stay neutral, so a coloured mark always means something. |
+| **Gestalt proximity and common region** | Things that answer the same question sit together in one region. Panels side by side are of similar height; a long list takes its own full-width row instead of leaving dead space beside short panes. |
+| **Fitts's law** | Targets are at least 40px (44px on touch); actions sit next to what they act on; the primary button is the largest control in its region. |
+| **Miller's law / chunking** | Long lists are chunked (first 6, "Show all"); figures are grouped (current · potential · held up). |
+| **Nielsen: visibility of status** | Freshness ("Updated just now"), loading skeletons and toasts after every action. |
+| **Nielsen: consistency** | One component per job (`components/ds`); one page wrapper (`app-page`); one type scale and one radius scale. |
+| **Nielsen: error prevention and recovery** | Destructive actions confirm; errors say what happened and how to recover; idle sign-out warns first and offers "Stay signed in". |
+| **Nielsen: minimalism** | No element without a job: no decorative icons, kickers, badges or dividers. Explanations that most people skip (formulas, legal notes) sit behind an info button or on Help. |
+| **Doherty threshold** | Feedback within 400ms: optimistic updates, skeletons, no blocking spinners on navigation. |
+
 ## 2. Palette: Navy & Teal, 60 · 30 · 10
 
 Product-owner decision (binding).
@@ -48,7 +67,7 @@ Product-owner decision (binding).
 Rules:
 
 - **Teal is for actions.** If a screen looks teal, a decorative element is using the
-  accent. Decorative emphasis (chips such as “OSU holds it”, quote panels, icon tiles,
+  accent. Decorative emphasis (chips such as “You hold it”, quote panels, icon tiles,
   “Current”/“You” badges) uses the navy **structure** role: `bg-structure-soft
   text-structure-soft-fg border-structure-border`.
 - **Selection and state may use teal**: selected option cards, active filter chips,
@@ -162,7 +181,7 @@ duration-(--duration-fast) | z-(--z-sticky) | h-(--table-row-compact)
 | Blocking / overdue / not acceptable | `--status-blocked` | unacceptable tier, red SLA, rejected |
 | Unknown / not assessed | `--status-unknown` (+ dashed outline for missing) | no value yet, no target, check by hand, missing |
 | Action | `--interactive` (teal) | buttons, links, focus, selection |
-| OSU holds it / structure | `--structure-*` (navy) | waiting-on-OSU chips, quotes, icon tiles |
+| You hold it / structure | `--structure-*` (navy) | waiting-on-your organisation chips, quotes, icon tiles |
 | Found by Sonar | `--ai-*` | provenance marks only |
 
 ### Matrix outcomes
@@ -175,16 +194,15 @@ duration-(--duration-fast) | z-(--z-sticky) | h-(--table-row-compact)
 | unacceptable | octagon with cross | Not acceptable |
 | review | question in circle | Check by hand |
 | missing | dashed circle, dashed outline | Missing |
-| beneficial | plus, success outline | Benefits OSU (independent badge) |
+| beneficial | plus, success outline | Favours you (independent badge) |
 
 ### Tenant brand layer
 
-`<html data-tenant-theme="osu">` re-points `--tenant-brand` (Scarlet `#BA0C2F`, 6.6:1 with
-white) for **brand chrome only**: a header band or logo bar (`bg-tenant-brand
-text-tenant-brand-fg`). A tenant theme never changes `--interactive`, status, outcome or
-chart tokens. In a review UI, **red is reserved for “not acceptable”**, so Scarlet never
-appears on buttons, risk or status. Agree this exception with OSU Marketing (BUX reserves
-Scarlet for calls to action).
+`<html data-tenant-theme="…">` may re-point `--tenant-brand` for **brand chrome only**: a
+header band or logo bar (`bg-tenant-brand text-tenant-brand-fg`), at 4.5:1 or better with
+its foreground. A tenant theme never changes `--interactive`, status, outcome or chart
+tokens. In a review UI **red is reserved for “not acceptable”**, so a red brand colour never
+appears on buttons, risk or status.
 
 ### Token export (W3C DTCG)
 
@@ -385,7 +403,7 @@ Govern vocabulary lives in `lib/govern/labels.ts`. Use it, never a code:
 | Stage | `draft` · `review` · `negotiation` · `approval` · `signed` · `active` · `renewal` · `expired` | New · In review · With the other side · Approval and signature · Signed · Active · Up for renewal · Closed out |
 | Tier | `within` · `fallback` · `deviates` · `unacceptable` · `review` · `missing` | Within matrix · Acceptable fallback · Needs changes · Not acceptable · Check by hand · Missing |
 | SLA | `on_track` · `amber` · `red` · `none` | On time · Running late · Overdue · No target |
-| Waiting on | `osu_reviewer` · `counterparty` · `osu_office` · `pi_department` · `signatory` · `nobody` | Waiting on OSU reviewer · Waiting on the other side · Waiting on an OSU office · Waiting on PI or department · Waiting on signature · Nothing pending |
+| Waiting on | `internal_reviewer` · `counterparty` · `internal_office` · `pi_department` · `signatory` · `nobody` | Waiting on a reviewer · Waiting on the other side · Waiting on an internal office · Waiting on PI or department · Waiting on signature · Nothing pending |
 | Next action | `approve` · `send_back` · `escalate` · `reject` · `send_for_signature` | Approve for signature · Send back for changes · Escalate to an office · Reject · Send for signature |
 | Direction | `incoming` · `outgoing` | Money in · Money out |
 
@@ -429,7 +447,7 @@ Consolidation onto `components/ds`, page by page:
 | `CompositionBar` | `BarMeter showKey` or `StackedBar100` |
 | `components/settings/SettingsNav` `SettingsSection`, `SettingsSearch`, `FilterChips`, `FilterSummary`, `NoResults` | `PageSection variant="card"`, `SearchField`, `FilterChips`, `FilterBar`, `NoResults` |
 | `components/govern/primitives` `TierBadge`, `BeneficialBadge`, `PersonDot` | `OutcomeBadge`, `OutcomeBadge outcome="beneficial"`, `Avatar` |
-| `DaysInStage`, `WaitingOnChip` | `StatusPill` (tone from SLA; `brand` tone for OSU) |
+| `DaysInStage`, `WaitingOnChip` | `StatusPill` (tone from SLA; `brand` tone) |
 | `components/govern/ActivityFeed` | Map entries to `TimelineEvent` and render `ActivityFeed` from ds (keep `CommentBox`) |
 | `StatePanel` (inline uses) | `EmptyState` / `ErrorState` (`size="page"` for full views) |
 | `lib/status-tone` `STATUS_TONE` | `StatusPill` with a tone |

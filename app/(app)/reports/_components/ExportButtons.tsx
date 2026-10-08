@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { FileDown, FileSpreadsheet, Loader2 } from "@/components/ui/icons";
 import { downloadExcel, downloadPdf, type ExportReport } from "@/lib/govern/export";
 import { useGovernFeature } from "@/lib/govern/queries";
-import { ComingSoonButton } from "@/components/govern/ComingSoon";
 import { cn } from "@/lib/utils";
 
 export function ExportButtons({
@@ -24,7 +23,6 @@ export function ExportButtons({
   compact?: boolean;
 }) {
   const [busy, setBusy] = useState<"xlsx" | "pdf" | null>(null);
-  // Exports are a "Later" feature: while off, the buttons are shown as Coming soon.
   const isExportsOn = useGovernFeature("exports");
 
   const run = async (kind: "xlsx" | "pdf") => {
@@ -42,14 +40,9 @@ export function ExportButtons({
     }
   };
 
-  if (!isExportsOn) {
-    return (
-      <div className={cn("flex flex-wrap items-center gap-2", className)}>
-        <ComingSoonButton variant="outline" className="h-10 sm:h-9"><FileSpreadsheet size={15} />{compact ? "Excel" : "Download Excel"}</ComingSoonButton>
-        <ComingSoonButton variant="outline" className="h-10 sm:h-9"><FileDown size={15} />{compact ? "PDF" : "Download PDF"}</ComingSoonButton>
-      </div>
-    );
-  }
+  // Exports are a "Later" feature: while it is off, no download buttons are
+  // shown at all, so nothing on screen is a button that does nothing.
+  if (!isExportsOn) return null;
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>

@@ -69,7 +69,7 @@ export function ChartCard({
     >
       <header className={cn("flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between", variant === "card" ? "px-4 pt-4 md:px-5 md:pt-5" : "")}>
         <div className="min-w-0">
-          <h3 id={titleId} className="text-body-lg font-semibold tracking-tight text-fg-primary">{title}</h3>
+          <h3 id={titleId} className="text-base font-semibold tracking-tight text-fg-primary">{title}</h3>
           {takeaway && ready && <p className="mt-1 max-w-prose-ds text-body text-fg-secondary">{takeaway}</p>}
         </div>
         {(actions || (table && ready)) && (

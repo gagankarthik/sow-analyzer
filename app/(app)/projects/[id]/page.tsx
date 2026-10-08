@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import { ProcessingState } from "@/components/ProcessingState";
 import { SonarMark } from "@/components/ui/SonarMark";
@@ -19,7 +18,6 @@ import { KeyDatesCard } from "@/components/dates/KeyDatesCard";
 import { ReanalyseNotice } from "@/components/dates/ReanalyseNotice";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
-import { CategoryRadar } from "@/components/charts/CategoryRadar";
 import { MotionReveal } from "@/components/MotionReveal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -80,7 +78,7 @@ function DocumentOverview() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
-  const { data: detail, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useDocument(id);
+  const { data: detail, isLoading, isError, error, refetch, isFetching } = useDocument(id);
   const isReady = detail?.document.status === "READY";
   const { data: classification, isLoading: classLoading, isError: classError, refetch: refetchClass } = useClassification(id, !!isReady);
   const now = useNow(); // the real clock, re-read every minute
@@ -178,9 +176,8 @@ function DocumentOverview() {
 
       <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">Overview</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Overview</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
             {/* Owners and editors only; the API enforces it either way. */}
             {canReanalyse(doc.role) && (
               <Button variant="outline" size="lg" className="md:h-9" onClick={onReanalyze} disabled={reprocess.isPending || isProcessing} title="Re-run the analysis pipeline on this document">
@@ -214,7 +211,7 @@ function DocumentOverview() {
             <div className="flex items-start gap-3.5">
               <SonarMark size="md" tile className="hidden sm:inline-flex" />
               <div className="min-w-0 flex-1">
-                <h3 className="mb-1.5 text-sm font-semibold text-[var(--ai-ink)]">Sonar executive summary</h3>
+                <h3 className="text-base font-semibold mb-1.5">Sonar executive summary</h3>
                 {!isReady ? (
                   <p className="text-base text-[var(--ink-600)]">The summary appears once processing completes.</p>
                 ) : summary ? (
@@ -240,7 +237,7 @@ function DocumentOverview() {
 
           {showFocal && (
             <section aria-label="Clauses needing review" className="flex flex-col rounded-xl bg-[var(--navy)] p-5 text-white md:p-6 lg:col-span-4">
-              <h3 className="text-sm font-medium text-[var(--navy-foreground)]">Clauses needing review</h3>
+              <h3 className="text-base font-semibold">Clauses needing review</h3>
               <div className="mt-2 flex flex-wrap items-baseline gap-x-2">
                 <span className="text-4xl font-bold leading-none tabular-nums tracking-tight">{needsReview}</span>
                 <span className="text-sm text-[var(--navy-foreground)]">of {totalRiskClauses} clauses are high or critical</span>
@@ -264,28 +261,21 @@ function DocumentOverview() {
 
         {/* ── Risk intelligence (visual) ────────────────────── */}
         {isReady && totalRiskClauses > 0 && (
-          <MotionReveal><RiskIntelligence counts={riskCounts} categories={catData} /></MotionReveal>
+          <MotionReveal><RiskIntelligence counts={riskCounts} /></MotionReveal>
         )}
 
         {/* ── Risk analysis: heatmap + radar ────────────────── */}
         {isReady && clauses.length > 0 && (
           <MotionReveal delay={0.05}>
-            <section className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-              <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 lg:col-span-7">
+            <section>
+              <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
                 <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                  <h3 className="text-lg font-semibold tracking-tight text-foreground">Risk by category</h3>
+                  <h3 className="text-base font-semibold tracking-tight text-foreground">Risk by category</h3>
                   <span className="text-sm text-muted-foreground">Category by severity</span>
                 </div>
                 {/* Rated clauses only (an unrated clause is not "low"), and every
                     category listed: no row cap, so none is silently dropped. */}
                 <ClauseHeatmap clauses={clauses.filter((c) => c.riskRated !== false)} maxRows={Math.max(1, catData.length)} />
-              </div>
-              <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 lg:col-span-5">
-                <div className="flex items-baseline justify-between gap-2 mb-2">
-                  <h3 className="text-lg font-semibold tracking-tight text-foreground">Category coverage</h3>
-                  <span className="text-sm tabular-nums text-muted-foreground">{catData.length} categories</span>
-                </div>
-                <CategoryRadar data={catData} />
               </div>
             </section>
           </MotionReveal>
@@ -337,7 +327,7 @@ function DocumentOverview() {
         {isReady && topRiskClauses.length > 0 && (
           <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2"><ShieldAlert size={16} className="shrink-0 text-[var(--danger)]" /><h3 className="text-lg font-semibold tracking-tight text-foreground">Clauses that need attention</h3></div>
+              <div className="flex items-center gap-2"><ShieldAlert size={16} className="shrink-0 text-[var(--danger)]" /><h3 className="text-base font-semibold tracking-tight text-foreground">Clauses that need attention</h3></div>
               <Link href={`/projects/${project.id}/sow`} className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0">View all<ArrowRight size={13} strokeWidth={2.25} /></Link>
             </div>
             <div className="space-y-2.5">
@@ -366,7 +356,7 @@ function DocumentOverview() {
         {/* ── Row D: Parties + Document details ─────────────── */}
         <section className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
           <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 lg:col-span-2">
-            <h3 className="text-lg font-semibold tracking-tight text-foreground mb-4">Contract parties {doc.parties.length > 0 && <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{doc.parties.length}</span>}</h3>
+            <h3 className="text-base font-semibold tracking-tight text-foreground mb-4">Contract parties {doc.parties.length > 0 && <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{doc.parties.length}</span>}</h3>
             {doc.parties.length === 0 ? (
               <p className="text-sm text-[var(--ink-600)]">No parties identified in this document.</p>
             ) : (
@@ -382,7 +372,7 @@ function DocumentOverview() {
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-            <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Document details</h3>
+            <h3 className="text-base font-semibold mb-4 tracking-tight text-foreground">Document details</h3>
             <dl className="divide-y divide-[var(--ink-100)]">
               <DetailItem label="Type"><DocTypeBadge type={doc.docType} /></DetailItem>
               <DetailItem label="Lifecycle"><Badge variant="neutral" size="sm" className="text-xs capitalize">{doc.lifecycle}</Badge></DetailItem>
@@ -438,7 +428,7 @@ function FindingsStrip({ findings }: { findings: ApiKeyFinding[] }) {
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
       <div className="flex items-center gap-2">
         <ShieldAlert size={16} className="shrink-0 text-[var(--warning)]" />
-        <h3 className="text-lg font-semibold tracking-tight text-foreground">Key findings</h3>
+        <h3 className="text-base font-semibold tracking-tight text-foreground">Key findings</h3>
         <span className="text-sm tabular-nums text-muted-foreground">{total}</span>
       </div>
       <div className="flex min-w-0 flex-col gap-2 md:max-w-md md:flex-1">

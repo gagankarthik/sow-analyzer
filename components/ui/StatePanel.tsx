@@ -29,7 +29,7 @@ export function StatePanel({
   return (
     <div className={cn("flex flex-col items-center px-5 py-16 text-center md:py-24", className)}>
       <StateArt art={art} />
-      <h1 className="mt-8 text-2xl font-semibold tracking-[-0.02em] text-foreground md:text-3xl">{title}</h1>
+      <h1 className="text-2xl font-semibold mt-8 tracking-[-0.02em] text-foreground">{title}</h1>
       {description && (
         <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--ink-600)]">{description}</p>
       )}

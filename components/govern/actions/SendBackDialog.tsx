@@ -53,7 +53,7 @@ export function SendBackDialog({ contract, open, onOpenChange }: { contract: Con
         clauses: chosen.map((r) => ({ clauseType: r.clauseType, label: r.label.trim(), suggestedLanguage: r.suggestedLanguage.trim() || null })),
         note: note.trim() || undefined,
       },
-      { what: "send this back", success: "Sent back to the other side", description: `${plural(chosen.length, "clause")} with the changes OSU needs.` },
+      { what: "send this back", success: "Sent back to the other side", description: `${plural(chosen.length, "clause")} with the changes you need.` },
     );
     if (ok) onOpenChange(false);
   }
@@ -64,7 +64,7 @@ export function SendBackDialog({ contract, open, onOpenChange }: { contract: Con
       open={open}
       onOpenChange={onOpenChange}
       title="Send back for changes"
-      description={<>The other side gets the clauses below with the language OSU suggests. The card moves to <strong className="font-semibold text-foreground">With the other side</strong> until their revised version arrives.</>}
+      description={<>The other side gets the clauses below with the language you suggest. The card moves to <strong className="font-semibold text-foreground">With the other side</strong> until their revised version arrives.</>}
       confirmLabel={chosen.length ? `Send back ${plural(chosen.length, "clause")}` : "Send back"}
       onConfirm={confirm}
       pending={pending}
@@ -109,7 +109,7 @@ export function SendBackDialog({ contract, open, onOpenChange }: { contract: Con
               <textarea
                 value={r.suggestedLanguage}
                 onChange={(e) => update(r.key, { suggestedLanguage: e.target.value })}
-                placeholder="The language OSU asks for (optional)"
+                placeholder="The language you ask for (optional)"
                 aria-label={`Suggested language for ${r.label || "this clause"}`}
                 rows={3}
                 className={`${TEXTAREA} mt-2.5`}

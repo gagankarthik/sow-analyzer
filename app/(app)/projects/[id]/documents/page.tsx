@@ -9,7 +9,6 @@ import { DocLoadError } from "@/components/DocLoadError";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -49,7 +48,7 @@ export default function DocumentsPage() {
   const id = params?.id ?? "";
   const router = useRouter();
 
-  const { data: detail, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useDocument(id);
+  const { data: detail, isLoading, isError, error, refetch, isFetching } = useDocument(id);
   const deleteVersionMut = useDeleteVersion(id);
   const deleteDocMut = useDeleteDocument();
 
@@ -127,11 +126,10 @@ export default function DocumentsPage() {
             {/* Toolbar */}
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-xl font-semibold tracking-tight text-foreground">Versions <span className="ml-1 text-base font-normal tabular-nums text-muted-foreground">{versions.length}</span></h2>
+                <h2 className="text-lg font-semibold tracking-tight text-foreground">Versions <span className="ml-1 text-base font-normal tabular-nums text-muted-foreground">{versions.length}</span></h2>
                 <p className="mt-1 text-sm text-[var(--ink-600)]">Every version of this document on record.</p>
               </div>
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
                 <Button size="lg" className="flex-1 sm:flex-none md:h-9" asChild><Link href="/projects/upload"><Upload size={14} />Upload new</Link></Button>
                 {/* Deleting needs the delete permission; the server enforces it too. */}
                 {canDelete && (
@@ -147,7 +145,7 @@ export default function DocumentsPage() {
               <section aria-label="Current version" className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
                   <div className="min-w-0">
-                    <h3 className="text-sm font-medium text-[var(--navy-foreground)]">Current version</h3>
+                    <h3 className="text-base font-semibold">Current version</h3>
                     <div className="mt-1 text-4xl font-bold leading-none tabular-nums tracking-tight">v{current.versionNumber}</div>
                     <p className="mt-2 flex items-start gap-1.5 text-base text-white"><FileText size={15} className="mt-0.5 shrink-0 text-[var(--navy-foreground)]" /><span className="min-w-0 break-all">{filename ?? "File name not recorded"}</span></p>
                   </div>
@@ -228,7 +226,7 @@ export default function DocumentsPage() {
           {/* Sidebar */}
           <aside className="grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 md:gap-6 lg:col-span-4 lg:grid-cols-1">
             <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
-              <h3 className="mb-3 text-base font-semibold text-foreground">Document info</h3>
+              <h3 className="text-base font-semibold mb-3 text-foreground">Document info</h3>
               <ul className="divide-y divide-[var(--ink-100)] text-sm">
                 <Row label="Type"><DocTypeBadge type={doc.docType} /></Row>
                 <Row label="Lifecycle"><span className="font-semibold text-foreground capitalize">{doc.lifecycle}</span></Row>
@@ -240,7 +238,7 @@ export default function DocumentsPage() {
 
             {doc.parties.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
-                <h3 className="mb-3 text-base font-semibold text-foreground">Parties</h3>
+                <h3 className="text-base font-semibold mb-3 text-foreground">Parties</h3>
                 <ul className="space-y-2.5">
                   {doc.parties.map((p) => (
                     <li key={p} className="flex items-center gap-2.5">

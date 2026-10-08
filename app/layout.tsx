@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -9,8 +9,8 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 // IBM Plex Sans for the interface and body: an institutional grotesk with
 // clear figures, suited to research and legal offices. Plex Mono for
-// references and figures. Source Serif 4, upright, is the public site's
-// display face only (headlines), for a journal-like voice.
+// references and figures. Instrument Sans is the public site's face: a
+// crisp, slightly condensed grotesk for confident headlines.
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex",
   subsets: ["latin"],
@@ -25,10 +25,10 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
-  variable: "--font-serif-display",
+const instrument = Instrument_Sans({
+  variable: "--font-instrument",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -60,7 +60,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${plexSans.variable} ${plexMono.variable} ${sourceSerif.variable}`}
+      className={`${plexSans.variable} ${plexMono.variable} ${instrument.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
         <QueryProvider>

@@ -45,13 +45,13 @@ export function TierBadge({ tier, className }: { tier: Tier; className?: string 
 export function BeneficialBadge({ className }: { className?: string }) {
   return (
     <span
-      title="This term benefits OSU."
+      title="This term favours your organisation."
       className={cn(
         "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color-mix(in_srgb,var(--success)_30%,transparent)] px-2 text-xs font-semibold text-[var(--success)]",
         className,
       )}
     >
-      <span aria-hidden>+</span> Benefits OSU
+      <span aria-hidden>+</span> Favours you
     </span>
   );
 }
@@ -84,8 +84,8 @@ export function DaysInStage({
 }
 
 const WAITING_ICON: Record<WaitingOnKind, typeof Clock> = {
-  osu_reviewer: UserRound,
-  osu_office: Building2,
+  internal_reviewer: UserRound,
+  internal_office: Building2,
   counterparty: Users,
   pi_department: Users,
   signatory: PenLine,
@@ -94,7 +94,8 @@ const WAITING_ICON: Record<WaitingOnKind, typeof Clock> = {
 
 /** Who holds the contract right now, in plain words. */
 export function WaitingOnChip({ waitingOn, className }: { waitingOn: WaitingOn; className?: string }) {
-  const Icon = WAITING_ICON[waitingOn.kind];
+  // Unknown kinds fall back to a neutral icon instead of breaking the page.
+  const Icon = WAITING_ICON[waitingOn.kind] ?? CircleDashed;
   const external = waitingOn.kind === "counterparty";
   return (
     <span

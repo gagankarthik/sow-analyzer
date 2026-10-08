@@ -269,7 +269,7 @@ function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming
   return (
     <section id="missing-details" aria-labelledby="missing-heading" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
       <div>
-        <h2 id="missing-heading" className="inline-flex items-center gap-2 text-base font-semibold text-foreground"><CircleDashed size={16} className="text-[var(--warning)]" />What&rsquo;s missing</h2>
+        <h2 id="missing-heading" className="text-lg font-semibold inline-flex items-center gap-2 text-foreground"><CircleDashed size={16} className="text-[var(--warning)]" />What&rsquo;s missing</h2>
         <p className="mt-0.5 text-sm text-[var(--ink-600)]">Sonar could not find these. Fill them in so this contract is counted and filtered correctly.</p>
       </div>
       <ul className="flex flex-col divide-y divide-border">
@@ -377,7 +377,7 @@ function RoutingAndSignature({ contract: c }: { contract: ContractDetail }) {
       <Section
         title="Approvals"
         description={isRoutingOn
-          ? "Offices this contract must pass before signature, from OSU's routing rules."
+          ? "Offices this contract must pass before signature, from your routing rules."
           : <span className="inline-flex flex-wrap items-center gap-2">Who approved it before signature. Office routing rules are <ComingSoonBadge /></span>}
       >
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">

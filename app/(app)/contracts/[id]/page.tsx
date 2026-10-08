@@ -11,7 +11,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { ExternalLink, Loader2 } from "@/components/ui/icons";
 import { ActivityFeed, CommentBox } from "@/components/govern/ActivityFeed";
 import { BLOCKING_TIERS, AGREEMENT_TYPE_LABEL, STATE_LABEL } from "@/lib/govern/labels";
@@ -23,6 +22,7 @@ import { ContractTabList, useHashTab, type ContractTab } from "./_components/Con
 import { DetailsSection } from "./_components/DetailsSection";
 import { MatrixSection } from "./_components/MatrixSection";
 import { MoneySection } from "./_components/MoneySection";
+import { ContractJourney } from "./_components/ContractJourney";
 import { NextStepPanel } from "./_components/NextStepPanel";
 import { RoundsSection } from "./_components/RoundsSection";
 import { Section } from "./_components/SectionParts";
@@ -40,7 +40,7 @@ function safeDecode(raw: string): string {
 export default function ContractPage() {
   const params = useParams<{ id: string }>();
   const id = safeDecode(params?.id ?? "");
-  const { data: contract, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = useContract(id);
+  const { data: contract, isLoading, isError, error, refetch } = useContract(id);
 
   if (isLoading) return <ContractSkeleton />;
 
@@ -60,11 +60,11 @@ export default function ContractPage() {
     );
   }
 
-  return <ContractView contract={contract} isError={isError} isFetching={isFetching} dataUpdatedAt={dataUpdatedAt} onRefresh={() => refetch()} />;
+  return <ContractView contract={contract} isError={isError} onRefresh={() => refetch()} />;
 }
 
-function ContractView({ contract: c, isError, isFetching, dataUpdatedAt, onRefresh }: {
-  contract: ContractDetail; isError: boolean; isFetching: boolean; dataUpdatedAt: number; onRefresh: () => void;
+function ContractView({ contract: c, isError, onRefresh }: {
+  contract: ContractDetail; isError: boolean; onRefresh: () => void;
 }) {
   const [tab, setTab] = useHashTab();
   const isObligationsOn = useGovernFeature("obligations");
@@ -95,7 +95,6 @@ function ContractView({ contract: c, isError, isFetching, dataUpdatedAt, onRefre
         subtitle={[AGREEMENT_TYPE_LABEL[c.agreementType], party, c.piName ? `PI ${c.piName}` : null, c.department].filter(Boolean).join(" · ")}
         actions={
           <>
-            <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={onRefresh} failed={isError} />
             <Button asChild variant="outline" size="lg" className="md:h-9">
               <Link href={`/projects/${encodeURIComponent(c.currentDocId)}`}><ExternalLink size={14} />Open document analysis</Link>
             </Button>
@@ -120,6 +119,9 @@ function ContractView({ contract: c, isError, isFetching, dataUpdatedAt, onRefre
             <button type="button" onClick={onRefresh} className="font-semibold underline underline-offset-2">Try again</button>
           </p>
         )}
+
+        {/* Where the agreement is in its journey, draft to signed. */}
+        <ContractJourney contract={c} onOpen={(section) => goTo(section)} />
 
         {/* Above the fold: next step + blockers on the left, where it is on the right. */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">

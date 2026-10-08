@@ -48,7 +48,7 @@ export const isUnsigned = (c: Contract) => isOpen(c) && PRE_SIGNATURE_STAGES.inc
 export const isCurrent = (c: Contract) => c.valueBucket === "current"
 export const isPotential = (c: Contract) => c.valueBucket === "potential"
 
-/** "Needs attention": overdue, or blocked by a term OSU does not accept, or
+/** "Needs attention": overdue, or blocked by a term you do not accept, or
  *  running late with open items. The leader home's first question. */
 export function needsAttention(c: Contract): boolean {
   if (!isUnsigned(c)) return false
@@ -192,7 +192,7 @@ export interface WaitingQueue {
 
 export function waitingQueues(contracts: Contract[]): WaitingQueue[] {
   const open = contracts.filter(isUnsigned)
-  const kinds: WaitingOnKind[] = ["osu_reviewer", "osu_office", "counterparty", "pi_department", "signatory"]
+  const kinds: WaitingOnKind[] = ["internal_reviewer", "internal_office", "counterparty", "pi_department", "signatory"]
   return kinds
     .map((kind) => {
       const set = open.filter((c) => c.waitingOn.kind === kind)

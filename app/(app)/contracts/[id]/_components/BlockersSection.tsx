@@ -27,7 +27,7 @@ export function BlockersPreview({ contract: c, onSeeAll }: { contract: ContractD
   return (
     <section aria-labelledby="blocks-heading" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 id="blocks-heading" className="text-base font-semibold text-foreground">What blocks signature</h2>
+        <h2 id="blocks-heading" className="text-lg font-semibold text-foreground">What blocks signature</h2>
         <span className={cn("text-sm font-semibold tabular-nums", open.length ? "text-[var(--warning)]" : "text-[var(--success)]")}>
           {open.length ? plural(open.length, "open item") : "Nothing"}
         </span>
@@ -35,7 +35,7 @@ export function BlockersPreview({ contract: c, onSeeAll }: { contract: ContractD
       {open.length === 0 ? (
         <p className="flex items-start gap-2 text-sm leading-relaxed text-[var(--ink-700)]">
           <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[var(--success)]" />
-          {signedOrDone ? "Nothing — it is signed." : "No open items. Every clause Sonar checked is within what OSU accepts, or has been resolved."}
+          {signedOrDone ? "Nothing — it is signed." : "No open items. Every clause Sonar checked is within what you accept, or has been resolved."}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -68,7 +68,7 @@ export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
   return (
     <Section
       title="What blocks signature"
-      description="Sonar lists every clause outside OSU's matrix. Close an item when the other side fixes it; add your own for anything else."
+      description="Sonar lists every clause outside your matrix. Close an item when the other side fixes it; add your own for anything else."
       actions={!adding && <Button type="button" onClick={() => setAdding(true)}><Plus size={14} />Add an item</Button>}
     >
       {adding && <BlockerForm contract={c} onDone={() => setAdding(false)} />}
@@ -218,7 +218,7 @@ function BlockerForm({ contract: c, blocker, onDone }: { contract: ContractDetai
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor={`${idBase}-lang`} className="text-sm font-semibold text-foreground">Suggested language (optional)</label>
-        <textarea id={`${idBase}-lang`} rows={3} value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="The wording OSU will ask for" className={TEXTAREA} />
+        <textarea id={`${idBase}-lang`} rows={3} value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="The wording you will ask for" className={TEXTAREA} />
       </div>
       <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone} disabled={pending}>Cancel</Button>

@@ -38,7 +38,7 @@ export default function ProjectError({
       <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--danger-soft)] text-[var(--danger)] mb-5">
         <AlertCircle size={24} strokeWidth={1.5} />
       </span>
-      <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+      <h2 className="text-lg font-semibold tracking-tight text-foreground">
         Something went wrong
       </h2>
       <p className="mt-2 max-w-sm break-words text-base leading-relaxed text-[var(--ink-600)]">

@@ -1,7 +1,7 @@
 // Tone → class maps shared by every components/ds piece that carries a status.
 // A tone is a MEANING from the product-owner colour table, not a hue:
 //   ok · acceptable · caution · blocked · unknown   (status meanings)
-//   brand (the navy "structure" role: OSU holds it, emphasis that is not
+//   brand (the navy "structure" role: You hold it, emphasis that is not
 //   an action; teal is reserved for actions) · ai (found by Sonar)
 // The legacy names success / info / warning / danger / neutral are accepted
 // as aliases so existing call sites can migrate without renaming.

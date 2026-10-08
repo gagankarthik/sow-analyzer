@@ -6,13 +6,10 @@ import type { GovernFeature } from "@/lib/govern/features";
 import { SettingsLayout, SettingsSection } from "@/components/settings/SettingsNav";
 import {
   BookMarked,
+  Building2,
   Briefcase,
   ChevronRight,
-  Database,
-  Globe2,
   Grid3x3,
-  Lock,
-  Mail,
   Plug,
   Route,
   ShieldCheck,
@@ -39,10 +36,17 @@ type NavGroup = {
 
 const groups: NavGroup[] = [
   {
-    label: "Contract workflow",
-    desc: "How OSU agreements are checked, routed and connected to the systems of record.",
+    label: "Organisation",
+    desc: "Who you are and how Govern should fit your organisation.",
     items: [
-      { icon: Grid3x3, title: "Review matrix", desc: "OSU's accepted positions per agreement type. Edit, import from Excel, and keep dated versions.", href: "/settings/matrix" },
+      { icon: Building2, title: "Organisation setup", desc: "Name, reporting currency, financial year, governing law, targets and team, as a six-step checklist.", href: "/settings/organization" },
+    ],
+  },
+  {
+    label: "Contract workflow",
+    desc: "How agreements are checked, routed and connected to the systems of record.",
+    items: [
+      { icon: Grid3x3, title: "Review matrix", desc: "Your accepted positions per agreement type. Edit, import from Excel, and keep dated versions.", href: "/settings/matrix" },
       { icon: Route, title: "Workflow & routing", desc: "Stage targets, reviewers, auto-assignment, approval routing and alerts.", href: "/settings/workflow" },
       { icon: Plug, title: "Integrations", desc: "Huron, Workday, Microsoft 365 and DocuSign: status, field mapping and the sync log.", href: "/settings/integrations", feature: "integrations" },
     ],
@@ -57,20 +61,10 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Workspace",
-    desc: "People, permissions, and external systems your contracts flow through.",
+    label: "People",
+    desc: "Who can see and change your contracts.",
     items: [
       { icon: Users, title: "Team & roles", desc: "Invite people to your projects, set their role and remove them.", href: "/settings/team" },
-      { icon: Lock, title: "Approval routing", desc: "Route contracts to OSU offices by type, value and risk.", href: "/settings/workflow", feature: "routingRules" },
-      { icon: Globe2, title: "Integrations", desc: "Huron, Workday, Microsoft 365 and DocuSign.", href: "/settings/integrations", feature: "integrations" },
-    ],
-  },
-  {
-    label: "System",
-    desc: "How long data lives in the system and how you hear about changes.",
-    items: [
-      { icon: Database, title: "Data & retention", desc: "Where your contracts live and for how long.", href: "#", soon: true },
-      { icon: Mail, title: "Notifications", desc: "Email and Teams alerts for assignments, send-backs, approvals and overdue contracts.", href: "/settings/workflow", feature: "notifications" },
     ],
   },
 ];
@@ -80,7 +74,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Settings"
-        subtitle="The rules and integrations that govern Blue-IQ across your firm."
+        subtitle="How contracts are checked, routed and who works on them, for your whole workspace."
       />
 
       <SettingsLayout>
@@ -109,7 +103,7 @@ function SettingsRow({ item }: { item: NavItem }) {
         <Icon size={16} className={item.soon ? "text-muted-foreground" : "text-[var(--ink-700)]"} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-2 text-base font-semibold text-foreground">
+        <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
           {item.title}
           {item.feature && <FeatureComingSoonBadge feature={item.feature} />}
         </span>
@@ -137,10 +131,7 @@ function SettingsRow({ item }: { item: NavItem }) {
       className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50 sm:gap-4 sm:px-5"
     >
       {body}
-      <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-[var(--brand-primary-600)] group-hover:text-[var(--brand-primary-700)]">
-        <span className="hidden sm:inline">Configure</span>
-        <ChevronRight size={16} />
-      </span>
+      <ChevronRight size={16} aria-hidden className="shrink-0 text-[var(--ink-400)] transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-[var(--ink-700)] motion-reduce:transition-none" />
     </Link>
   );
 }

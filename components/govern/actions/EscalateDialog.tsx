@@ -9,7 +9,7 @@ import { useRunContractAction } from "./useRunAction";
 
 /** What each office looks at, so the reviewer picks the right one. */
 const OFFICE_HINT: Record<Office, string> = {
-  legal_affairs: "Indemnity, liability, governing law and anything OSU does not normally accept.",
+  legal_affairs: "Indemnity, liability, governing law and anything you do not normally accept.",
   tech_commercialization: "License scope, royalties, equity and IP ownership.",
   sponsored_programs: "Budgets, sponsor terms and grant flow-down.",
   export_control: "Foreign parties, restricted technology and export rules.",

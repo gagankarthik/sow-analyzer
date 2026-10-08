@@ -22,7 +22,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   status: Status;
   signIn: (email: string, password: string) => Promise<AuthUser>;
-  signOut: () => void;
+  signOut: (opts?: { everywhere?: boolean }) => void;
   refresh: () => Promise<void>;
 }
 
@@ -61,12 +61,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const signOut = useCallback(() => {
-    cognitoSignOut();
-    setUser(null);
-    setStatus("unauthenticated");
-    router.replace("/login");
+  // Finish signing out (tokens, cookie, stored data) before the state change
+  // that sends the shell to /login; otherwise the unload can cut it short.
+  const signOut = useCallback((opts?: { everywhere?: boolean }) => {
+    void (async () => {
+      try {
+        await cognitoSignOut(opts);
+      } finally {
+        setUser(null);
+        setStatus("unauthenticated");
+        router.replace("/login");
+      }
+    })();
   }, [router]);
+
+  // Signing in or out in another tab changes the stored Cognito session:
+  // re-read it here so this tab follows.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key.startsWith("CognitoIdentityServiceProvider.")) void refresh();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [refresh]);
 
   const value = useMemo<AuthContextValue>(
     () => ({ user, status, signIn, signOut, refresh }),

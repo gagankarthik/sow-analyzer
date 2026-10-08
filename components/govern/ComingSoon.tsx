@@ -57,7 +57,7 @@ export function ComingSoonPanel({
         <Hourglass size={16} className="mt-1 shrink-0 text-[var(--ink-500)]" aria-hidden />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold text-foreground">{heading}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{heading}</h2>
             <ComingSoonBadge />
           </div>
           {body && <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--ink-700)]">{body}</p>}

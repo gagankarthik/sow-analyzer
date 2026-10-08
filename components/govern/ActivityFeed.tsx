@@ -100,7 +100,7 @@ export function ActivityFeed({ entries, limit, className }: { entries: ActivityE
     <div className={cn("flex flex-col gap-6", className)}>
       {groups.map((g) => (
         <section key={g.day} aria-label={g.day}>
-          <h4 className="mb-3 text-sm font-semibold text-[var(--ink-800)]">{g.day}</h4>
+          <h4 className="text-sm font-semibold mb-3">{g.day}</h4>
           <ol className="relative flex flex-col gap-4 before:absolute before:bottom-2 before:left-[15px] before:top-2 before:w-px before:bg-border">
             {g.items.map((e) => <ActivityRow key={e.id} entry={e} />)}
           </ol>
@@ -176,7 +176,6 @@ export function CommentBox({ contractId, className }: { contractId: string; clas
         id={`comment-${contractId}`}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void post(); } }}
         rows={2}
         placeholder="Add a comment for everyone working on this contract…"
         className="min-h-14 w-full resize-y bg-transparent text-base leading-relaxed outline-none placeholder:text-muted-foreground md:text-sm"

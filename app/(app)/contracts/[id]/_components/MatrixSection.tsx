@@ -1,6 +1,6 @@
 "use client";
 
-// Requirement 1 on one contract: how each clause compares with OSU's matrix,
+// Requirement 1 on one contract: how each clause compares with your matrix,
 // which version of the matrix it was checked against, and a re-check.
 
 import { useMemo, useState } from "react";
@@ -57,7 +57,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
 
   if (!review) {
     return (
-      <Section title="Matrix review" description="How each clause compares with OSU's accepted positions.">
+      <Section title="Matrix review" description="How each clause compares with your accepted positions.">
         <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-[var(--ink-300)] p-6">
           {analysing ? (
             <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-700)]"><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />Sonar is still reading this agreement. The review appears here when it is done.</p>
@@ -77,21 +77,21 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
   const blocking = blockingCount(review.counts);
 
   return (
-    <Section title="Matrix review" description="How each clause compares with OSU's accepted positions." actions={recheckButton}>
+    <Section title="Matrix review" description="How each clause compares with your accepted positions." actions={recheckButton}>
       {/* Summary infographic */}
       <div className="grid grid-cols-1 gap-5 rounded-xl border border-border bg-card p-5 lg:grid-cols-[minmax(0,1fr)_16rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <p className="text-base leading-snug text-[var(--ink-700)]">
             <span className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">{fine}</span>
             <span className="text-xl font-semibold text-[var(--ink-500)]"> / {total}</span>
-            <span className="ml-2">clauses are within what OSU accepts</span>
+            <span className="ml-2">clauses are within what you accept</span>
           </p>
           <TierBar counts={review.counts} size="lg" />
           <TierLegend counts={review.counts} />
           <div className="flex flex-wrap items-center gap-2 text-sm">
             {blocking > 0 && <span className="font-semibold text-[var(--warning)]">{plural(blocking, "clause")} to resolve before signature</span>}
             {review.counts.beneficial > 0 && <BeneficialBadge />}
-            {review.counts.beneficial > 0 && <span className="text-[var(--ink-700)]">{plural(review.counts.beneficial, "term")} favour OSU</span>}
+            {review.counts.beneficial > 0 && <span className="text-[var(--ink-700)]">{plural(review.counts.beneficial, "term")} favour you</span>}
           </div>
         </div>
         <dl className="flex flex-col gap-3 border-t border-border pt-4 text-sm lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
@@ -117,7 +117,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
         {([
           ["action", "Needs a look", needsAction.length],
           ["all", "All clauses", sorted.length],
-          ["beneficial", "Benefits OSU", beneficial.length],
+          ["beneficial", "Favours you", beneficial.length],
         ] as [View, string, number][]).map(([v, label, n]) => (
           <button
             key={v}
@@ -136,7 +136,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
 
       {shown.length === 0 ? (
         <p className="rounded-xl border border-dashed border-[var(--ink-300)] px-4 py-6 text-sm text-[var(--ink-700)]">
-          {view === "action" ? "No clause needs a look. Everything is within the matrix or an accepted fallback." : view === "beneficial" ? "No terms were tagged as benefiting OSU." : "No clauses were checked."}
+          {view === "action" ? "No clause needs a look. Everything is within the matrix or an accepted fallback." : view === "beneficial" ? "No terms were tagged as favouring your organisation." : "No clauses were checked."}
         </p>
       ) : (
         <ul className="flex flex-col gap-2.5">
@@ -177,11 +177,11 @@ function ClauseRow({ clause: cl }: { clause: MatrixClauseResult }) {
         <div id={panelId} className="flex flex-col gap-4 border-t border-border p-4">
           {cl.reason && <p className="text-sm leading-relaxed text-[var(--ink-700)]">{cl.reason}</p>}
           {cl.beneficial && cl.beneficialReason && (
-            <p className="text-sm leading-relaxed text-[var(--success)]">Why it helps OSU: {cl.beneficialReason}</p>
+            <p className="text-sm leading-relaxed text-[var(--success)]">Why it helps you: {cl.beneficialReason}</p>
           )}
           <dl className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <Compare label={cl.clauseNumber ? `In this agreement · clause ${cl.clauseNumber}` : "In this agreement"} text={cl.found} emphasis />
-            <Compare label="OSU standard" text={cl.standard} />
+            <Compare label="Your standard" text={cl.standard} />
             <Compare label="Acceptable fallback" text={cl.fallback} />
           </dl>
           {cl.escalationOffice && (

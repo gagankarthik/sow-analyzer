@@ -1,13 +1,12 @@
 "use client";
 
-// The OSU review matrix (Requirement 1): one playbook per agreement type,
+// The review matrix (Requirement 1): one playbook per agreement type,
 // edited here, saved as dated versions, or loaded in bulk from Excel / CSV.
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -19,6 +18,7 @@ import {
 } from "@/components/govern/admin/shared";
 import { ClauseCard } from "@/components/govern/matrix/ClauseCard";
 import { ClauseDialog, type ClauseDialogTarget } from "@/components/govern/matrix/ClauseDialog";
+import { HomeStateSetting } from "@/components/govern/matrix/HomeStateSetting";
 import { ImportDialog } from "@/components/govern/matrix/ImportDialog";
 import { SaveVersionDialog } from "@/components/govern/matrix/SaveVersionDialog";
 import { TypeSwitcher } from "@/components/govern/matrix/TypeSwitcher";
@@ -29,7 +29,7 @@ import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, personName, plural } from "@/lib
 import type { AgreementType, MatrixClause } from "@/lib/govern/types";
 
 export default function MatrixPage() {
-  const { data, isLoading, error, isError, isFetching, dataUpdatedAt, refetch } = useMatrix();
+  const { data, isLoading, error, isFetching, refetch } = useMatrix();
   const { isAdmin, loading: roleLoading } = useAdminAccess();
   const save = useSaveMatrix();
   const draft = useMatrixDraft(data?.current.playbooks);
@@ -78,11 +78,10 @@ export default function MatrixPage() {
     <>
       <PageHeader
         title="Review matrix"
-        subtitle="OSU's accepted positions, clause by clause. Sonar checks every agreement against them, so reviewers only touch what deviates."
+        subtitle="Your accepted positions, clause by clause. Sonar checks every agreement against them, so reviewers only touch what deviates."
         back={{ href: "/settings", label: "Settings" }}
         actions={
           <>
-            <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
             {canEdit && (
               <Button
                 variant="outline"
@@ -106,14 +105,14 @@ export default function MatrixPage() {
         ) : (
           <>
             {/* Focal block: which version is in force, and what that means for contracts. */}
-            <div className="grid grid-cols-1 gap-5 rounded-xl bg-[var(--navy-800)] p-5 text-white md:grid-cols-12 md:gap-8">
+            <div className="grid grid-cols-1 gap-5 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs md:grid-cols-12 md:gap-8">
               <div className="min-w-0 md:col-span-4">
-                <div className="text-sm font-medium text-[var(--navy-100)]">Version in use</div>
+                <div className="text-sm font-medium text-[var(--ink-600)]">Version in use</div>
                 <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-                  <span className="text-4xl font-semibold leading-none tracking-tight tabular-nums">v{current.version}</span>
-                  <span className="text-base text-[var(--navy-100)]">effective {formatDay(current.effectiveDate)}</span>
+                  <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">v{current.version}</span>
+                  <span className="text-base text-[var(--ink-600)]">effective {formatDay(current.effectiveDate)}</span>
                 </div>
-                <p className="mt-2 text-sm text-[var(--navy-100)]">
+                <p className="mt-2 text-sm text-[var(--ink-600)]">
                   {plural(totalClauses, "clause position")} · saved by {current.createdBy ? personName(current.createdBy) : "the system"}
                 </p>
               </div>
@@ -121,6 +120,8 @@ export default function MatrixPage() {
             </div>
 
             {!roleLoading && !isAdmin && <ReadOnlyNote what="You can read every playbook and its history; an admin makes the changes." />}
+
+            <HomeStateSetting key={current.version} matrix={current} canEdit={isAdmin} blocked={draft.isDirty} />
 
             <SettingsSection
               title={AGREEMENT_TYPE_LABEL[type]}
@@ -144,7 +145,7 @@ export default function MatrixPage() {
                   <p className="text-base font-semibold text-foreground">No clauses for {AGREEMENT_TYPE_LABEL[type]} yet</p>
                   <p className="mt-1 max-w-md text-sm leading-relaxed text-[var(--ink-600)]">
                     {canEdit
-                      ? "Add a clause, or import OSU's matrix from Excel. Until then, agreements of this type have nothing to be checked against."
+                      ? "Add a clause, or import your matrix from Excel. Until then, agreements of this type have nothing to be checked against."
                       : "Until an admin adds positions, agreements of this type have nothing to be checked against."}
                   </p>
                   {canEdit && (
@@ -226,31 +227,26 @@ export default function MatrixPage() {
 /** Clause positions per agreement type: where the matrix is thin at a glance. */
 function CoverageBars({ counts, active }: { counts: Record<AgreementType, number>; active: AgreementType }) {
   const max = Math.max(1, ...Object.values(counts));
-  const ROW = 22;
-  const height = AGREEMENT_TYPES.length * ROW;
   return (
     <figure className="min-w-0 md:col-span-8">
-      <figcaption className="mb-2 text-sm font-medium text-[var(--navy-100)]">Clause positions by agreement type</figcaption>
-      <svg viewBox={`0 0 400 ${height}`} className="h-auto w-full" aria-hidden="true">
-        {AGREEMENT_TYPES.map((t, i) => {
-          const y = i * ROW;
-          const w = (counts[t] / max) * 200;
+      <figcaption className="mb-3 text-sm font-medium text-[var(--ink-600)]">Clause positions by agreement type</figcaption>
+      <ul className="flex flex-col gap-2">
+        {AGREEMENT_TYPES.map((t) => {
+          const on = t === active;
           return (
-            <g key={t}>
-              <text x="0" y={y + 15} className={`text-[11px] ${t === active ? "fill-white font-semibold" : "fill-[var(--navy-100)]"}`}>
-                {AGREEMENT_TYPE_LABEL[t]}
-              </text>
-              <rect x="160" y={y + 5} width="200" height="12" rx="3" className="fill-white/15" />
-              {counts[t] > 0 && <rect x="160" y={y + 5} width={w} height="12" rx="3" className={t === active ? "fill-white" : "fill-white/60"} />}
-              <text x="368" y={y + 15} className="fill-white text-[11px] tabular-nums">{counts[t] || "none"}</text>
-            </g>
+            <li key={t} className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_2.5rem] items-center gap-3 text-sm">
+              <span className={on ? "truncate font-semibold text-foreground" : "truncate text-[var(--ink-700)]"}>{AGREEMENT_TYPE_LABEL[t]}</span>
+              <span className="h-2 overflow-hidden rounded-full bg-[var(--ink-100)]">
+                <span
+                  className={on ? "block h-full rounded-full bg-[var(--brand-primary-600)]" : "block h-full rounded-full bg-[var(--brand-primary-300)]"}
+                  style={{ width: `${(counts[t] / max) * 100}%` }}
+                />
+              </span>
+              <span className="text-right font-semibold tabular-nums text-foreground">{counts[t] || "—"}</span>
+            </li>
           );
         })}
-      </svg>
-      <table className="sr-only">
-        <caption>Clause positions by agreement type</caption>
-        <tbody>{AGREEMENT_TYPES.map((t) => <tr key={t}><th scope="row">{AGREEMENT_TYPE_LABEL[t]}</th><td>{counts[t]}</td></tr>)}</tbody>
-      </table>
+      </ul>
     </figure>
   );
 }

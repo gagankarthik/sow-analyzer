@@ -18,7 +18,11 @@ import {
 import { CLAUSE_TYPES } from "@/lib/clause-types";
 import { PRICING_LABELS, EMPTY_ANSWERS, type SowAnswers, type SowPricingModel } from "@/lib/sow/types";
 import { draftSow, reviseSow, type SowError } from "@/lib/sow/client";
-import { downloadDocx } from "@/lib/docx";
+import { downloadDocx, markdownToDocxBlob } from "@/lib/docx";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { getUploadUrl, uploadToS3 } from "@/lib/api";
+import { useCreateContract } from "@/lib/govern/queries";
 
 const CLAUSE_ICONS: Record<string, LucideIcon> = {
   "payment-milestone": DollarSign, "auto-renewal": Repeat, "ip-ownership": FileSignature,
@@ -43,6 +47,29 @@ export default function DraftSowPage() {
   const [draft, setDraft] = useState("");
   const [step, setStep] = useState<"intake" | "editor">("intake");
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  const createContract = useCreateContract();
+  const [sending, setSending] = useState(false);
+
+  // Drafting → review: the draft goes in as a Word document, opens a contract
+  // and starts the same journey as any uploaded agreement.
+  async function startReview() {
+    if (sending || !draft.trim()) return;
+    setSending(true);
+    try {
+      const base = (answers.title || "statement-of-work").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 80) || "statement-of-work";
+      const blob = markdownToDocxBlob(draft, answers.title || "Statement of Work");
+      const file = new File([blob], `${base}.docx`, { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      const ticket = await getUploadUrl(file.name, "SOW");
+      await uploadToS3(ticket.uploadUrl, file);
+      const contract = await createContract.mutateAsync({ docId: ticket.docId, counterparty: answers.client.trim() || null });
+      toast.success("Sent to review", { description: "Sonar is reading the draft. It is on the board in Draft." });
+      router.push(`/contracts/${encodeURIComponent(contract.contractId)}`);
+    } catch (e) {
+      toast.error("Couldn't send the draft to review", { description: e instanceof Error ? e.message : "Your draft is safe here. Try again." });
+      setSending(false);
+    }
+  }
   const [error, setError] = useState<string | null>(null);
   const [noKey, setNoKey] = useState(false);
 
@@ -107,7 +134,7 @@ export default function DraftSowPage() {
         subtitle={
           step === "intake"
             ? "Answer a few questions and Sonar drafts an editable SOW."
-            : "Edit directly or ask Sonar to revise, then download as Word."
+            : "Edit directly or ask Sonar to revise, then start its review or download it as Word."
         }
         actions={
           step === "editor" ? (
@@ -115,8 +142,12 @@ export default function DraftSowPage() {
               <Button variant="outline" className="h-10 md:h-9" onClick={startOver}>
                 <ChevronLeft size={15} />Start over
               </Button>
-              <Button className="h-10 md:h-9" onClick={() => downloadDocx(draft, answers.title || "statement-of-work")}>
+              <Button variant="outline" className="h-10 md:h-9" onClick={() => downloadDocx(draft, answers.title || "statement-of-work")}>
                 <Download size={15} />Download .docx
+              </Button>
+              <Button className="h-10 md:h-9" onClick={() => void startReview()} disabled={sending || !draft.trim()}>
+                {sending ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" /> : <FileSignature size={15} />}
+                {sending ? "Sending…" : "Start review"}
               </Button>
             </>
           ) : undefined

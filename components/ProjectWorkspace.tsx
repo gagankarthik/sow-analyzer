@@ -12,7 +12,6 @@ import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
-import { CategoryRadar } from "@/components/charts/CategoryRadar";
 import { ContractValueChart } from "@/components/charts/ContractValueChart";
 import { SowTimeline } from "@/components/SowTimeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -580,7 +579,7 @@ function OverviewPanel({ v }: { v: View }) {
         <div className="flex items-start gap-3.5">
           <SonarMark size="md" tile className="hidden sm:inline-flex" />
           <div className="min-w-0 flex-1">
-            <h3 className="mb-1.5 text-sm font-semibold text-[var(--ai-ink)]">Sonar project overview</h3>
+            <h3 className="text-base font-semibold mb-1.5">Sonar project overview</h3>
             {!v.hasAnalysis ? (
               <p className="text-base text-[var(--ink-600)]">{v.analyzingClauses || v.processingCount > 0 ? "Analyzing the documents in this project. The overview appears as each SOW finishes." : "Upload a SOW and Sonar will summarize the project here."}</p>
             ) : (
@@ -623,18 +622,14 @@ function OverviewPanel({ v }: { v: View }) {
         </MotionReveal>
       )}
 
-      {v.hasAnalysis && <MotionReveal><RiskIntelligence counts={v.riskCounts} categories={v.catData} unrated={v.unratedCount} /></MotionReveal>}
+      {v.hasAnalysis && <MotionReveal><RiskIntelligence counts={v.riskCounts} unrated={v.unratedCount} /></MotionReveal>}
 
       {v.hasAnalysis && (
         <MotionReveal delay={0.05}>
-          <section className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-            <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 lg:col-span-7">
-              <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Risk by category</h3>
+          <section>
+            <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+              <h3 className="text-base font-semibold mb-4 tracking-tight text-foreground">Risk by category</h3>
               <ClauseHeatmap clauses={v.allClauses} />
-            </div>
-            <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 lg:col-span-5">
-              <h3 className="mb-2 text-lg font-semibold tracking-tight text-foreground">Category coverage</h3>
-              <CategoryRadar data={v.catData} />
             </div>
           </section>
         </MotionReveal>
@@ -643,7 +638,7 @@ function OverviewPanel({ v }: { v: View }) {
       {v.attention.length > 0 && (
         <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2"><ShieldAlert size={16} className="shrink-0 text-[var(--danger)]" /><h3 className="text-lg font-semibold tracking-tight text-foreground">Clauses that need attention</h3></div>
+            <div className="flex items-center gap-2"><ShieldAlert size={16} className="shrink-0 text-[var(--danger)]" /><h3 className="text-base font-semibold tracking-tight text-foreground">Clauses that need attention</h3></div>
             <button onClick={() => v.goTo("sow")} type="button" className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0">All clauses<ArrowRight size={13} strokeWidth={2.25} /></button>
           </div>
           <div className="space-y-2.5">{v.attention.slice(0, 5).map((c, i) => <AttentionRow key={`${c._docId}-${c.number}-${i}`} c={c} />)}</div>
@@ -671,7 +666,7 @@ function ValueBar({ segments, total, currency, reconciled }: { segments: ValueSe
     <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 bg-[var(--navy)] p-5 text-white md:p-6">
         <div className="min-w-0">
-          <h3 className="text-sm font-medium text-[var(--navy-foreground)]">{authoritative ? "Total contract value" : "Extracted contract value"}</h3>
+          <h3 className="text-base font-semibold">{authoritative ? "Total contract value" : "Extracted contract value"}</h3>
           <div className="mt-1.5 break-words text-3xl font-bold leading-none tabular-nums tracking-tight md:text-4xl">{fmtMoney(total, currency)}</div>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -793,7 +788,7 @@ function CommercialTerms({ v }: { v: View }) {
   return (
     <MotionReveal delay={0.04}>
       <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-        <h3 className="mb-1 flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"><FileSignatureFallback />Commercial terms</h3>
+        <h3 className="text-base font-semibold mb-1 flex items-center gap-2 tracking-tight text-foreground"><FileSignatureFallback />Commercial terms</h3>
         <p className="mb-4 text-sm text-[var(--ink-600)]">As extracted from the {v.readyDocs.length} analyzed document{v.readyDocs.length === 1 ? "" : "s"} in this project. Where a later document restates a term, the later one is shown.</p>
 
         {facts.length > 0 && (
@@ -1067,14 +1062,14 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
             <div className="flex-1 space-y-5 overflow-y-auto p-4">
               {/* Original */}
               <div>
-                <h4 className="mb-1.5 text-sm font-semibold text-foreground">Original clause</h4>
+                <h4 className="text-sm font-semibold mb-1.5 text-foreground">Original clause</h4>
                 <p className="whitespace-pre-wrap break-words rounded-lg border border-border bg-[var(--panel)] p-3 text-sm leading-relaxed text-foreground">{clause.body || "No clause text was extracted."}</p>
               </div>
 
               {/* Suggested (real, generated by Sonar on request) */}
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <h4 className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--ai-ink)]"><Sparkles size={13} />Suggested revision by Sonar</h4>
+                  <h4 className="text-sm font-semibold inline-flex items-center gap-1.5"><Sparkles size={13} />Suggested revision by Sonar</h4>
                   {sug.text && !sug.loading && <button type="button" onClick={generate} className="inline-flex min-h-10 items-center rounded-md px-1 text-sm font-semibold text-[var(--ai-ink)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)] md:min-h-0">Regenerate</button>}
                 </div>
                 {sug.loading ? (
@@ -1092,14 +1087,14 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
 
               {clause.summary && (
                 <div>
-                  <h4 className="mb-1.5 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--ai-ink)]"><Sparkles size={12} />Sonar&apos;s analysis</h4>
+                  <h4 className="text-sm font-semibold mb-1.5 inline-flex items-center gap-1.5"><Sparkles size={12} />Sonar&apos;s analysis</h4>
                   <p className="text-base leading-relaxed text-[var(--ink-700)]">{clause.summary}</p>
                 </div>
               )}
 
               {related.length > 0 && (
                 <div>
-                  <h4 className="mb-1.5 text-sm font-semibold text-foreground">Related clauses · {categoryLabel(clause.category)}</h4>
+                  <h4 className="text-sm font-semibold mb-1.5 text-foreground">Related clauses · {categoryLabel(clause.category)}</h4>
                   <ul className="space-y-1.5">
                     {related.map((r, i) => {
                       const rm = clauseRiskMeta(r);
@@ -1121,7 +1116,7 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
                   embedding similarity (not just same-category). */}
               {(similar.isLoading || similar.isError || similarItems.length > 0) && (
                 <div>
-                  <h4 className="mb-1.5 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <h4 className="text-sm font-semibold mb-1.5 inline-flex items-center gap-1.5 text-foreground">
                     <Layers size={12} />Similar clauses · across your documents
                   </h4>
                   {similar.isLoading ? (
@@ -1280,7 +1275,7 @@ function TimelinePanel({ v }: { v: View }) {
         <NoResults noun="documents" onClear={clearFilters} />
       ) : (
         <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-          <h3 className="mb-5 text-lg font-semibold tracking-tight text-foreground">Timeline &amp; activity</h3>
+          <h3 className="text-base font-semibold mb-5 tracking-tight text-foreground">Timeline &amp; activity</h3>
           <ol className="relative space-y-5 border-l border-[var(--ink-300)] pl-5 md:pl-6">
             {items.map((d) => (
               <li key={d.docId} className="relative">
@@ -1328,7 +1323,7 @@ function TeamPanel({ v }: { v: View }) {
     <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h3 className="text-lg font-semibold tracking-tight text-foreground">Team</h3>
+          <h3 className="text-base font-semibold tracking-tight text-foreground">Team</h3>
           <p className="mt-1 text-sm leading-relaxed text-[var(--ink-600)]">
             The people who can open {v.project.name}, and what each may do.{" "}
             {canManage ? "Manage everyone across your projects in" : "See every project you are on in"}{" "}
@@ -1413,7 +1408,7 @@ function DocumentsPanel({ v }: { v: View }) {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-xl font-semibold tracking-tight text-foreground">Documents</h3>
+        <h3 className="text-base font-semibold tracking-tight text-foreground">Documents</h3>
         {v.canUpload
           ? v.docs.length > 0 && <Button size="lg" className="md:h-9" aria-expanded={showUpload} onClick={() => setShowUpload((s) => !s)}><Plus size={14} />Add document</Button>
           : <p className="text-sm text-[var(--ink-600)]">{readOnlyReason(v.role)}</p>}
@@ -1677,7 +1672,7 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
           {/* AI analysis with provenance — first on mobile and tablet */}
           <div className="order-1 bg-card p-4 md:p-5 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--ai-ink)]"><Sparkles size={14} />Sonar extracted from this document</h3>
+              <h3 className="text-base font-semibold flex items-center gap-2"><Sparkles size={14} />Sonar extracted from this document</h3>
               <button type="button" onClick={() => document.getElementById("reader-file")?.scrollIntoView()} className="inline-flex h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">Jump to document<ArrowRight size={13} className="rotate-90" /></button>
             </div>
 
@@ -1697,7 +1692,7 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
             {/* Where the figures came from */}
             {lineItems.length > 0 && (
               <div className="mt-4">
-                <h4 className="mb-2 text-base font-semibold text-foreground">Figures &amp; where they came from</h4>
+                <h4 className="text-sm font-semibold mb-2 text-foreground">Figures &amp; where they came from</h4>
                 <ul className="space-y-2">
                   {lineItems.map((li, i) => (
                     <li key={i} className="rounded-lg border border-border bg-card p-3">
@@ -1721,7 +1716,7 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
 
             {findings.length > 0 && (
               <div className="mt-4">
-                <h4 className="mb-2 text-base font-semibold text-foreground">Key findings</h4>
+                <h4 className="text-sm font-semibold mb-2 text-foreground">Key findings</h4>
                 <ul className="space-y-2">
                   {findings.map((f, i) => {
                     const meta = SEVERITY_META[f.severity];
@@ -1750,7 +1745,7 @@ function UploadPrompt({ v }: { v: View }) {
   if (!v.canUpload) return <NoDocuments v={v} />;
   return (
     <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-      <h3 className="mb-1 text-xl font-semibold tracking-tight text-foreground">Upload your SOW</h3>
+      <h3 className="text-base font-semibold mb-1 tracking-tight text-foreground">Upload your SOW</h3>
       <p className="mb-4 text-sm text-[var(--ink-600)]">Drop the contract for {v.project.name}. Sonar extracts clauses, scores risk, and surfaces key findings.</p>
       <UploadDropzone projectId={v.project.id} defaultDocType="SOW" onDocReady={v.onDocReady} />
     </section>
@@ -1803,7 +1798,7 @@ function AttentionRow({ c }: { c: AggClause }) {
 function PartiesCard({ parties }: { parties: string[] }) {
   return (
     <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-      <h3 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Contract parties <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{parties.length}</span></h3>
+      <h3 className="text-base font-semibold mb-4 tracking-tight text-foreground">Contract parties <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{parties.length}</span></h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {parties.map((party, i) => (
           <div key={i} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">

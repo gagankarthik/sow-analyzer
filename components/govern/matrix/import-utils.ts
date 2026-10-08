@@ -105,11 +105,11 @@ function cellText(v: unknown): string {
 const HEADER_SYNONYMS: Record<ImportField, string[]> = {
   agreementType: ["agreement type", "contract type", "type of agreement", "agreement", "playbook"],
   clauseType: ["clause type", "clause", "clause category", "category", "term type", "topic"],
-  standard: ["standard position", "standard", "preferred position", "osu position", "position", "osu standard"],
+  standard: ["standard position", "standard", "preferred position", "our position", "position", "our standard"],
   fallback: ["fallback", "acceptable fallback", "fallback position", "fall back", "alternative position"],
   unacceptable: ["unacceptable terms", "unacceptable", "not acceptable", "deal breakers", "red lines", "prohibited terms"],
   escalationOffice: ["escalation office", "escalate to", "office", "escalation", "reviewing office"],
-  beneficial: ["beneficial terms", "beneficial", "favorable terms", "favourable terms", "beneficial to osu"],
+  beneficial: ["beneficial terms", "beneficial", "favorable terms", "favourable terms", "beneficial to us"],
   suggestedLanguage: ["suggested language", "suggested redline", "redline language", "model language", "suggested redline language", "proposed language"],
 };
 
@@ -265,22 +265,22 @@ export async function downloadTemplate(): Promise<void> {
   ws.addRow({
     agreementType: "License",
     clauseType: "Publication rights and review period",
-    standard: "OSU may publish freely after a review period of no more than 60 days.",
+    standard: "The Organization may publish freely after a review period of no more than 60 days.",
     fallback: "Review period up to 90 days, with a further 30-day delay for patent filing.",
     unacceptable: "Sponsor approval required to publish; Sponsor may delete results",
     escalationOffice: "Legal Affairs",
     beneficial: "Review period of 30 days or less",
-    suggestedLanguage: "OSU may publish the results after giving Sponsor 60 days to review for confidential information and patentable inventions.",
+    suggestedLanguage: "The Organization may publish the results after giving Sponsor 60 days to review for confidential information and patentable inventions.",
   });
   ws.addRow({
     agreementType: "Sponsored research",
     clauseType: "Governing law and sovereign immunity",
-    standard: "Ohio law governs; nothing waives OSU's sovereign immunity.",
+    standard: "Home-state law governs; nothing waives the Organization's sovereign immunity.",
     fallback: "Silent on governing law.",
     unacceptable: "Another state's law; Waiver of sovereign immunity",
     escalationOffice: "Legal Affairs",
     beneficial: "",
-    suggestedLanguage: "This Agreement is governed by the laws of the State of Ohio. Nothing in it waives the sovereign immunity of The Ohio State University.",
+    suggestedLanguage: "This Agreement is governed by the laws of the Organization's home state. Nothing in it waives the sovereign immunity of the Organization.",
   });
   ws.getRow(1).font = { bold: true };
   ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE9EDF4" } };
@@ -292,11 +292,11 @@ export async function downloadTemplate(): Promise<void> {
   notes.addRows([
     { c: "Agreement type", w: `One of: ${AGREEMENT_TYPES.map((t) => AGREEMENT_TYPE_LABEL[t]).join(", ")}. Optional if you import one type at a time.` },
     { c: "Clause type", w: `One of: ${MATRIX_CLAUSE_TYPES.map((t) => t.label).join("; ")}.` },
-    { c: "Standard position", w: "What OSU expects the clause to say. Required." },
-    { c: "Fallback", w: "A position OSU will still accept." },
-    { c: "Unacceptable terms", w: "Terms OSU never accepts. Separate several with a semicolon (;)." },
+    { c: "Standard position", w: "What you expect the clause to say. Required." },
+    { c: "Fallback", w: "A position you will still accept." },
+    { c: "Unacceptable terms", w: "Terms you never accept. Separate several with a semicolon (;)." },
     { c: "Escalation office", w: `One of: ${OFFICES.map((o) => OFFICE_LABEL[o]).join(", ")}.` },
-    { c: "Beneficial terms", w: "Terms that favour OSU. Separate several with a semicolon (;)." },
+    { c: "Beneficial terms", w: "Terms that favour you. Separate several with a semicolon (;)." },
     { c: "Suggested language", w: "Redline wording reviewers can send back to the other side." },
   ]);
   notes.getRow(1).font = { bold: true };
@@ -306,7 +306,7 @@ export async function downloadTemplate(): Promise<void> {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "osu-review-matrix-template.xlsx";
+  a.download = "review-matrix-template.xlsx";
   document.body.appendChild(a);
   a.click();
   a.remove();

@@ -59,7 +59,6 @@ import {
   AlertTriangle,
 } from "@/components/ui/icons";
 import { MotionReveal } from "@/components/MotionReveal";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { useDocuments, useDeleteDocument, useUpdateAnyDocument, isProcessing } from "@/lib/queries/documents";
 import { can, useProjects } from "@/lib/projects-store";
 import { ROLE_META } from "@/components/team/roles";
@@ -91,7 +90,7 @@ export default function LibraryPage() {
   // The shared documents query: polls while anything is processing, refetches
   // on focus, and is invalidated by every upload / edit / delete in the app — so
   // this list and its counts match the dashboard, workflow and notifications.
-  const { data, isLoading: loading, isError, error: loadError, isFetching, dataUpdatedAt, refetch } = useDocuments();
+  const { data, isLoading: loading, isError, error: loadError, refetch } = useDocuments();
   const docs = useMemo(() => data ?? [], [data]);
   // An error with nothing loaded is a failed page; with data it is a stale list.
   const failed = isError && !data;
@@ -235,7 +234,6 @@ export default function LibraryPage() {
         subtitle="Every SOW, MSA and amendment in one place."
         actions={
           <>
-            <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
             <Button asChild className="h-10 md:h-9">
               <Link href="/projects/upload">
                 <Plus size={15} strokeWidth={2.25} />
@@ -384,7 +382,7 @@ export default function LibraryPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft">
                   <FileText size={22} className="text-[var(--brand-primary-600)]" />
                 </div>
-                <h3 className="mb-1.5 text-lg font-semibold text-foreground">
+                <h3 className="text-base font-semibold mb-1.5 text-foreground">
                   {docs.length === 0 ? "No documents yet" : "No documents match these filters"}
                 </h3>
                 <p className="mb-5 max-w-xs text-sm text-[var(--ink-600)]">

@@ -7,7 +7,6 @@ import { ProjectHeader } from "@/components/ProjectHeader";
 import { DocLoadError } from "@/components/DocLoadError";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import {
   CheckCircle2,
   Clock,
@@ -95,7 +94,7 @@ export default function AuditPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
-  const { data: detail, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useDocument(id);
+  const { data: detail, isLoading, isError, error, refetch, isFetching } = useDocument(id);
   const [query, setQuery] = useState("");
   const [artifactState, setArtifactState] = useState(ALL);
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
@@ -156,11 +155,10 @@ export default function AuditPage() {
         <ContractActivity docId={id} />
 
         {/* ── Status (focal) + document integrity ───────────── */}
-        <LastUpdated className="justify-end" updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
 
         <section className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
           <div className="flex flex-col rounded-xl bg-[var(--navy)] p-5 text-white md:p-6 lg:col-span-4">
-            <h2 className="text-sm font-medium text-[var(--navy-foreground)]">Processing status</h2>
+            <h2 className="text-lg font-semibold">Processing status</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2.5">
               <span className="text-3xl font-semibold capitalize leading-none tracking-tight">{rawStatus.toLowerCase()}</span>
               <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CHIP[statusTone]}`}>
@@ -181,7 +179,7 @@ export default function AuditPage() {
           </div>
 
           <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 lg:col-span-8">
-            <h2 className="mb-1 text-lg font-semibold tracking-tight text-foreground">Document record</h2>
+            <h2 className="text-lg font-semibold mb-1 tracking-tight text-foreground">Document record</h2>
             <p className="mb-4 text-sm text-[var(--ink-600)]">Identifiers and hashes as stored for this document.</p>
             <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
               <IntegrityField label="Document ID" value={doc.docId} mono />
@@ -199,7 +197,7 @@ export default function AuditPage() {
         <section>
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">Processing pipeline</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">Processing pipeline</h2>
               <p className="mt-0.5 text-sm text-[var(--ink-600)]">
                 {rawStatus === "FAILED"
                   ? "Processing failed. The service does not report which stage failed."
@@ -255,7 +253,7 @@ export default function AuditPage() {
         {/* ── Version audit ─────────────────────────────────── */}
         <section>
           <div className="mb-4">
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
               Version audit <span className="ml-1 text-base font-normal text-muted-foreground">{sortedVersions.length} version{sortedVersions.length === 1 ? "" : "s"}</span>
             </h2>
             <p className="mt-0.5 text-sm text-[var(--ink-600)]">
@@ -376,7 +374,7 @@ function ContractActivity({ docId }: { docId: string }) {
     <section aria-labelledby="govern-activity-heading" className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="govern-activity-heading" className="text-xl font-semibold tracking-tight text-foreground">Activity</h2>
+          <h2 id="govern-activity-heading" className="text-lg font-semibold tracking-tight text-foreground">Activity</h2>
           <p className="mt-0.5 text-sm text-[var(--ink-600)]">
             Who reviewed, approved, sent back or commented, and when.
             {found.contract && <> Currently: <span className="font-medium text-foreground">{STATE_LABEL[found.contract.state]}</span>.</>}

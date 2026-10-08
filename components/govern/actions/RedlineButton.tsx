@@ -31,7 +31,7 @@ export function RedlineButton({ contract, clauses, note, variant = "outline", si
       await downloadRedline({
         contractTitle: contract.title || "Agreement",
         counterparty: contract.counterparty || contract.sponsor,
-        reviewerName: me.data ? personName(me.data) : contract.owner ? personName(contract.owner) : "OSU reviewer",
+        reviewerName: me.data ? personName(me.data) : contract.owner ? personName(contract.owner) : "Reviewer",
         note: note?.trim() || null,
         date: new Date(),
         clauses: redlineClauses(review, clauses),

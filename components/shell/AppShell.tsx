@@ -1,22 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
-import { CommandPalette } from "./CommandPalette";
 import { CopilotPanel } from "./CopilotPanel";
-import { AnalysisDisclaimer } from "@/components/ui/AnalysisDisclaimer";
-import { recordRecentDoc } from "@/lib/recent";
 import { useUIStore } from "@/lib/stores/ui";
 import { hydrateProjects, startProjectsSync } from "@/lib/projects-store";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { clearSessionCookie } from "@/lib/auth/session";
+import { useIdleSignOut } from "@/lib/auth/use-idle-sign-out";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname() ?? "";
-  const [paletteOpen, setPaletteOpen] = useState(false);
   const copilotOpen = useUIStore((s) => s.copilotOpen);
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const setCopilotOpen = useUIStore((s) => s.setCopilotOpen);
@@ -27,8 +21,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // once a minute, so a project created, shared or changed on another device or
   // by a teammate appears here. Keyed on the user, so signing in as someone else
   // in the same tab never shows the previous person's list.
-  const { status, user } = useAuth();
+  const { status, user, signOut } = useAuth();
   const userId = user?.sub;
+
+  // Sign out this device after 30 minutes with no activity in any tab (warns
+  // at 28). Other devices keep their own sessions.
+  const idleSignOut = useCallback(() => signOut(), [signOut]);
+  useIdleSignOut({ enabled: status === "authenticated", onTimeout: idleSignOut });
   useEffect(() => {
     if (status !== "authenticated") return;
     void hydrateProjects(userId);
@@ -44,57 +43,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const back = encodeURIComponent(window.location.pathname + window.location.search);
     window.location.replace(`/login?redirect=${back}`);
   }, [status]);
-
-  // Global keyboard shortcuts: ⌘K palette, ⌘/ copilot, and the "go to"
-  // sequences (g then d / p) à la Linear.
-  useEffect(() => {
-    let lastG = 0;
-    function isTyping() {
-      const el = document.activeElement;
-      return (
-        el instanceof HTMLElement &&
-        (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)
-      );
-    }
-    function onKey(e: KeyboardEvent) {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setPaletteOpen((v) => !v);
-        return;
-      }
-      if (mod && e.key === "/") {
-        e.preventDefault();
-        toggleCopilot();
-        return;
-      }
-      if (mod || e.altKey || isTyping()) return;
-
-      // Sequence: "g" primes, then "d"/"p"/"l"/"w"/"r" within 800ms navigates.
-      const now = Date.now();
-      if (e.key.toLowerCase() === "g") {
-        lastG = now;
-        return;
-      }
-      if (now - lastG < 800) {
-        const map: Record<string, string> = { d: "/dashboard", p: "/projects", l: "/library", w: "/workflow", r: "/reports" };
-        const dest = map[e.key.toLowerCase()];
-        if (dest) {
-          e.preventDefault();
-          router.push(dest);
-        }
-        lastG = 0;
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [router, toggleCopilot]);
-
-  // Record opened documents for the palette's "Recent" group.
-  useEffect(() => {
-    const m = /^\/projects\/([^/]+)/.exec(pathname);
-    if (m && m[1] !== "new") recordRecentDoc(m[1]);
-  }, [pathname]);
 
   useEffect(() => {
     if (mobileNav) {
@@ -115,20 +63,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar
         mobileOpen={mobileNav}
         onMobileClose={() => setMobileNav(false)}
-        onOpenSearch={() => setPaletteOpen(true)}
         onOpenCopilot={toggleCopilot}
       />
       <div className="flex-1 min-w-0 flex flex-col">
         <TopBar
-          onCommandOpen={() => setPaletteOpen(true)}
           onCopilotToggle={toggleCopilot}
           onMenuClick={() => setMobileNav(true)}
         />
         <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">{children}</main>
-        <AnalysisDisclaimer />
       </div>
       <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
 }

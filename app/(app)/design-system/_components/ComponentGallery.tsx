@@ -102,7 +102,7 @@ function DataDisplayChapter() {
         <div className="mb-1"><ExampleDataLabel /></div>
         <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4">
           <KpiTile
-            label="Waiting on OSU"
+            label="Waiting on you"
             value={38}
             delta={{ value: -0.12, goodWhen: "down", period: "vs last month" }}
             sparkline={<Sparkline values={[52, 49, 47, 51, 44, 43, 38]} />}
@@ -120,7 +120,7 @@ function DataDisplayChapter() {
         </div>
         <Variant label="loading">
           <div className="grid max-w-md grid-cols-2 gap-4">
-            <KpiTile label="Waiting on OSU" value={0} loading />
+            <KpiTile label="Waiting on you" value={0} loading />
             <KpiTile label="Overdue" value={0} loading />
           </div>
         </Variant>
@@ -161,7 +161,7 @@ function DataDisplayChapter() {
               <StatusPill tone="blocked">Overdue</StatusPill>
               <StatusPill tone="unknown">No target</StatusPill>
               <StatusPill tone="unknown" dashed>Missing</StatusPill>
-              <StatusPill tone="brand">OSU holds it</StatusPill>
+              <StatusPill tone="brand">You hold it</StatusPill>
               <StatusPill tone="ai">Found by Sonar</StatusPill>
               <StatusPill tone="caution" size="sm">sm</StatusPill>
             </div>
@@ -240,15 +240,15 @@ function DataDisplayChapter() {
 
         <Specimen name="Avatar and Legend" importPath="@/components/ds" purpose="People are never colour-coded; unassigned is a dashed ring. Legends use ink text beside a swatch.">
           <div className="flex flex-wrap items-center gap-3">
-            <Avatar name="Becky Alvarez" size="lg" />
+            <Avatar name="Avery Chen" size="lg" />
             <Avatar name="Daniel Okafor" size="md" />
-            <Avatar email="raman.41@osu.edu" />
+            <Avatar email="raman.41@example.org" />
             <Avatar name={null} email={null} />
-            <AvatarGroup people={[{ name: "Becky Alvarez" }, { name: "Grace Chen" }, { name: "Tom Lindqvist" }, { name: "Priya Raman" }, { name: "Daniel Okafor" }]} />
+            <AvatarGroup people={[{ name: "Avery Chen" }, { name: "Grace Chen" }, { name: "Tom Lindqvist" }, { name: "Priya Raman" }, { name: "Daniel Okafor" }]} />
           </div>
           <Legend
             items={[
-              { key: "a", label: "Waiting on OSU", color: "var(--viz-cat-1)" },
+              { key: "a", label: "Waiting on you", color: "var(--viz-cat-1)" },
               { key: "b", label: "Waiting on the other side", color: "var(--viz-cat-2)" },
               { key: "c", label: "Potential value", tone: "caution", hatch: true },
               { key: "d", label: "Trend", color: "var(--viz-cat-3)", shape: "line" },
@@ -261,7 +261,7 @@ function DataDisplayChapter() {
         <div className="mb-1"><ExampleDataLabel /></div>
         <ActivityFeed
           events={[
-            { id: "1", at: "2026-10-07T15:12:00Z", title: "Sent back for changes", icon: <Undo2 />, tone: "caution", body: "Indemnity clause exceeds OSU limits; proposed fallback language attached.", actor: <><Avatar name="Becky Alvarez" size="xs" decorative />Becky Alvarez</> },
+            { id: "1", at: "2026-10-07T15:12:00Z", title: "Sent back for changes", icon: <Undo2 />, tone: "caution", body: "Indemnity clause exceeds your organisation limits; proposed fallback language attached.", actor: <><Avatar name="Avery Chen" size="xs" decorative />Avery Chen</> },
             { id: "2", at: "2026-10-07T10:03:00Z", title: "Comment", icon: <MessageSquare />, isComment: true, body: "PI confirmed the publication delay can be 60 days.", actor: <><Avatar name="Priya Raman" size="xs" decorative />Priya Raman</> },
             { id: "3", at: "2026-10-06T09:30:00Z", title: "Assigned", icon: <UserRound />, tone: "brand", actor: <><Avatar name="Daniel Okafor" size="xs" decorative />Daniel Okafor</> },
             { id: "4", at: "2026-10-06T09:01:00Z", title: "Arrived", icon: <FileText />, body: "Received from sponsor portal.", actor: "Sonar" },
@@ -358,7 +358,7 @@ function InputsChapter() {
           label="Agreement progress"
           steps={[
             { id: "a", label: "Arrived", status: "complete", description: "Oct 6" },
-            { id: "b", label: "In review", status: "complete", description: "Becky Alvarez" },
+            { id: "b", label: "In review", status: "complete", description: "Avery Chen" },
             { id: "c", label: "With the other side", status: "current", description: "6 days" },
             { id: "d", label: "Approval and signature", status: "upcoming" },
             { id: "e", label: "Signed", status: "upcoming" },
@@ -413,7 +413,7 @@ function FeedbackChapter() {
             trigger={<Button variant="destructive">Reject agreement</Button>}
             tone="danger"
             title="Reject AGR-2026-1042?"
-            description="The sponsor will be told OSU cannot sign. You can reopen it later from the contract page."
+            description="The sponsor will be told your organisation cannot sign. You can reopen it later from the contract page."
             confirmLabel="Reject agreement"
             onConfirm={() => new Promise<void>((resolve) => window.setTimeout(() => { toast.success("Agreement rejected (example)"); resolve(); }, 800))}
           />

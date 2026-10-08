@@ -1,4 +1,4 @@
-// Govern: the contract workflow, OSU review matrix, value reporting and
+// Govern: the contract workflow, review matrix, value reporting and
 // integrations. These types mirror the API contract one to one
 // (sow-analyser-backend/docs/GOVERN_API.md). `null` always means "unknown",
 // never zero: a contract with no value has `value: null`, not 0.
@@ -13,7 +13,7 @@ export type Stage = Lifecycle
 export type State =
   | "intake" | "in_review" | "sent_back" | "escalated" | "ready_to_sign"
   | "out_for_signature" | "signed" | "active" | "rejected" | "closed"
-export type WaitingOnKind = "osu_reviewer" | "osu_office" | "counterparty" | "pi_department" | "signatory" | "nobody"
+export type WaitingOnKind = "internal_reviewer" | "internal_office" | "counterparty" | "pi_department" | "signatory" | "nobody"
 export type Office = "legal_affairs" | "tech_commercialization" | "sponsored_programs" | "export_control" | "risk_management"
 export type Tier = "within" | "fallback" | "deviates" | "unacceptable" | "review" | "missing"
 export type SlaStatus = "on_track" | "amber" | "red" | "none"
@@ -300,6 +300,18 @@ export interface BlockerInput {
   status?: "open" | "closed"
 }
 
+/** An open, dated obligation with the contract it belongs to (GET /obligations). */
+export interface PortfolioObligation extends Obligation {
+  contractId: string
+  contractTitle: string | null
+  counterparty: string | null
+  agreementType: AgreementType | null
+  stage: Stage | null
+  /** The contract's currency: an obligation's amount is in it. */
+  currency: string | null
+  owner: { email: string | null; name: string | null } | null
+}
+
 export interface ObligationInput {
   kind?: ObligationKind
   title?: string
@@ -335,6 +347,9 @@ export interface Matrix {
   createdAt: string
   createdBy: Person | null
   note: string | null
+  /** Your organization's home state (US state or DC). The governing-law check
+   *  needs it; with none set, a stated law goes to "Check by hand". */
+  homeState?: string | null
   playbooks: Partial<Record<AgreementType, MatrixPlaybook>>
 }
 
@@ -395,7 +410,20 @@ export interface RoutingRule {
 
 export type NotificationEvent = "assigned" | "sent_back" | "approved" | "overdue" | "escalated"
 
+/** The organisation, set during organisation setup. */
+export interface OrganizationSettings {
+  name: string | null
+  /** ISO 4217 code, e.g. "USD". */
+  defaultCurrency: string
+  /** 1 = January. */
+  fiscalYearStartMonth: number
+  /** Setup steps an admin confirmed by hand. */
+  confirmedSteps: ("matrix" | "workflow")[]
+  setupCompletedAt: string | null
+}
+
 export interface WorkflowSettings {
+  organization: OrganizationSettings
   stageTargetDays: Partial<Record<Stage, number | null>>
   redAfterMultiple: number
   reviewers: Reviewer[]
@@ -407,7 +435,10 @@ export interface WorkflowSettings {
 
 /** PUT body: any subset of the settings (the API merges it over what is saved)
  *  plus the write-only Teams webhook URL. */
-export type WorkflowSettingsInput = Partial<Omit<WorkflowSettings, "teamsWebhookConfigured">> & { teamsWebhookUrl?: string }
+export type WorkflowSettingsInput = Partial<Omit<WorkflowSettings, "teamsWebhookConfigured" | "organization">> & {
+  teamsWebhookUrl?: string
+  organization?: Partial<OrganizationSettings>
+}
 
 // ── Integrations ───────────────────────────────────────────────────────────
 

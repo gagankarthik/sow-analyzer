@@ -129,7 +129,7 @@ const COLUMNS: DataTableColumn<ExampleContract>[] = [
 
 export function GovernExample() {
   const [query, setQuery] = React.useState("");
-  const [waiting, setWaiting] = React.useState<"all" | "osu" | "external">("all");
+  const [waiting, setWaiting] = React.useState<"all" | "internal" | "external">("all");
   const [grouped, setGrouped] = React.useState(false);
   const [simulate, setSimulate] = React.useState<"ready" | "loading" | "error" | "empty">("ready");
   const debounced = useDebouncedValue(query, 200);
@@ -138,7 +138,7 @@ export function GovernExample() {
   const filtered = React.useMemo(() => {
     const q = debounced.trim().toLowerCase();
     return open.filter((r) => {
-      if (waiting === "osu" && (r.waitingOn === "counterparty" || r.waitingOn === "nobody")) return false;
+      if (waiting === "internal" && (r.waitingOn === "counterparty" || r.waitingOn === "nobody")) return false;
       if (waiting === "external" && r.waitingOn !== "counterparty") return false;
       if (!q) return true;
       return `${r.title} ${r.counterparty} ${r.ref}`.toLowerCase().includes(q);
@@ -171,11 +171,11 @@ export function GovernExample() {
     >
       <div className="flex flex-wrap items-center gap-3">
         <ExampleDataLabel />
-        <span className="text-caption text-fg-tertiary">240 generated agreements; nothing here comes from a real university.</span>
+        <span className="text-caption text-fg-tertiary">240 generated agreements; nothing here comes from a real organization.</span>
       </div>
 
       <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4">
-        <KpiTile label="Waiting on OSU" value={waitingOnOsu.length} emphasis="hero" delta={{ value: -0.09, goodWhen: "down", period: "vs last month" }} href="#gov-table" />
+        <KpiTile label="Waiting on you" value={waitingOnOsu.length} emphasis="hero" delta={{ value: -0.09, goodWhen: "down", period: "vs last month" }} href="#gov-table" />
         <KpiTile label="Past target" value={overdue.length} tone="blocked" footnote={`${formatValue(overdue.length)} of ${formatValue(open.length)} open agreements`} />
         <KpiTile
           label="Held-up value"
@@ -195,7 +195,7 @@ export function GovernExample() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <ChartCard
           title="Which office is holding the most contracts?"
-          takeaway={`${top.office} holds ${top.waiting} of ${officeTotal} contracts waiting on an OSU office, more than any other.`}
+          takeaway={`${top.office} holds ${top.waiting} of ${officeTotal} contracts waiting on an internal office, more than any other.`}
           table={{ columns: ["Office", "Waiting"], rows: byOffice.map((o) => [o.office, o.waiting]) }}
         >
           <BarChart data={byOffice} categoryKey="office" series={[{ key: "waiting", label: "Contracts waiting" }]} labelWidth={170} />
@@ -265,7 +265,7 @@ export function GovernExample() {
             onChange={setWaiting}
             options={[
               { value: "all", label: "Anyone" },
-              { value: "osu", label: "OSU" },
+              { value: "internal", label: "Internal" },
               { value: "external", label: "Other side" },
             ]}
           />

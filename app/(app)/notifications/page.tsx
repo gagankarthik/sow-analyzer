@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/PageHeader";
 import { MotionReveal } from "@/components/MotionReveal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { useNow } from "@/lib/use-now";
 import {
   useNotifications,
@@ -69,7 +68,7 @@ function relTime(ts: number, now: number): string {
 }
 
 export default function NotificationsPage() {
-  const { notifications, unreadCount, isRead, markRead, markAllRead, isLoading, isError, isFetching, updatedAt, refetch } = useNotifications();
+  const { notifications, unreadCount, isRead, markRead, markAllRead, isLoading, isError, refetch } = useNotifications();
   const [filter, setFilter] = useState<NotificationType | "all">("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const now = useNow(30_000); // "5m ago" and the Today bucket follow the real clock
@@ -98,7 +97,6 @@ export default function NotificationsPage() {
         title="Notifications"
         actions={
           <>
-            <LastUpdated updatedAt={updatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
             <Button variant="outline" className="h-10 sm:h-9" onClick={markAllRead} disabled={unreadCount === 0}>
               <Check size={14} />
               Mark all read
@@ -172,7 +170,7 @@ export default function NotificationsPage() {
             <div className="space-y-6">
               {groups.map(([bucket, items]) => (
                 <section key={bucket}>
-                  <h2 className="mb-2.5 text-lg font-semibold tracking-tight text-foreground">{bucket}</h2>
+                  <h2 className="text-lg font-semibold mb-2.5 tracking-tight text-foreground">{bucket}</h2>
                   <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-xs">
                     {items.map((n, i) => {
                       const meta = TYPE_META[n.type];

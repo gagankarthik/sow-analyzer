@@ -29,8 +29,8 @@ export const DIRECTION_LABEL: Record<Direction, string> = {
 }
 
 export const DIRECTION_HINT: Record<Direction, string> = {
-  incoming: "Sponsor funding, licence fees and royalties paid to the university",
-  outgoing: "Subawards and vendor spend paid by the university",
+  incoming: "Sponsor funding, licence fees and royalties paid to the organization",
+  outgoing: "Subawards and vendor spend paid by the organization",
 }
 
 export const OFFICES: Office[] = [
@@ -65,7 +65,7 @@ export const STATE_LABEL: Record<State, string> = {
   intake: "Just arrived",
   in_review: "Being reviewed",
   sent_back: "Sent back for changes",
-  escalated: "With an OSU office",
+  escalated: "With an internal office",
   ready_to_sign: "Ready to sign",
   out_for_signature: "Out for signature",
   signed: "Signed",
@@ -75,8 +75,8 @@ export const STATE_LABEL: Record<State, string> = {
 }
 
 export const WAITING_ON_LABEL: Record<WaitingOnKind, string> = {
-  osu_reviewer: "Waiting on OSU reviewer",
-  osu_office: "Waiting on an OSU office",
+  internal_reviewer: "Waiting on a reviewer",
+  internal_office: "Waiting on an internal office",
   counterparty: "Waiting on the other side",
   pi_department: "Waiting on PI or department",
   signatory: "Waiting on signature",
@@ -85,20 +85,20 @@ export const WAITING_ON_LABEL: Record<WaitingOnKind, string> = {
 
 /** Short form for chips and table cells. */
 export const WAITING_ON_SHORT: Record<WaitingOnKind, string> = {
-  osu_reviewer: "OSU reviewer",
-  osu_office: "OSU office",
+  internal_reviewer: "Reviewer",
+  internal_office: "Internal office",
   counterparty: "Other side",
   pi_department: "PI / department",
   signatory: "Signatory",
   nobody: "Nobody",
 }
 
-/** Who has the ball: OSU, or someone outside OSU. */
-export const WAITING_ON_SIDE: Record<WaitingOnKind, "osu" | "external" | "none"> = {
-  osu_reviewer: "osu",
-  osu_office: "osu",
-  pi_department: "osu",
-  signatory: "osu",
+/** Who has the ball: your organisation, or someone outside your organisation. */
+export const WAITING_ON_SIDE: Record<WaitingOnKind, "internal" | "external" | "none"> = {
+  internal_reviewer: "internal",
+  internal_office: "internal",
+  pi_department: "internal",
+  signatory: "internal",
   counterparty: "external",
   nobody: "none",
 }
@@ -115,10 +115,10 @@ export const TIER_LABEL: Record<Tier, string> = {
 }
 
 export const TIER_HINT: Record<Tier, string> = {
-  within: "Matches OSU's standard position.",
-  fallback: "Not the standard, but a position OSU accepts.",
-  deviates: "Outside what OSU accepts. Ask the other side to change it.",
-  unacceptable: "A term OSU does not accept. Change it or reject the agreement.",
+  within: "Matches your standard position.",
+  fallback: "Not the standard, but a position you accept.",
+  deviates: "Outside what you accept. Ask the other side to change it.",
+  unacceptable: "A term you do not accept. Change it or reject the agreement.",
   review: "Sonar found the clause but could not decide. A reviewer should compare it.",
   missing: "The matrix expects this clause and the agreement does not have it.",
 }
@@ -150,11 +150,11 @@ export const REJECT_REASONS: RejectReason[] = [
 ]
 
 export const REJECT_REASON_LABEL: Record<RejectReason, string> = {
-  unacceptable_terms: "Terms OSU cannot accept",
+  unacceptable_terms: "Terms you cannot accept",
   sponsor_withdrew: "The sponsor or licensee withdrew",
   pi_withdrew: "The PI or department withdrew",
   duplicate: "Duplicate of another agreement",
-  out_of_scope: "Not something OSU signs",
+  out_of_scope: "Not something you sign",
   other: "Another reason",
 }
 
@@ -242,3 +242,15 @@ export const CAPTURE_GAP_LABEL: Record<CaptureGap, string> = {
   termEnd: "End date",
   agreementTypeUnsure: "Agreement type (please confirm)",
 }
+
+
+/** US states and DC: the choices for the matrix's home state. */
+export const US_STATES = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
+  "District of Columbia", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas",
+  "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
+  "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York",
+  "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island",
+  "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
+  "West Virginia", "Wisconsin", "Wyoming",
+] as const

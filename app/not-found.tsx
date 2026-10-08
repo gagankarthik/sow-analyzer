@@ -26,7 +26,7 @@ export default function NotFound() {
           description="The address may be mistyped, or the page was moved or deleted. Your documents are not affected."
         >
           <Button size="lg" asChild>
-            <Link href="/dashboard">Go to dashboard</Link>
+            <Link href="/home">Go to home</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
             <Link href="/">Back to home</Link>

@@ -72,7 +72,7 @@ function PanelCard({ title, children, className }: { title: string; children: Re
 
 const MATRIX_ROWS: { clause: string; finding: string; outcome: Outcome }[] = [
   { clause: "License grant scope", finding: "Field of use is wider than the matrix allows", outcome: "deviates" },
-  { clause: "Governing law", finding: "Delaware law; the matrix requires Ohio", outcome: "unacceptable" },
+  { clause: "Governing law", finding: "Delaware law; the matrix requires your home state", outcome: "unacceptable" },
   { clause: "Royalties", finding: "3.5% of net sales; standard is 4%", outcome: "fallback" },
   { clause: "Publication rights", finding: "60-day review, matches the standard", outcome: "within" },
   { clause: "Indemnification", finding: "Capped at fees paid", outcome: "within" },
@@ -124,7 +124,7 @@ export function HolderCard({ className }: { className?: string }) {
 export function NextStepCard({ className }: { className?: string }) {
   return (
     <PanelCard title="Recommended next step" className={className}>
-      <p className="lp-pcard-strong">Send back to Buckeye BioSensors: 3 clauses need changes.</p>
+      <p className="lp-pcard-strong">Send back to the licensee: 3 clauses need changes.</p>
       <p className="lp-pcard-meta">Suggested language is attached to each clause.</p>
       <div className="mt-3 flex items-center gap-2">
         <span className="lp-pcard-button">Send back for changes</span>
@@ -139,7 +139,7 @@ export function NextStepCard({ className }: { className?: string }) {
 const LANES: { stage: string; count: number; items: { title: string; who: string; days: string; tone: "ok" | "late" | "over" }[] }[] = [
   { stage: "In review", count: 6, items: [
     { title: "Federal subaward: autonomous sensing", who: "Export Control", days: "23 days", tone: "over" },
-    { title: "Sponsored research: ceramic composites", who: "OSU reviewer", days: "4 days", tone: "ok" },
+    { title: "Sponsored research: ceramic composites", who: "a reviewer", days: "4 days", tone: "ok" },
   ] },
   { stage: "With the other side", count: 3, items: [
     { title: "Data use agreement: health outcomes", who: "Riverbend Health", days: "45 days", tone: "over" },
@@ -288,7 +288,7 @@ export function BottleneckCard({ className }: { className?: string }) {
 /* ─── What Sonar captured ─────────────────────────────────────── */
 
 const CAPTURED: { field: string; value: string; where: string }[] = [
-  { field: "Parties", value: "The Ohio State University · Buckeye BioSensors, Inc.", where: "Preamble" },
+  { field: "Parties", value: "Your organisation · the licensee", where: "Preamble" },
   { field: "Effective date", value: "1 November 2026", where: "§1.4" },
   { field: "Term", value: "Life of the last licensed patent", where: "§11.1" },
   { field: "Upfront fee", value: "$75,000 within 30 days", where: "§4.1" },

@@ -190,7 +190,7 @@ function ReviewerForm({
           <Input id={`${uid}-name`} value={r.name} onChange={(e) => setR({ ...r, name: e.target.value })} autoComplete="off" aria-invalid={tried && !!errs.name} />
         </Field>
         <Field label="Email" htmlFor={`${uid}-email`} required error={tried ? errs.email : null}>
-          <Input id={`${uid}-email`} type="email" value={r.email} onChange={(e) => setR({ ...r, email: e.target.value })} autoComplete="off" placeholder="name@osu.edu" aria-invalid={tried && !!errs.email} />
+          <Input id={`${uid}-email`} type="email" value={r.email} onChange={(e) => setR({ ...r, email: e.target.value })} autoComplete="off" placeholder="name@example.org" aria-invalid={tried && !!errs.email} />
         </Field>
       </div>
       <ToggleChips label="Offices" options={OFFICE_OPTIONS} values={r.offices} onChange={(offices) => setR({ ...r, offices })} hint="Escalations to these offices can land on this person." />

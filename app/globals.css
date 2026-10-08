@@ -22,20 +22,20 @@
 :root {
   color-scheme: light;
 
-  /* Accent (10%): TEAL. The variable names stay "brand-primary" because
-     every component references them; the values are the teal ramp.
-     White on 600 = 5.47:1 · 600 on white = 5.47:1 · 700 on 50 = 7.15:1. */
-  --brand-primary-50:  #EFFAF8;
-  --brand-primary-100: #D3F0EC;
-  --brand-primary-200: #A6E0D8;
-  --brand-primary-300: #6CC8BC;
-  --brand-primary-400: #2FA798;
-  --brand-primary-500: #138A7D;
-  --brand-primary-600: #0F766E;  /* buttons, links, focus */
-  --brand-primary-700: #0B5E58;  /* hover, text on tint */
-  --brand-primary-800: #0A4A46;
-  --brand-primary-900: #083B38;
-  --brand-primary-950: #062B29;
+  /* Accent (10%): BLUE-IQ BLUE, from the logo (#297AFF). The variable names
+     stay "brand-primary" because every component references them.
+     White on 600 = 5.4:1 · 600 on white = 5.4:1 · 700 on 50 = 7.4:1. */
+  --brand-primary-50:  #EEF4FF;
+  --brand-primary-100: #D9E6FF;
+  --brand-primary-200: #BCD3FF;
+  --brand-primary-300: #8EB6FF;
+  --brand-primary-400: #5994FF;
+  --brand-primary-500: #297AFF;  /* the logo blue: marks, charts */
+  --brand-primary-600: #1F63E0;  /* buttons, links, focus */
+  --brand-primary-700: #174EB5;  /* hover, text on tint */
+  --brand-primary-800: #153F8F;
+  --brand-primary-900: #142F68;
+  --brand-primary-950: #0D1E44;
 
   /* Secondary (30%): NAVY. White on 800 = 15.97:1 · 600 on 50 = 9.6:1. */
   --navy-50:  #EEF1F7;
@@ -106,24 +106,27 @@
   --font-display: var(--font-plex), ui-sans-serif, sans-serif;
   --font-mono:    var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Type scale. Eight steps, defined once, in rem so browser text zoom works.
-     They re-point Tailwind's text-* names, so `text-sm` is the only way to ask
-     for 13px: never write text-[13px]. 12px is the minimum.
+  /* Type scale, defined once, in rem so browser text zoom works. It
+     re-points Tailwind's text-* names: never write text-[NNpx]. 12px is the
+     minimum.
 
        text-xs   12  captions, meta, table headers, badges
-       text-sm   13  labels, secondary UI text, dense tables
-       text-base 14  body text, inputs, buttons
-       text-lg   16  lead paragraphs, card titles
-       text-xl   18  section headings
-       text-2xl  22  page sub-headings, small stats
-       text-3xl  28  page titles, KPI numbers
-       text-4xl  32  the single focal number on a page            */
+       text-sm   14  labels, nav, secondary UI text, tables
+       text-base 14  body text, inputs, buttons, panel titles (h3)
+       text-lg   16  section headings (h2), lead paragraphs
+       text-xl   20  dialog titles, sub-page titles
+       text-2xl  24  page titles (h1)
+       text-3xl  28  KPI numbers
+       text-4xl  32  the single focal number on a page
+     One scale: 12 / 14 / 16 / 20 / 24 / 28 / 32. Matches the named scale
+     (caption, body, body-lg, title-sm, title, headline). No step under 2px,
+     so every step reads as a level.                                     */
   --text-xs:   0.75rem;    --text-xs--line-height:   1.5;
-  --text-sm:   0.8125rem;  --text-sm--line-height:   1.5;
+  --text-sm:   0.875rem;   --text-sm--line-height:   1.5;
   --text-base: 0.875rem;   --text-base--line-height: 1.55;
   --text-lg:   1rem;       --text-lg--line-height:   1.5;
-  --text-xl:   1.125rem;   --text-xl--line-height:   1.4;
-  --text-2xl:  1.375rem;   --text-2xl--line-height:  1.25;
+  --text-xl:   1.25rem;    --text-xl--line-height:   1.4;
+  --text-2xl:  1.5rem;     --text-2xl--line-height:  1.25;
   --text-3xl:  1.75rem;    --text-3xl--line-height:  1.15;
   --text-4xl:  2rem;       --text-4xl--line-height:  1.1;
   --tracking-tight:  -0.02em;
@@ -181,8 +184,9 @@
   --chart-5: var(--danger);
 
   /* Sidebar: light. White rail with an ink-200 edge; items ink-700
-     (10.9:1 on white), hover ink-100; the active item is teal-50 with
-     teal-700 text (7.15:1), the selection role of the accent. */
+     (10.9:1 on white), hover ink-100; the active item is blue-50 with
+     blue-700 text (7.4:1), the selection role of the accent. Each item's
+     icon carries its area colour (--area-*). */
   --sidebar: var(--paper-elev);
   --sidebar-foreground: var(--ink-700);
   --sidebar-primary: var(--brand-primary-50);
@@ -344,11 +348,11 @@
   /* ── Matrix outcomes (Govern review) ──
      A dedicated set, separate from risk and from brand. Each outcome is
      colour + icon + word (see components/ds/OutcomeBadge):
-       within        check     "Within OSU terms"        fg/soft 4.75:1
+       within        check     "Within your organisation terms"        fg/soft 4.75:1
        fallback      half-circle "Acceptable fallback"   fg/soft 4.71:1
        deviates      triangle  "Needs review"            fg/soft 5.39:1
-       unacceptable  octagon   "Not acceptable to OSU"   fg/soft 4.83:1
-       beneficial    "+" in a success outline "Benefits OSU" 5.88:1
+       unacceptable  octagon   "Not acceptable to you"   fg/soft 4.83:1
+       beneficial    "+" in a success outline "Favours you" 5.88:1
        missing       dashed outline "Missing"            fg/raised 12.3:1  */
   --outcome-within:            var(--status-ok);
   --outcome-within-fg:         var(--status-ok-fg);
@@ -377,8 +381,8 @@
   /* ── Tenant brand layer ──
      Brand chrome only (header band, logo bar). A tenant theme never touches
      --interactive, status, outcome or chart tokens: in a review UI, red
-     stays reserved for "not acceptable". Opt in with
-     <html data-tenant-theme="osu">. */
+     stays reserved for "not acceptable". Opt in by setting
+     `data-tenant-theme` on <html> for a client. */
   --tenant-brand:     var(--navy-800);
   --tenant-brand-fg:  #FFFFFF;
   --tenant-brand-border: var(--navy-border);
@@ -401,7 +405,7 @@
   --chart-height-lg: 20rem;     /* 320 */
 
   /* Structure (the 30% navy role) for code: section headings, dark panels,
-     "OSU holds it" chips and other emphasis that is NOT an action. Use these
+     "You hold it" chips and other emphasis that is NOT an action. Use these
      instead of teal tints so the accent stays near 10%.
      structure-soft-fg on structure-soft = navy-600 on navy-50, 9.6:1. */
   --structure:          var(--navy-800);
@@ -524,13 +528,6 @@
   }
 }
 
-/* Tenant brand: The Ohio State University (BUX Scarlet #BA0C2F, 6.6:1 with
-   white). Header and logo bar only; see the rule on --tenant-brand above. */
-[data-tenant-theme="osu"] {
-  --tenant-brand:        #BA0C2F;
-  --tenant-brand-fg:     #FFFFFF;
-  --tenant-brand-border: #8F0A24;
-}
 
 /* Type scale for components/ds: 12 / 14 / 16 / 20 / 24 / 32 / 40 / 56, in rem
    so browser zoom works. These are NEW utility names (text-caption … text-

@@ -1,7 +1,7 @@
 "use client";
 
 // Requirement 3: the one recommended next step, as a sentence and a single
-// button. For a send-back it lists the clauses and the language OSU wants;
+// button. For a send-back it lists the clauses and the language you want;
 // for an escalation it names the office.
 
 import { ArrowRight, Building2, CheckCircle2, Hourglass } from "@/components/ui/icons";
@@ -33,7 +33,7 @@ export function NextStepPanel({ contract: c, onUploadRevision }: { contract: Con
       className="flex flex-col gap-5 rounded-xl border border-border bg-card p-5 md:p-6"
     >
       <div className="flex flex-col gap-2">
-        <h2 id="next-step-heading" className="flex items-start gap-2.5 text-[clamp(20px,2.2vw,26px)] font-semibold leading-snug tracking-[-0.02em] text-foreground">
+        <h2 id="next-step-heading" className="text-lg font-semibold flex items-start gap-2.5 leading-snug tracking-[-0.02em] text-foreground">
           <span className="mt-1 shrink-0" aria-hidden>
             {calm ? <Hourglass size={20} className="text-[var(--ink-500)]" /> : <ArrowRight size={20} className="text-[var(--brand-primary-600)]" />}
           </span>

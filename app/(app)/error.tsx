@@ -43,7 +43,7 @@ export default function AppError({
         Try again
       </Button>
       <Button size="lg" variant="outline" asChild>
-        <Link href="/dashboard">Go to dashboard</Link>
+        <Link href="/home">Go to home</Link>
       </Button>
     </StatePanel>
   );

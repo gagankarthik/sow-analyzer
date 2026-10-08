@@ -10,7 +10,7 @@ import type { Stage, WaitingOnKind } from "@/lib/govern/types";
 
 export type ReportFocus = { kind: "waiting"; value: WaitingOnKind } | { kind: "stage"; value: Stage } | null;
 
-const WAITING_KINDS: WaitingOnKind[] = ["osu_reviewer", "osu_office", "counterparty", "pi_department", "signatory"];
+const WAITING_KINDS: WaitingOnKind[] = ["internal_reviewer", "internal_office", "counterparty", "pi_department", "signatory"];
 
 function subscribe(onChange: () => void) {
   window.addEventListener("hashchange", onChange);

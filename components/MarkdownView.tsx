@@ -46,9 +46,9 @@ export function MarkdownView({ markdown, className }: { markdown: string; classN
     }
     flush();
     if (b.type === "heading") {
-      if (b.level === 1) out.push(<h1 key={out.length} className="mt-1 mb-4 border-b border-border pb-4 text-2xl font-semibold leading-tight tracking-tight text-foreground"><Inline spans={b.spans} /></h1>);
-      else if (b.level === 2) out.push(<h2 key={out.length} className="mt-7 mb-2 text-lg font-semibold tracking-tight text-foreground"><Inline spans={b.spans} /></h2>);
-      else out.push(<h3 key={out.length} className="mt-4 mb-1.5 text-base font-semibold text-foreground"><Inline spans={b.spans} /></h3>);
+      if (b.level === 1) out.push(<h1 key={out.length} className="text-2xl font-semibold mt-1 mb-4 border-b border-border pb-4 leading-tight tracking-tight text-foreground"><Inline spans={b.spans} /></h1>);
+      else if (b.level === 2) out.push(<h2 key={out.length} className="text-lg font-semibold mt-7 mb-2 tracking-tight text-foreground"><Inline spans={b.spans} /></h2>);
+      else out.push(<h3 key={out.length} className="text-base font-semibold mt-4 mb-1.5 text-foreground"><Inline spans={b.spans} /></h3>);
     } else {
       out.push(<p key={out.length} className="my-2.5 text-base leading-[1.7] text-[var(--ink-700)]"><Inline spans={b.spans} /></p>);
     }

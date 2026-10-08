@@ -14,7 +14,7 @@ const AGREEMENTS: Record<IndustrySectionId, string> = {
 
 export function Industries() {
   return (
-    <section id="industries" className="lp-section scroll-mt-20" aria-labelledby="industries-title">
+    <section id="industries" className="lp-section lp-band scroll-mt-20" aria-labelledby="industries-title">
       <div className="lp-wrap lp-split">
         <div>
           <h2 id="industries-title" className="lp-h2">

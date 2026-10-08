@@ -86,7 +86,7 @@ function StageGroup({
 }) {
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-[var(--ink-600)]">{title}</h3>
+      <h3 className="text-base font-semibold mb-2">{title}</h3>
       <ul className="divide-y divide-border rounded-lg border border-border">
         {stages.map((stage) => {
           const value = draft.stageTargetDays[stage] ?? null;

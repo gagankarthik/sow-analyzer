@@ -86,7 +86,7 @@ export function SendForSignatureDialog({ contract, open, onOpenChange }: { contr
       </fieldset>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label={needsSignatory ? "Signatory email" : "Signatory email (optional)"} htmlFor="sig-email">
-          <Input id="sig-email" type="email" inputMode="email" placeholder="signatory@osu.edu" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={email.trim() !== "" && !emailOk} />
+          <Input id="sig-email" type="email" inputMode="email" placeholder="signatory@example.org" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={email.trim() !== "" && !emailOk} />
         </Field>
         <Field label="Signatory name (optional)" htmlFor="sig-name">
           <Input id="sig-name" placeholder="e.g. Dana Whitfield" value={name} onChange={(e) => setName(e.target.value)} />

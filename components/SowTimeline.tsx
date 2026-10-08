@@ -72,7 +72,7 @@ export function SowTimeline({ classifications, currency }: { classifications: Ap
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="flex items-center gap-2">
           <CalendarClock size={16} className="shrink-0 self-center text-[var(--brand-primary-600)]" />
-          <h3 className="text-lg font-semibold tracking-tight text-foreground">Timeline</h3>
+          <h3 className="text-base font-semibold tracking-tight text-foreground">Timeline</h3>
           <span className="text-sm tabular-nums text-muted-foreground">{events.length} dated event{events.length === 1 ? "" : "s"}</span>
         </div>
         {events.length >= 2 && <span className="text-sm tabular-nums text-[var(--ink-600)]">{formatIsoDay(first)} → {formatIsoDay(last)}</span>}

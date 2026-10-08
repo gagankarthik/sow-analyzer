@@ -1,5 +1,5 @@
 // Wording and per-connector facts for the Integrations page. Generic names
-// only: these describe what each platform does for OSU, never its branding.
+// only: these describe what each platform does, never its branding.
 
 import type { Connector, ConnectorId, SyncRun } from "@/lib/govern/types"
 
@@ -16,7 +16,7 @@ export const CONNECTOR_NAME: Record<ConnectorId, string> = {
 export const CONNECTOR_PURPOSE: Record<ConnectorId, string> = {
   huron: "Agreement records and their documents come in for Sonar to review; matrix findings, blockers, the next step and status go back to the Huron record.",
   workday: "Award, cost center, supplier and spend data come in to power current spend reporting. Each contract is matched to its Workday record.",
-  m365: "Sign-on through OSU's identity provider, alerts in Teams and Outlook, and optional intake from a SharePoint folder or email inbox.",
+  m365: "Sign-on through your identity provider, alerts in Teams and Outlook, and optional intake from a SharePoint folder or email inbox.",
   docusign: "Signature status comes in: a completed envelope moves the contract to Signed automatically.",
 }
 

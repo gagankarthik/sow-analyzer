@@ -105,7 +105,7 @@ function ClauseForm({
     const found: Record<string, string> = {};
     if (!clauseType) found.clauseType = "Choose a clause type.";
     if (!label.trim()) found.label = "Give the clause a name people will recognise.";
-    if (!standard.trim()) found.standard = "Write OSU's standard position. Sonar compares every agreement with it.";
+    if (!standard.trim()) found.standard = "Write your standard position. Sonar compares every agreement with it.";
     const nums: Record<string, number> = {};
     for (const t of thresholds) {
       const n = Number(t.value);
@@ -191,15 +191,15 @@ function ClauseForm({
           </p>
 
           <Field label="Standard position" htmlFor={id("standard")} error={errors.standard} required>
-            <Textarea id={id("standard")} rows={3} maxLength={1200} value={standard} onChange={(e) => setStandard(e.target.value)} placeholder="What OSU expects this clause to say." />
+            <Textarea id={id("standard")} rows={3} maxLength={1200} value={standard} onChange={(e) => setStandard(e.target.value)} placeholder="What you expect this clause to say." />
           </Field>
-          <Field label="Acceptable fallback" htmlFor={id("fallback")} hint="A position OSU will still accept if the standard is refused.">
+          <Field label="Acceptable fallback" htmlFor={id("fallback")} hint="A position you will still accept if the standard is refused.">
             <Textarea id={id("fallback")} rows={2} maxLength={1200} value={fallback} onChange={(e) => setFallback(e.target.value)} />
           </Field>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ChipListEditor label="Unacceptable terms" values={unacceptable} onChange={setUnacceptable} tone="danger" placeholder="e.g. Sponsor approval to publish" hint="Terms OSU never accepts." />
-            <ChipListEditor label="Beneficial terms" values={beneficial} onChange={setBeneficial} tone="success" placeholder="e.g. Review period of 30 days or less" hint="Terms that favour OSU. Sonar tags them." />
+            <ChipListEditor label="Unacceptable terms" values={unacceptable} onChange={setUnacceptable} tone="danger" placeholder="e.g. Sponsor approval to publish" hint="Terms you never accept." />
+            <ChipListEditor label="Beneficial terms" values={beneficial} onChange={setBeneficial} tone="success" placeholder="e.g. Review period of 30 days or less" hint="Terms that favour you. Sonar tags them." />
           </div>
 
           <Field label="Escalation office" htmlFor={id("office")} hint="Who must review the clause when an agreement deviates.">

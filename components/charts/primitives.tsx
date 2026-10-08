@@ -42,7 +42,7 @@ export function ChartCard({
       <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-3.5 md:px-5">
         <div className="flex min-w-0 items-center gap-2">
           {icon && <span className="shrink-0 text-muted-foreground">{icon}</span>}
-          <h3 className="min-w-0 text-base font-semibold tracking-tight text-foreground">{title}</h3>
+          <h3 className="text-base font-semibold min-w-0 tracking-tight text-foreground">{title}</h3>
         </div>
         {actions ? actions : sub ? <span className="text-xs text-muted-foreground">{sub}</span> : null}
       </header>
@@ -226,16 +226,18 @@ export type BarListRow = {
  * label moves above its bar so nothing is squeezed or clipped.
  */
 export function BarList({
-  rows, labelWidth = 150, signed = false, onSelect, caption,
+  rows, labelWidth = 150, signed = false, onSelect, caption, max,
 }: {
   rows: BarListRow[];
+  /** Shared scale when one list is split into columns, so bars compare across them. */
+  max?: number;
   labelWidth?: number;
   signed?: boolean;
   onSelect?: (id: string) => void;
   caption?: string;
 }) {
   const values = rows.map((r) => r.value);
-  const hi = Math.max(0, ...values);
+  const hi = max ?? Math.max(0, ...values);
   const lo = signed ? Math.min(0, ...values) : 0;
   const span = hi - lo || 1;
   const zero = (-lo / span) * 100;

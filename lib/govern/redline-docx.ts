@@ -1,6 +1,6 @@
 // A tracked-changes Word redline for a send-back (competitive gap #3): the
-// other side opens it in Word and sees OSU's requests as real revisions —
-// their current wording struck through, OSU's language inserted — which they
+// other side opens it in Word and sees your requests as real revisions —
+// their current wording struck through, your language inserted — which they
 // can accept or reject one by one. `docx` is loaded only when someone asks
 // for the file, so it never weighs on the page bundle.
 
@@ -69,13 +69,13 @@ export function latestSentBackNote(c: ContractDetail): string | null {
 
 export function redlineFileName(title: string): string {
   const safe = title.replace(/[^\w\s-]+/g, "").trim().replace(/\s+/g, " ").slice(0, 80) || "Agreement"
-  return `${safe} - OSU requested changes.docx`
+  return `${safe} - requested changes.docx`
 }
 
 export async function buildRedlineDocx(input: RedlineInput): Promise<Blob> {
   const { AlignmentType, DeletedTextRun, Document, HeadingLevel, InsertedTextRun, Packer, Paragraph, TextRun } = await import("docx")
 
-  const author = `OSU — ${input.reviewerName}`
+  const author = input.reviewerName
   const date = input.date.toISOString()
   let revisionId = 1
   const deleted = (text: string) => new DeletedTextRun({ text, id: revisionId++, author, date })
@@ -85,13 +85,13 @@ export async function buildRedlineDocx(input: RedlineInput): Promise<Blob> {
   const header = [
     new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(`Requested changes: ${input.contractTitle}`)] }),
     new Paragraph({ children: [new TextRun({ text: "To: ", bold: true }), new TextRun(input.counterparty || "The other party")] }),
-    new Paragraph({ children: [new TextRun({ text: "From: ", bold: true }), new TextRun(`The Ohio State University — ${input.reviewerName}`)] }),
+    new Paragraph({ children: [new TextRun({ text: "From: ", bold: true }), new TextRun(input.reviewerName)] }),
     new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun(dateText)] }),
     new Paragraph({
       spacing: { before: 240, after: 240 },
       children: [new TextRun(
-        `OSU asks for the ${input.clauses.length === 1 ? "change" : `${input.clauses.length} changes`} below. ` +
-        "Each is shown as a tracked change: your current wording is struck through and OSU's language is inserted. " +
+        `We ask for the ${input.clauses.length === 1 ? "change" : `${input.clauses.length} changes`} below. ` +
+        "Each is shown as a tracked change: your current wording is struck through and our language is inserted. " +
         "Accept or reject each change in Word (Review > Accept), then send the revised agreement back.",
       )],
     }),
@@ -99,7 +99,7 @@ export async function buildRedlineDocx(input: RedlineInput): Promise<Blob> {
 
   const note = input.note
     ? [
-        new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Note from OSU")] }),
+        new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun("Note from us")] }),
         new Paragraph({ spacing: { after: 240 }, children: [new TextRun(input.note)] }),
       ]
     : []
@@ -123,7 +123,7 @@ export async function buildRedlineDocx(input: RedlineInput): Promise<Blob> {
     return [
       heading,
       ...(cl.currentWording ? [new Paragraph({ children: [new TextRun(cl.currentWording)] })] : []),
-      new Paragraph({ children: [new TextRun({ text: "OSU asks for this clause to be revised to fit its accepted positions. See the note above.", italics: true })] }),
+      new Paragraph({ children: [new TextRun({ text: "We ask for this clause to be revised to fit our accepted positions. See the note above.", italics: true })] }),
     ]
   })
 

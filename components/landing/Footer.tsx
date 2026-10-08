@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUp } from "lucide-react";
 import { Logo } from "@/components/landing/primitives";
 import { INDUSTRY_SECTIONS, PRODUCT_SECTIONS, SOLUTION_SECTIONS, landingHref } from "@/components/landing/site-nav";
 import { COMING_SOON_LABEL, isComingSoon } from "@/components/landing/ComingSoon";
@@ -50,8 +51,8 @@ const COLUMNS: { id: string; title: string; links: FooterLink[] }[] = [
   },
 ];
 
-/* Navy footer: full-width link columns, then the logo beside the legal
-   notice, then the copyright line. The notice is the same fixed copy the app shows under
+/* Navy footer: full-width link columns, then the logo with the full legal
+   notice under it, then copyright and a back-to-top button. The notice is the same fixed copy the app shows under
    every analysis (components/ui/AnalysisDisclaimer): do not reword it. */
 export function Footer() {
   return (
@@ -76,35 +77,27 @@ export function Footer() {
           ))}
         </div>
 
+        {/* Logo, then the full legal notice under it, then copyright and
+            the back-to-top button on one row. */}
         <div className="lp-footer-legal">
-          <div>
-            <Logo height={28} variant="dark" />
-          </div>
-          <div role="note" aria-labelledby="footer-legal-title">
+          <Logo height={28} variant="dark" />
+          <div role="note" aria-labelledby="footer-legal-title" className="mt-6">
             <h2 id="footer-legal-title" className="lp-footer-title">
               For guidance only, not legal advice.
             </h2>
-            <p className="mt-2 max-w-[32rem] text-sm">
+            <p className="mt-2 text-sm leading-relaxed">
               Blue-IQ uses AI to analyze and draft contract content, and it can be incomplete or wrong.
               Verify every figure, date, clause, and obligation against the source document, your own
               company&apos;s policies, and the laws that govern your contract before relying on it or
               acting. Blue-IQ accepts no liability for decisions made from this analysis.
             </p>
-            <p className="mt-3 text-sm">
-              Report a security issue to{" "}
-              <a href="mailto:security@blue-iq.ai" className="lp-link">
-                security@blue-iq.ai
-              </a>
-              .
-            </p>
           </div>
-        </div>
-
-        <div className="lp-footer-bottom">
-          <p>© 2026 Blue-IQ. All rights reserved.</p>
-          <a href="#main-content" className="lp-navlink">
-            Back to top
-          </a>
+          <div className="lp-footer-end">
+            <p>© 2026 Blue-IQ. All rights reserved.</p>
+            <a href="#main-content" className="lp-footer-top" aria-label="Back to top">
+              <ArrowUp size={18} strokeWidth={2} aria-hidden="true" />
+            </a>
+          </div>
         </div>
       </div>
     </footer>

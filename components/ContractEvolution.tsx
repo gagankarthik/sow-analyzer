@@ -57,7 +57,7 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
     <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
       <div className="mb-4 flex items-center gap-2">
         <Clock size={16} className="shrink-0 text-[var(--brand-primary-600)]" />
-        <h3 className="text-lg font-semibold tracking-tight text-foreground">Contract evolution</h3>
+        <h3 className="text-base font-semibold tracking-tight text-foreground">Contract evolution</h3>
       </div>
 
       {/* State flow — doubles as the view switch */}

@@ -13,7 +13,7 @@ export function SetupPrompt({ resume }: { resume: boolean }) {
       className="grid gap-6 rounded-xl border border-border bg-card p-5 md:p-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-10"
     >
       <div className="min-w-0">
-        <h2 id="setup-prompt-title" className="text-2xl font-semibold tracking-tight text-foreground">
+        <h2 id="setup-prompt-title" className="text-lg font-semibold tracking-tight text-foreground">
           {resume ? "Finish setting up your workspace" : "Set up your workspace"}
         </h2>
         <p className="mt-2 max-w-[56ch] text-base leading-relaxed text-[var(--ink-600)]">

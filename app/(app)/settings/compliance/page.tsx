@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import {
   FilterChips,
   FilterSummary,
@@ -43,7 +42,7 @@ const PACK_ICON: Record<PackIconKey, typeof ShieldCheck> = {
 export default function CompliancePacksPage() {
   // The enabled packs are tenant data from the API. Until it answers, nothing is
   // shown as on or off; if it fails, the page says so instead of showing defaults.
-  const { data, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = useCompliancePacks();
+  const { data, isLoading, isError, error, refetch } = useCompliancePacks();
   const save = useSaveCompliancePacks();
   const loaded = !!data;
 
@@ -111,18 +110,17 @@ export default function CompliancePacksPage() {
         title="Compliance packs"
         subtitle="Turn on a framework and Sonar grades compliance documents against its obligations."
         back={{ href: "/settings", label: "Settings" }}
-        actions={<LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />}
       />
 
       <SettingsLayout>
         {/* Summary — the page's focal block */}
-        <div className="flex flex-col gap-4 rounded-xl bg-[var(--navy-800)] p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+        <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs sm:flex-row sm:items-center sm:justify-between sm:gap-8">
           <div className="grid grid-cols-2 gap-6 sm:flex sm:gap-10">
             <Stat label="Packs enabled" value={loaded ? `${stats.packsOn}` : "—"} sub={loaded ? `of ${stats.totalPacks}` : isError ? "not available" : "loading"} />
             <Stat label="Clause categories checked" value={loaded ? `${stats.checks}` : "—"} sub="across enabled packs" />
           </div>
-          <p className="max-w-[44ch] text-sm leading-relaxed text-[var(--navy-100)]" aria-live="polite">
-            <span className="font-semibold text-white">
+          <p className="max-w-[44ch] text-sm leading-relaxed text-[var(--ink-600)]" aria-live="polite">
+            <span className="font-semibold text-foreground">
               {save.isPending
                 ? "Saving…"
                 : !loaded
@@ -230,7 +228,7 @@ export default function CompliancePacksPage() {
               </div>
 
               <div className="mt-4 border-t border-border pt-4">
-                <h3 className="mb-2.5 text-sm font-semibold text-foreground">
+                <h3 className="text-base font-semibold mb-2.5 text-foreground">
                   Clause categories checked{" "}
                   <span className="font-medium text-muted-foreground tabular-nums">· {p.checks.length}</span>
                 </h3>
@@ -280,10 +278,10 @@ export default function CompliancePacksPage() {
 function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="min-w-0">
-      <div className="text-sm font-medium text-[var(--navy-100)]">{label}</div>
+      <div className="text-sm font-medium text-[var(--ink-600)]">{label}</div>
       <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">{value}</span>
-        <span className="text-sm text-[var(--navy-100)]">{sub}</span>
+        <span className="text-sm text-[var(--ink-600)]">{sub}</span>
       </div>
     </div>
   );

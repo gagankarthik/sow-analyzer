@@ -1,6 +1,6 @@
 "use client";
 
-// "Blue IQ integrations at OSU · 4 connected platforms": Govern in the middle,
+// "Blue IQ integrations · 4 connected platforms": Govern in the middle,
 // the four systems around it, each line coloured by that connection's live
 // status. Generic glyphs and words only, no product logos. Below `sm` the
 // drawing would be too small to read, so the same facts show as a list.
@@ -105,7 +105,7 @@ export function IntegrationsDiagram({ connectors, planned = false }: { connector
   const statusText = (s: Status) => (planned ? "Planned" : liveStatusText(s));
   const ids = Object.keys(NODES) as ConnectorId[];
   const summary = ids.map((id) => `${CONNECTOR_NAME[id]}: ${statusText(statusOf(id))}`).join("; ");
-  const title = planned ? "Planned: Blue IQ integrations at OSU · 4 platforms" : "Blue IQ integrations at OSU · 4 connected platforms";
+  const title = planned ? "Planned: Blue IQ integrations · 4 platforms" : "Blue IQ integrations · 4 connected platforms";
 
   return (
     <figure className="min-w-0">
@@ -153,7 +153,7 @@ export function IntegrationsDiagram({ connectors, planned = false }: { connector
           <text x={HUB.x + HUB.w / 2} y={HUB.y + 44} textAnchor="middle" className="fill-white text-[20px] font-semibold">Govern</text>
           <text x={HUB.x + HUB.w / 2} y={HUB.y + 68} textAnchor="middle" className="fill-[var(--navy-100)] text-[12px]">Sonar checks every</text>
           <text x={HUB.x + HUB.w / 2} y={HUB.y + 84} textAnchor="middle" className="fill-[var(--navy-100)] text-[12px]">agreement against</text>
-          <text x={HUB.x + HUB.w / 2} y={HUB.y + 100} textAnchor="middle" className="fill-[var(--navy-100)] text-[12px]">OSU&apos;s matrix</text>
+          <text x={HUB.x + HUB.w / 2} y={HUB.y + 100} textAnchor="middle" className="fill-[var(--navy-100)] text-[12px]">Your matrix</text>
         </g>
 
         {/* systems */}
@@ -184,7 +184,7 @@ export function IntegrationsDiagram({ connectors, planned = false }: { connector
       {/* Phone: the same facts as a list. */}
       <ul className="space-y-2 sm:hidden" aria-label={planned ? "Planned platforms" : "Connected platforms"}>
         <li className="rounded-lg bg-[var(--navy-800)] px-3 py-2.5 text-sm text-white">
-          <span className="font-semibold">Govern</span> sits in the middle: Sonar checks every agreement against OSU&apos;s matrix.
+          <span className="font-semibold">Govern</span> sits in the middle: Sonar checks every agreement against your matrix.
         </li>
         {ids.map((id) => {
           const s = statusOf(id);

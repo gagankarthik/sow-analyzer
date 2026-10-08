@@ -5,7 +5,7 @@
 // test is not enough: browsers treat "\" as "/", so "/\evil.com" navigates to
 // another site, and tabs or newlines inside a URL are stripped before parsing.
 
-const DEFAULT_TARGET = "/dashboard";
+const DEFAULT_TARGET = "/home";
 const PARSE_BASE = "http://redirect.invalid";
 
 // Control characters (tab, CR, LF and friends) are stripped by URL parsers, so

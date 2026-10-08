@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { SettingsLayout, SettingsSection } from "@/components/settings/SettingsNav";
 import {
   LoadError, PageSkeleton, ReadOnlyNote, useAdminAccess, useUnsavedChangesGuard,
@@ -34,7 +33,7 @@ function PlannedIntegrations() {
     <>
       <PageHeader
         title="Integrations"
-        subtitle="How Govern will plug into the systems OSU already runs. For now, Huron record IDs and Workday references are entered on each contract."
+        subtitle="How Govern will plug into the systems you already run. For now, Huron record IDs and Workday references are entered on each contract."
         back={{ href: "/settings", label: "Settings" }}
       />
       <SettingsLayout>
@@ -66,16 +65,8 @@ function LiveIntegrations() {
     <>
       <PageHeader
         title="Integrations"
-        subtitle="How Govern plugs into the systems OSU already runs, so nobody enters a contract twice. Huron and Workday stay the systems of record."
+        subtitle="How Govern plugs into the systems you already run, so nobody enters a contract twice. Huron and Workday stay the systems of record."
         back={{ href: "/settings", label: "Settings" }}
-        actions={
-          <LastUpdated
-            updatedAt={connectors.dataUpdatedAt}
-            isFetching={connectors.isFetching}
-            onRefresh={() => void connectors.refetch()}
-            failed={connectors.isError}
-          />
-        }
       />
 
       <SettingsLayout>
@@ -84,7 +75,7 @@ function LiveIntegrations() {
           <div className="flex flex-col gap-2 border-b border-border px-4 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-5">
             <div className="min-w-0">
               <h2 id="int-map-heading" className="text-lg font-semibold tracking-tight text-foreground">
-                Blue IQ integrations at OSU · 4 connected platforms
+                Blue IQ integrations · 4 connected platforms
               </h2>
               <p className="mt-1 max-w-[58ch] text-sm leading-relaxed text-muted-foreground">
                 Huron records flow into Govern and findings flow back; Workday and DocuSign feed data in; Microsoft 365
@@ -122,7 +113,7 @@ function LiveIntegrations() {
             <div className="rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-10 text-center">
               <p className="text-base font-semibold text-foreground">No connections are set up for this workspace</p>
               <p className="mx-auto mt-1 max-w-md text-sm text-[var(--ink-600)]">
-                The API returned no connectors. Ask Blue IQ support to enable Huron, Workday, Microsoft 365 and DocuSign for OSU.
+                The API returned no connectors. Ask Blue IQ support to enable Huron, Workday, Microsoft 365 and DocuSign.
               </p>
             </div>
           ) : (

@@ -94,7 +94,7 @@ export default function TeamPage() {
         <div className="max-w-4xl">
           <main className="min-w-0 space-y-4 md:space-y-6">
             <div>
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">Parties</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">Parties</h2>
               <p className="mt-1 text-sm leading-relaxed text-[var(--ink-600)]">
                 The parties named in this contract, as extracted from the document.
                 {isReady && classification.isLoading

@@ -69,7 +69,7 @@ function CardHeader({
         <div className="min-w-0">
           {eyebrow && <div className="mb-1 text-sm font-medium text-muted-foreground">{eyebrow}</div>}
           {title && (
-            <h3 className="text-xl font-semibold leading-tight tracking-[-0.015em] text-foreground">
+            <h3 className="text-base font-semibold leading-tight tracking-[-0.015em] text-foreground">
               {title}
             </h3>
           )}

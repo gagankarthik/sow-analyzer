@@ -8,7 +8,6 @@ import { DocLoadError } from "@/components/DocLoadError";
 import { Button } from "@/components/ui/button";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { ProcessingState } from "@/components/ProcessingState";
 import {
   ArrowRight, Files, XCircle, CheckCircle2, TrendingUp, ShieldAlert,
@@ -44,7 +43,7 @@ export default function ProjectInsightsPage() {
   const id = params?.id ?? "";
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
 
-  const { data: detail, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useDocument(id);
+  const { data: detail, isLoading, isError, error, refetch, isFetching } = useDocument(id);
   const isReady = detail?.document.status === "READY";
   const { data: classification, isLoading: classLoading, isError: classError, refetch: refetchClass } = useClassification(id, !!isReady);
   const { data: allDocs = [] } = useDocuments();
@@ -113,7 +112,7 @@ export default function ProjectInsightsPage() {
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-12">
           <div className="flex flex-col rounded-xl bg-[var(--navy)] p-5 text-white sm:col-span-2 md:p-6 lg:col-span-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-medium text-[var(--navy-foreground)]">Overall risk</h2>
+              <h2 className="text-lg font-semibold">Overall risk</h2>
               <TrendingUp size={16} className="shrink-0 text-[var(--navy-foreground)]" />
             </div>
             <div className={`mt-2 font-bold capitalize leading-none tracking-tight ${isReady && overallRisk ? "text-4xl" : "text-2xl"}`}>{!isReady ? "—" : overallRisk ?? "Not assessed"}</div>
@@ -152,7 +151,7 @@ export default function ProjectInsightsPage() {
           <div className="flex items-start gap-3.5">
             <SonarMark size="md" tile className="hidden sm:inline-flex" />
             <div className="min-w-0 flex-1">
-              <h2 className="mb-1.5 text-sm font-semibold text-[var(--ai-ink)]">Summary from the analysis</h2>
+              <h2 className="text-lg font-semibold mb-1.5">Summary from the analysis</h2>
               {summary ? (
                 <p className="max-w-[58ch] text-base leading-relaxed text-foreground">{summary}</p>
               ) : !isReady ? (
@@ -183,7 +182,6 @@ export default function ProjectInsightsPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => { void refetch(); void refetchClass(); }} failed={isError} />
               <Button size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}>Open SOW<ArrowRight size={14} /></Link></Button>
             </div>
           </div>
@@ -394,7 +392,7 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
 
         {/* What money and dates does it state? */}
         <section className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-          <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">What money and dates does it state?</h2>
+          <h2 className="text-lg font-semibold mb-4 tracking-tight text-foreground">What money and dates does it state?</h2>
           <dl className="divide-y divide-[var(--ink-100)] text-sm">
             <Fact label="Contract value" value={value !== null ? fmtMoney(value, currency) : null} note={value !== null && !currency ? "Currency not extracted" : undefined} />
             {(doc.docType === "AMENDMENT" || delta !== null) && (
@@ -465,7 +463,7 @@ function Stat({ label, value, hint, icon, tone = "neutral", className = "" }: {
   return (
     <div className={`min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-5 ${className}`}>
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-medium leading-snug text-[var(--ink-600)]">{label}</h3>
+        <h3 className="text-base font-semibold leading-snug">{label}</h3>
         <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${STAT_TONE[tone]}`}>{icon}</span>
       </div>
       <div className="mt-2 break-words text-3xl font-semibold leading-none tabular-nums tracking-tight text-foreground">{value}</div>

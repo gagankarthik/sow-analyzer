@@ -8,7 +8,6 @@ import { DocTypeBadge } from "@/components/DocTypeBadge";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { docTypeShort } from "@/lib/doc-types";
 import { useDocuments, isProcessing } from "@/lib/queries/documents";
@@ -91,7 +90,7 @@ function daysLabel(days: number | null): string {
 }
 
 export default function RenewalsPage() {
-  const { data, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = useDocuments();
+  const { data, isLoading, isError, error, refetch } = useDocuments();
   const docs = useMemo(() => data ?? [], [data]);
   const now = useNow(); // real current time, re-read every minute
   const processingCount = docs.filter((d) => isProcessing(d.status)).length;
@@ -237,7 +236,7 @@ export default function RenewalsPage() {
         <div className="app-container app-page">
           <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-14 text-center">
             <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={24} strokeWidth={1.5} /></span>
-            <h2 className="text-xl font-semibold text-foreground">Couldn&apos;t load your contracts</h2>
+            <h2 className="text-lg font-semibold text-foreground">Couldn&apos;t load your contracts</h2>
             <p className="mt-2 max-w-md break-words text-base leading-relaxed text-[var(--ink-600)]">{error instanceof Error ? error.message : "The request failed."} Renewal and expiry dates are unknown until this loads.</p>
             <Button variant="outline" size="lg" className="mt-6" onClick={() => refetch()}><RefreshCw size={14} />Try again</Button>
           </div>
@@ -251,14 +250,13 @@ export default function RenewalsPage() {
       <PageHeader
         title="Obligations & renewals"
         subtitle="What's expiring, up for renewal, and coming due."
-        actions={<LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />}
       />
 
       <div className="app-container app-page">
         {/* Summary — the 90-day window is the focal block; the other three figures sit beside it. */}
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
           <section aria-labelledby="window-heading" className="rounded-xl bg-[var(--navy-800)] p-5 text-white md:p-6 lg:col-span-7">
-            <h2 id="window-heading" className="text-base font-medium text-[var(--navy-100)]">Due in the next 90 days</h2>
+            <h2 id="window-heading" className="text-lg font-semibold">Due in the next 90 days</h2>
             <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-4xl font-bold leading-none tracking-[-0.025em] tabular-nums">{kpis.next90}</span>
               <span className="text-base text-[var(--navy-100)]">date{kpis.next90 === 1 ? "" : "s"} in that window: renewals, term ends, notice deadlines, payments, milestones and deliverables</span>

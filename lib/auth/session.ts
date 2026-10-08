@@ -35,13 +35,13 @@ export function setSessionCookie(idToken: string, expSeconds: number): void {
     typeof location !== "undefined" && location.protocol === "https:"
       ? "; Secure"
       : "";
-  document.cookie = `${SESSION_COOKIE}=${idToken}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+  document.cookie = `${SESSION_COOKIE}=${idToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict${secure}`;
 }
 
 /** Remove the session cookie (client only). */
 export function clearSessionCookie(): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+  document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Strict`;
 }
 
 // Runtime-agnostic base64url decode (works in the browser via atob and in the

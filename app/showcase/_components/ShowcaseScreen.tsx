@@ -19,13 +19,13 @@ import {
 import { StaticAuthProvider } from "@/components/auth/AuthProvider";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
-import { AnalysisDisclaimer } from "@/components/ui/AnalysisDisclaimer";
 import type { AuthUser } from "@/lib/auth/cognito";
 import {
   SHOWCASE_CONTRACTS, SHOWCASE_DETAILS, SHOWCASE_MATRIX, SHOWCASE_ME, SHOWCASE_NOW, SHOWCASE_SETTINGS, showcaseTrends,
 } from "@/lib/govern/__fixtures__/showcase";
 import { governKeys } from "@/lib/govern/queries";
 import { documentKeys } from "@/lib/queries/documents";
+import HomePage from "@/app/(app)/home/page";
 import WorkflowPage from "@/app/(app)/workflow/page";
 import ContractPage from "@/app/(app)/contracts/[id]/page";
 import ValueReportPage from "@/app/(app)/reports/value/page";
@@ -34,6 +34,7 @@ import { SHOWCASE_SCREENS, type ShowcaseScreenId } from "./screens";
 
 const PAGES: Record<ShowcaseScreenId, ComponentType> = {
   board: WorkflowPage,
+  home: HomePage,
   contract: ContractPage,
   matrix: ContractPage,
   reports: ValueReportPage,
@@ -117,13 +118,12 @@ export function ShowcaseScreen({ screen }: { screen: ShowcaseScreenId }) {
           <PathnameContext.Provider value={route.pathname}>
             <PathParamsContext.Provider value={route.params}>
               <div className="flex w-full min-h-screen bg-background">
-                <Sidebar onOpenSearch={noop} onOpenCopilot={noop} />
+                <Sidebar onOpenCopilot={noop} />
                 <div className="flex-1 min-w-0 flex flex-col">
-                  <TopBar onCommandOpen={noop} onCopilotToggle={noop} onMenuClick={noop} />
+                  <TopBar onCopilotToggle={noop} onMenuClick={noop} />
                   <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">
                     <Page />
                   </main>
-                  <AnalysisDisclaimer />
                 </div>
               </div>
             </PathParamsContext.Provider>

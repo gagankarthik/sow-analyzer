@@ -1,8 +1,8 @@
 "use client";
 
-// What changed between the version OSU sent back and the one that came back
-// (competitive gap #8). Each changed clause is marked as one OSU asked for, or
-// as an "Unrequested change": an edit to a clause OSU never sent back, which
+// What changed between the version you sent back and the one that came back
+// (competitive gap #8). Each changed clause is marked as one you asked for, or
+// as an "Unrequested change": an edit to a clause you never sent back, which
 // sponsors often make without tracking it.
 
 import { useMemo, useState } from "react";
@@ -132,10 +132,10 @@ function ChangeRow({ item: { change, clause, requested } }: { item: ClassifiedCh
         </span>
         {requested ? (
           <span className="inline-flex h-6 items-center gap-1 rounded-md border border-structure-border bg-structure-soft px-2 text-xs font-semibold text-structure-soft-fg">
-            <CheckCircle2 size={12} />OSU asked for this
+            <CheckCircle2 size={12} />You asked for this
           </span>
         ) : (
-          <span className="inline-flex h-6 items-center gap-1 rounded-md bg-[var(--warning-soft)] px-2 text-xs font-semibold text-[var(--warning-fg)]" title="OSU did not send this clause back. Check the edit before approving.">
+          <span className="inline-flex h-6 items-center gap-1 rounded-md bg-[var(--warning-soft)] px-2 text-xs font-semibold text-[var(--warning-fg)]" title="You did not send this clause back. Check the edit before approving.">
             <AlertTriangle size={12} />Unrequested change
           </span>
         )}

@@ -14,12 +14,16 @@ import {
   ShieldCheck,
   Users,
   Grid3x3,
+  Building2,
   Route,
   Plug,
 } from "@/components/ui/icons";
 
-const ITEMS: { label: string; href: string; icon: typeof Settings; feature?: GovernFeature }[] = [
+/** Every settings section, in order. Shared with the app sidebar, which shows
+ *  this list (with a Back row) while you are anywhere in Settings. */
+export const SETTINGS_ITEMS: { label: string; href: string; icon: typeof Settings; feature?: GovernFeature }[] = [
   { label: "Overview", href: "/settings", icon: Settings },
+  { label: "Organisation", href: "/settings/organization", icon: Building2 },
   { label: "Review matrix", href: "/settings/matrix", icon: Grid3x3 },
   { label: "Workflow & routing", href: "/settings/workflow", icon: Route },
   { label: "Integrations", href: "/settings/integrations", icon: Plug, feature: "integrations" },
@@ -29,17 +33,16 @@ const ITEMS: { label: string; href: string; icon: typeof Settings; feature?: Gov
   { label: "Team & roles", href: "/settings/team", icon: Users },
 ];
 
-/** Settings sub-navigation: a scrolling tab row below `xl`, a sticky left rail
- *  from `xl` up (the content column is too narrow for a rail before that,
- *  because the app sidebar already takes 248px). */
+/** Settings sub-navigation for tablet and phone, where the app sidebar is a
+ *  drawer: a scrolling tab row. From `lg` up the docked sidebar lists these
+ *  sections itself, so this row is hidden there. */
 export function SettingsNav() {
   const pathname = usePathname() ?? "";
 
   return (
-    <nav aria-label="Settings" className="min-w-0 xl:sticky xl:top-24 xl:self-start">
-      <ul className="scrollbar-none flex gap-1 overflow-x-auto border-b border-border xl:flex-col xl:overflow-visible xl:border-b-0">
-        {ITEMS.map((item) => {
-          const Icon = item.icon;
+    <nav aria-label="Settings" className="min-w-0 lg:hidden">
+      <ul className="scrollbar-none flex gap-1 overflow-x-auto border-b border-border">
+        {SETTINGS_ITEMS.map((item) => {
           const active =
             item.href === "/settings"
               ? pathname === "/settings"
@@ -50,16 +53,15 @@ export function SettingsNav() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-10 items-center gap-2.5 whitespace-nowrap px-3 text-base transition-colors",
+                  "flex h-10 items-center gap-2.5 whitespace-nowrap px-3 text-sm transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                   // tab row: underline marks the active tab
-                  "-mb-px border-b-2 xl:mb-0 xl:rounded-lg xl:border-b-0",
+                  "-mb-px border-b-2",
                   active
-                    ? "border-[var(--brand-primary-600)] font-semibold text-[var(--brand-primary-700)] xl:bg-[var(--brand-primary-50)]"
-                    : "border-transparent font-medium text-[var(--ink-600)] hover:text-foreground xl:hover:bg-muted",
+                    ? "border-[var(--brand-primary-600)] font-semibold text-[var(--brand-primary-700)]"
+                    : "border-transparent font-medium text-[var(--ink-600)] hover:text-foreground",
                 )}
               >
-                <Icon size={16} strokeWidth={active ? 2 : 1.75} className="hidden shrink-0 xl:block" />
                 {item.label}
                 {item.feature && <FeatureComingSoonBadge feature={item.feature} />}
               </Link>
@@ -75,7 +77,7 @@ export function SettingsNav() {
 export function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-container py-6 md:py-8">
-      <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-[200px_minmax(0,1fr)] xl:gap-8">
+      <div className="flex flex-col gap-4 md:gap-6">
         <SettingsNav />
         <div className="flex min-w-0 flex-col gap-4 md:gap-6">{children}</div>
       </div>

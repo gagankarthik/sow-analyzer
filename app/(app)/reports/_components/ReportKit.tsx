@@ -63,7 +63,7 @@ export function ReportError({ error, onRetry, what = "these figures" }: { error:
       <span className={cn("mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card", forbidden ? "text-[var(--ink-600)] ring-1 ring-border" : "text-[var(--danger)]")}>
         {forbidden ? <Lock size={22} strokeWidth={1.75} /> : <XCircle size={24} strokeWidth={1.5} />}
       </span>
-      <h2 className="text-xl font-semibold text-foreground">
+      <h2 className="text-lg font-semibold text-foreground">
         {forbidden ? "You don't have access to this" : `Couldn't load ${what}`}
       </h2>
       <p className="mt-2 max-w-md text-base leading-relaxed text-[var(--ink-600)]">
@@ -84,9 +84,9 @@ export function ReportError({ error, onRetry, what = "these figures" }: { error:
 export function NoContracts() {
   return (
     <div className="flex flex-col items-center rounded-2xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-16 text-center">
-      <h2 className="text-xl font-semibold text-foreground">No contracts yet</h2>
+      <h2 className="text-lg font-semibold text-foreground">No contracts yet</h2>
       <p className="mt-2 max-w-md text-base leading-relaxed text-[var(--ink-600)]">
-        Upload an agreement to start. Sonar reads it, checks it against the OSU matrix and it appears here.
+        Upload an agreement to start. Sonar reads it, checks it against your matrix and it appears here.
       </p>
       <Button className="mt-6" size="lg" asChild>
         <Link href="/projects/upload">Upload an agreement</Link>

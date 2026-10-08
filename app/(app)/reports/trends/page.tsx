@@ -9,7 +9,6 @@ import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { HBarChart } from "@/components/charts/HBarChart";
 import { FilterChips } from "@/components/settings/SettingsNav";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { ACCENT } from "@/lib/chart-theme";
 import type { ExportReport } from "@/lib/govern/export";
 import {
@@ -39,14 +38,14 @@ const THROUGHPUT: ChartSeries[] = [{ key: "received", label: "Received", color: 
 const CYCLE: ChartSeries[] = [{ key: "days", label: "Average days to signature", color: SIGNED }];
 const ON_TIME: ChartSeries[] = [{ key: "pct", label: "Finished within target", color: "var(--success)" }];
 const FRICTION: ChartSeries[] = [
-  { key: "sentBack", label: "Sent back", color: "var(--warning)" },
+  { key: "sentBack", label: "Sent back", color: ACCENT },
   { key: "rejected", label: "Rejected", color: "var(--ink-500)", dashed: true },
-  { key: "overdue", label: "Went overdue", color: "var(--danger)" },
+  { key: "overdue", label: "Went overdue", color: "var(--danger)", dashed: true },
 ];
 
 export default function TrendsPage() {
   const [granularity, setGranularity] = useState<Granularity>("month");
-  const { data, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = useTrends(granularity, PERIODS[granularity]);
+  const { data, isLoading, isError, error, refetch } = useTrends(granularity, PERIODS[granularity]);
 
   return (
     <>
@@ -56,7 +55,6 @@ export default function TrendsPage() {
         subtitle="How the work is moving over time: what arrives, what gets signed, how long it takes and where it slows down."
         actions={
           <>
-            <LastUpdated updatedAt={dataUpdatedAt || undefined} isFetching={isFetching} onRefresh={() => void refetch()} failed={isError && !!data} />
             <ExportButtons build={() => buildTrendsReport(data as Trends)} disabled={!data || data.periods.length === 0} />
           </>
         }
@@ -74,7 +72,7 @@ export default function TrendsPage() {
           <ReportError error={error} onRetry={() => void refetch()} what="trends" />
         ) : !data || !hasHistory(data.periods) ? (
           <div className="flex flex-col items-center rounded-2xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-16 text-center">
-            <h2 className="text-xl font-semibold text-foreground">Trends appear after a few weeks of activity</h2>
+            <h2 className="text-lg font-semibold text-foreground">Trends appear after a few weeks of activity</h2>
             <p className="mt-2 max-w-md text-base leading-relaxed text-[var(--ink-600)]">
               {data && activePeriods(data.periods).length === 1
                 ? `There is one ${unitWord(granularity, 1)} of activity so far. Come back once there are two or more to compare.`

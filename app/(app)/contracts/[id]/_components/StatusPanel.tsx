@@ -8,18 +8,15 @@ import { Button } from "@/components/ui/button";
 import { CircleDashed, Coins, UserRound } from "@/components/ui/icons";
 import { DaysInStage, PersonDot, WaitingOnChip } from "@/components/govern/primitives";
 import { ActionDialogHost, availableActions, type ActionKind } from "@/components/govern/actions";
-import { DIRECTION_LABEL, PRE_SIGNATURE_STAGES, STAGES, STAGE_LABEL, STATE_LABEL, daysLabel, personName, plural } from "@/lib/govern/labels";
+import { DIRECTION_LABEL, STAGE_LABEL, STATE_LABEL, daysLabel, personName, plural } from "@/lib/govern/labels";
 import { contractValueText } from "@/lib/govern/metrics";
-import type { ContractDetail, SlaStatus, Stage } from "@/lib/govern/types";
-import { cn } from "@/lib/utils";
+import type { ContractDetail, SlaStatus } from "@/lib/govern/types";
 
 const VALUE_SOURCE: Record<NonNullable<ContractDetail["valueSource"]>, string> = {
   manual: "entered by a reviewer",
   extracted: "found by Sonar",
   expected: "expected at intake",
 };
-
-const RAIL: Stage[] = [...PRE_SIGNATURE_STAGES, "signed"];
 
 export function StatusPanel({ contract: c, onShowMissing }: { contract: ContractDetail; onShowMissing: () => void }) {
   const [dialog, setDialog] = useState<ActionKind | null>(null);
@@ -31,7 +28,7 @@ export function StatusPanel({ contract: c, onShowMissing }: { contract: Contract
     <section aria-label="Where it is" className="flex flex-col divide-y divide-border rounded-xl border border-border bg-card">
       {/* Who has it */}
       <div className="flex flex-col gap-2.5 p-5">
-        <h2 className="text-sm font-semibold text-[var(--ink-800)]">Who has it</h2>
+        <h2 className="text-lg font-semibold">Who has it</h2>
         <div className="flex flex-wrap items-center gap-2">
           <WaitingOnChip waitingOn={c.waitingOn} className="h-7 text-sm" />
           <span className="text-sm text-[var(--ink-600)]">{STATE_LABEL[c.state]}</span>
@@ -56,7 +53,7 @@ export function StatusPanel({ contract: c, onShowMissing }: { contract: Contract
       {/* How long */}
       {!closed && (
         <div className="flex flex-col gap-3 p-5">
-          <h2 className="text-sm font-semibold text-[var(--ink-800)]">How long</h2>
+          <h2 className="text-lg font-semibold">How long</h2>
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums text-foreground">{c.daysInStage}</span>
             <span className="text-sm text-[var(--ink-700)]">{c.daysInStage === 1 ? "day" : "days"} at this step · {STAGE_LABEL[c.stage]}</span>
@@ -71,15 +68,10 @@ export function StatusPanel({ contract: c, onShowMissing }: { contract: Contract
         </div>
       )}
 
-      {/* Road to signature */}
-      <div className="p-5">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--ink-800)]">Road to signature</h2>
-        <StageRail stage={c.stage} closed={closed} />
-      </div>
 
       {/* Value */}
       <div className="flex flex-col gap-2 p-5">
-        <h2 className="text-sm font-semibold text-[var(--ink-800)]">Value · {DIRECTION_LABEL[c.direction]}</h2>
+        <h2 className="text-lg font-semibold">Value · {DIRECTION_LABEL[c.direction]}</h2>
         {c.value !== null ? (
           <p className="flex flex-wrap items-baseline gap-x-2">
             <span className="text-xl font-semibold tabular-nums text-foreground">{contractValueText(c)}</span>
@@ -133,22 +125,3 @@ function ClockBar({ days, target, sla }: { days: number; target: number | null; 
   );
 }
 
-function StageRail({ stage, closed }: { stage: Stage; closed: boolean }) {
-  const index = RAIL.indexOf(stage);
-  // After signature every rail step is done.
-  const reached = index === -1 ? (STAGES.indexOf(stage) > STAGES.indexOf("signed") ? RAIL.length - 1 : -1) : index;
-  return (
-    <ol className="grid grid-cols-5 gap-1">
-      {RAIL.map((s, i) => {
-        const done = i < reached || (i === reached && s === "signed");
-        const current = i === reached && s !== "signed";
-        return (
-          <li key={s} className="flex min-w-0 flex-col gap-1.5" aria-current={current ? "step" : undefined}>
-            <span className={cn("h-1.5 rounded-full", done ? "bg-[var(--success)]" : current ? (closed ? "bg-[var(--ink-400)]" : "bg-[var(--brand-primary-600)]") : "bg-[var(--ink-200)]")} />
-            <span className={cn("text-xs leading-tight", current ? "font-semibold text-foreground" : "text-[var(--ink-600)]")}>{STAGE_LABEL[s]}</span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}

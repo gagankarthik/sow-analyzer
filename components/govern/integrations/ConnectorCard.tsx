@@ -151,7 +151,7 @@ export function ConnectorCard({
       <header className="flex flex-col gap-3 border-b border-border px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 id={id("title")} className="text-lg font-semibold tracking-tight text-foreground">{connector.name}</h3>
+            <h3 id={id("title")} className="text-base font-semibold tracking-tight text-foreground">{connector.name}</h3>
             <Chip tone={tone}>{STATUS_LABEL[connector.status] ?? connector.status}</Chip>
             <span className="text-xs font-medium text-muted-foreground">{DIRECTION_LABEL[connector.direction]}</span>
           </div>
@@ -254,7 +254,7 @@ export function ConnectorCard({
               )}
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Write-only: stored in OSU&apos;s secret store and never shown again, not even to admins.
+              Write-only: stored in your secret store and never shown again, not even to admins.
               {connector.credentialsConfigured ? " Enter new values only to replace them." : ""}
             </p>
             {canEdit ? (
@@ -297,7 +297,7 @@ export function ConnectorCard({
           <fieldset className="grid gap-2">
             <legend className="mb-1 text-sm font-semibold text-foreground">Field mapping</legend>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Which field in {connector.name} each Govern field reads from or writes to. Set per university, so a new
+              Which field in {connector.name} each Govern field reads from or writes to. Set per organization, so a new
               tenant needs no custom code.
             </p>
             {mapping.length === 0 ? (

@@ -22,10 +22,10 @@ export type ExampleContract = {
 };
 
 const SPONSORS = [
-  "Battelle Memorial Institute", "Nationwide Children’s Hospital", "Honda R&D Americas", "Abbott Laboratories",
+  "Harbor Research Institute Memorial Institute", "Nationwide Children’s Hospital", "Honda R&D Americas", "Abbott Laboratories",
   "National Science Foundation", "Cardinal Health", "Procter & Gamble", "U.S. Department of Energy",
   "Huntington National Bank", "Owens Corning", "American Electric Power", "Scotts Miracle-Gro Company",
-  "Wexner Medical Center Foundation", "Intel Ohio", "Mount Carmel Health System", "Battelle Pacific Northwest Laboratory (subcontract for the Ohio Clean Hydrogen Hub)",
+  "Lakeside Medical Center Foundation", "Intel home state", "Riverview Health Health System", "Harbor Research Institute Pacific Northwest Laboratory (subcontract for the home state Clean Hydrogen Hub)",
 ];
 const SUBJECTS = [
   "Battery degradation study", "Pediatric sepsis biomarkers", "Autonomous vehicle sensor fusion", "Point-of-care diagnostics licence",
@@ -34,15 +34,15 @@ const SUBJECTS = [
   "Clinical data sharing", "Semiconductor workforce collaboration", "Nursing outcomes registry", "Electrolyser durability programme",
 ];
 const PEOPLE = [
-  { name: "Becky Alvarez", email: "alvarez.112@osu.edu" },
-  { name: "Daniel Okafor", email: "okafor.7@osu.edu" },
-  { name: "Priya Raman", email: "raman.41@osu.edu" },
-  { name: "Tom Lindqvist", email: "lindqvist.3@osu.edu" },
-  { name: "Grace Chen", email: "chen.2190@osu.edu" },
+  { name: "Avery Chen", email: "alvarez.112@example.org" },
+  { name: "Daniel Okafor", email: "okafor.7@example.org" },
+  { name: "Priya Raman", email: "raman.41@example.org" },
+  { name: "Tom Lindqvist", email: "lindqvist.3@example.org" },
+  { name: "Grace Chen", email: "chen.2190@example.org" },
 ];
 const TYPES: AgreementType[] = ["sponsored_research", "license", "nda", "mta", "collaboration", "option", "grant"];
 const STAGE_POOL: Stage[] = ["draft", "review", "review", "review", "negotiation", "negotiation", "approval", "signed", "active"];
-const WAITING: WaitingOnKind[] = ["osu_reviewer", "osu_reviewer", "counterparty", "counterparty", "osu_office", "pi_department", "signatory"];
+const WAITING: WaitingOnKind[] = ["internal_reviewer", "internal_reviewer", "counterparty", "counterparty", "internal_office", "pi_department", "signatory"];
 const TIER_POOL: Tier[] = ["within", "within", "fallback", "deviates", "deviates", "unacceptable", "missing", "review"];
 
 /** Mulberry32: tiny deterministic PRNG. */

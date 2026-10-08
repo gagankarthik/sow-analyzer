@@ -11,9 +11,9 @@ export function makeContract(overrides: Partial<Contract> = {}): Contract {
   return {
     contractId: id, currentDocId: id, versionDocIds: [id], tenantId: "t-1",
     title: `Agreement ${sequence}`, docType: "LICENSE", agreementType: "license", direction: "incoming",
-    counterparty: "Buckeye BioSensors, Inc.", sponsor: null, piName: null, department: null, college: null,
+    counterparty: "Northfield Diagnostics, Inc.", sponsor: null, piName: null, department: null, college: null,
     stage: "review", state: "in_review",
-    waitingOn: { kind: "osu_reviewer", label: "Waiting on OSU reviewer", office: null, person: null },
+    waitingOn: { kind: "internal_reviewer", label: "Waiting on a reviewer", office: null, person: null },
     owner: null, createdAt: "2026-09-01T00:00:00Z", updatedAt: "2026-09-01T00:00:00Z",
     stageEnteredAt: "2026-09-01T00:00:00Z", signedAt: null,
     daysInStage: 3, totalDays: 3, targetDays: 5, slaStatus: "on_track", rounds: 0, analysisStatus: "READY",

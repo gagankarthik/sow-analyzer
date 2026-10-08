@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "@/components/ui/icons";
 
-/* Closing call to action, shared by the public pages: one navy panel with
-   the offer on the left and what happens after the request on the right. */
+/* Closing call to action, shared by the public pages: a brand-blue panel
+   with the offer and what happens after the request. */
 
 const WHAT_HAPPENS = [
   "Send one agreement and your current matrix, as a spreadsheet or a document.",
@@ -16,22 +16,22 @@ export function StartCta() {
       <div className="lp-wrap">
         <div className="lp-cta">
           <div>
-            <h2 id="start-title" className="lp-h2 max-w-xl">
+            <h2 id="start-title" className="lp-cta-title">
               See your own agreements against your own matrix.
             </h2>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/signup" className="lp-btn lp-btn-on-navy">
+            <div className="lp-hero-actions">
+              <Link href="/signup" className="lp-btn lp-btn-white lp-btn-lg">
                 Request a demo
                 <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
               </Link>
-              <Link href="/calculator" className="lp-btn lp-btn-ghost">
+              <Link href="/calculator" className="lp-btn lp-btn-onblue lp-btn-lg">
                 Estimate your savings
               </Link>
             </div>
           </div>
           <div>
             <p className="lp-cta-label">What happens next</p>
-            <ol className="lp-cta-steps mt-4">
+            <ol className="lp-cta-steps">
               {WHAT_HAPPENS.map((step) => (
                 <li key={step}>{step}</li>
               ))}

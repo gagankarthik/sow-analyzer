@@ -15,7 +15,6 @@
     "amazon-cognito-identity-js": "^6.3.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cmdk": "^1.1.1",
     "docx": "^9.9.0",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.39.0",

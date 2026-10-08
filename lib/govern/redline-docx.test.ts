@@ -27,13 +27,13 @@ describe("redline", () => {
   })
 
   it("makes a safe file name", () => {
-    expect(redlineFileName('Exclusive License: "Buckeye" / v1')).toBe("Exclusive License Buckeye v1 - OSU requested changes.docx")
-    expect(redlineFileName("///")).toBe("Agreement - OSU requested changes.docx")
+    expect(redlineFileName('Exclusive License: "Northfield" / v1')).toBe("Exclusive License Northfield v1 - requested changes.docx")
+    expect(redlineFileName("///")).toBe("Agreement - requested changes.docx")
   })
 
   it("produces a Word file with tracked insertions and deletions by the reviewer", async () => {
     const blob = await buildRedlineDocx({
-      contractTitle: "Exclusive License", counterparty: "Buckeye BioSensors", reviewerName: "Dana Ruiz",
+      contractTitle: "Exclusive License", counterparty: "Northfield Diagnostics", reviewerName: "Dana Ruiz",
       note: "Please see the changes below.", date: new Date("2026-10-08T12:00:00Z"),
       clauses: redlineClauses(review, [{ clauseType: "Royalties", label: "Royalties", suggestedLanguage: "3.5%" }]),
     })
@@ -42,6 +42,6 @@ describe("redline", () => {
     const xml = await zip.file("word/document.xml")!.async("string")
     expect(xml).toContain("<w:ins")
     expect(xml).toContain("<w:del")
-    expect(xml).toContain("OSU — Dana Ruiz")
+    expect(xml).toContain("Dana Ruiz")
   })
 })

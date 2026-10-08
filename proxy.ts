@@ -13,6 +13,7 @@ import { SESSION_COOKIE, isTokenValid } from "@/lib/auth/session";
 // folder there must be added here (and to app/robots.ts). AppShell also sends
 // signed-out visitors to /login, so a missed entry still does not open a page.
 const PROTECTED_PREFIXES = [
+  "/home",
   "/dashboard",
   "/reports",
   "/contracts",
@@ -21,7 +22,9 @@ const PROTECTED_PREFIXES = [
   "/insights",
   "/library",
   "/notifications",
+  "/obligations",
   "/onboarding",
+  "/profile",
   "/projects",
   "/renewals",
   "/settings",
@@ -42,7 +45,7 @@ export default function proxy(req: NextRequest) {
   const authed = isTokenValid(token);
 
   if (authed && SIGNED_OUT_ONLY.has(pathname)) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+    return NextResponse.redirect(new URL("/home", req.nextUrl));
   }
 
   // Signed-out visitors to the workspace go to login, keeping where they were

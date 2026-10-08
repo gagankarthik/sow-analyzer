@@ -109,13 +109,13 @@ describe("bottlenecks (Requirement 3)", () => {
   })
 
   it("groups the queue by who it is waiting on, and by whom exactly", () => {
-    const legal = { kind: "osu_office" as const, label: "Waiting on Legal Affairs", office: "legal_affairs" as const, person: null }
+    const legal = { kind: "internal_office" as const, label: "Waiting on Legal Affairs", office: "legal_affairs" as const, person: null }
     const queues = waitingQueues([
       makeContract({ waitingOn: legal, daysInStage: 10 }),
       makeContract({ waitingOn: legal, daysInStage: 20 }),
       makeContract({ waitingOn: { kind: "counterparty", label: "Waiting on the other side", office: null, person: null } }),
     ])
-    const offices = queues.find((q) => q.kind === "osu_office")
+    const offices = queues.find((q) => q.kind === "internal_office")
     expect(offices).toMatchObject({ count: 2, averageDays: 15 })
     expect(offices?.who).toEqual([{ label: "Waiting on Legal Affairs", count: 2, averageDays: 15 }])
   })

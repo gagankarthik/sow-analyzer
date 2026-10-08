@@ -49,7 +49,7 @@ export function PageIntro({ title, description, actions, meta, className, ...pro
   return (
     <header className={cn("flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between", className)} {...props}>
       <div className="flex min-w-0 flex-col gap-2">
-        <h1 className="text-title font-semibold tracking-tight text-fg-primary text-balance md:text-headline">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-fg-primary text-balance">{title}</h1>
         {description && <p className="max-w-prose-ds text-body-lg text-fg-secondary">{description}</p>}
         {meta && <div className="mt-1">{meta}</div>}
       </div>

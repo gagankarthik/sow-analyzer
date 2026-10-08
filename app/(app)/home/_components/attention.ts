@@ -16,7 +16,7 @@ export function attentionReasons(c: Contract): string[] {
   }
   const unacceptable = c.matrix?.counts.unacceptable ?? 0;
   if (unacceptable > 0) {
-    reasons.push(unacceptable === 1 ? "Has a term OSU does not accept" : `Has ${unacceptable} terms OSU does not accept`);
+    reasons.push(unacceptable === 1 ? "Has a term you do not accept" : `Has ${unacceptable} terms you do not accept`);
   }
   if (c.slaStatus === "amber" && c.openBlockers > 0) {
     reasons.push(`Running late with ${plural(c.openBlockers, "open item")}`);
@@ -25,7 +25,7 @@ export function attentionReasons(c: Contract): string[] {
   return reasons;
 }
 
-/** "Overdue by 6 days in "In review", and has 2 terms OSU does not accept." */
+/** "Overdue by 6 days in "In review", and has 2 terms you do not accept." */
 export function attentionSentence(c: Contract): string {
   const r = attentionReasons(c);
   if (r.length === 0) return "Needs a look.";

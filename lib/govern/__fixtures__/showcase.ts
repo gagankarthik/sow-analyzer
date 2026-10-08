@@ -1,6 +1,6 @@
 // Sample workspace for the dev-only /showcase screens (marketing screenshots).
-// Every party is fictional: the six OSU-style sample agreements from
-// sow-analyser-backend/samples/osu, plus generic agreements so the board and
+// Every party is fictional: the six Default sample agreements from
+// sow-analyser-backend/samples, plus generic agreements so the board and
 // reports look like a working office. Nothing here is real customer data.
 
 import { WAITING_ON_LABEL } from "../labels"
@@ -85,9 +85,9 @@ function sample(s: Sample): Contract {
 export const FEATURED_CONTRACT_ID = "agr-00012345"
 
 const LICENSE_SEND_BACK_CLAUSES: NextStep["clauses"] = [
-  { clauseType: "LicenseScope", label: "License grant scope", tier: "deviates", suggestedLanguage: "University grants Licensee an exclusive licence under the Licensed Patents, in the Field of Use and the Territory … University reserves the right to practise the Licensed Patents for research, teaching and educational purposes." },
-  { clauseType: "Royalties", label: "Royalties and sublicense income", tier: "deviates", suggestedLanguage: "Licensee shall pay University a running royalty of three and one-half percent (3.5%) of Net Sales and twenty-five percent (25%) of all Sublicense Income." },
-  { clauseType: "GoverningLaw", label: "Governing law and sovereign immunity", tier: "unacceptable", suggestedLanguage: "This Agreement is governed by the laws of the State of Ohio. Nothing in this Agreement waives the University's sovereign immunity." },
+  { clauseType: "LicenseScope", label: "License grant scope", tier: "deviates", suggestedLanguage: "Organization grants Licensee an exclusive licence under the Licensed Patents, in the Field of Use and the Territory … Organization reserves the right to practise the Licensed Patents for research, teaching and educational purposes." },
+  { clauseType: "Royalties", label: "Royalties and sublicense income", tier: "deviates", suggestedLanguage: "Licensee shall pay Organization a running royalty of three and one-half percent (3.5%) of Net Sales and twenty-five percent (25%) of all Sublicense Income." },
+  { clauseType: "GoverningLaw", label: "Governing law and sovereign immunity", tier: "unacceptable", suggestedLanguage: "This Agreement is governed by the laws of the home state. Nothing in this Agreement waives the Organization's sovereign immunity." },
 ]
 
 export const SHOWCASE_CONTRACTS: Contract[] = [
@@ -95,13 +95,13 @@ export const SHOWCASE_CONTRACTS: Contract[] = [
   sample({
     contractId: FEATURED_CONTRACT_ID, title: "Exclusive license: Wearable lactate biosensor",
     docType: "LICENSE", agreementType: "license", direction: "incoming",
-    counterparty: "Buckeye BioSensors, Inc.", sponsor: null, piName: "Dr. Elena Vasquez",
+    counterparty: "Northfield Diagnostics, Inc.", sponsor: null, piName: "Dr. Elena Vasquez",
     department: "Biomedical Engineering", college: "College of Engineering",
     stage: "review", state: "in_review", daysInStage: 12, totalDays: 20,
-    waitingOn: waiting("osu_reviewer", null, REVIEWER_JORDAN), owner: REVIEWER_JORDAN,
+    waitingOn: waiting("internal_reviewer", null, REVIEWER_JORDAN), owner: REVIEWER_JORDAN,
     value: 525_000, overallRisk: "high", openBlockers: 3,
     matrix: { version: 3, reviewedAt: daysAgo(12), counts: counts({ within: 8, fallback: 1, deviates: 2, unacceptable: 1, beneficial: 3 }) },
-    nextStep: step("send_back", "Send back to Buckeye BioSensors: 3 clauses need changes.", {
+    nextStep: step("send_back", "Send back to Northfield Diagnostics: 3 clauses need changes.", {
       detail: "Governing law is not acceptable and goes to Legal Affairs if the licensee will not change it.",
       office: "legal_affairs", clauses: LICENSE_SEND_BACK_CLAUSES,
     }),
@@ -129,10 +129,10 @@ export const SHOWCASE_CONTRACTS: Contract[] = [
     counterparty: "Midwest Advanced Materials Corp.", sponsor: "Midwest Advanced Materials Corp.",
     piName: "Dr. Priya Raman", department: "Materials Science & Engineering", college: "College of Engineering",
     stage: "review", state: "escalated", daysInStage: 16, totalDays: 23,
-    waitingOn: waiting("osu_office", "legal_affairs"), owner: REVIEWER_SAM,
+    waitingOn: waiting("internal_office", "legal_affairs"), owner: REVIEWER_SAM,
     value: 425_000, overallRisk: "high", openBlockers: 2,
     matrix: { version: 3, reviewedAt: daysAgo(16), counts: counts({ within: 7, fallback: 1, deviates: 1, unacceptable: 1 }) },
-    nextStep: step("escalate", "With Legal Affairs: the university indemnifying the sponsor is not acceptable.", { office: "legal_affairs" }),
+    nextStep: step("escalate", "With Legal Affairs: the organization indemnifying the sponsor is not acceptable.", { office: "legal_affairs" }),
     huronRecordId: "AGR00012402", workdayRef: "WD-GR-220871", workdayMatch: "auto",
     routing: { required: ["legal_affairs"], approvals: [], reasons: ["A clause is not acceptable under the matrix."] },
   }),
@@ -142,7 +142,7 @@ export const SHOWCASE_CONTRACTS: Contract[] = [
     counterparty: "Great Lakes Cell Therapeutics, Inc.", piName: "Dr. Hannah Lee",
     department: "Microbial Infection and Immunity", college: "College of Medicine",
     stage: "review", state: "in_review", daysInStage: 3, totalDays: 3,
-    waitingOn: waiting("osu_reviewer", null, REVIEWER_MAYA), owner: REVIEWER_MAYA,
+    waitingOn: waiting("internal_reviewer", null, REVIEWER_MAYA), owner: REVIEWER_MAYA,
     overallRisk: "low",
     matrix: { version: 3, reviewedAt: daysAgo(3), counts: counts({ within: 6, fallback: 2 }) },
     nextStep: step("approve", "Approve for signature: two accepted fallbacks, nothing blocking."),
@@ -164,10 +164,10 @@ export const SHOWCASE_CONTRACTS: Contract[] = [
   sample({
     contractId: "agr-00012451", title: "Federal subaward: Resilient autonomous sensing",
     docType: "OTHER", agreementType: "grant", direction: "outgoing",
-    counterparty: "Lakeshore State University Research Foundation", sponsor: "U.S. Army Research Office",
+    counterparty: "Lakeshore Research Foundation", sponsor: "U.S. Army Research Office",
     piName: "Dr. Kevin Mueller", department: "Computer Science and Engineering", college: "College of Engineering",
     stage: "review", state: "escalated", daysInStage: 23, totalDays: 27,
-    waitingOn: waiting("osu_office", "export_control"), owner: REVIEWER_SAM,
+    waitingOn: waiting("internal_office", "export_control"), owner: REVIEWER_SAM,
     value: 180_000, overallRisk: "critical", openBlockers: 1,
     matrix: { version: 3, reviewedAt: daysAgo(23), counts: counts({ within: 6, unacceptable: 1 }) },
     nextStep: step("escalate", "With Export Control: the foreign-national restriction needs clearance.", { office: "export_control" }),
@@ -193,7 +193,7 @@ export const SHOWCASE_CONTRACTS: Contract[] = [
     sponsor: "Northgate Pharmaceuticals", piName: "Dr. Samuel Ortiz",
     department: "Internal Medicine", college: "College of Medicine",
     stage: "review", state: "in_review", daysInStage: 4,
-    waitingOn: waiting("osu_reviewer", null, REVIEWER_MAYA), owner: REVIEWER_MAYA,
+    waitingOn: waiting("internal_reviewer", null, REVIEWER_MAYA), owner: REVIEWER_MAYA,
     value: 860_000, overallRisk: "medium", openBlockers: 1,
     matrix: { version: 3, reviewedAt: daysAgo(4), counts: counts({ within: 10, fallback: 1, deviates: 1, beneficial: 1 }) },
     nextStep: step("send_back", "Send back to Northgate: 1 clause needs changes."),
@@ -212,7 +212,7 @@ export const SHOWCASE_CONTRACTS: Contract[] = [
     docType: "OTHER", agreementType: "collaboration", counterparty: "Volta Cell Systems",
     piName: "Dr. Peter Novak", department: "Chemistry and Biochemistry", college: "College of Arts and Sciences",
     stage: "draft", state: "intake", daysInStage: 1,
-    waitingOn: waiting("osu_reviewer"), owner: null, value: 250_000, overallRisk: null,
+    waitingOn: waiting("internal_reviewer"), owner: null, value: 250_000, overallRisk: null,
     matrix: { version: 3, reviewedAt: daysAgo(1), counts: counts({ within: 9, fallback: 1 }) },
     nextStep: step("assign", "Assign a reviewer."), captureGaps: ["requestedDate"],
   }),
@@ -267,7 +267,7 @@ export const SHOWCASE_CONTRACTS: Contract[] = [
     docType: "LICENSE", agreementType: "option", counterparty: "Northstar Semiconductor",
     piName: "Dr. Marco Bianchi", department: "Electrical and Computer Engineering", college: "College of Engineering",
     stage: "review", state: "in_review", daysInStage: 15, totalDays: 15,
-    waitingOn: waiting("osu_reviewer", null, REVIEWER_JORDAN), owner: REVIEWER_JORDAN,
+    waitingOn: waiting("internal_reviewer", null, REVIEWER_JORDAN), owner: REVIEWER_JORDAN,
     value: 25_000, overallRisk: "medium", openBlockers: 1,
     matrix: { version: 3, reviewedAt: daysAgo(15), counts: counts({ within: 8, deviates: 1 }) },
     nextStep: step("send_back", "Send back to Northstar: the option period is 24 months, the matrix allows 12."),
@@ -287,7 +287,7 @@ export const SHOWCASE_CONTRACTS: Contract[] = [
     docType: "MSA", agreementType: "collaboration", counterparty: "Keystone Industrial Group",
     piName: "Dr. Victor Hale", department: "Industrial and Systems Engineering", college: "College of Engineering",
     stage: "renewal", state: "active", daysInStage: 12, totalDays: 700, signedAt: daysAgo(712),
-    waitingOn: waiting("osu_reviewer", null, REVIEWER_SAM), owner: REVIEWER_SAM, value: 600_000, overallRisk: "low",
+    waitingOn: waiting("internal_reviewer", null, REVIEWER_SAM), owner: REVIEWER_SAM, value: 600_000, overallRisk: "low",
     nextStep: step("none", "Term ends in 48 days. Decide whether to renew."), termEndDate: daysAhead(48),
   }),
 ]
@@ -305,12 +305,12 @@ function clause(c: Partial<MatrixClauseResult> & Pick<MatrixClauseResult, "claus
 const LICENSE_CLAUSES: MatrixClauseResult[] = [
   clause({
     clauseType: "LicenseScope", label: "License grant scope (exclusivity, field of use, territory)", clauseNumber: "2.1", tier: "deviates",
-    reason: "The licence is exclusive, worldwide, in all fields of use, with no reserved right for the university to use the technology for research and education.",
+    reason: "The licence is exclusive, worldwide, in all fields of use, with no reserved right for the organization to use the technology for research and education.",
     found: "Exclusive, worldwide, all fields of use; no reserved research rights.",
     standard: "Exclusive licence limited to a defined field of use and territory, with reserved research and education rights.",
     fallback: "All fields of use, if research and education rights are reserved and diligence applies per field.",
     escalationOffice: "tech_commercialization", suggestedLanguage: LICENSE_SEND_BACK_CLAUSES[0].suggestedLanguage,
-    quote: "University hereby grants to Licensee an exclusive, worldwide, royalty-bearing license under the Licensed Patents in all fields of use.",
+    quote: "Organization hereby grants to Licensee an exclusive, worldwide, royalty-bearing license under the Licensed Patents in all fields of use.",
   }),
   clause({
     clauseType: "Royalties", label: "Royalties, milestones, equity and sublicense income", clauseNumber: "3.3", tier: "deviates",
@@ -319,24 +319,24 @@ const LICENSE_CLAUSES: MatrixClauseResult[] = [
     found: "1% running royalty; no sublicense income share.",
     standard: "At least 3% running royalty and 25% of sublicense income.", fallback: "At least 2% and 15% of sublicense income.",
     escalationOffice: "tech_commercialization", suggestedLanguage: LICENSE_SEND_BACK_CLAUSES[1].suggestedLanguage,
-    quote: "Licensee shall pay University a running royalty of one percent (1%) of Net Sales of all Licensed Products.",
+    quote: "Licensee shall pay Organization a running royalty of one percent (1%) of Net Sales of all Licensed Products.",
   }),
   clause({
-    clauseType: "GoverningLaw", label: "Governing law (Ohio) and sovereign immunity", clauseNumber: "14.1", tier: "unacceptable",
-    reason: "Governing law is Delaware and the university would waive its sovereign immunity.",
+    clauseType: "GoverningLaw", label: "Governing law (home state) and sovereign immunity", clauseNumber: "14.1", tier: "unacceptable",
+    reason: "Governing law is Delaware and the organization would waive its sovereign immunity.",
     found: "Delaware law; waiver of sovereign immunity.",
-    standard: "Ohio law; no waiver of sovereign immunity.", escalationOffice: "legal_affairs", escalationRequired: true,
+    standard: "home-state law; no waiver of sovereign immunity.", escalationOffice: "legal_affairs", escalationRequired: true,
     suggestedLanguage: LICENSE_SEND_BACK_CLAUSES[2].suggestedLanguage,
-    quote: "This Agreement shall be governed by the laws of the State of Delaware. University hereby waives any claim of sovereign immunity.",
+    quote: "This Agreement shall be governed by the laws of the State of Delaware. Organization hereby waives any claim of sovereign immunity.",
   }),
   clause({
     clauseType: "Diligence", label: "Diligence and termination for failure to commercialize", clauseNumber: "5.1", tier: "within",
     beneficial: true, beneficialReason: "Dated development and sales milestones with a cure period.",
     standard: "Commercially reasonable efforts with dated milestones and a termination right.",
   }),
-  clause({ clauseType: "BackgroundIP", label: "Background and foreground IP ownership", clauseNumber: "7.1", tier: "within", standard: "The university keeps title to the licensed patents." }),
-  clause({ clauseType: "Indemnity", label: "Indemnification and insurance (public university)", clauseNumber: "11.1", tier: "within", standard: "The licensee indemnifies the university and carries insurance." }),
-  clause({ clauseType: "DataRights", label: "Data rights, confidentiality term and use of name", clauseNumber: "9.1", tier: "within", standard: "No use of the university's name without consent." }),
+  clause({ clauseType: "BackgroundIP", label: "Background and foreground IP ownership", clauseNumber: "7.1", tier: "within", standard: "The organization keeps title to the licensed patents." }),
+  clause({ clauseType: "Indemnity", label: "Indemnification and insurance", clauseNumber: "11.1", tier: "within", standard: "The licensee indemnifies the organization and carries insurance." }),
+  clause({ clauseType: "DataRights", label: "Data rights, confidentiality term and use of name", clauseNumber: "9.1", tier: "within", standard: "No use of the organization's name without consent." }),
   clause({ clauseType: "Sublicensing", label: "Sublicensing", clauseNumber: "4.1", tier: "fallback", standard: "Sublicenses need prior written consent.", fallback: "Consent not unreasonably withheld." }),
   clause({ clauseType: "Confidentiality", label: "Confidentiality", clauseNumber: "8.1", tier: "within", required: false }),
   clause({ clauseType: "Warranties", label: "Warranties", clauseNumber: "10.1", tier: "within", required: false }),
@@ -419,6 +419,7 @@ export const SHOWCASE_DETAILS: ContractDetail[] = [
 // ── Settings, matrix and trends ────────────────────────────────────────────
 
 export const SHOWCASE_SETTINGS: WorkflowSettings = {
+  organization: { name: "Northwind Research", defaultCurrency: "USD", fiscalYearStartMonth: 7, confirmedSteps: [], setupCompletedAt: null },
   stageTargetDays: STAGE_TARGET_DAYS,
   redAfterMultiple: RED_AFTER_MULTIPLE,
   reviewers: [
@@ -469,7 +470,7 @@ export function showcaseTrends(periods: number): Trends {
     },
     clauseDeviations: [
       { clauseType: "PublicationRights", label: "Publication rights and review period", total: 96, byPeriod: {} },
-      { clauseType: "Indemnity", label: "Indemnification and insurance (public university)", total: 71, byPeriod: {} },
+      { clauseType: "Indemnity", label: "Indemnification and insurance", total: 71, byPeriod: {} },
       { clauseType: "GoverningLaw", label: "Governing law and sovereign immunity", total: 58, byPeriod: {} },
     ],
     officeLoad: [

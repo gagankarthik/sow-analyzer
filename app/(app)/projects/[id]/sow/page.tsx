@@ -20,7 +20,6 @@ import { ALL, ListFilters, NoResults, type FilterGroup } from "../_components/Li
 import { docTypeShort } from "@/lib/doc-types";
 import { categoryLabel, clauseSpecificType } from "@/lib/clause-categories";
 import { formatDate } from "@/lib/format";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { ClausePlaybookPanel, OutcomeBadge, OUTCOME_DOT } from "@/components/playbook/Outcome";
 import { ReanalyseNotice } from "@/components/dates/ReanalyseNotice";
 import { OUTCOME_LABEL, PLAYBOOK_OUTCOMES, SOURCE_LABEL, type PlaybookOutcome } from "@/lib/playbook";
@@ -66,9 +65,9 @@ export default function SowPage() {
   const id = params?.id ?? "";
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
 
-  const { data: detail, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useDocument(id);
+  const { data: detail, isLoading, isError, error, refetch, isFetching } = useDocument(id);
   const isReady = detail?.document.status === "READY";
-  const { data: classification, isLoading: classLoading, isError: classError, error: classErr, refetch: refetchClass, isFetching: classFetching, dataUpdatedAt: classUpdatedAt } = useClassification(id, !!isReady);
+  const { data: classification, isLoading: classLoading, isError: classError, error: classErr, refetch: refetchClass } = useClassification(id, !!isReady);
 
   const [search, setSearch] = useState("");
   const [activeRisk, setActiveRisk] = useState<RiskLevel | null>(null);
@@ -235,7 +234,7 @@ export default function SowPage() {
               <div className="flex items-start gap-3.5">
                 <SonarMark size="md" tile className="hidden sm:inline-flex" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="mb-1.5 text-sm font-semibold text-[var(--ai-ink)]">Sonar executive summary</h2>
+                  <h2 className="text-lg font-semibold mb-1.5">Sonar executive summary</h2>
                   {classLoading ? (
                     <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
                   ) : classification?.summary ? (
@@ -263,7 +262,7 @@ export default function SowPage() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[var(--warning)]" />
                   <div className="min-w-0">
-                    <h2 id="review-heading" className="text-base font-semibold text-foreground">This analysis is incomplete. Check the document yourself.</h2>
+                    <h2 id="review-heading" className="text-lg font-semibold text-foreground">This analysis is incomplete. Check the document yourself.</h2>
                     {review.reasons.length > 0 ? (
                       <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm leading-relaxed text-[var(--ink-700)]">
                         {review.reasons.map((r) => <li key={r} className="[overflow-wrap:anywhere]">{r}</li>)}
@@ -295,12 +294,11 @@ export default function SowPage() {
             {/* Split view: clause list first, Sonar rail beside it on desktop and beneath it on mobile/tablet */}
             <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
               <main className="min-w-0 space-y-3 lg:col-span-8">
-                <LastUpdated className="justify-end" updatedAt={classUpdatedAt || dataUpdatedAt} isFetching={isFetching || classFetching} onRefresh={() => { void refetch(); void refetchClass(); }} failed={isError || classError} />
                 {/* Focal block: clause register header + filters */}
                 <section aria-labelledby="clauses-heading" className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
                   <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 bg-[var(--navy)] px-4 py-4 text-white md:px-5">
                     <div>
-                      <h2 id="clauses-heading" className="text-xl font-semibold tracking-tight">Clauses</h2>
+                      <h2 id="clauses-heading" className="text-lg font-semibold tracking-tight">Clauses</h2>
                     </div>
                     {/* A number only once the clauses have loaded: "0" would read as "no risk". */}
                     <p className="flex flex-wrap items-baseline gap-2 text-sm text-[var(--navy-foreground)]">
@@ -394,7 +392,7 @@ export default function SowPage() {
               <aside className="min-w-0 lg:col-span-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:sticky lg:top-[76px] lg:grid-cols-1">
                   <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 md:p-5">
-                    <div className="mb-2 flex items-center gap-2"><SonarMark size="sm" /><h3 className="text-sm font-semibold text-[var(--ai-ink)]">Sonar Co-pilot</h3></div>
+                    <div className="mb-2 flex items-center gap-2"><SonarMark size="sm" /><h3 className="text-base font-semibold">Sonar Co-pilot</h3></div>
                     <p className="text-sm leading-relaxed text-foreground">
                       {riskCounts.critical + riskCounts.high > 0
                         ? `${riskCounts.critical + riskCounts.high} clause${riskCounts.critical + riskCounts.high === 1 ? " is" : "s are"} rated high or critical. Ask Sonar about them.`
@@ -412,7 +410,7 @@ export default function SowPage() {
 
                   {classification && classification.parties.length > 0 && (
                     <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
-                      <h3 className="mb-3 text-base font-semibold text-foreground">Parties</h3>
+                      <h3 className="text-base font-semibold mb-3 text-foreground">Parties</h3>
                       <ul className="space-y-2.5">
                         {classification.parties.map((p) => (
                           <li key={p} className="flex items-center gap-2.5">
@@ -492,7 +490,7 @@ function ClauseCard({ clause, isExpanded, onToggle, depth }: { clause: ApiClause
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--warning-fg)]"><AlertTriangle size={12} />Needs review</span>
           )}
         </div>
-        <h3 className="break-words text-lg font-semibold leading-snug text-foreground">{clause.title || clause.number}</h3>
+        <h3 className="text-base font-semibold break-words leading-snug text-foreground">{clause.title || clause.number}</h3>
         {unclassified && (
           <p role="note" className="mt-2 flex items-start gap-2 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-3 py-2 text-sm leading-relaxed text-foreground">
             <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--warning)]" />
@@ -505,12 +503,12 @@ function ClauseCard({ clause, isExpanded, onToggle, depth }: { clause: ApiClause
 
       <div id={panelId} hidden={!isExpanded} className="space-y-4 border-t border-border bg-[var(--panel)] p-4">
         <section aria-label="Playbook result">
-          <h4 className="mb-2 text-sm font-semibold text-foreground">Against the playbook</h4>
+          <h4 className="text-sm font-semibold mb-2 text-foreground">Against the playbook</h4>
           <ClausePlaybookPanel result={clause.playbook} />
         </section>
         {subclauses.length > 0 && (
           <section aria-label="Sub-clauses">
-            <h4 className="mb-2 text-sm font-semibold text-foreground">Sub-clauses <span className="font-normal tabular-nums text-muted-foreground">{subclauses.length}</span></h4>
+            <h4 className="text-sm font-semibold mb-2 text-foreground">Sub-clauses <span className="font-normal tabular-nums text-muted-foreground">{subclauses.length}</span></h4>
             <ol className="space-y-2 border-l-2 border-[var(--ink-200)] pl-3 sm:ml-2 sm:pl-4">
               {subclauses.map((s) => (
                 <li key={`${s.ref}-${s.start}`} className="text-sm leading-relaxed">

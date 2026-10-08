@@ -29,7 +29,7 @@ export function RejectDialog({ contract, open, onOpenChange }: { contract: Contr
       onOpenChange={onOpenChange}
       tone="danger"
       title="Reject this contract"
-      description={<>OSU will not sign <strong className="font-semibold text-foreground">{contract.title}</strong>. It leaves the board; you can reopen it later from “Show rejected & closed”.</>}
+      description={<>You will not sign <strong className="font-semibold text-foreground">{contract.title}</strong>. It leaves the board; you can find and reopen it later under All on the Workflow board.</>}
       confirmLabel="Reject"
       onConfirm={confirm}
       pending={pending}
@@ -50,7 +50,7 @@ export function RejectDialog({ contract, open, onOpenChange }: { contract: Contr
         value={note}
         onChange={setNote}
         label={needsNote ? "Explain the reason" : "Note (optional)"}
-        placeholder="e.g. Sponsor will not accept OSU's publication rights."
+        placeholder="e.g. Sponsor will not accept your publication rights."
       />
     </ActionDialog>
   );

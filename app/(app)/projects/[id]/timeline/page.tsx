@@ -7,7 +7,6 @@ import { ProjectHeader } from "@/components/ProjectHeader";
 import { DocLoadError } from "@/components/DocLoadError";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { KeyDateList } from "@/components/dates/KeyDateList";
 import { ReanalyseNotice } from "@/components/dates/ReanalyseNotice";
 import {
@@ -69,9 +68,9 @@ export default function TimelinePage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
-  const { data: detail, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useDocument(id);
+  const { data: detail, isLoading, isError, error, refetch, isFetching } = useDocument(id);
   const isReady = detail?.document.status === "READY";
-  const { data: classification, isLoading: classLoading, isError: classError, error: classErr, refetch: refetchClass } = useClassification(id, !!isReady);
+  const { data: classification, isLoading: classLoading, isError: classError, error: classErr } = useClassification(id, !!isReady);
   const { data: timeline, isError: timelineError, error: timelineErr } = useTimeline(id, !!isReady);
   const now = useNow(); // the real clock, re-read every minute
 
@@ -209,8 +208,7 @@ export default function TimelinePage() {
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
           <main className="min-w-0 space-y-4 lg:col-span-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">Key dates</h2>
-              <LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => { void refetch(); void refetchClass(); }} failed={isError} />
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">Key dates</h2>
             </div>
 
             {/* Honest about where the list came from. */}
@@ -269,7 +267,7 @@ export default function TimelinePage() {
             {/* ── How this contract changed ─────────────────────── */}
             <section aria-labelledby="history-heading" className="pt-4">
               <div className="mb-3">
-                <h2 id="history-heading" className="text-xl font-semibold tracking-tight text-foreground">How this contract changed</h2>
+                <h2 id="history-heading" className="text-lg font-semibold tracking-tight text-foreground">How this contract changed</h2>
                 <p className="mt-0.5 text-sm text-[var(--ink-600)]">Versions of this document and the amendments in its chain, in order.</p>
               </div>
               {/* A document with no amendment chain has no timeline artifact (404):
@@ -322,7 +320,7 @@ export default function TimelinePage() {
 
           <aside className="min-w-0 lg:col-span-4">
             <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5 lg:sticky lg:top-[76px]">
-              <h3 className="mb-3 text-base font-semibold text-foreground">At a glance</h3>
+              <h3 className="text-base font-semibold mb-3 text-foreground">At a glance</h3>
               <ul className="divide-y divide-[var(--ink-100)] text-sm">
                 {datesPending ? (
                   <Row label="Key dates"><Skeleton className="h-4 w-10" /></Row>
@@ -374,7 +372,7 @@ function TermStrip({ term }: { term: TermPeriod }) {
   return (
     <section aria-label="Contract term" className="rounded-xl bg-[var(--navy)] p-4 text-white md:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className="text-lg font-semibold tracking-tight">{headline}</h3>
+        <h3 className="text-base font-semibold tracking-tight">{headline}</h3>
         <p className="text-sm tabular-nums text-[var(--navy-foreground)]">{detail}</p>
       </div>
       <div

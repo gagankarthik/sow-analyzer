@@ -21,7 +21,7 @@ export function KeyDatesCard({ docId, source, timeline }: { docId: string; sourc
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <div className="flex items-center gap-2">
           <CalendarClock size={16} className="shrink-0 text-[var(--brand-primary-600)]" />
-          <h3 id="key-dates-heading" className="text-lg font-semibold tracking-tight text-foreground">Key dates</h3>
+          <h3 id="key-dates-heading" className="text-base font-semibold tracking-tight text-foreground">Key dates</h3>
           <span className="text-sm tabular-nums text-muted-foreground">{counts.total}</span>
         </div>
         <Link href={href} className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0">
@@ -66,7 +66,7 @@ export function KeyDatesCard({ docId, source, timeline }: { docId: string; sourc
 function Slot({ title, className, children }: { title: string; className?: string; children: React.ReactNode }) {
   return (
     <div className={`min-w-0 rounded-lg border border-border bg-[var(--panel)] p-3.5 ${className ?? ""}`}>
-      <h4 className="mb-2 text-xs font-semibold text-muted-foreground">{title}</h4>
+      <h4 className="text-sm font-semibold mb-2 text-muted-foreground">{title}</h4>
       <div className="space-y-2.5">{children}</div>
     </div>
   );

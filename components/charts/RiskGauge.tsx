@@ -19,7 +19,7 @@ export function RiskGauge({ score, size }: { score: number; size?: number }) {
       aria-label={`Risk index ${value} out of 100, in the ${RISK_LABEL[level].toLowerCase()} band. Bands: low under 25, medium 25 to 49, high 50 to 74, critical 75 and above.`}
     >
       <div className="flex items-baseline gap-1.5">
-        <span className="text-[40px] font-semibold leading-none tracking-[-0.02em] text-foreground">{value}</span>
+        <span className="text-4xl font-semibold leading-none tracking-[-0.02em] text-foreground">{value}</span>
         <span className="text-sm text-muted-foreground">out of 100</span>
       </div>
       <div className="mt-2 flex items-center gap-1.5 text-sm font-medium text-foreground">

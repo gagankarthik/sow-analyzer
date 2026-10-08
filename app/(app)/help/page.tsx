@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { AnalysisDisclaimer } from "@/components/ui/AnalysisDisclaimer";
 import { Button } from "@/components/ui/button";
 import {
   Upload, ShieldCheck, GitBranch, BookMarked, Sonar, Library, Kanban, DraftSow,
@@ -9,13 +10,13 @@ import {
 } from "@/components/ui/icons";
 
 /* Plain, useful in-app help: how to get started, what each area does, keyboard
-   shortcuts, and where to get more help. */
+   and where to get more help. */
 
 const QUICK_START = [
   { icon: Upload, title: "Upload a contract", body: "Go to a project and drop a SOW, MSA, NDA, licence, DPA, BAA, or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analysing on upload." },
   { icon: Sonar, title: "Review the analysis", body: "Open the project to see the extracted clauses, the risk level given to each one, and the key findings." },
   { icon: GitBranch, title: "Track amendments", body: "Add an amendment to the project. When the analysis can match it to the contract it amends, the changes are listed against the original, and the contract value is updated from the figures the amendment states." },
-  { icon: BarChart3, title: "Watch the portfolio", body: "The Dashboard and Insights add up extracted value and clause risk across your analysed documents, and say how many documents are not yet included." },
+  { icon: BarChart3, title: "Watch the portfolio", body: "Home (Risk and documents) and Insights add up extracted value and clause risk across your analysed documents, and say how many documents are not yet included." },
 ];
 
 const AREAS = [
@@ -27,13 +28,6 @@ const AREAS = [
   { icon: ShieldCheck, title: "Security & legal", body: "How your documents are protected, and the policies that apply." },
 ];
 
-const SHORTCUTS: [string, string][] = [
-  ["⌘ / Ctrl + K", "Open search & commands"],
-  ["⌘ / Ctrl + /", "Open Sonar (copilot)"],
-  ["[", "Collapse / expand the sidebar"],
-  ["g then d / p / l / w", "Go to Dashboard / Projects / Library / Workflow"],
-];
-
 const SECTION_HEADING = "text-lg font-semibold tracking-tight text-foreground";
 
 export default function HelpPage() {
@@ -41,7 +35,7 @@ export default function HelpPage() {
     <>
       <PageHeader title="Help & getting started" />
 
-      {/* Two columns from lg: the guide on the left, support + shortcuts held in a narrower rail. */}
+      {/* Two columns from lg: the guide on the left, support held in a narrower rail. */}
       <div className="app-container app-page lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] lg:items-start">
         <div className="min-w-0 space-y-6 md:space-y-8">
           {/* Quick start — one ordered list, not four cards */}
@@ -64,7 +58,7 @@ export default function HelpPage() {
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                      <h3 className="text-base font-semibold flex items-center gap-2 text-foreground">
                         {s.title}
                         <Icon size={15} strokeWidth={1.85} className="shrink-0 text-muted-foreground" />
                       </h3>
@@ -99,7 +93,7 @@ export default function HelpPage() {
         <aside className="min-w-0 space-y-6 md:space-y-8">
           {/* Support — the focal block and the page's one primary action */}
           <section aria-labelledby="support" className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
-            <h2 id="support" className="text-xl font-semibold tracking-tight">Still stuck?</h2>
+            <h2 id="support" className="text-lg font-semibold tracking-tight">Still stuck?</h2>
             <p className="mt-2 text-base leading-relaxed text-[var(--navy-foreground)]">
               Ask Sonar in any project for help with a specific clause, or email our team.
             </p>
@@ -115,20 +109,10 @@ export default function HelpPage() {
               </Link>
             </div>
           </section>
-
-          <section aria-labelledby="shortcuts">
-            <h2 id="shortcuts" className={`mb-3 ${SECTION_HEADING}`}>Keyboard shortcuts</h2>
-            <ul className="divide-y divide-border rounded-xl border border-border bg-card px-4 shadow-xs md:px-5">
-              {SHORTCUTS.map(([keys, what]) => (
-                <li key={keys} className="flex flex-col gap-1.5 py-3">
-                  <span className="text-sm text-[var(--ink-600)]">{what}</span>
-                  <kbd className="w-fit rounded-md border border-[var(--ink-300)] bg-[var(--panel)] px-2 py-0.5 font-mono text-xs text-foreground">{keys}</kbd>
-                </li>
-              ))}
-            </ul>
-          </section>
         </aside>
       </div>
+      {/* The legal notice lives here, once, instead of under every page. */}
+      <AnalysisDisclaimer className="mt-2" />
     </>
   );
 }

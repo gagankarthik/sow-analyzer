@@ -150,7 +150,7 @@ export function AnalysisStep({
 function Notice({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div role="alert" className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-4">
-      <h3 className="flex items-center gap-2 text-base font-semibold text-foreground">
+      <h3 className="text-base font-semibold flex items-center gap-2 text-foreground">
         <AlertCircle size={16} className="shrink-0 text-[var(--danger)]" />{title}
       </h3>
       <div className="mt-2 text-sm leading-relaxed text-[var(--ink-600)]">{children}</div>

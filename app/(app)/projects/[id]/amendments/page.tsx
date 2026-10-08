@@ -8,7 +8,6 @@ import { DocLoadError } from "@/components/DocLoadError";
 import { ProcessingState } from "@/components/ProcessingState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { Badge } from "@/components/ui/badge";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import {
@@ -58,7 +57,7 @@ export default function AmendmentsPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
-  const { data: detail, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useDocument(id);
+  const { data: detail, isLoading, isError, error, refetch, isFetching } = useDocument(id);
   const isReady = detail?.document.status === "READY";
   const { data: diff, isLoading: diffLoading, isError: diffIsError, error: diffError, refetch: refetchDiff } = useDiff(id, !!isReady);
   // A document with no parent has no diff (404): expected. Anything else is a failure.
@@ -129,7 +128,7 @@ export default function AmendmentsPage() {
                 <div className="flex min-w-0 items-start gap-3">
                   <AlertCircle size={18} className="mt-0.5 shrink-0 text-[var(--info)]" />
                   <div className="min-w-0">
-                    <h2 className="text-base font-semibold text-foreground">Amendment relationship</h2>
+                    <h2 className="text-lg font-semibold text-foreground">Amendment relationship</h2>
                     <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">This document is an <Badge variant="neutral" size="sm" className="text-xs">AMENDMENT</Badge> to a parent contract.</p>
                   </div>
                 </div>
@@ -143,7 +142,7 @@ export default function AmendmentsPage() {
                 <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
               ) : diffFailed ? (
                 <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-12 text-center">
-                  <h3 className="mb-1 text-lg font-semibold text-foreground">Couldn&apos;t load the change analysis</h3>
+                  <h3 className="text-base font-semibold mb-1 text-foreground">Couldn&apos;t load the change analysis</h3>
                   <p className="mb-5 max-w-sm break-words text-sm leading-relaxed text-[var(--ink-600)]">{diffError instanceof Error ? diffError.message : "The request failed."}</p>
                   <Button variant="outline" size="lg" onClick={() => refetchDiff()}><RefreshCw size={14} />Try again</Button>
                 </div>
@@ -152,7 +151,7 @@ export default function AmendmentsPage() {
                   {/* Focal block: how much changed, and how badly */}
                   <section aria-labelledby="change-analysis" className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <h2 id="change-analysis" className="text-sm font-medium text-[var(--navy-foreground)]">Sonar change analysis</h2>
+                      <h2 id="change-analysis" className="text-lg font-semibold">Sonar change analysis</h2>
                       <span className="text-sm text-[var(--navy-foreground)]">vs parent, v{doc.latestVersion}</span>
                     </div>
                     <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-start md:gap-8">
@@ -196,7 +195,7 @@ export default function AmendmentsPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-14 text-center">
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted"><GitBranch size={20} className="text-[var(--ink-600)]" /></div>
-                  <h3 className="mb-1 text-lg font-semibold text-foreground">{isAmendment ? "No clause changes detected" : "No changes to show"}</h3>
+                  <h3 className="text-base font-semibold mb-1 text-foreground">{isAmendment ? "No clause changes detected" : "No changes to show"}</h3>
                   <p className="mb-5 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
                     {isAmendment
                       ? "This amendment introduced no detected clause changes versus its parent, or the parent could not be matched."
@@ -211,13 +210,13 @@ export default function AmendmentsPage() {
           {/* Sidebar */}
           <aside className="grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 md:gap-6 lg:col-span-4 lg:grid-cols-1">
             <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
-              <h3 className="mb-3 text-base font-semibold text-foreground">Document info</h3>
+              <h3 className="text-base font-semibold mb-3 text-foreground">Document info</h3>
               <ul className="divide-y divide-[var(--ink-100)]">
                 <InfoRow label="Doc type"><DocTypeBadge type={doc.docType} /></InfoRow>
                 <InfoRow label="Lifecycle"><Badge variant="neutral" size="sm" className="text-xs capitalize">{doc.lifecycle}</Badge></InfoRow>
                 <InfoRow label="Status"><Badge variant={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"} size="sm" className="text-xs">{rawStatus}</Badge></InfoRow>
                 <InfoRow label="Versions"><span className="text-sm font-semibold tabular-nums text-foreground">{doc.latestVersion}</span></InfoRow>
-                <li className="py-2.5"><LastUpdated className="justify-between" updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => { void refetch(); if (isReady) void refetchDiff(); }} failed={isError} /></li>
+                <li className="py-2.5"></li>
                 {isReady && diff && <InfoRow label="Changes"><span className="text-sm font-semibold tabular-nums text-foreground">{changes.length}</span></InfoRow>}
                 {doc.parentDocId && <InfoRow label="Parent"><code className="font-mono text-xs text-foreground">{doc.parentDocId.slice(0, 12)}…</code></InfoRow>}
               </ul>
@@ -225,7 +224,7 @@ export default function AmendmentsPage() {
 
             {isReady && changes.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
-                <h3 className="mb-3 text-base font-semibold text-foreground">Impact breakdown</h3>
+                <h3 className="text-base font-semibold mb-3 text-foreground">Impact breakdown</h3>
                 <div className="space-y-3">
                   {([["High impact", "70 or more", bands.high, "bg-[var(--danger)]"], ["Medium impact", "40 to 69", bands.medium, "bg-[var(--warning)]"], ["Low impact", "under 40", bands.low, "bg-[var(--success)]"], ["Not scored", "", bands.unscored, "bg-[var(--ink-400)]"]] as const).filter(([label, , n]) => label !== "Not scored" || n > 0).map(([label, range, n, bar]) => (
                     <div key={label}>

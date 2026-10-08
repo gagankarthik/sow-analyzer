@@ -95,7 +95,7 @@ export function AssignDialog({ contract, open, onOpenChange }: { contract: Contr
 
       <div className="grid grid-cols-1 gap-3 border-t border-border pt-4 sm:grid-cols-2">
         <Field label="Or type an email" htmlFor="assign-email">
-          <Input id="assign-email" type="email" inputMode="email" autoComplete="off" placeholder="name@osu.edu" value={email}
+          <Input id="assign-email" type="email" inputMode="email" autoComplete="off" placeholder="name@example.org" value={email}
             onChange={(e) => { setEmail(e.target.value); setPicked(null); }} />
         </Field>
         <Field label="Their name (optional)" htmlFor="assign-name">

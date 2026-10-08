@@ -5,7 +5,6 @@ import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import {
   FilterChips,
   FilterSummary,
@@ -123,7 +122,6 @@ export default function ClauseLibraryPage() {
         title="Clause library"
         subtitle="Every clause Sonar extracted from your analysed documents, grouped by category."
         back={{ href: "/settings", label: "Settings" }}
-        actions={<LastUpdated updatedAt={docsQuery.dataUpdatedAt} isFetching={docsQuery.isFetching} onRefresh={() => docsQuery.refetch()} failed={docsQuery.isError} />}
       />
 
       <SettingsLayout>
@@ -135,7 +133,7 @@ export default function ClauseLibraryPage() {
           ) : docsFailed ? (
             <div role="alert" className="flex flex-col items-center rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-10 text-center">
               <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={22} strokeWidth={1.75} /></span>
-              <h3 className="text-lg font-semibold text-foreground">Couldn&apos;t load your documents</h3>
+              <h3 className="text-base font-semibold text-foreground">Couldn&apos;t load your documents</h3>
               <p className="mt-1.5 max-w-sm break-words text-sm leading-relaxed text-[var(--ink-600)]">
                 {docsQuery.error instanceof Error ? docsQuery.error.message : "The request failed."}
               </p>
@@ -146,7 +144,7 @@ export default function ClauseLibraryPage() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft">
                 <FileText size={20} className="text-[var(--brand-primary-700)]" />
               </div>
-              <h3 className="text-xl font-semibold tracking-tight text-foreground">No clauses yet</h3>
+              <h3 className="text-base font-semibold tracking-tight text-foreground">No clauses yet</h3>
               <p className="mt-2 max-w-sm text-base leading-relaxed text-[var(--ink-600)]">
                 {docs.length === 0
                   ? "Upload a document and its clauses appear here once it has been analysed."
@@ -175,7 +173,7 @@ export default function ClauseLibraryPage() {
                   {visible.map((cat) => (
                     <li key={cat.key || "__uncategorised"} className="min-w-0 rounded-lg border border-border bg-[var(--panel)] p-4">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="min-w-0 break-words text-base font-semibold text-foreground">{cat.label}</h3>
+                        <h3 className="text-base font-semibold min-w-0 break-words text-foreground">{cat.label}</h3>
                         <span className="shrink-0 text-xl font-semibold leading-none tabular-nums text-foreground">{cat.clauses.toLocaleString()}</span>
                       </div>
                       <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink-600)]">

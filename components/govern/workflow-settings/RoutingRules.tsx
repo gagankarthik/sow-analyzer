@@ -1,6 +1,6 @@
 "use client";
 
-// Approval routing: rules that send a contract to one or more OSU offices
+// Approval routing: rules that send a contract to one or more internal offices
 // before signature. Every rule is shown as the sentence it means, so an admin
 // reads "Any license worth $500,000 or more goes to Legal Affairs before
 // signature" rather than a table of conditions.
@@ -52,7 +52,7 @@ export function RoutingRules({
     <SettingsSection
       id="routing"
       title="Approval routing"
-      description={`Rules that send a contract to an OSU office before signature. ${enabledCount} of ${rules.length} on. A contract that matches several rules needs every office named.`}
+      description={`Rules that send a contract to an internal office before signature. ${enabledCount} of ${rules.length} on. A contract that matches several rules needs every office named.`}
       action={!readOnly && (
         <Button
           size="lg"
@@ -118,7 +118,7 @@ export function RoutingRules({
         </ul>
       )}
       <p className="border-t border-border bg-[var(--panel)] px-4 py-3 text-xs leading-relaxed text-[var(--ink-600)] sm:px-5">
-        Agreement type and money direction narrow which contracts a rule looks at. Value, a term OSU does not accept and risk each trigger it on their own.
+        Agreement type and money direction narrow which contracts a rule looks at. Value, a term you do not accept and risk each trigger it on their own.
       </p>
 
       <Dialog open={editing !== null} onOpenChange={(o) => !o && setEditing(null)}>
@@ -247,7 +247,7 @@ function RoutingRuleForm({
         <label className="flex min-h-10 items-start gap-3 rounded-lg border border-border p-3">
           <Switch checked={!!when.anyUnacceptable} onCheckedChange={(v) => setWhen({ anyUnacceptable: v })} className="mt-0.5" />
           <span className="text-sm leading-snug">
-            <span className="block font-medium text-foreground">Has a term OSU does not accept</span>
+            <span className="block font-medium text-foreground">Has a term you do not accept</span>
             <span className="text-[var(--ink-600)]">Any clause the matrix marks &ldquo;Not acceptable&rdquo;.</span>
           </span>
         </label>

@@ -8,13 +8,13 @@
 //      it says a feature is on or off, that wins);
 //   2. otherwise `NEXT_PUBLIC_GOVERN_FEATURES` — a comma list such as
 //      "exports,docusign" (camelCase or snake_case both work);
-//   3. otherwise the default below (all off).
+//   3. otherwise the default below (obligation tracking on, the rest off).
 
 export const GOVERN_FEATURES = {
   routingRules: false,
   docusign: false,
   notifications: false,
-  obligations: false,
+  obligations: true,
   exports: false,
   integrations: false,
 } as const
@@ -27,7 +27,7 @@ export const GOVERN_FEATURE_KEYS = Object.keys(GOVERN_FEATURES) as GovernFeature
 export const GOVERN_FEATURE_LABEL: Record<GovernFeature, { title: string; description: string }> = {
   routingRules: {
     title: "Approval routing rules",
-    description: "Send a contract to the right OSU offices for sign-off before signature, based on its type, value and terms.",
+    description: "Send a contract to the right internal offices for sign-off before signature, based on its type, value and terms.",
   },
   docusign: {
     title: "DocuSign signatures",
@@ -39,7 +39,7 @@ export const GOVERN_FEATURE_LABEL: Record<GovernFeature, { title: string; descri
   },
   obligations: {
     title: "Obligation tracking",
-    description: "Track reports, payments and other deliverables each contract commits OSU to, with reminders before they fall due.",
+    description: "Track reports, payments and other deliverables each contract commits your organisation to, with reminders before they fall due.",
   },
   exports: {
     title: "Excel and PDF exports",

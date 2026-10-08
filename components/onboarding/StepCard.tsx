@@ -21,7 +21,7 @@ export function StepCard({
       <h2
         id={STEP_TITLE_ID}
         tabIndex={-1}
-        className="text-2xl font-semibold tracking-tight text-foreground focus:outline-none"
+        className="text-lg font-semibold tracking-tight text-foreground focus:outline-none"
       >
         {title}
       </h2>

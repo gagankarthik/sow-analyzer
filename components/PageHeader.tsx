@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { ChevronLeft } from "@/components/ui/icons";
 
 type Props = {
@@ -32,14 +33,19 @@ export function PageHeader({
             {back && (
               <Link
                 href={back.href}
-                className="-mb-0.5 inline-flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                // In Settings the docked sidebar carries the way back, so the
+                // link only shows where the sidebar is a drawer.
+                className={cn(
+                  "-mb-0.5 inline-flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+                  back.href === "/settings" && "lg:hidden",
+                )}
               >
                 <ChevronLeft size={15} strokeWidth={2} />
                 {back.label}
               </Link>
             )}
             <h1
-              className="text-[clamp(24px,2.6vw,32px)] font-semibold tracking-[-0.025em] text-foreground leading-[1.15] break-words"
+              className="text-2xl font-semibold tracking-[-0.025em] text-foreground leading-[1.15] break-words"
             >
               {title}
             </h1>

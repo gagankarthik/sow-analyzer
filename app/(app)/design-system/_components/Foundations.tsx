@@ -120,7 +120,7 @@ const PAIRS: Pair[] = [
   { fg: "--interactive", bg: "--surface-raised", use: "text", label: "Teal link on card" },
   { fg: "--interactive", bg: "--surface-canvas", use: "text", label: "Teal link on page" },
   { fg: "--structure-fg", bg: "--structure", use: "text", label: "White on navy band" },
-  { fg: "--structure-soft-fg", bg: "--structure-soft", use: "text", label: "Navy chip (OSU holds it)" },
+  { fg: "--structure-soft-fg", bg: "--structure-soft", use: "text", label: "Navy chip (You hold it)" },
   { fg: "--sidebar-foreground", bg: "--sidebar", use: "text", label: "Sidebar item on navy" },
   { fg: "--sidebar-primary-foreground", bg: "--sidebar-primary", use: "text", label: "Active sidebar item (teal-300 pill)" },
   { fg: "--sidebar-primary", bg: "--sidebar", use: "graphic", label: "Active pill against the navy sidebar" },
@@ -132,7 +132,7 @@ const PAIRS: Pair[] = [
   { fg: "--status-ok-fg", bg: "--surface-raised", use: "text", label: "OK text on card" },
   { fg: "--status-caution-fg", bg: "--surface-raised", use: "text", label: "Caution text on card" },
   { fg: "--status-blocked-fg", bg: "--surface-raised", use: "text", label: "Blocked text on card" },
-  { fg: "--outcome-beneficial-fg", bg: "--surface-raised", use: "text", label: "Benefits OSU badge (success outline)" },
+  { fg: "--outcome-beneficial-fg", bg: "--surface-raised", use: "text", label: "Favours you badge (success outline)" },
   { fg: "--outcome-missing-fg", bg: "--surface-raised", use: "text", label: "Missing badge (dashed)" },
   { fg: "--ai-ink", bg: "--ai-surface", use: "text", label: "Sonar text on Sonar surface" },
   { fg: "--tenant-brand-fg", bg: "--tenant-brand", use: "text", label: "Tenant header text" },
@@ -274,7 +274,7 @@ export function Foundations() {
                     ["Blocking", "--status-blocked", <StatusPill key="d" tone="blocked">Overdue</StatusPill>, "Unacceptable tier, red SLA, rejected"],
                     ["Unknown", "--status-unknown", <StatusPill key="e" tone="unknown" dashed>No value yet</StatusPill>, "No value, no target, check by hand, missing"],
                     ["Action (teal accent)", "--interactive", <span key="f" className="text-body font-medium text-fg-link underline">Open contract</span>, "Primary buttons, links, focus, selected"],
-                    ["OSU holds it (navy)", "--structure-soft", <StatusPill key="f2" tone="brand">OSU reviewer</StatusPill>, "Emphasis that is not an action"],
+                    ["You hold it (navy)", "--structure-soft", <StatusPill key="f2" tone="brand">Reviewer</StatusPill>, "Emphasis that is not an action"],
                     ["Sonar provenance", "--ai-ink", <StatusPill key="g" tone="ai">Found by Sonar</StatusPill>, "Found-by-Sonar marks only"],
                   ] as const
                 ).map(([meaning, token, example, used]) => (
@@ -404,7 +404,7 @@ export function Foundations() {
                   <code className="font-mono text-caption font-semibold text-fg-primary">{name}</code>
                   <span className="text-caption text-fg-tertiary">{size} · {use}</span>
                 </div>
-                <p className={cn(cls, "min-w-0 truncate font-semibold tracking-tight text-fg-primary")}>38 contracts waiting on OSU</p>
+                <p className={cn(cls, "min-w-0 truncate font-semibold tracking-tight text-fg-primary")}>38 contracts waiting on your organisation</p>
               </li>
             ))}
           </ul>

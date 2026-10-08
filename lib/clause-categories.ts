@@ -28,7 +28,7 @@ const OVERRIDES: Record<string, string> = {
   BreachNotification: "Breach Notification",
   DataRetention: "Data Retention",
   SecurityControls: "Security Controls",
-  // Research and university licensing (OSU review matrix)
+  // Research and university licensing (review matrix)
   PublicationRights: "Publication Rights",
   BackgroundIP: "Background IP",
   ExportControl: "Export Control",
@@ -99,7 +99,7 @@ export function clauseTypeLabel(c: ClauseTypeFields): string {
 
 // ── Review-matrix clause types (Govern, Requirement 1) ──────────────────────
 // The category ids a matrix clause can carry, with the longer labels the
-// matrix uses. Research and licensing types come first: they are what OSU's
+// matrix uses. Research and licensing types come first: they are what your
 // reviewers grade most. Mirrors KNOWN_CATEGORIES in the backend's
 // shared/clause_types.py.
 

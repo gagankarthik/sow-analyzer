@@ -7,7 +7,6 @@
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { X } from "@/components/ui/icons";
 import { prefersReducedMotion } from "@/lib/chart-theme";
 import { contractsTable, describeFilters, type ExportReport } from "@/lib/govern/export";
@@ -40,7 +39,7 @@ function stageTakeaway(stages: StageQueue[], targets: Partial<Record<Stage, numb
   return `Every step is within its target on average. The longest is "${STAGE_LABEL[slowest.stage]}" at ${daysLabel(Math.round(slowest.averageDays ?? 0))}.`;
 }
 
-/** "Most are waiting on the other side (9). The longest waits are with OSU office (avg 18 days)." */
+/** "Most are waiting on the other side (9). The longest waits are with internal office (avg 18 days)." */
 function waitingTakeaway(queues: WaitingQueue[]): string {
   if (queues.length === 0) return "Nothing is waiting on anyone.";
   const most = [...queues].sort((a, b) => b.count - a.count)[0];
@@ -56,7 +55,7 @@ function focusLabel(f: NonNullable<ReportFocus>): string {
 }
 
 export default function BottlenecksPage() {
-  const { data, isLoading, isError, error, isFetching, dataUpdatedAt, refetch } = useContracts();
+  const { data, isLoading, isError, error, refetch } = useContracts();
   const all = useMemo(() => data?.contracts ?? [], [data]);
   const [filters, setFilters] = useState<ContractFilters>(NO_FILTERS);
   const [focus, setFocus] = useHashFocus();
@@ -143,7 +142,6 @@ export default function BottlenecksPage() {
         subtitle="Every contract not yet signed, by step and by who has it, against the target days your admins set."
         actions={
           <>
-            <LastUpdated updatedAt={dataUpdatedAt || undefined} isFetching={isFetching} onRefresh={() => void refetch()} failed={isError && !!data} />
             <ExportButtons build={buildReport} disabled={!data || all.length === 0} />
           </>
         }

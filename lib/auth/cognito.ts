@@ -207,13 +207,56 @@ export async function confirmForgotPassword(
   });
 }
 
-export function signOut(): void {
+/** Browser storage that holds a user's work or history (drafts, recent
+ *  documents, read receipts, onboarding answers). Cleared at sign-out so the
+ *  next person on a shared machine sees none of it. UI preferences (sidebar,
+ *  table density) are not personal data and stay. */
+const PERSONAL_STORAGE = [/^blueiq:/, /^recent-docs$/, /^biq-notif-read$/, /^biq-dashboard-filters$/];
+
+function clearPersonalStorage(): void {
   try {
-    pool().getCurrentUser()?.signOut();
+    const keys = Object.keys(window.localStorage);
+    for (const key of keys) {
+      if (PERSONAL_STORAGE.some((re) => re.test(key))) window.localStorage.removeItem(key);
+    }
+    window.sessionStorage.clear();
   } catch {
-    /* pool may be unconfigured; ignore */
+    /* storage blocked: nothing was stored */
+  }
+}
+
+const GLOBAL_SIGN_OUT_TIMEOUT_MS = 4000;
+
+/**
+ * Sign out. By default this device only; `everywhere` first revokes the
+ * refresh tokens on every device (global sign out, capped at a few seconds
+ * so a slow network never leaves the user stuck). Then, always, the local
+ * session, the session cookie and personal data in browser storage are
+ * cleared. Callers must await this before navigating away, or the page
+ * unload can cut it short and leave the tokens in place.
+ */
+export async function signOut({ everywhere = false }: { everywhere?: boolean } = {}): Promise<void> {
+  const user = cognitoConfigured ? pool().getCurrentUser() : null;
+  if (user) {
+    if (everywhere) {
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          user.getSession((err: Error | null) => {
+            if (err) return resolve();
+            user.globalSignOut({ onSuccess: () => resolve(), onFailure: () => resolve() });
+          });
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, GLOBAL_SIGN_OUT_TIMEOUT_MS)),
+      ]);
+    }
+    try {
+      user.signOut();
+    } catch {
+      /* already signed out */
+    }
   }
   clearSessionCookie();
+  clearPersonalStorage();
 }
 
 // ── Session / token access ───────────────────────────────────────────────────

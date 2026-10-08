@@ -8,7 +8,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
-import { LastUpdated } from "@/components/ui/LastUpdated";
 import { SettingsLayout } from "@/components/settings/SettingsNav";
 import {
   LoadError, PageSkeleton, ReadOnlyNote, UnsavedBar, useAdminAccess, useUnsavedChangesGuard,
@@ -87,7 +86,6 @@ export default function WorkflowSettingsPage() {
             : "How long each stage should take, who reviews what, and how new contracts are assigned."
         }
         back={{ href: "/settings", label: "Settings" }}
-        actions={<LastUpdated updatedAt={q.dataUpdatedAt} isFetching={q.isFetching} onRefresh={() => q.refetch()} failed={q.isError} />}
       />
 
       <SettingsLayout>
@@ -143,20 +141,20 @@ function Summary({ draft, features }: { draft: SettingsDraft; features: GovernFe
   const channels = [draft.notifications.email && "email", draft.notifications.teams && "Teams"].filter(Boolean) as string[];
 
   return (
-    <div className="grid grid-cols-1 gap-4 rounded-xl bg-[var(--navy-800)] p-5 text-white md:grid-cols-12 md:gap-8">
+    <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs md:grid-cols-12 md:gap-8">
       <div className="min-w-0 md:col-span-4">
-        <div className="text-sm font-medium text-[var(--navy-100)]">Target from arrival to signature</div>
+        <div className="text-sm font-medium text-[var(--ink-600)]">Target from arrival to signature</div>
         <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-          <span className="text-4xl font-semibold leading-none tracking-tight tabular-nums">{total > 0 ? total : "—"}</span>
-          {total > 0 && <span className="text-base text-[var(--navy-100)]">days</span>}
+          <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">{total > 0 ? total : "—"}</span>
+          {total > 0 && <span className="text-base text-[var(--ink-600)]">days</span>}
         </div>
-        <p className="mt-2 text-sm text-[var(--navy-100)]">
+        <p className="mt-2 text-sm text-[var(--ink-600)]">
           {review !== null ? `${STAGE_LABEL.review}: ${plural(review, "day")}` : "No review target set"} · red after {Number.isFinite(draft.redAfterMultiple) ? draft.redAfterMultiple : "—"}× target
         </p>
       </div>
-      <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--navy-100)] md:col-span-8">
+      <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--ink-600)] md:col-span-8">
         <p>
-          <span className="font-semibold text-white">{plural(draft.reviewers.length, "reviewer")}</span> in the directory,{" "}
+          <span className="font-semibold text-foreground">{plural(draft.reviewers.length, "reviewer")}</span> in the directory,{" "}
           {features.routingRules ? (
             <>
               {plural(draft.assignmentRules.length, "assignment rule")} and{" "}
@@ -166,7 +164,7 @@ function Summary({ draft, features }: { draft: SettingsDraft; features: GovernFe
             <>and {plural(draft.assignmentRules.length, "assignment rule")} on.</>
           )}
         </p>
-        {firstRule && <p className="text-white">{routingSentence(firstRule)}</p>}
+        {firstRule && <p className="text-foreground">{routingSentence(firstRule)}</p>}
         {features.notifications && (
           <p>{channels.length ? `Alerts go out by ${channels.join(" and ")}.` : "Alerts are off."}</p>
         )}

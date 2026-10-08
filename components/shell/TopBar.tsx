@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -18,17 +18,14 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Bell,
   Search,
-  Command,
   ChevronDown,
   ArrowRight,
   User,
-  Users,
   LogOut,
   Settings,
   Menu,
@@ -47,7 +44,6 @@ import { useUIStore } from "@/lib/stores/ui";
 import { useNow } from "@/lib/use-now";
 
 type Props = {
-  onCommandOpen?: () => void;
   /** kept for API compatibility but no longer rendered as a button */
   onCopilotToggle?: () => void;
   /** opens the mobile sidebar drawer */
@@ -57,11 +53,6 @@ type Props = {
 /** 40px icon button used across the bar. */
 const ICON_BUTTON =
   "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[var(--ink-700)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
-
-const NOOP_SUBSCRIBE = () => () => {};
-function useHasMounted(): boolean {
-  return useSyncExternalStore(NOOP_SUBSCRIBE, () => true, () => false);
-}
 
 /* ──────────────────────────────────────────────── */
 /*  Search — live documents, projects and pages     */
@@ -78,7 +69,7 @@ type SearchHit = {
 
 const PAGE_HITS: SearchHit[] = [
   // Each `sub` says what the page actually shows today (kept in step with the page headers).
-  { id: "p-dashboard", label: "Dashboard", sub: "Portfolio overview", href: "/dashboard", group: "Pages", icon: <BarChart3 size={14} /> },
+  { id: "p-dashboard", label: "Risk and documents", sub: "Clause risk, value and compliance", href: "/home?view=risk", group: "Pages", icon: <BarChart3 size={14} /> },
   { id: "p-projects", label: "Projects", sub: "Contracts grouped with their amendments", href: "/projects", group: "Pages", icon: <Briefcase size={14} /> },
   { id: "p-workflow", label: "Workflow", sub: "Documents by lifecycle stage", href: "/workflow", group: "Pages", icon: <Kanban size={14} /> },
   { id: "p-library", label: "Library", sub: "Every uploaded document", href: "/library", group: "Pages", icon: <FileText size={14} /> },
@@ -86,6 +77,7 @@ const PAGE_HITS: SearchHit[] = [
   { id: "p-playbook", label: "Playbook", sub: "Settings · negotiation standards", href: "/settings/playbook", group: "Pages", icon: <BookMarked size={14} /> },
   { id: "p-clauses", label: "Clause library", sub: "Settings · clauses extracted from your documents", href: "/settings/clauses", group: "Pages", icon: <FileText size={14} /> },
   { id: "p-settings", label: "Settings", sub: "Rules and integrations", href: "/settings", group: "Pages", icon: <Settings size={14} /> },
+  { id: "p-profile", label: "Profile", sub: "Your account, password and sessions", href: "/profile", group: "Pages", icon: <User size={14} /> },
 ];
 
 // Search is built from the shared, live documents query and the projects list
@@ -123,6 +115,8 @@ function SearchBar() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  // Collapsed to an icon until asked for; it slides open and shut.
+  const [expanded, setExpanded] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listId = useId();
@@ -131,22 +125,22 @@ function SearchBar() {
   useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (!wrapRef.current) return;
-      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
+      if (!wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        if (!inputRef.current?.value) setExpanded(false);
+      }
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  // Global Cmd/Ctrl-K to focus this input (and let the command palette pop too)
+  // Escape closes the results and, when empty, the field.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        inputRef.current?.focus();
-        setOpen(true);
+      if (e.key === "Escape") {
+        setOpen(false);
+        if (!inputRef.current?.value) setExpanded(false);
       }
-      if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -174,6 +168,14 @@ function SearchBar() {
     router.push(hit.href);
     setOpen(false);
     setQ("");
+    setExpanded(false);
+  }
+
+  function expand() {
+    setExpanded(true);
+    setOpen(true);
+    // Focus once the field is in the layout, as it starts to open.
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -193,11 +195,27 @@ function SearchBar() {
   }
 
   return (
-    <div ref={wrapRef} className="relative w-full max-w-[440px]">
+    <div
+      ref={wrapRef}
+      className={cn(
+        "relative h-10 transition-[width] duration-200 ease-out motion-reduce:transition-none",
+        expanded ? "w-[min(440px,100%)]" : "w-10",
+      )}
+    >
+      {!expanded && (
+        <button
+          type="button"
+          aria-label="Search"
+          onClick={expand}
+          className="absolute inset-0 z-10 inline-flex items-center justify-center rounded-lg text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          <Search size={18} strokeWidth={1.75} />
+        </button>
+      )}
       <Search
         size={16}
         strokeWidth={1.75}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        className={cn("absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-opacity duration-150", !expanded && "opacity-0")}
       />
       <input
         ref={inputRef}
@@ -208,11 +226,14 @@ function SearchBar() {
           setActive(0);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => { setExpanded(true); setOpen(true); }}
         onKeyDown={onKeyDown}
+        tabIndex={expanded ? 0 : -1}
+        aria-hidden={!expanded || undefined}
         placeholder="Search documents & pages…"
         className={cn(
-          "h-10 w-full rounded-lg pl-9 pr-3 md:pr-16 text-base text-foreground",
+          "h-10 w-full rounded-lg pl-9 pr-3 text-base text-foreground transition-opacity duration-150",
+          !expanded && "pointer-events-none opacity-0",
           "bg-[var(--panel)] border border-[var(--ink-300)] placeholder:text-muted-foreground",
           "focus:outline-none focus:bg-card focus:border-[var(--brand-primary-600)] focus:ring-2 focus:ring-ring/30",
           "transition-colors",
@@ -224,12 +245,9 @@ function SearchBar() {
         aria-autocomplete="list"
         autoComplete="off"
       />
-      <kbd className="absolute right-2 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md text-xs font-mono border border-border text-muted-foreground bg-card pointer-events-none">
-        <Command size={12} strokeWidth={2} />K
-      </kbd>
 
       {/* Results dropdown */}
-      {open && (
+      {open && expanded && (
         <div id={listId} className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 min-w-[280px] rounded-xl border border-border bg-card shadow-md overflow-hidden">
           {q.trim() === "" ? (
             <div className="p-3">
@@ -462,8 +480,8 @@ function NotificationBell() {
 /* ──────────────────────────────────────────────── */
 
 const ACCOUNT_LINKS = [
-  { label: "Profile & settings", href: "/settings", icon: User },
-  { label: "Team", href: "/settings/team", icon: Users },
+  { label: "Profile", href: "/profile", icon: User },
+  { label: "Settings", href: "/settings", icon: Settings },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Help", href: "/help", icon: Help },
 ];
@@ -472,17 +490,15 @@ const ACCOUNT_LINKS = [
 const MENU_ROW =
   "min-h-10 cursor-pointer gap-3 rounded-lg px-2.5 py-2 text-base font-medium [&_svg]:text-[var(--ink-600)]";
 
-function ProfileMenu({ onCommandOpen }: { onCommandOpen?: () => void }) {
+function ProfileMenu() {
   const { user, status, signOut } = useAuth();
   const { unreadCount, isLoading: notifLoading, isError: notifError } = useNotifications();
-  const mounted = useHasMounted();
 
   const initials = initialsOf(user);
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
   const email = user?.email || (status === "loading" ? "Loading…" : "Not signed in");
   // Only shown when the identity token actually carries a group; no invented role.
   const group = user?.groups?.[0];
-  const isMac = mounted && /Mac|iPhone|iPad/.test(navigator.platform);
 
   return (
     <DropdownMenu>
@@ -538,22 +554,12 @@ function ProfileMenu({ onCommandOpen }: { onCommandOpen?: () => void }) {
           ))}
         </DropdownMenuGroup>
 
-        <DropdownMenuSeparator className="mx-0 my-0" />
-        <DropdownMenuGroup className="p-1.5">
-          <DropdownMenuItem onSelect={onCommandOpen} className={MENU_ROW}>
-            <Command size={16} />
-            <span className="min-w-0 flex-1 truncate">Search &amp; commands</span>
-            <DropdownMenuShortcut className="font-mono tracking-normal">
-              {isMac ? "⌘K" : "Ctrl K"}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
 
         <DropdownMenuSeparator className="mx-0 my-0" />
         <DropdownMenuGroup className="p-1.5">
           <DropdownMenuItem
             variant="destructive"
-            onSelect={signOut}
+            onSelect={() => signOut()}
             disabled={status !== "authenticated"}
             className="min-h-10 cursor-pointer gap-3 rounded-lg px-2.5 py-2 text-base font-medium"
           >
@@ -570,7 +576,7 @@ function ProfileMenu({ onCommandOpen }: { onCommandOpen?: () => void }) {
 /*  TopBar                                          */
 /* ──────────────────────────────────────────────── */
 
-export function TopBar({ onCommandOpen, onMenuClick }: Props) {
+export function TopBar({ onMenuClick }: Props) {
   const sidebarCollapsed = useUIStore((st) => st.sidebarCollapsed);
   const toggleSidebar = useUIStore((st) => st.toggleSidebar);
 
@@ -605,28 +611,18 @@ export function TopBar({ onCommandOpen, onMenuClick }: Props) {
           </button>
         </TooltipTrigger>
         <TooltipContent>
-          {sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} · [
+          {sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         </TooltipContent>
       </Tooltip>
 
-      {/* Search — inline field from `sm` up, beside the toggle */}
-      <div className="hidden sm:flex flex-1 items-center min-w-0">
-        <SearchBar />
-      </div>
-      <div className="flex-1 sm:hidden" />
+      <div className="flex-1" />
 
-      {/* Search — icon button below `sm`; opens the full-screen palette */}
-      <button
-        type="button"
-        aria-label="Search"
-        onClick={onCommandOpen}
-        className={cn(ICON_BUTTON, "sm:hidden")}
-      >
-        <Search size={18} strokeWidth={1.75} />
-      </button>
-
-      {/* Right cluster */}
-      <div className="flex items-center gap-0.5 sm:gap-1.5 shrink-0">
+      {/* Right cluster: search (an icon that slides open to the left), help,
+          notifications, account. */}
+      <div className="flex min-w-0 items-center justify-end gap-0.5 sm:gap-1.5">
+        <div className="flex min-w-0 justify-end w-[min(440px,55vw)]">
+          <SearchBar />
+        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <Link href="/help" aria-label="Help" className={ICON_BUTTON}>
@@ -639,7 +635,7 @@ export function TopBar({ onCommandOpen, onMenuClick }: Props) {
 
         <Separator orientation="vertical" className="!h-6 mx-1 hidden sm:block" />
 
-        <ProfileMenu onCommandOpen={onCommandOpen} />
+        <ProfileMenu />
       </div>
     </header>
   );

@@ -156,7 +156,7 @@ export function ActionDialogHost({ kind, contract, onClose }: { kind: ActionKind
   }
 }
 
-/** The one obvious next step, as a button. When nothing is for OSU to do,
+/** The one obvious next step, as a button. When nothing is for you to do,
  *  it says so in a sentence instead of offering a button. */
 export function NextStepButton({
   contract, size = "default", className, onUploadRevision, quietWhenNone = false,

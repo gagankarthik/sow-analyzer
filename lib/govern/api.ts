@@ -4,29 +4,48 @@
 import { request } from "@/lib/api"
 import type {
   BlockerInput, CaptureReport, Connector, Trends, ConnectorId, ConnectorInput, Contract, ContractAction, ContractDetail,
-  ContractPatch, GovernMe, IncomeItem, Matrix, MatrixImportResult, MatrixImportRow, MatrixPlaybook,
-  MatrixVersionInfo, AgreementType, ObligationInput, SyncRun, WorkflowSettings, WorkflowSettingsInput,
+  ContractPatch, GovernMe, WaitingOn, WaitingOnKind, IncomeItem, Matrix, MatrixImportResult, MatrixImportRow, MatrixPlaybook,
+  MatrixVersionInfo, AgreementType, ObligationInput, PortfolioObligation, SyncRun, WorkflowSettings, WorkflowSettingsInput,
 } from "./types"
 
 const contractPath = (id: string) => `/contracts/${encodeURIComponent(id)}`
 
 type DetailResponse = { contract: ContractDetail }
 
+// Older API builds name the internal holders `osu_reviewer` / `osu_office`
+// and put your organization's name in the label. Map them to the current
+// kinds, and any unknown kind to "nobody", so one unexpected value can never
+// break a page. Safe to keep after every backend is on the new names.
+const LEGACY_KIND: Record<string, WaitingOnKind> = { osu_reviewer: "internal_reviewer", osu_office: "internal_office" }
+const KNOWN_KINDS = new Set<string>(["internal_reviewer", "internal_office", "counterparty", "pi_department", "signatory", "nobody"])
+
+function normaliseWaitingOn(w: WaitingOn | undefined | null): WaitingOn {
+  if (!w) return { kind: "nobody", label: "Nothing pending", office: null, person: null } as WaitingOn
+  const raw = String(w.kind)
+  const kind = (LEGACY_KIND[raw] ?? (KNOWN_KINDS.has(raw) ? raw : "nobody")) as WaitingOnKind
+  const label = typeof w.label === "string" ? w.label.replace(/\bOSU\s+/g, "").replace(/\s{2,}/g, " ") : w.label
+  return { ...w, kind, label }
+}
+
+function normaliseContract<T extends Contract>(c: T): T {
+  return { ...c, waitingOn: normaliseWaitingOn(c.waitingOn) }
+}
+
 // ── Contracts ──────────────────────────────────────────────────────────────
 
 export async function listContracts(includeClosed = false): Promise<{ contracts: Contract[]; generatedAt: string | null }> {
   const qs = includeClosed ? "?includeClosed=true" : ""
   const data = await request<{ contracts?: Contract[]; generatedAt?: string }>(`/contracts${qs}`)
-  return { contracts: data.contracts ?? [], generatedAt: data.generatedAt ?? null }
+  return { contracts: (data.contracts ?? []).map(normaliseContract), generatedAt: data.generatedAt ?? null }
 }
 
 export async function getContract(id: string): Promise<ContractDetail> {
-  return (await request<DetailResponse>(contractPath(id))).contract
+  return normaliseContract((await request<DetailResponse>(contractPath(id))).contract)
 }
 
 export async function patchContract(id: string, patch: ContractPatch): Promise<ContractDetail> {
   const data = await request<DetailResponse>(contractPath(id), { method: "PATCH", body: JSON.stringify(patch) })
-  return data.contract
+  return normaliseContract(data.contract)
 }
 
 export async function runContractAction(id: string, action: ContractAction): Promise<ContractDetail> {
@@ -34,7 +53,7 @@ export async function runContractAction(id: string, action: ContractAction): Pro
     method: "POST",
     body: JSON.stringify(action),
   })
-  return data.contract
+  return normaliseContract(data.contract)
 }
 
 export async function rescoreContract(id: string): Promise<ContractDetail> {
@@ -43,7 +62,7 @@ export async function rescoreContract(id: string): Promise<ContractDetail> {
 
 export async function addBlocker(id: string, input: BlockerInput & { text: string }): Promise<ContractDetail> {
   const data = await request<DetailResponse>(`${contractPath(id)}/blockers`, { method: "POST", body: JSON.stringify(input) })
-  return data.contract
+  return normaliseContract(data.contract)
 }
 
 export async function updateBlocker(id: string, blockerId: string, input: BlockerInput): Promise<ContractDetail> {
@@ -51,12 +70,17 @@ export async function updateBlocker(id: string, blockerId: string, input: Blocke
     method: "PATCH",
     body: JSON.stringify(input),
   })
-  return data.contract
+  return normaliseContract(data.contract)
+}
+
+export async function listObligations(): Promise<{ obligations: PortfolioObligation[]; enabled: boolean }> {
+  const data = await request<{ obligations?: PortfolioObligation[]; enabled?: boolean }>("/obligations")
+  return { obligations: data.obligations ?? [], enabled: data.enabled ?? true }
 }
 
 export async function addObligation(id: string, input: ObligationInput & { kind: string; title: string }): Promise<ContractDetail> {
   const data = await request<DetailResponse>(`${contractPath(id)}/obligations`, { method: "POST", body: JSON.stringify(input) })
-  return data.contract
+  return normaliseContract(data.contract)
 }
 
 export async function updateObligation(id: string, oblId: string, input: ObligationInput): Promise<ContractDetail> {
@@ -64,12 +88,12 @@ export async function updateObligation(id: string, oblId: string, input: Obligat
     method: "PATCH",
     body: JSON.stringify(input),
   })
-  return data.contract
+  return normaliseContract(data.contract)
 }
 
 export async function saveIncome(id: string, items: Partial<IncomeItem>[]): Promise<ContractDetail> {
   const data = await request<DetailResponse>(`${contractPath(id)}/income`, { method: "PUT", body: JSON.stringify({ items }) })
-  return data.contract
+  return normaliseContract(data.contract)
 }
 
 /** A presigned upload for the other side's revised version. Upload the file
@@ -95,10 +119,12 @@ export async function saveMatrix(
   playbooks: Partial<Record<AgreementType, MatrixPlaybook>>,
   note?: string,
   effectiveDate?: string,
+  /** Left out keeps the current home state; null clears it. */
+  homeState?: string | null,
 ): Promise<Matrix> {
   const data = await request<{ matrix: Matrix }>("/matrix", {
     method: "PUT",
-    body: JSON.stringify({ playbooks, note, effectiveDate }),
+    body: JSON.stringify(homeState === undefined ? { playbooks, note, effectiveDate } : { playbooks, note, effectiveDate, homeState }),
   })
   return data.matrix
 }
@@ -159,7 +185,7 @@ export async function getGovernMe(): Promise<GovernMe> {
  *  "New") with the details the uploader gave; Sonar fills the rest. */
 export async function createContract(input: ContractPatch & { docId: string }): Promise<ContractDetail> {
   const data = await request<DetailResponse>("/contracts", { method: "POST", body: JSON.stringify(input) })
-  return data.contract
+  return normaliseContract(data.contract)
 }
 
 // ── Trends and capture ─────────────────────────────────────────────────────

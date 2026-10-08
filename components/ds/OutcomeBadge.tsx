@@ -11,8 +11,8 @@ import type { Tier } from "@/lib/govern/types";
 /** A matrix tier, plus the independent "beneficial" mark. */
 export type Outcome = Tier | "beneficial";
 
-export const OUTCOME_LABEL: Record<Outcome, string> = { ...TIER_LABEL, beneficial: "Benefits OSU" };
-export const OUTCOME_HINT: Record<Outcome, string> = { ...TIER_HINT, beneficial: "This term benefits OSU." };
+export const OUTCOME_LABEL: Record<Outcome, string> = { ...TIER_LABEL, beneficial: "Favours you" };
+export const OUTCOME_HINT: Record<Outcome, string> = { ...TIER_HINT, beneficial: "This term favours your organisation." };
 
 /** Chart/mark colour per outcome (CSS variable references). */
 export const OUTCOME_COLOR: Record<Outcome, string> = {

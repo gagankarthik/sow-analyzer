@@ -5,7 +5,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, Filter, Search, X } from "@/components/ui/icons";
 import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
@@ -50,7 +49,7 @@ export function BoardFilters({
           <Input
             type="search"
             aria-label="Search agreements"
-            placeholder="Search a sponsor, PI, department or title"
+            placeholder="Search by title, sponsor, PI or department"
             value={filters.q}
             onChange={(e) => set("q", e.target.value)}
             className="h-11 border-[var(--ink-300)] pl-9 text-base md:h-10 md:text-sm"
@@ -72,10 +71,29 @@ export function BoardFilters({
             )}
             <ChevronDown size={14} className={cn("transition-transform duration-150 motion-reduce:transition-none", open && "rotate-180")} />
           </Button>
-          <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm text-[var(--ink-700)]">
-            <Switch checked={showClosed} onCheckedChange={onShowClosedChange} aria-label="Show rejected and closed agreements" />
-            Show rejected &amp; closed
-          </label>
+          {/* List scope, the standard Open | All convention: "All" adds
+              closed and rejected agreements. */}
+          <div role="radiogroup" aria-label="Agreements to show" className="inline-flex h-10 items-center rounded-lg border border-border bg-[var(--ink-50)] p-0.5">
+            {([
+              [false, "Open", "Agreements still in progress or in force"],
+              [true, "All", "Include closed and rejected agreements"],
+            ] as const).map(([value, label, hint]) => (
+              <button
+                key={label}
+                type="button"
+                role="radio"
+                aria-checked={showClosed === value}
+                title={hint}
+                onClick={() => onShowClosedChange(value)}
+                className={cn(
+                  "h-full rounded-md px-3.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
+                  showClosed === value ? "bg-card text-foreground shadow-xs ring-1 ring-border" : "text-[var(--ink-600)] hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

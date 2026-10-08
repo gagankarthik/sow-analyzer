@@ -1,7 +1,7 @@
 "use client";
 
 // One clause of a playbook, read at a glance: the standard and fallback side
-// by side, what OSU never accepts and what favours it, who reviews a
+// by side, what you never accept and what favours it, who reviews a
 // deviation, the numbers Sonar checks and the redline it offers.
 
 import { Button } from "@/components/ui/button";
@@ -63,11 +63,11 @@ export function ClauseCard({
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="min-w-0 lg:col-span-7">
-          <h4 className="text-sm font-semibold text-[var(--success-fg)]">Standard position</h4>
+          <h4 className="text-sm font-semibold">Standard position</h4>
           <p className="mt-1 text-sm leading-relaxed text-foreground">{clause.standard || "—"}</p>
         </div>
         <div className="min-w-0 border-l-2 border-[var(--info-soft)] pl-3 lg:col-span-5">
-          <h4 className="text-sm font-semibold text-[var(--info-fg)]">Acceptable fallback</h4>
+          <h4 className="text-sm font-semibold">Acceptable fallback</h4>
           <p className="mt-1 text-sm leading-relaxed text-[var(--ink-700)]">{clause.fallback || "No fallback: only the standard is accepted."}</p>
         </div>
       </div>
@@ -76,13 +76,13 @@ export function ClauseCard({
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           {clause.unacceptable.length > 0 && (
             <div className="min-w-0">
-              <h4 className="mb-1.5 text-sm font-semibold text-[var(--danger-fg)]">Not acceptable</h4>
+              <h4 className="text-sm font-semibold mb-1.5">Not acceptable</h4>
               <ul className="flex flex-wrap gap-1.5">{clause.unacceptable.map((u) => <li key={u}><Chip tone="danger">{u}</Chip></li>)}</ul>
             </div>
           )}
           {clause.beneficial.length > 0 && (
             <div className="min-w-0">
-              <h4 className="mb-1.5 text-sm font-semibold text-[var(--success-fg)]">Beneficial to OSU</h4>
+              <h4 className="text-sm font-semibold mb-1.5">Favours you</h4>
               <ul className="flex flex-wrap gap-1.5">{clause.beneficial.map((b) => <li key={b}><Chip tone="success">{b}</Chip></li>)}</ul>
             </div>
           )}
