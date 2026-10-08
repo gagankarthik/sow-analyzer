@@ -1,5 +1,6 @@
 "use client";
 
+import { useEditionTerms } from "@/lib/govern/queries";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
@@ -12,6 +13,7 @@ const FIELD =
   "h-11 border-[var(--ink-300)] bg-card text-base placeholder:text-[var(--ink-500)]";
 
 export default function NewProjectPage() {
+  const terms = useEditionTerms();
   const router = useRouter();
   const [name, setName] = useState("");
   const [client, setClient] = useState("");
@@ -42,7 +44,7 @@ export default function NewProjectPage() {
   return (
     <>
       <PageHeader
-        back={{ href: "/projects", label: "Back to projects" }}
+        back={{ href: "/projects", label: `Back to ${terms.projects.toLowerCase()}` }}
         title="New project"
       />
 

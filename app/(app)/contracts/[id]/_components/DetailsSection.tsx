@@ -4,7 +4,7 @@
 // Huron and Workday ids (Requirement 6), and the "what's missing" checklist so
 // capture never misses anything silently.
 
-import { useAgreementTypes } from "@/lib/govern/queries";
+import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
 import { useCanEditContracts } from "@/lib/govern/queries";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -41,6 +41,9 @@ interface Draft {
   text: Record<TextKey, string>;
   numbers: Record<NumberKey, string>;
 }
+
+/** Research-administration fields, shown in the Campus edition only. */
+const RESEARCH_KEYS = new Set<TextKey>(["sponsor", "piName", "college", "huronRecordId"]);
 
 const TEXT_FIELDS: { key: TextKey; label: string; placeholder?: string; type?: string }[] = [
   { key: "counterparty", label: "Other party", placeholder: "e.g. Acme Therapeutics, Inc." },
@@ -129,6 +132,7 @@ function diff(c: ContractDetail, d: Draft): ContractPatch | "invalid" {
 }
 
 export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
+  const terms = useEditionTerms();
   const canEdit = useCanEditContracts();
   const patch = usePatchContract(c.contractId);
   const onError = useGovernErrorToast();
@@ -228,11 +232,11 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
           <dl className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2 lg:grid-cols-3">
             <Fact label="Agreement type">{AGREEMENT_TYPE_LABEL[c.agreementType]}</Fact>
             <Fact label="Money">{DIRECTION_LABEL[c.direction]}</Fact>
-            <Fact label="Other party" provenance={mark("counterparty")}>{c.counterparty}</Fact>
-            <Fact label="Sponsor or licensee" provenance={mark("sponsor")}>{c.sponsor}</Fact>
-            <Fact label="Principal investigator" provenance={mark("piName")}>{c.piName}</Fact>
+            <Fact label={terms.researchFields ? "Other party" : terms.party} provenance={mark("counterparty")}>{c.counterparty}</Fact>
+            {terms.researchFields && <Fact label={terms.party} provenance={mark("sponsor")}>{c.sponsor}</Fact>}
+            {terms.researchFields && <Fact label="Principal investigator" provenance={mark("piName")}>{c.piName}</Fact>}
             <Fact label="Department" provenance={mark("department")}>{c.department}</Fact>
-            <Fact label="College" provenance={mark("college")}>{c.college}</Fact>
+            {terms.researchFields && <Fact label="College" provenance={mark("college")}>{c.college}</Fact>}
             <Fact label="Value" provenance={c.value !== null ? <ValueSource contract={c} /> : null}>{c.value === null ? null : contractValueText(c)}</Fact>
             <Fact label="Value found by Sonar">{c.extractedValue === null ? null : fmtMoney(c.extractedValue, c.currency)}</Fact>
             <Fact label="Expected value at intake">{c.expectedValue === null ? null : fmtMoney(c.expectedValue, c.currency)}</Fact>
@@ -306,6 +310,7 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
   /** The match status only means something once the Workday integration is live. */
   showWorkdayMatch: boolean;
 }) {
+  const terms = useEditionTerms();
   const agreementTypes = useAgreementTypes(draft.agreementType);
   const setText = (key: TextKey, v: string) => onChange({ ...draft, text: { ...draft.text, [key]: v } });
   const setNumber = (key: NumberKey, v: string) => onChange({ ...draft, numbers: { ...draft.numbers, [key]: v } });
@@ -326,9 +331,9 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
           <SelectContent>{(["incoming", "outgoing"] as Direction[]).map((d) => <SelectItem key={d} value={d}>{DIRECTION_LABEL[d]}</SelectItem>)}</SelectContent>
         </Select>
       </FormField>
-      {TEXT_FIELDS.slice(0, 5).map((f) => (
-        <FormField key={f.key} label={f.label} id={fieldId(f.key)}>
-          <Input id={fieldId(f.key)} value={draft.text[f.key]} placeholder={f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
+      {TEXT_FIELDS.slice(0, 5).filter((f) => terms.researchFields || !RESEARCH_KEYS.has(f.key)).map((f) => (
+        <FormField key={f.key} label={f.key === "counterparty" && !terms.researchFields ? terms.party : f.key === "sponsor" ? terms.party : f.label} id={fieldId(f.key)}>
+          <Input id={fieldId(f.key)} value={draft.text[f.key]} placeholder={f.key === "counterparty" && !terms.researchFields ? terms.partyHint : f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
         </FormField>
       ))}
       <FormField label="Expected value" id={fieldId("expectedValue")} hint="What intake expected it to be worth.">
@@ -340,7 +345,7 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
       <FormField label="Currency" id={fieldId("currency")}>
         <Input id={fieldId("currency")} maxLength={3} value={draft.text.currency} placeholder="USD" onChange={(e) => setText("currency", e.target.value.toUpperCase())} />
       </FormField>
-      {TEXT_FIELDS.slice(5).map((f) => (
+      {TEXT_FIELDS.slice(5).filter((f) => terms.researchFields || !RESEARCH_KEYS.has(f.key)).map((f) => (
         <FormField key={f.key} label={f.label} id={fieldId(f.key)}>
           <Input id={fieldId(f.key)} type={f.type} value={draft.text[f.key]} placeholder={f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
         </FormField>

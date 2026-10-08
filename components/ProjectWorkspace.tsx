@@ -1,7 +1,7 @@
 "use client";
 
 import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
-import { useEditionFeature } from "@/lib/govern/queries";
+import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
 import { Fragment, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
@@ -147,6 +147,7 @@ const docCan = (doc: ApiDocument, capability: Parameters<typeof can>[1]) => can(
 
 export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const showSow = useEditionFeature("sowDocuments");
+  const terms = useEditionTerms();
   const project = useProject(projectId);
   // The projects list has its own load state: "not loaded yet" and "couldn't
   // load" must not read as "this project does not exist".
@@ -421,7 +422,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   return (
     <>
       <PageHeader
-        back={{ href: "/projects", label: "Projects" }}
+        back={{ href: "/projects", label: terms.projects }}
         title={project.name}
         subtitle={`${project.client ? `${project.client} · ` : ""}${hasDocs ? `${docs.length} document${docs.length === 1 ? "" : "s"}${processingCount > 0 ? ` · ${processingCount} analyzing` : ""}${totalClauses !== null ? ` · ${totalClauses.toLocaleString()} clause${totalClauses === 1 ? "" : "s"}` : ""}` : "No documents yet"}`}
         actions={

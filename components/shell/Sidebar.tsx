@@ -12,7 +12,7 @@ import {
   Settings, Library, DraftSow, CalendarClock, House, Gauge, ChevronLeft, ChevronRight, ListChecks, FileText,
 } from "@/components/ui/icons";
 import { SETTINGS_ITEMS } from "@/components/settings/SettingsNav";
-import { editionHas, type EditionFeature } from "@/lib/edition";
+import { EDITION_TERMS, editionHas, type Edition, type EditionFeature } from "@/lib/edition";
 import { useEdition, useGovernMe } from "@/lib/govern/queries";
 
 type NavItem = {
@@ -27,22 +27,39 @@ type NavItem = {
   edition?: EditionFeature;
 };
 
-// One list, ordered by how often people need each place. Icons stay
-// neutral: colour carries status only.
-const NAV_ITEMS: NavItem[] = [
-  { label: "Home", href: "/home", icon: House },
-  { label: "Workflow", href: "/workflow", icon: Kanban },
-  { label: "Contracts", href: "/contracts", icon: FileText },
-  { label: "Projects", href: "/projects", icon: Briefcase },
-  { label: "Library", href: "/library", icon: Library },
-  { label: "Renewals", href: "/renewals", icon: CalendarClock },
-  { label: "Obligations", href: "/obligations", icon: ListChecks },
-  { label: "Reports", href: "/reports", icon: Gauge },
-  { label: "Insights", href: "/insights", icon: BarChart3 },
-  { label: "Draft SOW", href: "/draft", icon: DraftSow, edition: "sowDrafting" },
-  { label: "Sonar", action: "copilot", icon: Sonar },
-  { label: "Settings", href: "/settings", icon: Settings, drill: true },
-];
+// One list per edition, ordered by how often that team needs each place.
+// Campus leads with obligations (royalty reports, sponsor deliverables);
+// Workforce leads with engagements and SOW drafting. Icons stay neutral:
+// colour carries status only.
+const NAV_BY_EDITION: Record<Edition, NavItem[]> = {
+  campus: [
+    { label: "Home", href: "/home", icon: House },
+    { label: "Workflow", href: "/workflow", icon: Kanban },
+    { label: "Contracts", href: "/contracts", icon: FileText },
+    { label: "Obligations", href: "/obligations", icon: ListChecks },
+    { label: "Renewals", href: "/renewals", icon: CalendarClock },
+    { label: EDITION_TERMS.campus.projects, href: "/projects", icon: Briefcase },
+    { label: "Library", href: "/library", icon: Library },
+    { label: "Reports", href: "/reports", icon: Gauge },
+    { label: "Insights", href: "/insights", icon: BarChart3 },
+    { label: "Sonar", action: "copilot", icon: Sonar },
+    { label: "Settings", href: "/settings", icon: Settings, drill: true },
+  ],
+  workforce: [
+    { label: "Home", href: "/home", icon: House },
+    { label: "Workflow", href: "/workflow", icon: Kanban },
+    { label: "Contracts", href: "/contracts", icon: FileText },
+    { label: EDITION_TERMS.workforce.projects, href: "/projects", icon: Briefcase },
+    { label: "Draft SOW", href: "/draft", icon: DraftSow, edition: "sowDrafting" },
+    { label: "Obligations", href: "/obligations", icon: ListChecks },
+    { label: "Renewals", href: "/renewals", icon: CalendarClock },
+    { label: "Library", href: "/library", icon: Library },
+    { label: "Reports", href: "/reports", icon: Gauge },
+    { label: "Insights", href: "/insights", icon: BarChart3 },
+    { label: "Sonar", action: "copilot", icon: Sonar },
+    { label: "Settings", href: "/settings", icon: Settings, drill: true },
+  ],
+};
 
 // A leader's view is five places: what needs them, the board, the records,
 // and the two reporting views. Everything else stays one link away.
@@ -50,7 +67,7 @@ const LEADER_HREFS = new Set(["/home", "/workflow", "/contracts", "/reports", "/
 
 // Every routable destination in the rail, so the longest-prefix match below
 // decides the one active item. (Help lives in the top bar.)
-const ALL_HREFS = NAV_ITEMS.filter((i) => i.href).map((i) => i.href as string);
+const ALL_HREFS = [...new Set(Object.values(NAV_BY_EDITION).flat().filter((i) => i.href).map((i) => i.href as string))];
 
 function bestMatchHref(pathname: string): string | null {
   let best: string | null = null;
@@ -91,7 +108,7 @@ export function Sidebar({
   const me = useGovernMe();
   const edition = useEdition();
   const isLeader = me.data?.role === "leader";
-  const navItems = NAV_ITEMS.filter((i) =>
+  const navItems = NAV_BY_EDITION[edition].filter((i) =>
     (!i.edition || editionHas(edition, i.edition)) && (!isLeader || (i.href ? LEADER_HREFS.has(i.href) : false)));
   const settingsItems = SETTINGS_ITEMS.filter((i) => !i.edition || editionHas(edition, i.edition));
   // Collapse state is shared with the top bar, which holds the toggle button.

@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { FileSignature, Plus } from "@/components/ui/icons";
 import { RISK_LABEL } from "@/lib/chart-theme";
 import { AGREEMENT_TYPE_LABEL, STAGE_LABEL, STAGES, WAITING_ON_SHORT } from "@/lib/govern/labels";
-import { useContracts, useGovernMe } from "@/lib/govern/queries";
+import { useContracts, useGovernMe, useEditionTerms } from "@/lib/govern/queries";
 import { CONTRACT_VIEWS, VIEW_GROUP_LABEL, viewById, type ViewGroup } from "@/lib/govern/views";
 import type { Contract } from "@/lib/govern/types";
 import type { RiskLevel } from "@/lib/types";
@@ -41,6 +41,7 @@ export default function ContractsPage() {
 }
 
 function Contracts() {
+  const terms = useEditionTerms();
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -103,7 +104,7 @@ function Contracts() {
       <FilterPill label="Type" selected={type} onChange={setType} options={optionsFrom(inView, (c) => c.agreementType, (v) => AGREEMENT_TYPE_LABEL[v as Contract["agreementType"]] ?? v)} />
       <FilterPill label="People" selected={people} onChange={setPeople} options={optionsFrom(inView, ownerKey, (v) => v === "unassigned" ? "Unassigned" : inView.find((c) => ownerKey(c) === v)?.owner?.name || v)} />
       <FilterPill label="Turn" selected={turn} onChange={setTurn} options={optionsFrom(inView, (c) => c.waitingOn.kind, (v) => WAITING_ON_SHORT[v as Contract["waitingOn"]["kind"]] ?? v)} />
-      <FilterPill label="Sponsor or party" selected={party} onChange={setParty} options={optionsFrom(inView, partyKey, (v) => v === "none" ? "Not named" : v)} />
+      <FilterPill label={terms.researchFields ? "Sponsor or party" : terms.party} selected={party} onChange={setParty} options={optionsFrom(inView, partyKey, (v) => v === "none" ? "Not named" : v)} />
       <FilterPill label="Department" selected={dept} onChange={setDept} options={optionsFrom(inView, (c) => c.department ?? "none", (v) => v === "none" ? "Not set" : v)} />
       <FilterPill label="Value" selected={band} onChange={setBand} options={VALUE_BANDS.map((b) => ({ value: b, label: VALUE_BAND_LABEL[b], count: inView.filter((c) => inValueBand(c, b)).length })).filter((o) => o.count > 0)} />
       <FilterPill label="Risk" selected={risk} onChange={setRisk} options={optionsFrom(inView, (c) => c.overallRisk ?? "none", (v) => v === "none" ? "Not assessed" : RISK_LABEL[v as RiskLevel])} />

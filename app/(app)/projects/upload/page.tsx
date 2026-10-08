@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditionFeature } from "@/lib/govern/queries";
+import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
 import { useCallback, useId, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
@@ -21,6 +21,7 @@ function projectFromUrl(): string {
 }
 
 export default function UploadPage() {
+  const terms = useEditionTerms();
   const showSow = useEditionFeature("sowDocuments");
   const pickerId = useId();
   const projects = useProjects();
@@ -56,7 +57,7 @@ export default function UploadPage() {
   return (
     <>
       <PageHeader
-        back={{ href: "/projects", label: "Back to projects" }}
+        back={{ href: "/projects", label: `Back to ${terms.projects.toLowerCase()}` }}
         title="Add a document"
         subtitle={showSow ? "Upload a SOW, MSA or amendment for analysis." : "Upload an agreement: Sonar reads it and checks it against your review matrix."}
       />

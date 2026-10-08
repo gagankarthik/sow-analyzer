@@ -3,7 +3,7 @@
 // Search is always there and needs nothing else (Requirement 5); the filters
 // (Requirement 3) sit folded away until someone asks for them.
 
-import { useAgreementTypes } from "@/lib/govern/queries";
+import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
 import { SearchField } from "@/components/ds/inputs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,6 +38,7 @@ export function BoardFilters({
   showClosed: boolean;
   onShowClosedChange: (v: boolean) => void;
 }) {
+  const terms = useEditionTerms();
   const agreementTypes = useAgreementTypes();
   const set = <K extends keyof ContractFilters>(key: K, value: ContractFilters[K]) => onChange({ ...filters, [key]: value });
   const activeCount = (Object.keys(NO_FILTERS) as (keyof ContractFilters)[])
@@ -46,7 +47,7 @@ export function BoardFilters({
   return (
     <section aria-label="Search and filters" className="flex flex-col gap-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <SearchField label="Search agreements" hideLabel placeholder="Search by title, sponsor, PI or department" value={filters.q} onChange={(v) => set("q", v)} className="flex-1 sm:max-w-md md:max-w-md" />
+        <SearchField label="Search agreements" hideLabel placeholder={terms.searchPlaceholder} value={filters.q} onChange={(v) => set("q", v)} className="flex-1 sm:max-w-md md:max-w-md" />
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -93,8 +94,8 @@ export function BoardFilters({
         <div id="board-filters" className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <FilterSelect label="Agreement type" value={filters.agreementType} onChange={(v) => set("agreementType", v as ContractFilters["agreementType"])}
             options={[{ value: ALL, label: "Any type" }, ...agreementTypes.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }))]} />
-          <FilterSelect label="Sponsor or licensee" value={filters.sponsor} onChange={(v) => set("sponsor", v)}
-            options={[{ value: ALL, label: "Any sponsor" }, ...options.sponsors.map((s) => ({ value: s, label: s }))]} />
+          <FilterSelect label={terms.party} value={filters.sponsor} onChange={(v) => set("sponsor", v)}
+            options={[{ value: ALL, label: terms.anyParty }, ...options.sponsors.map((s) => ({ value: s, label: s }))]} />
           <FilterSelect label="Department" value={filters.department} onChange={(v) => set("department", v)}
             options={[{ value: ALL, label: "Any department" }, ...options.departments.map((d) => ({ value: d, label: d }))]} />
           <FilterSelect label="Reviewer" value={filters.reviewer} onChange={(v) => set("reviewer", v)}

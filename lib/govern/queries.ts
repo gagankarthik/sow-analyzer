@@ -10,7 +10,7 @@
  * list refreshes every minute while a page is open (and on focus).
  */
 
-import { EDITION_AGREEMENT_TYPES, editionHas, resolveEdition, type Edition, type EditionFeature } from "@/lib/edition";
+import { EDITION_AGREEMENT_TYPES, EDITION_TERMS, editionHas, resolveEdition, type Edition, type EditionFeature, type EditionTerms } from "@/lib/edition";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { isPermanentError } from "@/lib/api";
@@ -153,6 +153,11 @@ export function useAgreementTypes(include?: AgreementType | null): AgreementType
 export function useOrgCurrency(): string {
   const settings = useWorkflowSettings();
   return settings.data?.organization?.defaultCurrency || "USD";
+}
+
+/** The edition's words and fields (see EDITION_TERMS). */
+export function useEditionTerms(): EditionTerms {
+  return EDITION_TERMS[useEdition()];
 }
 
 export function useEditionFeature(feature: EditionFeature): boolean {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditionFeature } from "@/lib/govern/queries";
+import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
@@ -122,6 +122,7 @@ type SortKey = "name" | "status" | "risk" | "highRisk" | "docCount" | "clauseCou
 type SortDir = "asc" | "desc";
 
 export default function ProjectsPage() {
+  const terms = useEditionTerms();
   const { data, isLoading: docsLoading, isError: docsError, refetch } = useDocuments();
   const docs = useMemo(() => data ?? [], [data]);
   const rawProjects = useProjects();
@@ -214,7 +215,7 @@ export default function ProjectsPage() {
   return (
     <>
       <PageHeader
-        title="Projects"
+        title={terms.projects}
         actions={
           <>
             <Button asChild className="h-10 md:h-9">

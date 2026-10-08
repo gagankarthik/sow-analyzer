@@ -3,7 +3,7 @@
 import { docTypeLabel } from "@/lib/doc-types";
 import { AGREEMENT_TYPE_LABEL, STAGE_LABEL } from "@/lib/govern/labels";
 import { useContracts, useGovernMe } from "@/lib/govern/queries";
-import { useEditionFeature } from "@/lib/govern/queries";
+import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -78,10 +78,10 @@ type SearchHit = {
 const PAGE_HITS: SearchHit[] = [
   // Each `sub` says what the page actually shows today (kept in step with the page headers).
   { id: "p-dashboard", label: "Risk and documents", sub: "Clause risk, value and compliance", href: "/home?view=risk", group: "Pages", icon: <BarChart3 size={14} /> },
-  { id: "p-projects", label: "Projects", sub: "Contracts grouped with their amendments", href: "/projects", group: "Pages", icon: <Briefcase size={14} /> },
+
   { id: "p-contracts", label: "Contracts", sub: "Every agreement, in progress and signed", href: "/contracts", group: "Pages", icon: <FileText size={14} /> },
   { id: "p-workflow", label: "Workflow", sub: "Who has each agreement and what moves it to signature", href: "/workflow", group: "Pages", icon: <Kanban size={14} /> },
-  { id: "p-obligations", label: "Obligations", sub: "Reports, payments, milestones and renewal deadlines", href: "/obligations", group: "Pages", icon: <FileText size={14} /> },
+
   { id: "p-library", label: "Library", sub: "Every uploaded document", href: "/library", group: "Pages", icon: <FileText size={14} /> },
   { id: "p-insights", label: "Insights", sub: "Portfolio insights", href: "/insights", group: "Pages", icon: <BarChart3 size={14} /> },
   { id: "p-playbook", label: "Playbook", sub: "Settings · negotiation standards", href: "/settings/playbook", group: "Pages", icon: <BookMarked size={14} />, adminOnly: true },
@@ -94,6 +94,8 @@ const PAGE_HITS: SearchHit[] = [
 // (so it reflects uploads and deletes), plus the static set of workspace pages.
 function useSearchIndex(): SearchHit[] {
   const hasPlaybook = useEditionFeature("commercialPlaybook");
+  const hasDraft = useEditionFeature("sowDrafting");
+  const terms = useEditionTerms();
   const { data } = useDocuments();
   const docs = useMemo(() => data ?? [], [data]);
 
@@ -117,7 +119,7 @@ function useSearchIndex(): SearchHit[] {
     const projectHits: SearchHit[] = projects.map((p) => ({
       id: p.id,
       label: p.name,
-      sub: p.client ? `Project · ${p.client}` : "Project",
+      sub: p.client ? `${terms.projects.slice(0, -1)} · ${p.client}` : terms.projects.slice(0, -1),
       href: `/projects/${p.id}`,
       group: "Projects",
       icon: <Briefcase size={14} />,
@@ -131,9 +133,15 @@ function useSearchIndex(): SearchHit[] {
       icon: <FileText size={14} />,
     }));
     // Pages the customer's edition hides are not offered (Requirement 7).
-    const pages = PAGE_HITS.filter((h) => (h.href !== "/settings/playbook" || hasPlaybook) && !(isLeader && h.adminOnly));
+    // Pages whose name or purpose depends on the edition.
+    const editionPages: SearchHit[] = [
+      { id: "p-projects", label: terms.projects, sub: terms.projectsHint, href: "/projects", group: "Pages", icon: <Briefcase size={14} /> },
+      { id: "p-obligations", label: "Obligations", sub: terms.obligationsHint, href: "/obligations", group: "Pages", icon: <FileText size={14} /> },
+      ...(hasDraft ? [{ id: "p-draft", label: "Draft SOW", sub: "Sonar drafts a statement of work from a short questionnaire", href: "/draft", group: "Pages" as const, icon: <FileText size={14} /> }] : []),
+    ];
+    const pages = [...editionPages, ...PAGE_HITS].filter((h) => (h.href !== "/settings/playbook" || hasPlaybook) && !(isLeader && h.adminOnly));
     return [...contractHits, ...projectHits, ...docHits, ...pages];
-  }, [contracts, docs, projects, hasPlaybook, isLeader]);
+  }, [contracts, docs, projects, hasPlaybook, hasDraft, terms, isLeader]);
 }
 
 function SearchBar() {

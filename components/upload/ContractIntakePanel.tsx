@@ -5,7 +5,7 @@
 // is usually not in the document at all (PI, department, Huron and Workday
 // references), so nothing the board needs is silently missed.
 
-import { useAgreementTypes } from "@/lib/govern/queries";
+import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
 import { useId, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +25,7 @@ export function ContractIntakePanel({
   /** File the previous details went to, shown once they are cleared. */
   lastApplied: string | null;
 }) {
+  const terms = useEditionTerms();
   const agreementTypes = useAgreementTypes();
   const uid = useId();
   const id = (n: string) => `${uid}-${n}`;
@@ -66,9 +67,9 @@ export function ContractIntakePanel({
             </legend>
             <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">Sonar can&apos;t find these, so the contract shows them as gaps until someone adds them.</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <TextField id={id("pi")} label="Principal investigator (PI)" value={values.piName} onChange={(v) => set("piName", v)} placeholder="Dr Jane Lee" />
-              <TextField id={id("dept")} label="Department or college" value={values.department} onChange={(v) => set("department", v)} placeholder="Chemistry" />
-              <TextField id={id("huron")} label="Huron record ID" value={values.huronRecordId} onChange={(v) => set("huronRecordId", v)} placeholder="AGR-2026-00123" mono />
+              {terms.researchFields && <TextField id={id("pi")} label="Principal investigator (PI)" value={values.piName} onChange={(v) => set("piName", v)} placeholder="Dr Jane Lee" />}
+              <TextField id={id("dept")} label={terms.researchFields ? "Department or college" : "Department or cost center"} value={values.department} onChange={(v) => set("department", v)} placeholder={terms.researchFields ? "Chemistry" : "IT Services"} />
+              {terms.researchFields && <TextField id={id("huron")} label="Huron record ID" value={values.huronRecordId} onChange={(v) => set("huronRecordId", v)} placeholder="AGR-2026-00123" mono />}
               <TextField id={id("workday")} label="Workday reference" value={values.workdayRef} onChange={(v) => set("workdayRef", v)} placeholder="AWD-004512" mono />
               <div className="grid gap-1.5">
                 <label htmlFor={id("date")} className="text-sm font-medium text-foreground">Date needed by</label>
@@ -104,8 +105,8 @@ export function ContractIntakePanel({
                   </SelectContent>
                 </Select>
               </div>
-              <TextField id={id("cp")} label="Other party" value={values.counterparty} onChange={(v) => set("counterparty", v)} placeholder="Acme Therapeutics Inc." />
-              <TextField id={id("sponsor")} label="Sponsor or licensee" value={values.sponsor} onChange={(v) => set("sponsor", v)} placeholder="If different from the other party" />
+              <TextField id={id("cp")} label={terms.researchFields ? "Other party" : terms.party} value={values.counterparty} onChange={(v) => set("counterparty", v)} placeholder={terms.researchFields ? "Acme Therapeutics Inc." : "Northwind Consulting"} />
+              {terms.researchFields && <TextField id={id("sponsor")} label={terms.party} value={values.sponsor} onChange={(v) => set("sponsor", v)} placeholder="If different from the other party" />}
               <div className="grid gap-1.5 sm:col-span-2">
                 <label htmlFor={id("value")} className="text-sm font-medium text-foreground">Expected value</label>
                 <div className="flex gap-2">

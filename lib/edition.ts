@@ -54,6 +54,49 @@ export const EDITION_AGREEMENT_TYPES: Record<Edition, AgreementType[]> = {
   workforce: ["sow", "msa", "staffing", "nda", "software", "other"],
 }
 
+/** Words and fields that differ by edition. Campus speaks research
+ *  administration (sponsors, PIs, colleges, Huron); Workforce speaks
+ *  procurement (vendors, engagements). Routes and data are the same. */
+export type EditionTerms = {
+  /** Sidebar and page name for /projects. */
+  projects: string
+  project: string
+  projectsHint: string
+  /** The other side of most agreements. */
+  party: string
+  partyHint: string
+  anyParty: string
+  /** Principal investigator, college and the Huron record (research fields). */
+  researchFields: boolean
+  searchPlaceholder: string
+  obligationsHint: string
+}
+
+export const EDITION_TERMS: Record<Edition, EditionTerms> = {
+  campus: {
+    projects: "Projects",
+    project: "project",
+    projectsHint: "Agreements grouped with their amendments",
+    party: "Sponsor or licensee",
+    partyHint: "e.g. National Science Foundation",
+    anyParty: "Any sponsor",
+    researchFields: true,
+    searchPlaceholder: "Search by title, sponsor, PI or department",
+    obligationsHint: "Royalty reports, payments, milestones and renewal deadlines",
+  },
+  workforce: {
+    projects: "Engagements",
+    project: "engagement",
+    projectsHint: "An MSA with its SOWs and change orders",
+    party: "Vendor",
+    partyHint: "e.g. Northwind Consulting",
+    anyParty: "Any vendor",
+    researchFields: false,
+    searchPlaceholder: "Search by title, vendor, owner or department",
+    obligationsHint: "Deliverables, invoices, milestones and renewal deadlines",
+  },
+}
+
 export function deploymentEdition(): Edition {
   return process.env.NEXT_PUBLIC_GOVERN_EDITION?.trim().toLowerCase() === "workforce" ? "workforce" : "campus"
 }

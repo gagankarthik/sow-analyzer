@@ -1,5 +1,7 @@
 "use client";
 
+import { EDITION_TERMS, type EditionTerms } from "@/lib/edition";
+import { useEditionTerms } from "@/lib/govern/queries";
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,18 +62,18 @@ function DocLink({ href, title, sub }: { href: string; title: string; sub: strin
   );
 }
 
-export function contractProperties(c: Contract): { label: string; value: string | null }[] {
+export function contractProperties(c: Contract, terms: EditionTerms = EDITION_TERMS.campus): { label: string; value: string | null }[] {
   return [
     { label: "Agreement type", value: AGREEMENT_TYPE_LABEL[c.agreementType] },
-    { label: "Sponsor or counterparty", value: c.sponsor || c.counterparty },
-    { label: "Principal investigator", value: c.piName },
+    { label: terms.researchFields ? "Sponsor or counterparty" : terms.party, value: c.sponsor || c.counterparty },
+    ...(terms.researchFields ? [{ label: "Principal investigator", value: c.piName }] : []),
     { label: "Department", value: c.department },
     { label: "Money", value: DIRECTION_LABEL[c.direction] },
     { label: "Value", value: c.value === null ? null : contractValueText(c) },
     { label: "Effective date", value: shortDate(c.effectiveDate) },
     { label: "Term ends", value: shortDate(c.termEndDate) },
     { label: "Reviewed against", value: c.matrix?.version ? `Review matrix, version ${c.matrix.version}` : null },
-    { label: "Huron record", value: c.huronRecordId },
+    ...(terms.researchFields ? [{ label: "Huron record", value: c.huronRecordId }] : []),
     { label: "Workday reference", value: c.workdayRef },
   ];
 }
@@ -82,6 +84,7 @@ export function ContractProperties({ contract: c, edit, className }: {
   edit?: React.ReactNode;
   className?: string;
 }) {
+  const terms = useEditionTerms();
   return (
     <section aria-labelledby={`props-${c.contractId}`} className={className}>
       <div className="flex items-baseline justify-between gap-3">
@@ -90,7 +93,7 @@ export function ContractProperties({ contract: c, edit, className }: {
       </div>
       <p className="mt-0.5 text-xs text-[var(--ink-600)]">Updated {shortDate(c.updatedAt)}</p>
       <dl className="mt-4 flex flex-col gap-4">
-        {contractProperties(c).map((p) => (
+        {contractProperties(c, terms).map((p) => (
           <div key={p.label}>
             <dt className="text-xs text-[var(--ink-600)]">{p.label}</dt>
             <dd className={cn("mt-0.5 text-sm", p.value ? "text-foreground" : "text-[var(--ink-500)]")}>{p.value || "Not captured"}</dd>
