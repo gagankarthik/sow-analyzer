@@ -4,6 +4,7 @@
 // Huron and Workday ids (Requirement 6), and the "what's missing" checklist so
 // capture never misses anything silently.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
 import { useCanEditContracts } from "@/lib/govern/queries";
 import { useEffect, useRef, useState } from "react";
@@ -49,13 +50,13 @@ const TEXT_FIELDS: { key: TextKey; label: string; placeholder?: string; type?: s
   { key: "counterparty", label: "Other party", placeholder: "e.g. Acme Therapeutics, Inc." },
   { key: "sponsor", label: "Sponsor or licensee", placeholder: "e.g. National Science Foundation" },
   { key: "piName", label: "Principal investigator", placeholder: "e.g. Dr. Maya Chen" },
-  { key: "department", label: "Department", placeholder: "e.g. Chemical Engineering" },
+  { key: "department", label: "Department", get placeholder() { return byEdition("e.g. Chemical Engineering", "e.g. IT Services") } },
   { key: "college", label: "College", placeholder: "e.g. College of Engineering" },
   { key: "requestedDate", label: "Date needed by", type: "date" },
   { key: "effectiveDate", label: "Start date", type: "date" },
   { key: "termEndDate", label: "End date", type: "date" },
   { key: "huronRecordId", label: "Huron record ID", placeholder: "e.g. AGR00012345" },
-  { key: "workdayRef", label: "Workday reference", placeholder: "e.g. GR-2026-0412" },
+  { key: "workdayRef", label: "Workday reference", get placeholder() { return byEdition("e.g. GR-2026-0412", "e.g. PO-2026-0412") } },
 ];
 
 const WORKDAY_MATCH_LABEL: Record<WorkdayMatch, string> = {
@@ -245,7 +246,7 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
             <Fact label="Date needed by" provenance={mark("requestedDate")}>{c.requestedDate ? formatDate(c.requestedDate) : null}</Fact>
             <Fact label="Start date" provenance={mark("effectiveDate")}>{c.effectiveDate ? formatDate(c.effectiveDate) : null}</Fact>
             <Fact label="End date" provenance={mark("termEndDate")}>{c.termEndDate ? formatDate(c.termEndDate) : null}</Fact>
-            <Fact label="Huron record ID" provenance={mark("huronRecordId")}>{c.huronRecordId}</Fact>
+            {terms.researchFields && <Fact label="Huron record ID" provenance={mark("huronRecordId")}>{c.huronRecordId}</Fact>}
             <Fact label="Workday reference">
               {!isIntegrationsOn ? (
                 // No live Workday sync yet: the reference is a typed field, so no match status is implied.

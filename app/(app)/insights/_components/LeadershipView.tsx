@@ -5,6 +5,7 @@
 // time and money be saved. Everything is a count or sum over the live
 // contracts, obligations and trends.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useMemo } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,7 +97,7 @@ export function LeadershipView() {
     { label: "Signed, last 3 months", value: trendsQ.data ? String(sp.signedRecent) : "—", sub: trendsQ.data ? signedChange.text : "Trends unavailable", tone: signedChange.tone, href: "/reports/trends" },
     { label: "Days to signature", value: sp.cycleRecent === null ? "—" : String(sp.cycleRecent), sub: sp.cycleRecent === null ? "Nothing signed recently" : cycleChange.text, tone: cycleChange.tone, href: "/reports/trends" },
     { label: "Pipeline value", value: formatCompact(v.pipeline, v.currency), sub: v.heldUp > 0 ? `${formatCompact(v.heldUp, v.currency)} held up by delays` : "Nothing held up", tone: v.heldUp > 0 ? "warning" : "neutral", href: "/reports/value" },
-    { label: "Obligations, next 3 months", value: obligationsQ.data ? String(due90) : "—", sub: obligationsQ.isError ? "Obligations unavailable" : "Reports, payments and term ends", href: "/obligations?view=90" },
+    { label: "Obligations, next 3 months", value: obligationsQ.data ? String(due90) : "—", sub: obligationsQ.isError ? "Obligations unavailable" : byEdition("Reports, payments and term ends", "Deliverables, payments and term ends"), href: "/obligations?view=90" },
   ];
 
   return (

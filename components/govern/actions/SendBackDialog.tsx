@@ -1,5 +1,6 @@
 "use client";
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "@/components/ui/icons";
@@ -93,7 +94,7 @@ export function SendBackDialog({ contract, open, onOpenChange }: { contract: Con
                 <input
                   value={r.label}
                   onChange={(e) => update(r.key, { label: e.target.value })}
-                  placeholder="Which clause? e.g. Publication review period"
+                  placeholder={byEdition("Which clause? e.g. Publication review period", "Which clause? e.g. Overtime approval")}
                   aria-label="Clause name"
                   className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 />
@@ -121,7 +122,7 @@ export function SendBackDialog({ contract, open, onOpenChange }: { contract: Con
       <Button type="button" variant="outline" className="self-start" onClick={addRow}>
         <Plus size={14} />Add another clause
       </Button>
-      <NoteField id="sendback-note" value={note} onChange={setNote} label="Message to the other side (optional)" placeholder="e.g. Happy to discuss the publication window on a call." />
+      <NoteField id="sendback-note" value={note} onChange={setNote} label="Message to the other side (optional)" placeholder={byEdition("e.g. Happy to discuss the publication window on a call.", "e.g. Happy to discuss the rate card on a call.")} />
       <div className="flex flex-col gap-2 rounded-lg border border-border bg-[var(--panel)] p-3.5 sm:flex-row sm:items-center">
         <p className="min-w-0 flex-1 text-sm leading-relaxed text-[var(--ink-700)]">
           Need a Word file for the other side? The redline shows these clauses as tracked changes they can accept.

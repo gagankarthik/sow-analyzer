@@ -5,6 +5,7 @@
 // overdue and late counts, and a sortable list of every one with its next
 // step. Filters are optional; plain-word search is enough.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { X } from "@/components/ui/icons";
@@ -209,7 +210,7 @@ export default function BottlenecksPage() {
                       onSelect={(k) => setFocus(focus?.kind === "waiting" && focus.value === k ? null : { kind: "waiting", value: k })}
                     />
                   </Panel>
-                  <Panel id="who" className="lg:col-span-5" title="Who exactly" sub="Each person, office or sponsor holding contracts, most first.">
+                  <Panel id="who" className="lg:col-span-5" title="Who exactly" sub={byEdition("Each person, office or sponsor holding contracts, most first.", "Each person, office or vendor holding contracts, most first.")}>
                     <WhoList queues={view.waiting} />
                   </Panel>
                 </div>

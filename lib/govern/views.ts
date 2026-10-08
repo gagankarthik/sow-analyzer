@@ -1,4 +1,5 @@
-import type { Contract } from "@/lib/govern/types"
+
+import { byEdition } from "@/lib/edition-runtime";import type { Contract } from "@/lib/govern/types"
 
 // Preset views for the Contracts dashboard: saved filters every workspace
 // gets, grouped the way people ask ("what is mine", "what is stuck", "what is
@@ -30,7 +31,7 @@ export const CONTRACT_VIEWS: ContractView[] = [
   { id: "mine", label: "Assigned to me", group: "workflows", description: "Contracts you own.", test: (c, { me }) => inProgress(c) && !!me && c.owner?.email?.toLowerCase() === me },
   { id: "unassigned", label: "Needs a reviewer", group: "workflows", description: "No one owns these yet.", test: (c) => inProgress(c) && !c.owner },
   { id: "overdue", label: "Past target", group: "workflows", description: "In their step longer than the target.", test: (c) => inProgress(c) && c.slaStatus === "red" },
-  { id: "other-side", label: "With the other side", group: "workflows", description: "Waiting on the sponsor or counterparty.", test: (c) => inProgress(c) && c.waitingOn.kind === "counterparty" },
+  { id: "other-side", label: "With the other side", group: "workflows", get description() { return byEdition("Waiting on the sponsor or counterparty.", "Waiting on the vendor.") }, test: (c) => inProgress(c) && c.waitingOn.kind === "counterparty" },
   { id: "quiet", label: "No activity in 30 days", group: "workflows", description: "Open contracts nobody has touched in 30 days.", test: (c, { now }) => inProgress(c) && now - Date.parse(c.updatedAt) > 30 * DAY, hideWhenEmpty: true },
   { id: "closed", label: "Rejected or closed", group: "workflows", description: "Stopped before signature.", test: (c) => CLOSED.has(c.state), hideWhenEmpty: true },
 

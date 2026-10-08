@@ -1,5 +1,6 @@
 "use client";
 
+import { byEdition, noun } from "@/lib/edition-runtime";
 import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
 import { useCallback, useId, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
@@ -65,33 +66,33 @@ export default function UploadPage() {
       <div className="app-container py-6 md:py-8">
         <div className="max-w-3xl space-y-4">
           <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-            <label htmlFor={pickerId} className="mb-1.5 block text-sm font-medium text-foreground">Project</label>
+            <label htmlFor={pickerId} className="mb-1.5 block text-sm font-medium text-foreground">{noun("Project")}</label>
             <Select value={choice} onValueChange={setPicked} disabled={loading}>
               <SelectTrigger id={pickerId} className="w-full sm:max-w-sm">
-                <SelectValue placeholder={loading ? "Loading your projects" : undefined} />
+                <SelectValue placeholder={loading ? byEdition("Loading your projects", "Loading your engagements") : undefined} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_PROJECT}>No project</SelectItem>
+                <SelectItem value={NO_PROJECT}>{byEdition("No project", "No engagement")}</SelectItem>
                 {uploadable.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name || "Untitled project"}</SelectItem>
+                  <SelectItem key={p.id} value={p.id}>{p.name || byEdition("Untitled project", "Untitled engagement")}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
               {loading
-                ? "Loading the projects you can upload to."
+                ? byEdition("Loading the projects you can upload to.", "Loading the engagements you can upload to.")
                 : project
                   ? `Files you add next go into ${project.name} and are shared with everyone on it.${owner ? ` It is owned by ${owner}; you are ${ROLE_META[project.role ?? "viewer"].label.toLowerCase()}.` : ""}`
-                  : "Files you add next belong to no project. Only you can see them until you file them in one."}
+                  : byEdition("Files you add next belong to no project. Only you can see them until you file them in one.", "Files you add next belong to no engagement. Only you can see them until you file them in one.")}
               {!loading && readOnlyCount > 0 && (
-                <> {readOnlyCount === 1 ? "One project is" : `${readOnlyCount} projects are`} not listed because you are a viewer there.</>
+                <> {readOnlyCount === 1 ? `One ${noun("project")} is` : `${readOnlyCount} ${noun("projects")} are`} not listed because you are a viewer there.</>
               )}
             </p>
             {failed && (
               <div role="alert" className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-3 py-2.5">
                 <AlertTriangle size={15} className="shrink-0 text-[var(--warning)]" />
                 <p className="min-w-0 flex-1 basis-48 break-words text-sm text-foreground">
-                  Your projects could not be loaded, so only &ldquo;No project&rdquo; is offered.{sync.error ? ` ${sync.error}` : ""}
+                  {byEdition("Your projects could not be loaded, so only “No project” is offered.", "Your engagements could not be loaded, so only “No engagement” is offered.")}{sync.error ? ` ${sync.error}` : ""}
                 </p>
                 <Button variant="outline" className="h-10 md:h-9" onClick={() => void refreshProjects()}>
                   <RefreshCw size={14} />Try again

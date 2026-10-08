@@ -1,5 +1,6 @@
 "use client";
 
+import { byEdition, noun } from "@/lib/edition-runtime";
 import { docTypesFor } from "@/lib/doc-types";
 import { useEditionFeature } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
@@ -257,7 +258,7 @@ export default function LibraryPage() {
               <Input
                 type="search"
                 aria-label="Search documents"
-                placeholder="Search by title or project…"
+                placeholder={byEdition("Search by title or project…", "Search by title or engagement…")}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 className="h-9 rounded-lg border-[var(--ink-300)] bg-card pl-9 pr-3 placeholder:text-[var(--ink-500)]"
@@ -307,8 +308,8 @@ export default function LibraryPage() {
 
               {projectNames.length > 0 && (
                 <Select value={projectFilter} onValueChange={setProjectFilter}>
-                  <SelectTrigger aria-label="Filter by project" className={cn(FILTER_TRIGGER, "max-w-[240px]")}>
-                    <span className={FILTER_PREFIX}>Project</span>
+                  <SelectTrigger aria-label={byEdition("Filter by project", "Filter by engagement")} className={cn(FILTER_TRIGGER, "max-w-[240px]")}>
+                    <span className={FILTER_PREFIX}>{noun("Project")}</span>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -388,7 +389,7 @@ export default function LibraryPage() {
                 </h3>
                 <p className="mb-5 max-w-xs text-sm text-[var(--ink-600)]">
                   {docs.length === 0
-                    ? "Documents you upload appear here, along with the documents of any project that is shared with you."
+                    ? byEdition("Documents you upload appear here, along with the documents of any project that is shared with you.", "Documents you upload appear here, along with the documents of any engagement that is shared with you.")
                     : "Try clearing your filters or adjusting your search."}
                 </p>
                 {docs.length === 0 ? (
@@ -461,7 +462,7 @@ export default function LibraryPage() {
                     <TableHeader className="bg-[var(--panel)]">
                       <TableRow className="h-10 border-b border-border odd:bg-transparent hover:bg-transparent">
                         <ThSort label="Title" onClick={() => toggleSort("title")} dir={sort.key === "title" ? sort.dir : undefined} />
-                        <TableHead className={cn(TH, "hidden lg:table-cell")}>Project</TableHead>
+                        <TableHead className={cn(TH, "hidden lg:table-cell")}>{noun("Project")}</TableHead>
                         <ThSort label="Type" onClick={() => toggleSort("docType")} dir={sort.key === "docType" ? sort.dir : undefined} />
                         <ThSort label="Lifecycle" onClick={() => toggleSort("lifecycle")} dir={sort.key === "lifecycle" ? sort.dir : undefined} />
                         <TableHead className={TH}>Status</TableHead>

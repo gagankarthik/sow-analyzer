@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
+import { byEdition } from "@/lib/edition-runtime";
 import { ArrowRight, FileText } from "@/components/ui/icons";
 import { UPLOAD_REQUIREMENTS } from "@/lib/onboarding";
 import { StepCard } from "./StepCard";
 
 const PLAN = [
-  { title: "Create your first project", body: "A project holds one contract and the amendments that follow it." },
+  { get title() { return byEdition("Create your first project", "Create your first engagement") }, get body() { return byEdition("A project holds one contract and the amendments that follow it.", "An engagement holds an MSA and the SOWs and change orders that follow it.") } },
   { title: "Upload a contract", body: "Sonar starts reading it as soon as the upload finishes." },
   { title: "Read the analysis", body: "See how many clauses were found and which ones need review." },
 ];
@@ -13,7 +14,7 @@ export function WelcomeStep({ firstName, onStart }: { firstName?: string; onStar
   return (
     <StepCard
       title={firstName ? `Welcome, ${firstName}` : "Welcome to Blue-IQ Govern"}
-      lead="You will create a project, upload one contract and read the analysis of it. Sonar extracts the clauses and gives each one a risk level, so you can see what needs review."
+      lead={byEdition("You will create a project, upload one contract and read the analysis of it. Sonar extracts the clauses and gives each one a risk level, so you can see what needs review.", "You will create an engagement, upload one contract and read the analysis of it. Sonar extracts the clauses and gives each one a risk level, so you can see what needs review.")}
       footer={
         <>
           <span className="text-sm text-muted-foreground">You can leave at any point and pick up where you stopped.</span>
@@ -42,7 +43,7 @@ export function WelcomeStep({ firstName, onStart }: { firstName?: string; onStar
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-foreground">What you need</h3>
           <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">
-            One agreement file, such as a licence, a research agreement or an amendment. {UPLOAD_REQUIREMENTS}.
+            {byEdition("One agreement file, such as a licence, a research agreement or an amendment.", "One agreement file, such as a SOW, an MSA or a change order.")} {UPLOAD_REQUIREMENTS}.
           </p>
         </div>
       </div>

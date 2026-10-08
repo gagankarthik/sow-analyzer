@@ -5,6 +5,7 @@
 // is usually not in the document at all (PI, department, Huron and Workday
 // references), so nothing the board needs is silently missed.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
 import { useId, useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -52,7 +53,7 @@ export function ContractIntakePanel({
               ? "Details entered. They go with the next single file you add."
               : lastApplied
                 ? `Details were added to ${lastApplied}. Enter new ones for the next file, or leave blank.`
-                : "Sonar reads most details from the document. Add the ones it can't know, like the PI or the Huron record."}
+                : byEdition("Sonar reads most details from the document. Add the ones it can't know, like the PI or the Huron record.", "Sonar reads most details from the document. Add the ones it can't know, like the department or the Workday reference.")}
           </span>
         </span>
         <ChevronDown size={18} aria-hidden className={cn("mt-1 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none", isOpen && "rotate-180")} />
@@ -70,7 +71,7 @@ export function ContractIntakePanel({
               {terms.researchFields && <TextField id={id("pi")} label="Principal investigator (PI)" value={values.piName} onChange={(v) => set("piName", v)} placeholder="Dr Jane Lee" />}
               <TextField id={id("dept")} label={terms.researchFields ? "Department or college" : "Department or cost center"} value={values.department} onChange={(v) => set("department", v)} placeholder={terms.researchFields ? "Chemistry" : "IT Services"} />
               {terms.researchFields && <TextField id={id("huron")} label="Huron record ID" value={values.huronRecordId} onChange={(v) => set("huronRecordId", v)} placeholder="AGR-2026-00123" mono />}
-              <TextField id={id("workday")} label="Workday reference" value={values.workdayRef} onChange={(v) => set("workdayRef", v)} placeholder="AWD-004512" mono />
+              <TextField id={id("workday")} label="Workday reference" value={values.workdayRef} onChange={(v) => set("workdayRef", v)} placeholder={byEdition("AWD-004512", "PO-004512")} mono />
               <div className="grid gap-1.5">
                 <label htmlFor={id("date")} className="text-sm font-medium text-foreground">Date needed by</label>
                 <Input id={id("date")} type="date" value={values.requestedDate} onChange={(e) => set("requestedDate", e.target.value)} className="sm:w-48" />

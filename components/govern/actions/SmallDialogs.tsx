@@ -4,6 +4,7 @@
 // or department, and the three one-click moves after signature (active,
 // closed out, reopened).
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useGovernFeature, useOrgCurrency, usePatchContract } from "@/lib/govern/queries";
@@ -32,7 +33,7 @@ export function CommentDialog({ contract, open, onOpenChange }: { contract: Cont
       pending={pending}
       disabled={!text.trim()}
     >
-      <NoteField id="comment-text" value={text} onChange={setText} label="Comment" placeholder="e.g. Spoke to the sponsor; revised draft due Friday." />
+      <NoteField id="comment-text" value={text} onChange={setText} label="Comment" placeholder={byEdition("e.g. Spoke to the sponsor; revised draft due Friday.", "e.g. Spoke to the vendor; revised SOW due Friday.")} />
     </ActionDialog>
   );
 }
@@ -42,10 +43,10 @@ export function CommentDialog({ contract, open, onOpenChange }: { contract: Cont
 export function AskPiDialog({ contract, open, onOpenChange }: { contract: Contract; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { run, pending } = useRunContractAction();
   const [request, setRequest] = useState("");
-  const who = contract.piName || contract.department || "the PI or department";
+  const who = byEdition(contract.piName, null) || contract.department || byEdition("the PI or department", "the requesting department");
 
   async function confirm() {
-    const ok = await run(contract.contractId, { action: "ask_pi", request: request.trim() }, { what: "ask the PI or department", success: `Waiting on ${who}` });
+    const ok = await run(contract.contractId, { action: "ask_pi", request: request.trim() }, { what: byEdition("ask the PI or department", "ask the requesting department"), success: `Waiting on ${who}` });
     if (ok) onOpenChange(false);
   }
 
@@ -60,7 +61,7 @@ export function AskPiDialog({ contract, open, onOpenChange }: { contract: Contra
       pending={pending}
       disabled={!request.trim()}
     >
-      <NoteField id="pi-request" value={request} onChange={setRequest} label="What do they need to provide?" placeholder="e.g. Confirm the field of use with the lab." />
+      <NoteField id="pi-request" value={request} onChange={setRequest} label="What do they need to provide?" placeholder={byEdition("e.g. Confirm the field of use with the lab.", "e.g. Confirm the start date and headcount with the hiring manager.")} />
     </ActionDialog>
   );
 }

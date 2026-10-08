@@ -9,6 +9,7 @@
  * reload or a later visit resumes in the same place.
  */
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useMemo, useSyncExternalStore } from "react";
 
 export type OnboardingStep = "welcome" | "project" | "upload" | "analysis" | "done";
@@ -23,7 +24,7 @@ export interface OnboardingState {
 
 export const ONBOARDING_STEPS: { id: OnboardingStep; label: string }[] = [
   { id: "welcome", label: "Welcome" },
-  { id: "project", label: "Create project" },
+  { id: "project", get label() { return byEdition("Create project", "Create engagement") } },
   { id: "upload", label: "Upload contract" },
   { id: "analysis", label: "Analysis" },
   { id: "done", label: "Results" },

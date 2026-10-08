@@ -4,6 +4,7 @@
 // as a short "Add these now?" checklist the uploader can fill inline. Gaps
 // that need the agreement itself (dates) link to the contract page.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useAgreementTypes } from "@/lib/govern/queries";
 import { useId, useState } from "react";
 import Link from "next/link";
@@ -12,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, CheckCircle2, Loader2 } from "@/components/ui/icons";
 import { usePatchContract } from "@/lib/govern/queries";
-import { AGREEMENT_TYPE_LABEL, CAPTURE_GAP_LABEL } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, CAPTURE_GAP_LABEL, RESEARCH_CAPTURE_GAPS } from "@/lib/govern/labels";
 import type { AgreementType, CaptureGap, ContractDetail, ContractPatch } from "@/lib/govern/types";
 
 type TextGap = "counterparty" | "sponsor" | "piName" | "department" | "huronRecordId" | "workdayRef";
@@ -45,7 +46,8 @@ export function CaptureGapChecklist({ contract: created }: { contract: ContractD
   const [values, setValues] = useState<Partial<Record<CaptureGap, string>>>({});
   const [error, setError] = useState<string | null>(null);
 
-  const gaps = contract.captureGaps ?? [];
+  // Research-only gaps (sponsor, PI, Huron) are not asked of Workforce users.
+  const gaps = (contract.captureGaps ?? []).filter((g) => byEdition(true, !RESEARCH_CAPTURE_GAPS.includes(g)));
   if (gaps.length === 0) {
     return patch.isSuccess ? (
       <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--success)]" aria-live="polite">

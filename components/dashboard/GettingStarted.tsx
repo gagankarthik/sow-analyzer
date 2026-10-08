@@ -1,5 +1,6 @@
 "use client";
 
+import { byEdition } from "@/lib/edition-runtime";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
@@ -53,8 +54,8 @@ export function GettingStarted({
 
   const steps = [
     {
-      title: "Create your first project",
-      body: "A project groups a contract with its amendments, so value and risk roll up in one place.",
+      title: byEdition("Create your first project", "Create your first engagement"),
+      body: byEdition("A project groups a contract with its amendments, so value and risk roll up in one place.", "An engagement groups an MSA with its SOWs and change orders, so value and risk roll up in one place."),
       done: projectCount > 0,
       action: { label: "New project", href: "/projects/new" },
     },

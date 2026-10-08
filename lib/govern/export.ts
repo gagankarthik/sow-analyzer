@@ -7,6 +7,7 @@
 //
 // exceljs and jspdf are heavy, so both load only when someone clicks Download.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { fmtMoney } from "@/lib/contract-value"
 import { currencySymbol } from "@/lib/format"
 import {
@@ -55,7 +56,7 @@ export interface ExportReport {
 export const CONTRACT_COLUMNS: ExportColumn[] = [
   { key: "title", header: "Contract", width: 40 },
   { key: "type", header: "Agreement type", width: 22 },
-  { key: "sponsor", header: "Sponsor or licensee", width: 28 },
+  { key: "sponsor", get header() { return byEdition("Sponsor or licensee", "Vendor") }, width: 28 },
   { key: "pi", header: "PI", width: 20 },
   { key: "department", header: "Department", width: 24 },
   { key: "stage", header: "Stage", width: 22 },
@@ -101,7 +102,7 @@ export function describeFilters(f: ContractFilters, reviewerName?: (email: strin
   const parts: string[] = []
   if (f.q.trim()) parts.push(`search "${f.q.trim()}"`)
   if (f.agreementType !== "all") parts.push(AGREEMENT_TYPE_LABEL[f.agreementType])
-  if (f.sponsor !== "all") parts.push(`sponsor or licensee ${f.sponsor}`)
+  if (f.sponsor !== "all") parts.push(`${byEdition("sponsor or licensee", "vendor")} ${f.sponsor}`)
   if (f.department !== "all") parts.push(`department ${f.department}`)
   if (f.reviewer !== "all") parts.push(`reviewer ${reviewerName ? reviewerName(f.reviewer) : f.reviewer}`)
   if (f.valueBand !== "all") parts.push(`value ${VALUE_BAND_LABEL[f.valueBand]}`)

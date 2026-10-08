@@ -5,6 +5,7 @@
 // (per kind, each with the contracts to fix), every document that did not
 // become a contract and why, and when the check last ran.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
@@ -61,7 +62,7 @@ export default function CapturePage() {
             <div>
               <h2 className="text-lg font-semibold leading-tight tracking-[-0.02em] text-foreground">Everything captured</h2>
               <p className="mt-2 max-w-[54ch] text-lg leading-relaxed text-[var(--ink-700)]">
-                Every document became a contract, and every contract has its value, parties, PI, department, dates and system references.
+                Every document became a contract, and every contract has its value, parties, {byEdition("PI, department", "department")}, dates and system references.
                 {" "}{reconciledText(data?.lastReconciledAt ?? null)}
               </p>
             </div>

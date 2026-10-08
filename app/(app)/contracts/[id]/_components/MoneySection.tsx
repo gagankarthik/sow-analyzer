@@ -3,6 +3,7 @@
 // Requirement 4: licensing income (upfront, milestones, royalties, equity,
 // sublicense) with expected dates; Requirement 2: obligations after signing.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useCanEditContracts } from "@/lib/govern/queries";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Clock, ListChecks, Loader2, Pencil, Plus, RefreshCw, Sonar, Trash2 } from "@/components/ui/icons";
 import { useGovernErrorToast } from "@/components/govern/actions";
-import { INCOME_KIND_LABEL, OBLIGATION_KIND_LABEL, plural } from "@/lib/govern/labels";
+import { INCOME_KIND_LABEL, OBLIGATION_KIND_LABEL, plural, RESEARCH_INCOME_KINDS, RESEARCH_OBLIGATION_KINDS } from "@/lib/govern/labels";
 import { useAddObligation, useGovernFeature, useSaveIncome, useUpdateObligation } from "@/lib/govern/queries";
 import { ComingSoonPanel } from "@/components/govern/ComingSoon";
 import type { ContractDetail, IncomeItem, IncomeKind, Obligation, ObligationKind } from "@/lib/govern/types";
@@ -84,10 +85,10 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
       }));
     try {
       await save.mutateAsync(payload);
-      toast.success("Income saved");
+      toast.success(byEdition("Income saved", "Payments saved"));
       setRows(null);
     } catch (e) {
-      onError(e, "save the income", c.contractId);
+      onError(e, byEdition("save the income", "save the payments"), c.contractId);
     }
   }
 
@@ -97,15 +98,15 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
 
   return (
     <Section
-      title="Licensing income"
-      description="Fees, milestones, royalties and equity in this agreement, with when they are expected."
+      title={byEdition("Licensing income", "Payment schedule")}
+      description={byEdition("Fees, milestones, royalties and equity in this agreement, with when they are expected.", "Fees, milestone payments and rates in this agreement, with when they fall due.")}
       actions={!canEdit ? undefined : rows ? (
         <>
           <Button type="button" variant="outline" onClick={() => setRows(null)} disabled={save.isPending}>Cancel</Button>
-          <Button type="button" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={14} className="animate-spin" />}Save income</Button>
+          <Button type="button" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={14} className="animate-spin" />}{byEdition("Save income", "Save payments")}</Button>
         </>
       ) : (
-        <Button type="button" variant="outline" onClick={() => setRows(items.map(toRow))}><Pencil size={14} />{items.length ? "Edit income" : "Add income"}</Button>
+        <Button type="button" variant="outline" onClick={() => setRows(items.map(toRow))}><Pencil size={14} />{items.length ? byEdition("Edit income", "Edit payments") : byEdition("Add income", "Add payments")}</Button>
       )}
     >
       {rows ? (
@@ -115,7 +116,7 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
               <IncomeField label="Kind" id={`${r.key}-kind`}>
                 <Select value={r.kind} onValueChange={(v) => update(r.key, { kind: v as IncomeKind })}>
                   <SelectTrigger id={`${r.key}-kind`} className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>{INCOME_KINDS.map((k) => <SelectItem key={k} value={k}>{INCOME_KIND_LABEL[k]}</SelectItem>)}</SelectContent>
+                  <SelectContent>{INCOME_KINDS.filter((k) => byEdition(true, !RESEARCH_INCOME_KINDS.includes(k))).map((k) => <SelectItem key={k} value={k}>{INCOME_KIND_LABEL[k]}</SelectItem>)}</SelectContent>
                 </Select>
               </IncomeField>
               <IncomeField label="Description" id={`${r.key}-desc`} className="col-span-2 md:col-span-1">
@@ -140,7 +141,7 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
         </div>
       ) : items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-[var(--ink-300)] px-4 py-6 text-sm text-[var(--ink-600)]">
-          No income items. Sonar lists them for license and option agreements; add any it missed.
+          {byEdition("No income items. Sonar lists them for license and option agreements; add any it missed.", "No payment items yet. Add the fees and milestone payments this agreement sets out.")}
         </p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -224,7 +225,7 @@ function Obligations({ contract: c }: { contract: ContractDetail }) {
     <Section
       title="Obligations"
       description={signed
-        ? `${plural(open.length, "open obligation")}. Sponsor reports, payments, diligence milestones and review windows, with due dates.`
+        ? `${plural(open.length, "open obligation")}. ${byEdition("Sponsor reports, payments, diligence milestones and review windows", "Deliverables, invoices, milestone payments and notice dates")}, with due dates.`
         : "Sonar lists the obligations when the agreement is signed. You can add any you already know about."}
       actions={canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={14} />Add an obligation</Button>}
     >
@@ -301,7 +302,7 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
 function ObligationForm({ contract: c, onDone }: { contract: ContractDetail; onDone: () => void }) {
   const add = useAddObligation(c.contractId);
   const onError = useGovernErrorToast();
-  const [kind, setKind] = useState<ObligationKind>("sponsor_report");
+  const [kind, setKind] = useState<ObligationKind>(byEdition<ObligationKind>("sponsor_report", "milestone_payment"));
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [amount, setAmount] = useState("");
@@ -324,11 +325,11 @@ function ObligationForm({ contract: c, onDone }: { contract: ContractDetail; onD
       <IncomeField label="Kind" id="obl-kind">
         <Select value={kind} onValueChange={(v) => setKind(v as ObligationKind)}>
           <SelectTrigger id="obl-kind" className="w-full"><SelectValue /></SelectTrigger>
-          <SelectContent>{OBLIGATION_KINDS.map((k) => <SelectItem key={k} value={k}>{OBLIGATION_KIND_LABEL[k]}</SelectItem>)}</SelectContent>
+          <SelectContent>{OBLIGATION_KINDS.filter((k) => byEdition(true, !RESEARCH_OBLIGATION_KINDS.includes(k))).map((k) => <SelectItem key={k} value={k}>{OBLIGATION_KIND_LABEL[k]}</SelectItem>)}</SelectContent>
         </Select>
       </IncomeField>
       <IncomeField label="What is due" id="obl-title">
-        <Input id="obl-title" autoFocus value={title} placeholder="e.g. Annual progress report to sponsor" onChange={(e) => setTitle(e.target.value)} />
+        <Input id="obl-title" autoFocus value={title} placeholder={byEdition("e.g. Annual progress report to sponsor", "e.g. Monthly status report from the vendor")} onChange={(e) => setTitle(e.target.value)} />
       </IncomeField>
       <IncomeField label="Due date" id="obl-due">
         <Input id="obl-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />

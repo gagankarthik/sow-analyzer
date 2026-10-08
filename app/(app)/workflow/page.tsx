@@ -11,6 +11,7 @@
 // shows the four lanes of that stage's phase (before or after signature);
 // below that it shows the selected stage's agreements as a grid.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { PageSkeleton } from "@/components/govern/admin/shared";
 import { EditionOnly } from "@/components/govern/EditionOnly";
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react";
@@ -205,7 +206,7 @@ function Workflow() {
           <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center">
             <Search size={22} className="mb-3 text-[var(--ink-500)]" />
             <h2 className="text-lg font-semibold text-foreground">Nothing matches &ldquo;{filters.q || "these filters"}&rdquo;</h2>
-            <p className="mt-1.5 max-w-sm text-sm text-[var(--ink-600)]">Try a sponsor name, a PI&rsquo;s surname or a department. Closed and rejected agreements show under All.</p>
+            <p className="mt-1.5 max-w-sm text-sm text-[var(--ink-600)]">{byEdition("Try a sponsor name, a PI’s surname or a department. Closed and rejected agreements show under All.", "Try a vendor name, an owner’s surname or a department. Closed and rejected agreements show under All.")}</p>
             <Button variant="outline" size="lg" className="mt-5" onClick={() => setFilters(NO_FILTERS)}>Clear search and filters</Button>
           </div>
         ) : layout === "list" ? (

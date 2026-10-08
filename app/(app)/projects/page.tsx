@@ -1,6 +1,7 @@
 "use client";
 
-import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
+import { byEdition, noun } from "@/lib/edition-runtime";
+import { useEditionTerms } from "@/lib/govern/queries";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
@@ -232,7 +233,7 @@ export default function ProjectsPage() {
             <div className="flex min-w-0 items-center gap-4">
               <p className="text-4xl font-bold leading-none tabular-nums">{attentionCount}</p>
               <div className="min-w-0">
-                <p className="text-base font-semibold">Project{attentionCount === 1 ? "" : "s"} need{attentionCount === 1 ? "s" : ""} attention</p>
+                <p className="text-base font-semibold">{noun(attentionCount === 1 ? "Project" : "Projects")} need{attentionCount === 1 ? "s" : ""} attention</p>
                 <p className="text-sm leading-snug text-[var(--navy-foreground)]">
                   {highRiskClauses.toLocaleString()} high or critical risk clause{highRiskClauses === 1 ? "" : "s"}, or a failed document.
                 </p>
@@ -244,7 +245,7 @@ export default function ProjectsPage() {
               aria-pressed={risk === "attention"}
               className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-white/30 px-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:w-auto md:h-9"
             >
-              {risk === "attention" ? "Show all projects" : <>Review them <ArrowRight size={14} /></>}
+              {risk === "attention" ? byEdition("Show all projects", "Show all engagements") : <>Review them <ArrowRight size={14} /></>}
             </button>
           </section>
         )}
@@ -254,7 +255,7 @@ export default function ProjectsPage() {
             <div className="flex flex-col gap-2 md:flex-row md:items-start">
               <div className="relative w-full md:w-[260px] md:shrink-0">
                 <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search projects…" aria-label="Search projects"
+                <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={byEdition("Search projects…", "Search engagements…")} aria-label={byEdition("Search projects", "Search engagements")}
                   className="h-9 w-full rounded-lg border border-[var(--ink-300)] bg-card pl-9 pr-3 text-sm text-foreground outline-none transition-shadow placeholder:text-[var(--ink-500)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)]" />
               </div>
               <div className={FILTER_ROW}>
@@ -286,7 +287,7 @@ export default function ProjectsPage() {
                   </SelectContent>
                 </Select>
                 <Select value={sort.key} onValueChange={(v) => setSort({ key: v as SortKey, dir: SORT_OPTIONS.find((o) => o.key === v)?.dir ?? "desc" })}>
-                  <SelectTrigger aria-label="Sort projects" className={FILTER_TRIGGER}><span className={FILTER_PREFIX}>Sort</span><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label={byEdition("Sort projects", "Sort engagements")} className={FILTER_TRIGGER}><span className={FILTER_PREFIX}>Sort</span><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {SORT_OPTIONS.map((o) => <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}
                   </SelectContent>
@@ -369,7 +370,7 @@ function ProjectTable({ rows, sort, onSort }: { rows: Agg[]; sort: { key: SortKe
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border bg-[var(--panel)] text-left">
-            <Th label="Project" k="name" sort={sort} onSort={onSort} />
+            <Th label={noun("Project")} k="name" sort={sort} onSort={onSort} />
             <Th label="Status" k="status" sort={sort} onSort={onSort} className="hidden md:table-cell" />
             <Th label="Risk" k="risk" sort={sort} onSort={onSort} />
             <Th label="High-risk" k="highRisk" sort={sort} onSort={onSort} align="right" className="hidden lg:table-cell" />
@@ -438,7 +439,7 @@ function Dash() {
 
 /** Worst clause risk level in the project (not a blended score). */
 function RiskPill({ level }: { level: RiskLevel }) {
-  return <span title="Highest clause risk level found in this project" className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${RISK_PILL[level]}`}>{level}</span>;
+  return <span title={byEdition("Highest clause risk level found in this project", "Highest clause risk level found in this engagement")} className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${RISK_PILL[level]}`}>{level}</span>;
 }
 
 function StatusPill({ lifecycle, hideEmpty = false }: { lifecycle: Lifecycle | "—"; hideEmpty?: boolean }) {
@@ -580,28 +581,27 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-12 text-center md:py-16">
       <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={24} strokeWidth={1.75} /></span>
-      <h3 className="text-base font-semibold text-foreground">Couldn&apos;t load your projects</h3>
-      <p className="mt-2 max-w-md text-base text-[var(--ink-600)]">The request for your projects or documents failed. Try again in a moment.</p>
+      <h3 className="text-base font-semibold text-foreground">{byEdition("Couldn’t load your projects", "Couldn’t load your engagements")}</h3>
+      <p className="mt-2 max-w-md text-base text-[var(--ink-600)]">{byEdition("The request for your projects or documents failed. Try again in a moment.", "The request for your engagements or documents failed. Try again in a moment.")}</p>
       <Button variant="outline" size="lg" className="mt-6" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
     </div>
   );
 }
 
 function EmptyState({ pristine, reset }: { pristine: boolean; reset?: () => void }) {
-  const showSow = useEditionFeature("sowDocuments");
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center md:py-20">
       <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft text-structure-soft-fg"><Layers size={24} strokeWidth={1.75} /></span>
-      <h3 className="text-base font-semibold text-foreground">{pristine ? "No projects yet" : "No projects match"}</h3>
+      <h3 className="text-base font-semibold text-foreground">{pristine ? `No ${noun("projects")} yet` : `No ${noun("projects")} match`}</h3>
       <p className="mt-2 max-w-sm text-base text-[var(--ink-600)]">
-        {pristine ? (showSow ? "Create a project, then upload its SOW." : "Create a project, then upload its agreements.") + " Sonar extracts clauses, scores risk, and rolls it up here. Projects other people share with you appear here too." : "Try a different filter or clear your search."}
+        {pristine ? byEdition("Create a project, then upload its agreements.", "Create an engagement, then upload its MSA and SOWs.") + " Sonar extracts clauses, scores risk, and rolls it up here. " + byEdition("Projects other people share with you appear here too.", "Engagements other people share with you appear here too.") : "Try a different filter or clear your search."}
       </p>
       {pristine ? (
-        <Button variant="outline" size="lg" className="mt-6" asChild><Link href="/projects/new"><Plus size={15} />Create your first project</Link></Button>
+        <Button variant="outline" size="lg" className="mt-6" asChild><Link href="/projects/new"><Plus size={15} />{byEdition("Create your first project", "Create your first engagement")}</Link></Button>
       ) : (
         <Button variant="outline" size="lg" className="mt-6" onClick={reset}>Clear filters</Button>
       )}
-      {pristine && <Link href="/projects/upload" className="mt-2 inline-flex min-h-10 items-center gap-1 text-sm font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">or upload a document without a project <ArrowRight size={13} /></Link>}
+      {pristine && <Link href="/projects/upload" className="mt-2 inline-flex min-h-10 items-center gap-1 text-sm font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">{byEdition("or upload a document without a project", "or upload a document without an engagement")} <ArrowRight size={13} /></Link>}
     </div>
   );
 }

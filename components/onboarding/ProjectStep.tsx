@@ -1,5 +1,6 @@
 "use client";
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,7 +107,7 @@ export function ProjectStep({
       {saveError && (
         <p role="alert" className="flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
-          <span className="min-w-0 break-words">The project was not created. {saveError}</span>
+          <span className="min-w-0 break-words">{byEdition("The project was not created.", "The engagement was not created.")} {saveError}</span>
         </p>
       )}
     </div>
@@ -115,11 +116,11 @@ export function ProjectStep({
   return (
     <form noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }}>
       <StepCard
-        title="Create your first project"
+        title={byEdition("Create your first project", "Create your first engagement")}
         lead={
           hasProjects
-            ? "This step is already done: you have a project you can upload to. Continue with it, pick another, or create a new one."
-            : "A project groups a contract with its amendments, so value and risk roll up in one place."
+            ? byEdition("This step is already done: you have a project you can upload to. Continue with it, pick another, or create a new one.", "This step is already done: you have an engagement you can upload to. Continue with it, pick another, or create a new one.")
+            : byEdition("A project groups a contract with its amendments, so value and risk roll up in one place.", "An engagement groups an MSA with its SOWs and change orders, so value and risk roll up in one place.")
         }
         footer={
           <>
@@ -128,15 +129,15 @@ export function ProjectStep({
             </Button>
             <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={saving}>
               {saving
-                ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />Creating project</>
-                : <>{creating ? "Create project" : "Continue with this project"} <ArrowRight size={15} /></>}
+                ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project", "Creating engagement")}</>
+                : <>{creating ? byEdition("Create project", "Create engagement") : byEdition("Continue with this project", "Continue with this engagement")} <ArrowRight size={15} /></>}
             </Button>
           </>
         }
       >
         {hasProjects ? (
           <fieldset>
-            <legend className="mb-2 text-sm font-medium text-foreground">Project for this contract</legend>
+            <legend className="mb-2 text-sm font-medium text-foreground">{byEdition("Project for this contract", "Engagement for this contract")}</legend>
             <div className="max-h-72 space-y-2 overflow-y-auto p-0.5">
               {projects.map((p) => {
                 const on = choice === p.id;
@@ -169,7 +170,7 @@ export function ProjectStep({
                   onChange={() => setPicked(NEW)}
                   className="h-4 w-4 shrink-0 accent-[var(--brand-primary-600)] focus-visible:outline-none"
                 />
-                <span className="text-base font-semibold text-foreground">Create a new project</span>
+                <span className="text-base font-semibold text-foreground">{byEdition("Create a new project", "Create a new engagement")}</span>
               </label>
             </div>
             {creating && <div className="mt-5">{form}</div>}

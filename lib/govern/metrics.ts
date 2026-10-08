@@ -6,6 +6,7 @@
 // a contract with no value is counted apart ("2 contracts have no value yet"),
 // never as zero.
 
+import { editionMap } from "@/lib/edition-runtime"
 import { fmtMoney } from "@/lib/contract-value"
 import { currencySymbol } from "@/lib/format"
 import { PRE_SIGNATURE_STAGES, STAGES, WAITING_ON_SHORT } from "./labels"
@@ -123,14 +124,17 @@ export function valueHeldUp(contracts: Contract[]): {
 
 export type BreakdownKey = "sponsor" | "department" | "college" | "piName" | "agreementType" | "fiscalYear"
 
-export const BREAKDOWN_LABEL: Record<BreakdownKey, string> = {
+export const BREAKDOWN_LABEL: Record<BreakdownKey, string> = editionMap({
   sponsor: "Sponsor or licensee",
   department: "Department",
   college: "College",
   piName: "PI",
   agreementType: "Agreement type",
   fiscalYear: "Fiscal year",
-}
+}, { sponsor: "Vendor" })
+
+/** Breakdowns that only research administration records (college, PI). */
+export const RESEARCH_BREAKDOWNS: BreakdownKey[] = ["college", "piName"]
 
 function breakdownValue(c: Contract, key: BreakdownKey): string {
   switch (key) {

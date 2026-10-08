@@ -1,4 +1,5 @@
 import { OFFICE_LABEL } from "@/lib/govern/labels"
+import { byEdition } from "@/lib/edition-runtime";
 import type { Contract, Person } from "@/lib/govern/types"
 
 /** A person on a contract and what they did on it. */
@@ -29,7 +30,7 @@ export function contractPeople(c: Contract): ContractPerson[] {
   for (const a of c.routing?.approvals ?? []) {
     add(a.by, a.office === "reviewer" ? "Approved as reviewer" : `Approved for ${OFFICE_LABEL[a.office]}`)
   }
-  add(c.piRequest?.by, "Asked the PI a question")
+  add(c.piRequest?.by, byEdition("Asked the PI a question", "Asked the department a question"))
   add(c.rejection?.by, "Rejected it")
   add(c.signature?.signatory, "Signatory")
   return [...byEmail.values()]

@@ -1,5 +1,6 @@
 "use client";
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { REJECT_REASONS, REJECT_REASON_LABEL } from "@/lib/govern/labels";
@@ -50,7 +51,7 @@ export function RejectDialog({ contract, open, onOpenChange }: { contract: Contr
         value={note}
         onChange={setNote}
         label={needsNote ? "Explain the reason" : "Note (optional)"}
-        placeholder="e.g. Sponsor will not accept your publication rights."
+        placeholder={byEdition("e.g. Sponsor will not accept your publication rights.", "e.g. Vendor will not accept the hourly rate cap.")}
       />
     </ActionDialog>
   );

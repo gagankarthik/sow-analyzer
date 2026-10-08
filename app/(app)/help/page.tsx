@@ -1,5 +1,6 @@
 "use client";
 
+import { byEdition, noun } from "@/lib/edition-runtime";
 import { editionHas } from "@/lib/edition";
 import { useEdition } from "@/lib/govern/queries";
 import Link from "next/link";
@@ -15,9 +16,9 @@ import {
    and where to get more help. */
 
 const QUICK_START = [
-  { icon: Upload, title: "Upload a contract", body: "Go to a project and drop an agreement: a licence, research agreement, NDA, DPA, BAA or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analysing on upload." },
-  { icon: Sonar, title: "Review the analysis", body: "Open the project to see the extracted clauses, the risk level given to each one, and the key findings." },
-  { icon: GitBranch, title: "Track amendments", body: "Add an amendment to the project. When the analysis can match it to the contract it amends, the changes are listed against the original, and the contract value is updated from the figures the amendment states." },
+  { icon: Upload, title: "Upload a contract", get body() { return byEdition("Go to a project and drop an agreement: a licence, research agreement, NDA, DPA, BAA or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analysing on upload.", "Go to an engagement and drop an agreement: a SOW, MSA, staffing agreement, NDA, DPA or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analysing on upload.") } },
+  { icon: Sonar, title: "Review the analysis", get body() { return byEdition("Open the project to see the extracted clauses, the risk level given to each one, and the key findings.", "Open the engagement to see the extracted clauses, the risk level given to each one, and the key findings.") } },
+  { icon: GitBranch, title: "Track amendments", get body() { return byEdition("Add an amendment to the project. When the analysis can match it to the contract it amends, the changes are listed against the original, and the contract value is updated from the figures the amendment states.", "Add a change order or amendment to the engagement. When the analysis can match it to the contract it amends, the changes are listed against the original, and the contract value is updated from the figures the amendment states.") } },
   { icon: BarChart3, title: "Watch the portfolio", body: "Home (Risk and documents) and Insights add up extracted value and clause risk across your analysed documents, and say how many documents are not yet included." },
 ];
 
@@ -98,7 +99,7 @@ export default function HelpPage() {
           <section aria-labelledby="support" className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
             <h2 id="support" className="text-lg font-semibold tracking-tight">Still stuck?</h2>
             <p className="mt-2 text-base leading-relaxed text-[var(--navy-foreground)]">
-              Ask Sonar in any project for help with a specific clause, or email our team.
+              Ask Sonar in any {noun("project")} for help with a specific clause, or email our team.
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <Button size="lg" asChild>

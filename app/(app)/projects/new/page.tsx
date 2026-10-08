@@ -1,5 +1,6 @@
 "use client";
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useEditionTerms } from "@/lib/govern/queries";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -45,7 +46,7 @@ export default function NewProjectPage() {
     <>
       <PageHeader
         back={{ href: "/projects", label: `Back to ${terms.projects.toLowerCase()}` }}
-        title="New project"
+        title={byEdition("New project", "New engagement")}
       />
 
       <div className="app-container py-6 md:py-8">
@@ -100,14 +101,14 @@ export default function NewProjectPage() {
           {error && (
             <p role="alert" className="mt-5 flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
-              <span className="min-w-0 break-words">The project was not created. {error}</span>
+              <span className="min-w-0 break-words">{byEdition("The project was not created.", "The engagement was not created.")} {error}</span>
             </p>
           )}
 
           <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">You will own the project. You upload documents and invite people in the next step.</p>
             <Button type="submit" size="lg" disabled={creating} className="w-full sm:w-auto">
-              {creating ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />Creating project</> : <>Create project <ArrowRight size={15} /></>}
+              {creating ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project", "Creating engagement")}</> : <>{byEdition("Create project", "Create engagement")} <ArrowRight size={15} /></>}
             </Button>
           </div>
         </form>

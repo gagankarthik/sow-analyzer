@@ -4,6 +4,7 @@
 // every other action in a "…" menu. The board, the contract page and the
 // leader home all use these two, so a contract offers the same moves everywhere.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -99,8 +100,8 @@ function actionLabel(kind: ActionKind, c: AnyContract): string {
     case "close": return "Close out";
     case "reopen": return "Reopen for review";
     case "add_value": return "Add the contract value";
-    case "ask_pi": return "Ask the PI or department";
-    case "pi_answered": return "Mark the PI's answer received";
+    case "ask_pi": return byEdition("Ask the PI or department", "Ask the requesting department");
+    case "pi_answered": return byEdition("Mark the PI's answer received", "Mark the department's answer received");
   }
 }
 

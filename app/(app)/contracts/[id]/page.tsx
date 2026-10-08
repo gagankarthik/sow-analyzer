@@ -5,6 +5,7 @@
 // the working sections on the left (matrix review, blockers, rounds, money,
 // activity) and the contract's documents, properties and timing on the right.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -100,7 +101,7 @@ function ContractView({ contract: c, isError, onRefresh }: {
       <PageHeader
         back={{ href: "/contracts", label: "Contracts" }}
         title={c.title || "Untitled agreement"}
-        subtitle={[AGREEMENT_TYPE_LABEL[c.agreementType], party, c.piName ? `PI ${c.piName}` : null, c.department].filter(Boolean).join(" · ")}
+        subtitle={[AGREEMENT_TYPE_LABEL[c.agreementType], party, c.piName && byEdition(true, false) ? `PI ${c.piName}` : null, c.department].filter(Boolean).join(" · ")}
         actions={
           <>
             <AvatarStack people={contractPeople(c)} max={5} className="me-1" />
@@ -115,7 +116,7 @@ function ContractView({ contract: c, isError, onRefresh }: {
             <span>{c.owner ? <>Owned by <span className="font-medium text-foreground">{personName(c.owner)}</span></> : "No owner yet"}</span>
             {created && <span aria-hidden>·</span>}
             {created && <span>Created {created}</span>}
-            {c.huronRecordId && <><span aria-hidden>·</span><span>Huron <span className="font-mono text-xs text-foreground">{c.huronRecordId}</span></span></>}
+            {c.huronRecordId && byEdition(true, false) && <><span aria-hidden>·</span><span>Huron <span className="font-mono text-xs text-foreground">{c.huronRecordId}</span></span></>}
             {analysing && (
               <span className="inline-flex items-center gap-1.5 text-[var(--ai-ink)]"><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Sonar is reading the latest version</span>
             )}

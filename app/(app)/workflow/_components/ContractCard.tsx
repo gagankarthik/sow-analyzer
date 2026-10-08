@@ -5,6 +5,7 @@
 // opens the preview panel (elsewhere it links to the contract); the owner
 // prompt, the next-step button and the "…" menu sit above that layer.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { memo, useState } from "react";
 import Link from "next/link";
 import { Loader2, ShieldAlert, CheckCircle2, CircleDashed, UserRound } from "@/components/ui/icons";
@@ -20,8 +21,10 @@ import { cn } from "@/lib/utils";
 
 function partyLine(c: Contract): string | null {
   const party = c.sponsor || c.counterparty;
-  if (party && c.piName) return `${party} · PI ${c.piName}`;
-  return party || (c.piName ? `PI ${c.piName}` : null);
+  // The PI is a research field: Workforce cards show the vendor only.
+  const pi = byEdition(c.piName, null);
+  if (party && pi) return `${party} · PI ${pi}`;
+  return party || (pi ? `PI ${pi}` : null);
 }
 
 function ContractCardImpl({ contract: c }: { contract: Contract }) {

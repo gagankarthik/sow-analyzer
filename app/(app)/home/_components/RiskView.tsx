@@ -7,6 +7,7 @@
 // assessed", "No value yet", "—"): it is never shown as zero, as "low" or as
 // "all clear", and it is left out of the sums with the number left out stated.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { stageLabel } from "@/lib/govern/labels";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
@@ -769,7 +770,7 @@ export function RiskView() {
                       <SelectItem value="highRisk">High-risk clauses</SelectItem>
                       <SelectItem value="clauseCount">Clause count</SelectItem>
                       <SelectItem value="docCount">Document count</SelectItem>
-                      <SelectItem value="name">Project name</SelectItem>
+                      <SelectItem value="name">{byEdition("Project name", "Engagement name")}</SelectItem>
                       <SelectItem value="status">Status</SelectItem>
                     </SelectContent>
                   </Select>
@@ -786,7 +787,7 @@ export function RiskView() {
                 <table className="w-full min-w-[440px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border bg-[var(--panel)] text-left">
-                      <SortableTh label="Project" k="name" sort={sort} onSort={toggleSort} />
+                      <SortableTh label={byEdition("Project", "Engagement")} k="name" sort={sort} onSort={toggleSort} />
                       <SortableTh label="Status" k="status" sort={sort} onSort={toggleSort} className="hidden md:table-cell" />
                       <SortableTh label="Docs" k="docCount" sort={sort} onSort={toggleSort} align="right" className="hidden lg:table-cell" />
                       <SortableTh label="Clauses" k="clauseCount" sort={sort} onSort={toggleSort} align="right" className="hidden lg:table-cell" />

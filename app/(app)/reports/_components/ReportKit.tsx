@@ -4,6 +4,7 @@
 // error and empty treatments, a report panel, a stat tile, the plain-word
 // search field and the filter bar. Kept here so every report reads the same.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useAgreementTypes } from "@/lib/govern/queries";
 import * as React from "react";
 import Link from "next/link";
@@ -305,7 +306,7 @@ export function FilterBar({
         <SearchField
           id={`${idPrefix}-search`}
           label={`Search ${noun}`}
-          placeholder="Search by sponsor, PI, department or title"
+          placeholder={byEdition("Search by sponsor, PI, department or title", "Search by vendor, owner, department or title")}
           value={filters.q}
           onChange={(v) => set("q", v)}
           className="sm:max-w-md sm:flex-1"
@@ -347,10 +348,10 @@ export function FilterBar({
             options={[{ value: "all", label: "All types" }, ...agreementTypes.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }))]}
           />
           <FilterSelect
-            label="Sponsor or licensee"
+            label={byEdition("Sponsor or licensee", "Vendor")}
             value={filters.sponsor}
             onChange={(v) => set("sponsor", v)}
-            options={[{ value: "all", label: "Everyone" }, ...options.sponsors.map((s) => ({ value: s, label: s }))]}
+            options={[{ value: "all", label: byEdition("Any sponsor", "Any vendor") }, ...options.sponsors.map((s) => ({ value: s, label: s }))]}
           />
           <FilterSelect
             label="Department"

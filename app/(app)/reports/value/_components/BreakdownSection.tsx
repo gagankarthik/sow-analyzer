@@ -4,10 +4,11 @@
 // with one selector. Each row shows current and potential side by side on one
 // scale (main currency); the full sums, every currency, are printed beside it.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useState } from "react";
 import { FilterChips } from "@/components/settings/SettingsNav";
 import { AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
-import { BREAKDOWN_LABEL, formatMoney, type BreakdownKey, type BreakdownRow } from "@/lib/govern/metrics";
+import { BREAKDOWN_LABEL, RESEARCH_BREAKDOWNS, formatMoney, type BreakdownKey, type BreakdownRow } from "@/lib/govern/metrics";
 import type { AgreementType } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 import { LegendDot, SegmentBar, VALUE_FILL } from "../../_components/ReportCharts";
@@ -43,7 +44,7 @@ export function BreakdownSection({
         label="Group by"
         value={key}
         onChange={(k) => { setKey(k); setAll(false); }}
-        options={BREAKDOWN_KEYS.map((k) => ({ value: k, label: BREAKDOWN_LABEL[k] }))}
+        options={BREAKDOWN_KEYS.filter((k) => byEdition(true, !RESEARCH_BREAKDOWNS.includes(k))).map((k) => ({ value: k, label: BREAKDOWN_LABEL[k] }))}
       />
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         <LegendDot color={VALUE_FILL.current} label="Current" />

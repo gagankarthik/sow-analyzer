@@ -6,6 +6,7 @@
 // slow queue shows; licensing income; breakdowns; and every contract with no
 // value yet, so the totals are never silently incomplete.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -103,7 +104,7 @@ export default function ValueReportPage() {
       notes: [
         describeFilters(filters, reviewerNameFrom(options)),
         "Amounts in different currencies are listed separately and never added together.",
-        income.capped ? `Licensing income read from the first ${income.read} of ${income.total} license and option agreements.` : null,
+        income.capped && byEdition(true, false) ? `Licensing income read from the first ${income.read} of ${income.total} license and option agreements.` : null,
       ].filter((n): n is string => !!n),
       tables: [
         {
@@ -275,7 +276,7 @@ export default function ValueReportPage() {
               </Panel>
             </div>
 
-            <Panel id="licensing" title="Licensing income" sub="Upfront fees, milestones, royalties, equity and sublicense income from license and option agreements.">
+            {byEdition(true, false) && <Panel id="licensing" title="Licensing income" sub="Upfront fees, milestones, royalties, equity and sublicense income from license and option agreements.">
               <IncomeSection
                 rows={income.rows}
                 currency={currency}
@@ -285,10 +286,10 @@ export default function ValueReportPage() {
                 read={income.read}
                 capped={income.capped}
               />
-            </Panel>
+            </Panel>}
 
-            <Panel id="breakdown" title="Who and where the money comes from" sub={view.breakdowns.sponsor[0] && view.breakdowns.sponsor[0].current.valued + view.breakdowns.sponsor[0].potential.valued > 0
-                ? `${view.breakdowns.sponsor[0].key} is the largest sponsor or licensee: ${formatMoney(view.breakdowns.sponsor[0].current)} current, ${formatMoney(view.breakdowns.sponsor[0].potential)} potential.`
+            <Panel id="breakdown" title={byEdition("Who and where the money comes from", "Who and where the money goes")} sub={view.breakdowns.sponsor[0] && view.breakdowns.sponsor[0].current.valued + view.breakdowns.sponsor[0].potential.valued > 0
+                ? `${view.breakdowns.sponsor[0].key} is the largest ${byEdition("sponsor or licensee", "vendor")}: ${formatMoney(view.breakdowns.sponsor[0].current)} current, ${formatMoney(view.breakdowns.sponsor[0].potential)} potential.`
                 : `Current and potential value${currency ? ` (bars in ${currency})` : ""}.`}>
               <BreakdownSection rowsFor={(k) => view.breakdowns[k]} currency={currency} />
             </Panel>

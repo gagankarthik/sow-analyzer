@@ -3,6 +3,7 @@
 // Requirement 3: the items blocking signature. Sonar writes them from the
 // matrix review; reviewers add, edit, close and reopen them.
 
+import { byEdition } from "@/lib/edition-runtime";
 import { useCanEditContracts } from "@/lib/govern/queries";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, Building2, CheckCircle2, ChevronDown, Loader2, Pencil, Plus, RefreshCw, ShieldAlert, Sonar, UserRound } from "@/components/ui/icons";
 import { useGovernErrorToast } from "@/components/govern/actions";
-import { OFFICES, OFFICE_LABEL, personName, plural } from "@/lib/govern/labels";
+import { OFFICE_LABEL, officesForEdition, personName, plural } from "@/lib/govern/labels";
 import { useAddBlocker, useUpdateBlocker } from "@/lib/govern/queries";
 import type { Blocker, ContractDetail, Office } from "@/lib/govern/types";
 import { formatDate } from "@/lib/format";
@@ -192,7 +193,7 @@ function BlockerForm({ contract: c, blocker, onDone }: { contract: ContractDetai
     >
       <div className="flex flex-col gap-1.5">
         <label htmlFor={`${idBase}-text`} className="text-sm font-semibold text-foreground">What needs to happen?</label>
-        <Input id={`${idBase}-text`} autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Publication review period is 90 days; the matrix allows 60" />
+        <Input id={`${idBase}-text`} autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder={byEdition("e.g. Publication review period is 90 days; the matrix allows 60", "e.g. Overtime is billed at 2x; the matrix allows 1.5x")} />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
@@ -214,7 +215,7 @@ function BlockerForm({ contract: c, blocker, onDone }: { contract: ContractDetai
             <SelectTrigger id={`${idBase}-office`} className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value={NONE}>No office</SelectItem>
-              {OFFICES.map((o) => <SelectItem key={o} value={o}>{OFFICE_LABEL[o]}</SelectItem>)}
+              {officesForEdition().map((o) => <SelectItem key={o} value={o}>{OFFICE_LABEL[o]}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
