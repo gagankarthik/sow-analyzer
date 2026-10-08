@@ -8,8 +8,8 @@ import { openCookieSettings } from "@/lib/cookie-consent";
 export function PrivacyChoicesLink() {
   return (
     <button type="button" className="lp-navlink lp-privacy-choices" onClick={openCookieSettings}>
-      <PrivacyChoicesIcon />
       Your Privacy Choices
+      <PrivacyChoicesIcon />
     </button>
   );
 }
