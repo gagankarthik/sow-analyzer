@@ -1,5 +1,6 @@
 "use client";
 
+import { RolesMatrix } from "@/components/settings/RolesMatrix";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
@@ -424,6 +425,14 @@ export default function TeamSettingsPage() {
               );
             })}
           </dl>
+        </SettingsSection>
+
+        {/* ── Permissions by role, as the server enforces them ── */}
+        <SettingsSection
+          title="Roles and permissions"
+          description="What each Govern role can do, and what each workspace role adds. A person's Govern role is set by your administrator at sign-in."
+        >
+          <RolesMatrix />
         </SettingsSection>
       </SettingsLayout>
 

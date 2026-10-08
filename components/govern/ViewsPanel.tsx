@@ -3,26 +3,30 @@
 import Link from "next/link";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CONTRACT_VIEWS, VIEW_GROUP_LABEL, type ContractView, type ViewGroup } from "@/lib/govern/views";
 
-/* The Views panel: saved filters down the left of the Contracts dashboard,
-   each with a live count, grouped as all / in progress / signed. Each view is
-   a URL (?view=…) so it can be bookmarked and shared. Collapses to a rail. */
+/* The Views panel shared by the record dashboards (Contracts, Obligations):
+   saved filters down the left, each with a live count, in titled groups.
+   Every view is a URL so it can be bookmarked and shared. Collapses to a
+   rail; on small screens the same views are one select (ViewsSelect). */
 
-const GROUPS: ViewGroup[] = ["all", "workflows", "signed"];
+export type PanelView = { id: string; label: string; count: number; hideWhenEmpty?: boolean };
+export type PanelGroup = { label: string | null; views: PanelView[] };
 
 export function ViewsPanel({
+  label,
+  groups,
   activeId,
-  counts,
   collapsed,
   onToggle,
   hrefFor,
 }: {
+  /** Accessible name, e.g. "Contract views". */
+  label: string;
+  groups: PanelGroup[];
   activeId: string;
-  counts: Record<string, number>;
   collapsed: boolean;
   onToggle: () => void;
-  hrefFor: (view: ContractView) => string;
+  hrefFor: (id: string) => string;
 }) {
   if (collapsed) {
     return (
@@ -40,7 +44,7 @@ export function ViewsPanel({
   }
 
   return (
-    <nav aria-label="Contract views" className="hidden lg:block">
+    <nav aria-label={label} className="hidden lg:block">
       <div className="sticky top-20 flex max-h-[calc(100dvh-6rem)] flex-col overflow-y-auto pb-6 pe-2">
         <div className="flex items-center justify-between pb-2">
           <p className="text-sm font-semibold text-foreground">Views</p>
@@ -54,20 +58,19 @@ export function ViewsPanel({
           </button>
         </div>
 
-        {GROUPS.map((group) => {
-          const views = CONTRACT_VIEWS.filter((v) => v.group === group && (!v.hideWhenEmpty || (counts[v.id] ?? 0) > 0 || v.id === activeId));
+        {groups.map((group, gi) => {
+          const views = group.views.filter((v) => !v.hideWhenEmpty || v.count > 0 || v.id === activeId);
           if (views.length === 0) return null;
-          const heading = VIEW_GROUP_LABEL[group];
           return (
-            <div key={group} className={cn(heading && "mt-4 border-t border-border pt-4")}>
-              {heading && <p className="px-2.5 pb-1.5 text-xs font-semibold text-[var(--ink-500)]">{heading}</p>}
+            <div key={group.label ?? `group-${gi}`} className={cn(gi > 0 && "mt-4 border-t border-border pt-4")}>
+              {group.label && <p className="px-2.5 pb-1.5 text-xs font-semibold text-[var(--ink-500)]">{group.label}</p>}
               <ul className="flex flex-col gap-0.5">
                 {views.map((v) => {
                   const active = v.id === activeId;
                   return (
                     <li key={v.id}>
                       <Link
-                        href={hrefFor(v)}
+                        href={hrefFor(v.id)}
                         aria-current={active ? "page" : undefined}
                         scroll={false}
                         className={cn(
@@ -77,7 +80,7 @@ export function ViewsPanel({
                       >
                         <span className="truncate">{v.label}</span>
                         <span className={cn("shrink-0 text-xs tabular-nums", active ? "text-[var(--brand-primary-700)]" : "text-[var(--ink-500)]")}>
-                          {(counts[v.id] ?? 0).toLocaleString()}
+                          {v.count.toLocaleString()}
                         </span>
                       </Link>
                     </li>
@@ -93,7 +96,7 @@ export function ViewsPanel({
 }
 
 /** Phones and tablets: the same views as one select above the table. */
-export function ViewsSelect({ activeId, counts, onChange }: { activeId: string; counts: Record<string, number>; onChange: (id: string) => void }) {
+export function ViewsSelect({ groups, activeId, onChange }: { groups: PanelGroup[]; activeId: string; onChange: (id: string) => void }) {
   return (
     <label className="flex items-center gap-2 lg:hidden">
       <span className="text-sm font-medium text-[var(--ink-700)]">View</span>
@@ -102,10 +105,15 @@ export function ViewsSelect({ activeId, counts, onChange }: { activeId: string; 
         onChange={(e) => onChange(e.target.value)}
         className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--border-control)] bg-card px-3 text-sm text-foreground"
       >
-        {CONTRACT_VIEWS.map((v) => (
-          <option key={v.id} value={v.id}>{v.label} ({(counts[v.id] ?? 0).toLocaleString()})</option>
+        {groups.map((g, gi) => (
+          <optgroup key={g.label ?? `g-${gi}`} label={g.label ?? "All"}>
+            {g.views.map((v) => <option key={v.id} value={v.id}>{v.label} ({v.count.toLocaleString()})</option>)}
+          </optgroup>
         ))}
       </select>
     </label>
   );
 }
+
+/** Remembered open/closed state of a dashboard's Views panel. */
+export const viewsPanelKey = (page: string) => `blueiq:${page}-views-panel`;

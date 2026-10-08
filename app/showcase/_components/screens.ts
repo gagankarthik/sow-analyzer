@@ -5,6 +5,8 @@ import { FEATURED_CONTRACT_ID } from "@/lib/govern/__fixtures__/showcase";
 export const SHOWCASE_SCREENS = {
   board: { pathname: "/workflow", params: {} },
   contracts: { pathname: "/contracts", params: {} },
+  obligations: { pathname: "/obligations", params: {} },
+  data: { pathname: "/settings/data", params: {} },
   home: { pathname: "/home", params: {} },
   contract: { pathname: `/contracts/${FEATURED_CONTRACT_ID}`, params: { id: FEATURED_CONTRACT_ID }, tab: "matrix" },
   matrix: { pathname: `/contracts/${FEATURED_CONTRACT_ID}`, params: { id: FEATURED_CONTRACT_ID }, tab: "matrix" },

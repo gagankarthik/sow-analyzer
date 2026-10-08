@@ -10,6 +10,7 @@
 // first load shows a retry; a failed refresh keeps the last figures and
 // says so; an empty workspace says what to do; a manual refresh confirms.
 
+import { ViewsCard } from "./_components/ViewsCard";
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ViewTabs } from "@/components/ui/view-tabs";
@@ -181,7 +182,7 @@ function Home() {
         label: "Open contracts",
         value: String(view.unsignedCount),
         sub: view.unsignedCount > 0 ? `Longest wait ${plural(longestDays, "day")}` : "Nothing in progress",
-        href: "/workflow",
+        href: "/contracts?view=in-progress",
       },
       {
         label: "Signed and active",
@@ -269,6 +270,7 @@ function Home() {
             <StepsPanel stages={view.stages} targets={targets} redAfter={redAfter} />
           </div>
           <div className="flex min-w-0 flex-col gap-4 lg:col-span-4 lg:gap-5">
+            <ViewsCard />
             <MoneyPanel
               summary={view.summary}
               unvalued={view.unvalued}

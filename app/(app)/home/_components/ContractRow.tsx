@@ -7,6 +7,8 @@
 import Link from "next/link";
 import { ChevronRight } from "@/components/ui/icons";
 import { DaysInStage, WaitingOnChip } from "@/components/govern/primitives";
+import { AvatarStack } from "@/components/ds/Avatar";
+import { contractPeople } from "@/lib/govern/people";
 import { STAGE_LABEL } from "@/lib/govern/labels";
 import { contractValueText } from "@/lib/govern/metrics";
 import type { Contract } from "@/lib/govern/types";
@@ -60,6 +62,7 @@ export function ContractRow({
             <span className="mt-1.5 flex"><WaitingOnChip waitingOn={c.waitingOn} /></span>
           )}
         </span>
+        <AvatarStack people={contractPeople(c)} size="sm" emptyLabel="" className="mt-0.5 hidden shrink-0 sm:inline-flex" />
         <ChevronRight
           aria-hidden
           size={16}

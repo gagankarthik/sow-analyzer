@@ -19,6 +19,7 @@ import {
   Building2,
   Route,
   Plug,
+  Database,
 } from "@/components/ui/icons";
 
 /** Every settings section, in order. Shared with the app sidebar, which shows
@@ -27,6 +28,7 @@ export const SETTINGS_ITEMS: { label: string; href: string; icon: typeof Setting
   { label: "Overview", href: "/settings", icon: Settings },
   { label: "Organization", href: "/settings/organization", icon: Building2 },
   { label: "Review matrix", href: "/settings/matrix", icon: Grid3x3 },
+  { label: "Data manager", href: "/settings/data", icon: Database },
   { label: "Workflow & routing", href: "/settings/workflow", icon: Route },
   { label: "Integrations", href: "/settings/integrations", icon: Plug, feature: "integrations" },
   { label: "Playbook", href: "/settings/playbook", icon: BookMarked, edition: "commercialPlaybook" },

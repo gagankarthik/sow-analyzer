@@ -12,6 +12,7 @@ import {
   Briefcase,
   ChevronRight,
   Grid3x3,
+  Database,
   Plug,
   Route,
   ShieldCheck,
@@ -51,6 +52,7 @@ const groups: NavGroup[] = [
     desc: "How agreements are checked, routed and connected to the systems of record.",
     items: [
       { icon: Grid3x3, title: "Review matrix", desc: "Your accepted positions per agreement type. Edit, import from Excel, and keep dated versions.", href: "/settings/matrix" },
+      { icon: Database, title: "Data manager", desc: "The agreement types and properties every contract carries, and how fully each is captured.", href: "/settings/data" },
       { icon: Route, title: "Workflow & routing", desc: "Stage targets, reviewers, auto-assignment, approval routing and alerts.", href: "/settings/workflow" },
       { icon: Plug, title: "Integrations", desc: "Huron, Workday, Microsoft 365 and DocuSign: status, field mapping and the sync log.", href: "/settings/integrations", feature: "integrations" },
     ],

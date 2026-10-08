@@ -20,6 +20,7 @@ import { StaticAuthProvider } from "@/components/auth/AuthProvider";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import type { AuthUser } from "@/lib/auth/cognito";
+import type { ObligationKind, PortfolioObligation } from "@/lib/govern/types";
 import {
   SHOWCASE_CONTRACTS, SHOWCASE_DETAILS, SHOWCASE_MATRIX, SHOWCASE_ME, SHOWCASE_NOW, SHOWCASE_SETTINGS, showcaseTrends,
 } from "@/lib/govern/__fixtures__/showcase";
@@ -29,6 +30,8 @@ import HomePage from "@/app/(app)/home/page";
 import WorkflowPage from "@/app/(app)/workflow/page";
 import ContractPage from "@/app/(app)/contracts/[id]/page";
 import ContractsPage from "@/app/(app)/contracts/page";
+import ObligationsPage from "@/app/(app)/obligations/page";
+import DataManagerPage from "@/app/(app)/settings/data/page";
 import ValueReportPage from "@/app/(app)/reports/value/page";
 import BottlenecksPage from "@/app/(app)/reports/bottlenecks/page";
 import { SHOWCASE_SCREENS, type ShowcaseScreenId } from "./screens";
@@ -36,6 +39,8 @@ import { SHOWCASE_SCREENS, type ShowcaseScreenId } from "./screens";
 const PAGES: Record<ShowcaseScreenId, ComponentType> = {
   board: WorkflowPage,
   contracts: ContractsPage,
+  obligations: ObligationsPage,
+  data: DataManagerPage,
   home: HomePage,
   contract: ContractPage,
   matrix: ContractPage,
@@ -52,6 +57,30 @@ const SHOWCASE_USER: AuthUser = {
   groups: [],
   exp: Math.floor(Date.parse("2099-01-01T00:00:00Z") / 1000),
 };
+
+/** Sample obligations on the sample workspace's signed contracts (showcase only). */
+function showcaseObligations(): PortfolioObligation[] {
+  const signed = SHOWCASE_CONTRACTS.filter((c) => c.state === "signed" || c.state === "active");
+  const day = (n: number) => new Date(Date.parse(SHOWCASE_NOW) + n * 86_400_000).toISOString().slice(0, 10);
+  const plan: [ObligationKind, string, number | null, number | null, boolean][] = [
+    ["royalty_report", "Quarterly royalty report", 22, null, true],
+    ["sponsor_report", "Annual sponsor progress report", 41, null, false],
+    ["milestone_payment", "Second milestone payment", -6, 75000, true],
+    ["diligence_milestone", "First commercial sale milestone", 120, null, false],
+    ["publication_review", "Publication review window closes", 9, null, false],
+    ["term_end", "Term ends", 85, null, true],
+    ["closeout", "Final financial report", null, null, false],
+  ];
+  return plan.map(([kind, title, due, amount, verified], i) => {
+    const c = signed[i % Math.max(1, signed.length)] ?? SHOWCASE_CONTRACTS[0];
+    return {
+      id: `ob-${i}`, kind, title, dueDate: due === null ? null : day(due), amount, status: "open", source: verified ? "manual" : "sonar",
+      completedAt: null, verified, verifiedAt: verified ? day(-3) : null, verifiedBy: verified ? { email: SHOWCASE_ME.email, name: SHOWCASE_ME.name } : null,
+      contractId: c.contractId, contractTitle: c.title, counterparty: c.counterparty, agreementType: c.agreementType, stage: c.stage,
+      currency: c.currency, owner: c.owner,
+    };
+  });
+}
 
 function seededClient(): QueryClient {
   const client = new QueryClient({
@@ -77,6 +106,7 @@ function seededClient(): QueryClient {
   client.setQueryData(governKeys.trends("month", 6), showcaseTrends(6));
   client.setQueryData(governKeys.trends("month", 12), showcaseTrends(12));
   client.setQueryData(documentKeys.all, []);
+  client.setQueryData(governKeys.obligations, { obligations: showcaseObligations(), enabled: true });
   return client;
 }
 

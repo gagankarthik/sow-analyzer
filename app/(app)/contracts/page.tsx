@@ -17,17 +17,16 @@ import { FileSignature, Plus, Search } from "@/components/ui/icons";
 import { RISK_LABEL } from "@/lib/chart-theme";
 import { AGREEMENT_TYPE_LABEL, STAGE_LABEL, STAGES, WAITING_ON_SHORT } from "@/lib/govern/labels";
 import { useContracts, useGovernMe } from "@/lib/govern/queries";
-import { CONTRACT_VIEWS, viewById, type ContractView } from "@/lib/govern/views";
+import { CONTRACT_VIEWS, VIEW_GROUP_LABEL, viewById, type ViewGroup } from "@/lib/govern/views";
 import type { Contract } from "@/lib/govern/types";
 import type { RiskLevel } from "@/lib/types";
-import { useStoredValue, writeStoredValue } from "@/lib/use-stored-value";
-import { cn } from "@/lib/utils";
 import { BulkActions } from "./_components/BulkActions";
 import { CONTRACT_COLUMNS } from "./_components/columns";
 import { ContractPreview } from "./_components/ContractPreview";
-import { ViewsPanel, ViewsSelect } from "./_components/ViewsPanel";
+import { type PanelGroup } from "@/components/govern/ViewsPanel";
+import { RecordDashboard } from "@/components/govern/RecordDashboard";
 
-const PANEL_KEY = "blueiq:contracts-views-panel";
+const GROUPS: ViewGroup[] = ["all", "workflows", "signed"];
 
 export default function ContractsPage() {
   return (
@@ -57,7 +56,7 @@ function Contracts() {
   const [q, setQ] = useState(params.get("q") ?? "");
   const query = useDeferredValue(q.trim().toLowerCase());
   const [stage, setStage] = useState<string[]>([]);
-  const [type, setType] = useState<string[]>([]);
+  const [type, setType] = useState<string[]>(() => (params.get("type") ? [params.get("type") as string] : []));
   const [people, setPeople] = useState<string[]>([]);
   const [turn, setTurn] = useState<string[]>([]);
   const [risk, setRisk] = useState<string[]>([]);
@@ -76,9 +75,11 @@ function Contracts() {
   const filtering = !!query || stage.length + type.length + people.length + turn.length + risk.length > 0;
   const clearAll = () => { setQ(""); setStage([]); setType([]); setPeople([]); setTurn([]); setRisk([]); };
 
-  const collapsed = useStoredValue(PANEL_KEY) === "collapsed";
-  const togglePanel = () => writeStoredValue(PANEL_KEY, collapsed ? "open" : "collapsed");
-  const hrefFor = useCallback((v: ContractView) => `${pathname}?view=${v.id}`, [pathname]);
+  const hrefFor = useCallback((id: string) => `${pathname}?view=${id}`, [pathname]);
+  const groups: PanelGroup[] = useMemo(() => GROUPS.map((g) => ({
+    label: VIEW_GROUP_LABEL[g],
+    views: CONTRACT_VIEWS.filter((v) => v.group === g).map((v) => ({ id: v.id, label: v.label, count: counts[v.id] ?? 0, hideWhenEmpty: v.hideWhenEmpty })),
+  })), [counts]);
   const goToView = (id: string) => { setSelected(new Set()); router.replace(`${pathname}?view=${id}`, { scroll: false }); };
 
   const preview = previewId ? all.find((c) => c.contractId === previewId) ?? null : null;
@@ -100,27 +101,24 @@ function Contracts() {
   );
 
   return (
-    <div className="app-container py-6 md:py-8">
-      <div className={cn("grid grid-cols-1 gap-6 lg:gap-8", collapsed ? "lg:grid-cols-[2.25rem_minmax(0,1fr)]" : "lg:grid-cols-[14.5rem_minmax(0,1fr)]")}>
-        <ViewsPanel activeId={view.id} counts={counts} collapsed={collapsed} onToggle={togglePanel} hrefFor={hrefFor} />
-
-        <div className="flex min-w-0 flex-col gap-5">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <h1 className="flex items-baseline gap-3 text-2xl font-semibold tracking-tight text-foreground md:text-[1.75rem]">
-                {view.label}
-                <span className="text-base font-medium tabular-nums text-[var(--ink-500)]">{isLoading ? "" : rows.length.toLocaleString()}</span>
-              </h1>
-              <p className="mt-1 max-w-[60ch] text-sm text-[var(--ink-600)]">{view.description}</p>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9"><Link href="/draft"><FileSignature size={15} />Draft an SOW</Link></Button></EditionOnly>
-              <Button asChild size="lg" className="md:h-9"><Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />New agreement</Link></Button>
-            </div>
-          </header>
-
-          <ViewsSelect activeId={view.id} counts={counts} onChange={goToView} />
-
+    <RecordDashboard
+      page="contracts"
+      label="Contract views"
+      groups={groups}
+      activeId={view.id}
+      hrefFor={hrefFor}
+      onSelectView={goToView}
+      title={view.label}
+      count={isLoading ? null : rows.length}
+      description={view.description}
+      actions={
+        <>
+          <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9"><Link href="/draft"><FileSignature size={15} />Draft an SOW</Link></Button></EditionOnly>
+          <Button asChild size="lg" className="md:h-9"><Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />New agreement</Link></Button>
+        </>
+      }
+      aside={preview && <ContractPreview contract={preview} me={me} onClose={closePreview} />}
+    >
           <DataTable
             caption={view.label}
             noun="contracts"
@@ -150,10 +148,6 @@ function Contracts() {
               </div>
             }
           />
-        </div>
-      </div>
-
-      {preview && <ContractPreview contract={preview} me={me} onClose={closePreview} />}
-    </div>
+    </RecordDashboard>
   );
 }
