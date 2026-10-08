@@ -54,7 +54,7 @@ const COLUMNS: { id: string; title: string; links: FooterLink[] }[] = [
 ];
 
 /* Navy footer over a shape backdrop: the brand row with the promise (the one
-   call to action is the StartCta band above), then full-width link columns, then the full legal notice, then copyright and a back-to-top button. The notice is the same fixed copy the app shows under
+   call to action is the StartCta band above), then full-width link columns, then the not-legal-advice notice, then copyright and a back-to-top button. The notice is the same fixed copy the app shows under
    every analysis (components/ui/AnalysisDisclaimer): do not reword it. */
 export function Footer() {
   return (
@@ -92,18 +92,7 @@ export function Footer() {
         {/* Logo, then the full legal notice under it, then copyright and
             the back-to-top button on one row. */}
         <div className="lp-footer-legal">
-          <div role="note" aria-labelledby="footer-legal-title">
-            <h2 id="footer-legal-title" className="lp-footer-title">
-              For guidance only, not legal advice.
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed">
-              Blue-IQ uses AI to analyze and draft contract content, and it can be incomplete or wrong.
-              Verify every figure, date, clause, and obligation against the source document, your own
-              company&apos;s policies, and the laws that govern your contract before relying on it or
-              acting. Blue-IQ accepts no liability for decisions made from this analysis.
-            </p>
-          </div>
-          <p className="mt-4 text-sm leading-relaxed">
+          <p className="text-sm leading-relaxed">
             Blue-IQ is a software company, not a law firm. Nothing on this website is legal advice, and using this
             site or any of its resources does not create an attorney-client relationship between you and Blue-IQ. Your
             use of this website is subject to our{" "}
