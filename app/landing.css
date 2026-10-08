@@ -909,3 +909,8 @@
 @layer components {
   a.lp-pill { display: inline-flex; align-items: center; }
 }
+@layer components {
+  .lp-hero3 { position: relative; overflow: hidden; }
+  .lp-hero3-backdrop { position: absolute; inset: 0 0 auto 0; width: 100%; height: 900px; pointer-events: none; }
+  @media (max-width: 767px) { .lp-hero3-backdrop { opacity: 0.6; } }
+}

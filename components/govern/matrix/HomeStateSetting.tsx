@@ -57,7 +57,7 @@ export function HomeStateSetting({ matrix, canEdit, blocked }: {
           onChange={(e) => change(e.target.value)}
           disabled={!canEdit || blocked || save.isPending}
           title={blocked ? "Save or discard your clause changes first" : undefined}
-          className="h-11 min-w-56 rounded-lg border border-[var(--border-control)] bg-card px-3 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary-600)] disabled:cursor-not-allowed disabled:bg-[var(--ink-50)]"
+          className="h-11 min-w-56 rounded-lg border border-[var(--border-control)] bg-card px-3 text-base text-foreground outline-none transition-colors focus-visible:border-[var(--ink-500)] focus-visible:ring-4 focus-visible:ring-[var(--ink-100)] disabled:cursor-not-allowed disabled:bg-[var(--ink-50)]"
         >
           <option value="">Not set</option>
           {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
