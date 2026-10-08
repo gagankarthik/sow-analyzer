@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SonarMark } from "@/components/ui/SonarMark";
 import { MarketingShell } from "@/components/landing/MarketingShell";
 import { ClauseIndex } from "@/components/landing/ClauseIndex";
 import { StartCta } from "@/components/landing/StartCta";
@@ -45,12 +46,12 @@ const SECTION_COPY: Record<ProductSectionId, { body: string; points: string[] }>
 };
 
 const VISUAL: Record<ProductSectionId, { panel: string; card: React.ReactNode }> = {
-  matrix: { panel: "lp-panel-blue", card: <RedlineCard /> },
-  workflow: { panel: "lp-panel-violet", card: <BoardCard /> },
-  value: { panel: "lp-panel-teal", card: <ValueCard /> },
-  trends: { panel: "lp-panel-coral", card: <BottleneckCard /> },
-  capture: { panel: "lp-panel-navy", card: <CaptureCard /> },
-  integrations: { panel: "lp-panel-blue", card: <IntegrationsCard status="Coming soon" /> },
+  matrix: { panel: "lp-tint-blue", card: <RedlineCard /> },
+  workflow: { panel: "lp-tint-violet", card: <BoardCard /> },
+  value: { panel: "lp-tint-teal", card: <ValueCard /> },
+  trends: { panel: "lp-tint-coral", card: <BottleneckCard /> },
+  capture: { panel: "lp-tint-slate", card: <CaptureCard /> },
+  integrations: { panel: "lp-tint-blue", card: <IntegrationsCard status="Coming soon" /> },
 };
 
 export default function ProductPage() {
@@ -59,7 +60,7 @@ export default function ProductPage() {
       <JsonLd data={softwareApplicationSchema} />
       <JsonLd data={breadcrumbSchema([{ name: "Product", path: "/product" }])} />
 
-      <section className="lp-hero3" aria-labelledby="product-title">
+      <section className="lp-hero3 pb-12 md:pb-16" aria-labelledby="product-title">
         <div className="lp-wrap">
           <div className="lp-hero3-copy">
             <h1 id="product-title" className="lp-hero3-title">
@@ -69,17 +70,40 @@ export default function ProductPage() {
             <p className="lp-hero3-sub">
               Sonar reads it, your matrix rates it, the board moves it to signature, and the reports show what it is worth.
             </p>
-            <nav aria-label="Product areas" className="lp-pills mt-8 justify-center">
-              {PRODUCT_SECTIONS.map((section) => (
-                <a key={section.id} href={`#${section.id}`} className="lp-pill">{section.label}</a>
-              ))}
-            </nav>
           </div>
         </div>
       </section>
 
-      <section className="lp-section" aria-label="Product areas">
-        <div className="lp-wrap flex flex-col gap-6">
+      {/* The areas, one tap away while scrolling. */}
+      <nav aria-label="Product areas" className="lp-subnav">
+        <div className="lp-wrap lp-subnav-row">
+          {PRODUCT_SECTIONS.map((section) => (
+            <a key={section.id} href={`#${section.id}`} className="lp-subnav-link">{section.label}</a>
+          ))}
+        </div>
+      </nav>
+
+      {/* Sonar, the AI inside every step. */}
+      <section id="sonar" className="lp-wrap scroll-mt-32 pt-12" aria-labelledby="sonar-title">
+        <div className="lp-sonar sonar-rainbow">
+          <SonarMark size="lg" tile />
+          <div className="min-w-0">
+            <h2 id="sonar-title" className="lp-sonar-title">Sonar, the AI inside every step</h2>
+            <p className="lp-sonar-body">
+              Sonar reads each agreement, scanned pages included, files every clause against your matrix, suggests the
+              language to send back, and answers questions about any contract. Your matrix decides the rating; Sonar shows its work.
+            </p>
+          </div>
+          <ul className="lp-sonar-facts">
+            <li><b>Reads</b> PDF, Word and scans</li>
+            <li><b>Rates</b> against your positions</li>
+            <li><b>Drafts</b> suggested language</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="lp-features" aria-label="Product areas">
+        <div className="lp-wrap flex flex-col">
           {PRODUCT_SECTIONS.map((section, i) => (
             <article key={section.id} id={section.id} className={`lp-show lp-feature scroll-mt-24 ${i % 2 ? "lp-feature-flip" : ""}`}>
               <div className="lp-show-copy">

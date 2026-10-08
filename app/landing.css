@@ -1204,3 +1204,56 @@
   .lp-epanel-list dd { margin-top: 0.25rem; padding-left: 1.5rem; color: var(--lp-ink-2); }
   .lp-edition-label.mt-0 { margin-top: 0; }
 }
+
+/* Product page v2: a sticky area bar, the Sonar introduction, then each area
+   as an open row (no card) beside its example in a calm tinted panel. */
+@layer components {
+  .lp-subnav { position: sticky; top: 4rem; z-index: 40; background: rgba(243, 242, 238, 0.96); border-block: 1px solid var(--lp-line); }
+  .lp-subnav-row { display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; padding-block: 0.5rem; }
+  @media (min-width: 900px) { .lp-subnav-row { justify-content: center; } }
+  .lp-subnav-link {
+    flex-shrink: 0; display: inline-flex; align-items: center; min-height: 2.5rem; padding-inline: 1rem; border-radius: 9999px;
+    font-size: var(--text-sm); font-weight: 600; color: var(--lp-ink-2); white-space: nowrap;
+    transition: background-color var(--lp-dur) var(--lp-ease), color var(--lp-dur) var(--lp-ease);
+  }
+  .lp-subnav-link:hover { background: var(--lp-surface); color: var(--lp-ink); }
+
+  .lp-sonar {
+    --sonar-fill: var(--lp-surface);
+    display: grid; gap: 1.25rem; align-items: center; border-radius: 24px; padding: 1.5rem;
+  }
+  @media (min-width: 900px) { .lp-sonar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 1.75rem; padding: 1.75rem 2rem; } }
+  .lp-sonar-title { font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; color: var(--lp-ink); }
+  .lp-sonar-body { margin-top: 0.35rem; max-width: 46rem; color: var(--lp-ink-2); }
+  .lp-sonar-facts { display: grid; gap: 0.4rem; font-size: var(--text-sm); color: var(--lp-ink-2); }
+  .lp-sonar-facts b { font-weight: 600; color: var(--lp-ink); }
+
+  .lp-features { padding-block: 2rem 5rem; }
+  .lp-features .lp-feature {
+    margin-top: 0; border-radius: 0; background: transparent; padding: 3.5rem 0;
+    border-bottom: 1px solid var(--lp-line);
+  }
+  .lp-features .lp-feature:last-child { border-bottom: 0; }
+  @media (min-width: 900px) { .lp-features .lp-feature { padding: 4.5rem 0; gap: 4rem; } }
+  .lp-features .lp-show-panel {
+    display: flex; align-items: center; justify-content: center; border-radius: 24px; padding: 2rem;
+    border: 1px solid var(--lp-line);
+  }
+  @media (min-width: 900px) { .lp-features .lp-show-panel { padding: 2.75rem; } }
+  .lp-features .lp-show-panel > * { width: 100%; }
+  .lp-features .lp-show-panel .lp-pcard {
+    border-radius: 16px; margin-right: 0; border: 1px solid var(--lp-line);
+    box-shadow: 0 1px 2px rgba(11, 18, 32, 0.05), 0 20px 40px -24px rgba(11, 18, 32, 0.25);
+  }
+  .lp-tint-blue { background: #EEF4FF; } .lp-tint-violet { background: #F2EEFF; } .lp-tint-teal { background: #E8F5F1; }
+  .lp-tint-coral { background: #FDF0E9; } .lp-tint-slate { background: #EDEFF4; }
+}
+@layer components {
+  .lp-sheet-sonar {
+    --sonar-fill: var(--lp-surface);
+    display: flex; align-items: center; gap: 0.75rem; margin-top: 1.25rem; padding: 0.75rem 0.9rem; border-radius: 14px;
+    transition: transform var(--lp-dur) var(--lp-ease);
+  }
+  .lp-sheet-sonar:hover { transform: translateY(-1px); }
+}
+

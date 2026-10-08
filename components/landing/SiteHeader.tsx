@@ -1,5 +1,6 @@
 "use client";
 
+import { SonarMark } from "@/components/ui/SonarMark";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -243,6 +244,17 @@ function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void
         <div className="lp-sheet-intro">
           <p className="lp-sheet-title">{menu.label}</p>
           <p className="mt-2 text-sm text-lp-ink-2">{menu.intro}</p>
+          {/* Sonar, the AI in every step, under the Product menu's intro. */}
+          {menu.label === "Product" && (
+            <Link href="/product#sonar" onClick={onNavigate} className="lp-sheet-sonar sonar-rainbow">
+              <SonarMark size="sm" tile />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-lp-ink">Meet Sonar</span>
+                <span className="block text-xs text-lp-ink-2">The AI that reads, rates and drafts</span>
+              </span>
+              <ArrowRight size={14} strokeWidth={2} aria-hidden="true" className="ml-auto shrink-0 text-lp-ink-3" />
+            </Link>
+          )}
           <Link href={menu.foot.href} className="lp-sheet-foot" onClick={onNavigate}>
             {menu.foot.label}
             <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
