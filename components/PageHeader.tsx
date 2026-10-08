@@ -45,7 +45,7 @@ export function PageHeader({
               </Link>
             )}
             <h1
-              className="text-2xl font-semibold tracking-[-0.025em] text-foreground leading-[1.15] break-words"
+              className="text-balance text-2xl font-semibold tracking-[-0.025em] text-foreground leading-[1.15] break-words"
             >
               {title}
             </h1>

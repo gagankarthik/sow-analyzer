@@ -105,7 +105,7 @@ function RuleForm({ target, onClose }: { target: RuleDialogTarget; onClose: () =
     try {
       await save.mutateAsync({ ruleId, input });
       toast.success(rule ? "Rule saved" : "Rule added", {
-        description: "It applies the next time a document is analysed or re-analysed.",
+        description: "It applies the next time a document is analyzed or re-analyzed.",
       });
       onClose();
     } catch (err) {
@@ -176,7 +176,7 @@ function RuleForm({ target, onClose }: { target: RuleDialogTarget; onClose: () =
                 className="font-mono"
               />
               <p id={id("typeKey-hint")} className="text-xs leading-relaxed text-muted-foreground">
-                {available.length === 0 && "No custom clause types were found in your analysed documents. "}
+                {available.length === 0 && "No custom clause types were found in your analyzed documents. "}
                 The key must match the one the analysis gives the clause type (shown on a clause as its type), or the rule will never be applied.
               </p>
             </>
@@ -258,7 +258,7 @@ function RuleForm({ target, onClose }: { target: RuleDialogTarget; onClose: () =
               ? "Clauses of this type are checked automatically against your wording lists."
               : "With no required or forbidden wording, this rule has no automatic check: clauses of this type are flagged for you to compare with the standard position."}
         </p>
-        <p className="mt-1">Documents already analysed keep their current result. The rule applies the next time a document is analysed or re-analysed.</p>
+        <p className="mt-1">Documents already analyzed keep their current result. The rule applies the next time a document is analyzed or re-analyzed.</p>
       </div>
 
       <DialogFooter>

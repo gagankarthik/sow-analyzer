@@ -107,7 +107,7 @@ export default function SowPage() {
     }
     return [...counts.entries()].map(([key, count]) => ({ key, count, label: categoryLabel(key) })).sort((a, b) => a.label.localeCompare(b.label));
   }, [allClauses]);
-  // Playbook outcome per clause. A clause with no result (a document analysed
+  // Playbook outcome per clause. A clause with no result (a document analyzed
   // before grading existed) is counted as "not assessed", never as a pass.
   const outcomeCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -283,10 +283,10 @@ export default function SowPage() {
               </section>
             )}
 
-            {/* Clauses analysed before playbook grading: say so once, offer re-analysis. */}
+            {/* Clauses analyzed before playbook grading: say so once, offer re-analysis. */}
             {classification && allClauses.length > 0 && !graded && (
               <ReanalyseNotice docId={id} role={detail.document.role} busy={isProcessing} title="These clauses were not compared with the playbook">
-                This document was analysed before clauses were graded against a playbook, so each one shows &ldquo;not assessed&rdquo;. Re-analyse it to grade every clause against the playbook of the workspace it was uploaded into.
+                This document was analyzed before clauses were graded against a playbook, so each one shows &ldquo;not assessed&rdquo;. Re-analyze it to grade every clause against the playbook of the workspace it was uploaded into.
               </ReanalyseNotice>
             )}
 
@@ -319,7 +319,7 @@ export default function SowPage() {
                         ))}
                       </ul>
                       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                        Graded when this document was last analysed, against the playbook of the workspace it was uploaded into
+                        Graded when this document was last analyzed, against the playbook of the workspace it was uploaded into
                         {playbookSource ? ` (${playbookSource})` : ""}.
                         {" "}&ldquo;No rule&rdquo; and &ldquo;not classified&rdquo; mean nothing was checked.{" "}
                         <Link href="/settings/playbook" className="font-semibold text-[var(--brand-primary-600)] hover:underline">View the playbook</Link>
@@ -356,8 +356,8 @@ export default function SowPage() {
                     </p>
                     <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
                       {errorStatus(classErr) === 404
-                        ? "This document was processed before clause extraction was available, or extraction didn't complete. Re-upload it to generate the analysis."
-                        : (classErr instanceof Error ? classErr.message : "A network error occurred.")}
+                        ? "This document was processed before clause extraction was available, or extraction didn't complete. Re-analyze it to extract the clauses."
+                        : (classErr instanceof Error ? classErr.message : "Check your connection, then try again.")}
                     </p>
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                       <Button variant="outline" size="lg" className="md:h-9" onClick={() => refetchClass()}>Retry</Button>

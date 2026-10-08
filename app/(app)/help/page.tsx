@@ -16,19 +16,19 @@ import {
    and where to get more help. */
 
 const QUICK_START = [
-  { icon: Upload, title: "Upload a contract", get body() { return byEdition("Go to a project and drop an agreement: a licence, research agreement, NDA, DPA, BAA or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analysing on upload.", "Go to an engagement and drop an agreement: a SOW, MSA, staffing agreement, NDA, DPA or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analysing on upload.") } },
+  { icon: Upload, title: "Upload a contract", get body() { return byEdition("Go to a project and drop an agreement: a license, research agreement, NDA, DPA, BAA or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analyzing on upload.", "Go to an engagement and drop an agreement: a SOW, MSA, staffing agreement, NDA, DPA or compliance document (PDF, DOCX, or TXT, up to 50 MB). Sonar starts analyzing on upload.") } },
   { icon: Sonar, title: "Review the analysis", get body() { return byEdition("Open the project to see the extracted clauses, the risk level given to each one, and the key findings.", "Open the engagement to see the extracted clauses, the risk level given to each one, and the key findings.") } },
   { icon: GitBranch, title: "Track amendments", get body() { return byEdition("Add an amendment to the project. When the analysis can match it to the contract it amends, the changes are listed against the original, and the contract value is updated from the figures the amendment states.", "Add a change order or amendment to the engagement. When the analysis can match it to the contract it amends, the changes are listed against the original, and the contract value is updated from the figures the amendment states.") } },
-  { icon: BarChart3, title: "Watch the portfolio", body: "Home (Risk and documents) and Insights add up extracted value and clause risk across your analysed documents, and say how many documents are not yet included." },
+  { icon: BarChart3, title: "Watch the portfolio", body: "Home (Risk and documents) and Insights add up extracted value and clause risk across your analyzed documents, and say how many documents are not yet included." },
 ];
 
 const AREAS = [
   { icon: Library, title: "Library", body: "Every uploaded document, searchable and filterable by type, lifecycle, and status." },
   { icon: Kanban, title: "Workflow", body: "A board of your documents by lifecycle stage, from draft through to active and renewal." },
   { icon: BarChart3, title: "Insights", body: "What needs attention first, where risk and extracted value sit, which dates are coming up, and what is missing from your documents." },
-  { edition: "commercialPlaybook" as const, icon: BookMarked, title: "Playbook", body: "Your standard position for each clause type. Every clause is graded against it, and you can edit the rules; changes apply the next time a document is analysed." },
+  { edition: "commercialPlaybook" as const, icon: BookMarked, title: "Playbook", body: "Your standard position for each clause type. Every clause is graded against it, and you can edit the rules; changes apply the next time a document is analyzed." },
   { edition: "sowDrafting" as const, icon: DraftSow, title: "Draft SOW", body: "Answer a short questionnaire and Sonar drafts an editable statement of work you can export to Word." },
-  { icon: ShieldCheck, title: "Security & legal", body: "How your documents are protected, and the policies that apply." },
+  { icon: ShieldCheck, title: "Security and legal", body: "How your documents are protected, and the policies that apply." },
 ];
 
 const SECTION_HEADING = "text-lg font-semibold tracking-tight text-foreground";

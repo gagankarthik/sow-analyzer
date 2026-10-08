@@ -5,12 +5,14 @@
 // Documents (what the analysis found across the uploaded documents). The view
 // lives in the URL so links and reloads keep it.
 
+import dynamic from "next/dynamic";
 import { PageSkeleton } from "@/components/govern/admin/shared";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { ViewTabs } from "@/components/ui/view-tabs";
-import { DocumentInsights } from "./_components/DocumentInsights";
+// Loaded when its tab opens: it carries the charting library.
+const DocumentInsights = dynamic(() => import("./_components/DocumentInsights").then((m) => m.DocumentInsights), { loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
 import { LeadershipView } from "./_components/LeadershipView";
 
 type View = "leadership" | "documents";

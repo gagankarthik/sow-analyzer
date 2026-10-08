@@ -98,12 +98,12 @@ function PlaybookPageContent() {
     try {
       await revert.mutateAsync(rule.ruleId);
       toast.success(rule.hasBuiltInDefault ? "Reverted to the built-in default" : "Rule removed", {
-        description: "This applies the next time a document is analysed or re-analysed.",
+        description: "This applies the next time a document is analyzed or re-analyzed.",
       });
     } catch (e) {
       // The rule is back in the list exactly as it was (see useRevertPlaybookRule).
       toast.error(rule.hasBuiltInDefault ? "Couldn't revert the rule" : "Couldn't remove the rule", {
-        description: e instanceof Error ? e.message : "Please try again.",
+        description: e instanceof Error ? e.message : "Try again.",
       });
     }
   }
@@ -141,7 +141,7 @@ function PlaybookPageContent() {
           <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--ink-600)] md:col-span-8">
             {playbook ? (
               <>
-                <p><span className="font-semibold text-foreground">A change applies the next time a document is analysed or re-analysed.</span> Documents already analysed keep the result they were given.</p>
+                <p><span className="font-semibold text-foreground">A change applies the next time a document is analyzed or re-analyzed.</span> Documents already analyzed keep the result they were given.</p>
                 <p>A document is graded against the playbook of the workspace it was uploaded into: a document someone else uploaded and shared with you was graded against their playbook, not this one.</p>
                 <p>A clause whose type has no rule here is reported as &ldquo;no rule&rdquo;. That is not a pass: nothing was checked.</p>
               </>
@@ -247,7 +247,7 @@ function PlaybookPageContent() {
               {confirm?.hasBuiltInDefault
                 ? "Your wording, thresholds and wording checks for this clause type are deleted and the built-in default applies again."
                 : "This clause type has no built-in default. Without this rule, its clauses are reported as “no rule”: nothing is checked."}
-              {" "}Documents already analysed keep their current result until they are analysed again.
+              {" "}Documents already analyzed keep their current result until they are analyzed again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

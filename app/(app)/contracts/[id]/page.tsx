@@ -93,14 +93,14 @@ function ContractView({ contract: c, isError, onRefresh }: {
   const openBlockers = c.blockers.filter((b) => b.status === "open").length;
   const toLook = c.review?.clauses.filter((cl) => BLOCKING_TIERS.has(cl.tier) || cl.tier === "review").length ?? 0;
   const gaps = c.captureGaps?.length ?? 0;
-  const analysing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
+  const analyzing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
   const created = shortDate(c.createdAt);
 
   return (
     <>
       <PageHeader
         back={{ href: "/contracts", label: "Contracts" }}
-        title={c.title || "Untitled agreement"}
+        title={c.title || "Untitled contract"}
         subtitle={[AGREEMENT_TYPE_LABEL[c.agreementType], party, c.piName && byEdition(true, false) ? `PI ${c.piName}` : null, c.department].filter(Boolean).join(" · ")}
         actions={
           <>
@@ -125,7 +125,7 @@ function ContractView({ contract: c, isError, onRefresh }: {
               <span key={t} className="rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-xs text-[var(--ink-800)]">{t}</span>
             ))}
             {c.rounds > 0 && <span className="rounded-md bg-[var(--ink-100)] px-2 py-0.5 text-xs font-semibold text-[var(--ink-800)]">Round {c.rounds + 1}</span>}
-            {analysing && (
+            {analyzing && (
               <span className="inline-flex items-center gap-1.5 text-[var(--ai-ink)]"><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Sonar is reading the latest version</span>
             )}
           </div>

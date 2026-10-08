@@ -111,7 +111,9 @@ export function WaitingOnChip({ waitingOn, short = false, className }: { waiting
       )}
     >
       <Icon size={12} aria-hidden className="shrink-0" />
-      <span className="truncate">{short ? WAITING_ON_SHORT[waitingOn.kind] ?? waitingOn.kind : waitingOn.label || WAITING_ON_LABEL[waitingOn.kind]}</span>
+      <span className="truncate" aria-hidden={short || undefined}>{short ? WAITING_ON_SHORT[waitingOn.kind] ?? waitingOn.kind : waitingOn.label || WAITING_ON_LABEL[waitingOn.kind]}</span>
+      {/* The full sentence for screen readers; the title is mouse-only. */}
+      {short && <span className="sr-only">{waitingOn.label || WAITING_ON_LABEL[waitingOn.kind]}</span>}
     </span>
   );
 }
@@ -134,7 +136,8 @@ export function TurnPill({ waitingOn, days, sla, className }: { waitingOn: Waiti
     >
       <span className="inline-flex min-w-0 items-center gap-1.5 px-2">
         <Icon size={12} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
-        <span className="truncate">{WAITING_ON_SHORT[waitingOn.kind] ?? waitingOn.kind}</span>
+        <span className="truncate" aria-hidden>{WAITING_ON_SHORT[waitingOn.kind] ?? waitingOn.kind}</span>
+        <span className="sr-only">{waitingOn.label || WAITING_ON_LABEL[waitingOn.kind]}, </span>
       </span>
       <span className={cn("inline-flex h-full items-center border-l border-border px-1.5 font-semibold tabular-nums", SLA_TONE[sla])}>
         {days}d{late && <span className="sr-only">, {SLA_LABEL[sla]}</span>}

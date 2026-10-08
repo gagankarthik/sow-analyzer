@@ -8,7 +8,7 @@
  * description of the rule replaces the local one, then the list is re-read.
  *
  * Saving a rule does not re-grade documents: a changed rule applies the next
- * time a document is analysed or re-analysed. Nothing here touches document
+ * time a document is analyzed or re-analyzed. Nothing here touches document
  * queries for that reason.
  */
 

@@ -76,7 +76,7 @@ function MatchRow({ contract, canEdit }: { contract: Contract; canEdit: boolean 
       await match.mutateAsync(value);
       toast.success("Matched to Workday", { description: `${contract.title} → ${value}` });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The match could not be saved. Please try again.");
+      setError(err instanceof Error ? err.message : "The match could not be saved. Try again.");
     }
   }
 

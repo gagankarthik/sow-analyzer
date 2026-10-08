@@ -169,7 +169,7 @@ export default function TimelinePage() {
   const status = detail.document.status;
   const isProcessing = status !== "READY" && status !== "FAILED";
   // Until the classification has answered we do not know whether the full list
-  // exists, so nothing is said about "analysed before date extraction" yet.
+  // exists, so nothing is said about "analyzed before date extraction" yet.
   const datesPending = !!isReady && classLoading;
   const classFailed = classError && errorStatus(classErr) !== 404;
   const { counts } = dates;
@@ -202,7 +202,7 @@ export default function TimelinePage() {
         {isProcessing && (
           <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-[var(--warning)]/30 bg-[var(--warning-soft)] p-4 md:mb-6 md:px-5">
             <Clock size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--warning)]" />
-            <p className="text-base leading-relaxed text-foreground"><span className="font-semibold">This document is still being analysed.</span> Its dates and history appear here when the analysis finishes.</p>
+            <p className="text-base leading-relaxed text-foreground"><span className="font-semibold">This document is still being analyzed.</span> Its dates and history appear here when the analysis finishes.</p>
           </div>
         )}
 
@@ -227,10 +227,10 @@ export default function TimelinePage() {
               </p>
             )}
             {isReady && !datesPending && !classFailed && !source.extracted && (
-              <ReanalyseNotice docId={id} role={detail.document.role} busy={isProcessing} title="This document was analysed before full date extraction">
+              <ReanalyseNotice docId={id} role={detail.document.role} busy={isProcessing} title="This document was analyzed before full date extraction">
                 {source.source === "legacy"
-                  ? `Showing the ${source.dates.length} date${source.dates.length === 1 ? "" : "s"} the earlier analysis recorded. Re-analyse this document to extract every date, deadline and payment, with its source clause.`
-                  : "The earlier analysis recorded no dates. Re-analyse this document to extract dates."}
+                  ? `Showing the ${source.dates.length} date${source.dates.length === 1 ? "" : "s"} the earlier analysis recorded. Re-analyze this document to extract every date, deadline and payment, with its source clause.`
+                  : "The earlier analysis recorded no dates. Re-analyze this document to extract dates."}
               </ReanalyseNotice>
             )}
 

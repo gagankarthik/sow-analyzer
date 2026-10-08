@@ -57,7 +57,7 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
       toast.success("Document deleted");
       router.push("/projects");
     } catch (e) {
-      toast.error("Delete failed", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't delete the document", { description: e instanceof Error ? e.message : "Try again." });
       setConfirmDelete(false);
     }
   }

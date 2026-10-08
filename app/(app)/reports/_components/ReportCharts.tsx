@@ -284,7 +284,7 @@ export function StageFlow({
             selected === q.stage && "ring-2 ring-[var(--brand-primary-400)]",
           );
           return (
-            <li key={q.stage} className="relative min-w-0">
+            <li key={q.stage} id={`stage-${q.stage}`} className="relative min-w-0 scroll-mt-24">
               {hrefFor ? (
                 <Link href={hrefFor(q.stage)} className={cls}>{body}</Link>
               ) : onSelect ? (

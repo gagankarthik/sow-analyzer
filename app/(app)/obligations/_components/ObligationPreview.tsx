@@ -57,7 +57,7 @@ export function ObligationPreview({ obligation: o, today, busy, readOnly = false
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-10 pt-5">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-5">
         <p className="text-sm text-[var(--ink-600)]">{OBLIGATION_KIND_LABEL[o.kind]}</p>
         <h2 className="mt-1 text-xl font-semibold leading-snug tracking-tight text-foreground">{o.title}</h2>
 

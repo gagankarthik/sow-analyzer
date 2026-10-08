@@ -31,7 +31,7 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
   const [assigning, setAssigning] = useState(false);
   const closed = c.state === "rejected" || c.state === "closed";
   const canAssign = availableActions(c).includes("assign");
-  const analysing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
+  const analyzing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
   const party = partyLine(c);
   const gaps = c.captureGaps?.length ?? 0;
   const href = `/contracts/${encodeURIComponent(c.contractId)}`;
@@ -61,10 +61,10 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
         <h3 className="text-base font-semibold line-clamp-2 break-words leading-snug text-foreground">
           {openPreview ? (
             <button type="button" onClick={() => openPreview(c.contractId)} className={cover}>
-              {c.title || "Untitled agreement"}
+              {c.title || "Untitled contract"}
             </button>
           ) : (
-            <Link href={href} className={cover}>{c.title || "Untitled agreement"}</Link>
+            <Link href={href} className={cover}>{c.title || "Untitled contract"}</Link>
           )}
         </h3>
         {party && <p className="mt-0.5 truncate text-sm text-[var(--ink-600)]">{party}</p>}
@@ -79,7 +79,7 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
             <TurnPill waitingOn={c.waitingOn} days={c.daysInStage} sla={c.slaStatus} className="min-w-0" />
           </>
         )}
-        {analysing && (
+        {analyzing && (
           <span className="inline-flex h-6 items-center gap-1 rounded-md bg-[var(--ai-surface)] px-2 text-xs font-medium text-[var(--ai-ink)]">
             <Loader2 size={11} className="animate-spin motion-reduce:animate-none" />Sonar is reading
           </span>

@@ -136,7 +136,7 @@ function DraftSowPageContent() {
   return (
     <>
       <PageHeader
-        title={step === "intake" ? "Write a Statement of Work" : answers.title || "Your Statement of Work"}
+        title={step === "intake" ? "Draft a statement of work" : answers.title || "Your statement of work"}
         subtitle={
           step === "intake"
             ? "Answer a few questions and Sonar drafts an editable SOW."

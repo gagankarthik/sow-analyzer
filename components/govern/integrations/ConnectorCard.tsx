@@ -106,7 +106,7 @@ export function ConnectorCard({
         description: credsTouched ? "Credentials are stored securely and are never shown again." : undefined,
       });
     } catch (e) {
-      toast.error(`Couldn't save ${connector.name}`, { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error(`Couldn't save ${connector.name}`, { description: e instanceof Error ? e.message : "Try again." });
     }
   }
 
@@ -115,7 +115,7 @@ export function ConnectorCard({
       await save.mutateAsync({ id: connector.id, input: { enabled: next } });
       toast.success(next ? `${connector.name} turned on` : `${connector.name} turned off`);
     } catch (e) {
-      toast.error("Couldn't change the switch", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't change the switch", { description: e instanceof Error ? e.message : "Try again." });
     }
   }
 
@@ -136,7 +136,7 @@ export function ConnectorCard({
         });
       }
     } catch (e) {
-      toast.error("Couldn't start the sync", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't start the sync", { description: e instanceof Error ? e.message : "Try again." });
     }
   }
 

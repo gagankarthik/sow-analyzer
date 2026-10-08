@@ -13,6 +13,7 @@ import {
   type Icon,
 } from "@/components/landing/icons";
 import { IconBadge } from "@/components/landing/IconBadge";
+import { SonarMark } from "@/components/ui/SonarMark";
 import type { ProductSectionId } from "@/components/landing/site-nav";
 import type { GovernFeature } from "@/lib/govern/features";
 
@@ -76,6 +77,7 @@ export function Lifecycle() {
             <ChevronUp size={16} strokeWidth={2} />
           </span>
           <span className="lp-loop-core" aria-hidden="true">
+            <SonarMark size="sm" />
             Sonar checks every version
           </span>
         </div>

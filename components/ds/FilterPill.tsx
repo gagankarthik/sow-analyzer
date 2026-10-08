@@ -84,7 +84,7 @@ export function FilterPill({
               />
             </div>
           )}
-          <div role="listbox" aria-label={label} aria-multiselectable="true" className="max-h-72 overflow-y-auto">
+          <div role="listbox" aria-label={label} aria-multiselectable="true" className="max-h-72 overflow-y-auto overscroll-contain">
             {shown.length === 0 ? (
               <p className="px-2.5 py-3 text-sm text-[var(--ink-600)]">No matches.</p>
             ) : shown.map((o) => {

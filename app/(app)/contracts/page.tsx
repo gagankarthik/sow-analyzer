@@ -129,7 +129,7 @@ function Contracts() {
       actions={
         <>
           <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9"><Link href="/draft"><FileSignature size={15} />Draft an SOW</Link></Button></EditionOnly>
-          <Button asChild size="lg" className="md:h-9"><Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />New agreement</Link></Button>
+          <Button asChild size="lg" className="md:h-9"><Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />Upload a contract</Link></Button>
         </>
       }
       aside={preview && <ContractPreview contract={preview} me={me} onClose={closePreview} />}
@@ -140,7 +140,7 @@ function Contracts() {
             columns={CONTRACT_COLUMNS}
             rows={rows}
             getRowId={(c) => c.contractId}
-            getRowLabel={(c) => `Preview ${c.title || "Untitled agreement"}`}
+            getRowLabel={(c) => `Preview ${c.title || "Untitled contract"}`}
             onRowClick={(c) => setPreviewId(c.contractId)}
             activeRowId={previewId}
             defaultSort={{ columnId: "days", direction: "desc" }}
@@ -157,8 +157,8 @@ function Contracts() {
             empty={
               <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
                 <p className="text-base font-semibold text-foreground">No contracts yet</p>
-                <p className="max-w-md text-sm text-[var(--ink-600)]">Upload an agreement. Sonar reads it, checks it against your matrix and lists it here.</p>
-                <Button asChild><Link href="/projects/upload">Upload an agreement</Link></Button>
+                <p className="max-w-md text-sm text-[var(--ink-600)]">Upload a contract. Sonar reads it, checks it against your matrix and lists it here.</p>
+                <Button asChild><Link href="/projects/upload">Upload a contract</Link></Button>
               </div>
             }
           />

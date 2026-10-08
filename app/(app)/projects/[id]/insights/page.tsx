@@ -78,7 +78,7 @@ export default function ProjectInsightsPage() {
   const overallRisk: RiskLevel | null = doc.overallRisk ?? null;
   const summary = classification?.summary || doc.summary || "";
 
-  // Portfolio comparison. Formula: among the OTHER analysed documents that have
+  // Portfolio comparison. Formula: among the OTHER analyzed documents that have
   // a high-risk clause count, the share with strictly fewer high-risk clauses
   // than this one. Documents with no count are left out, not treated as zero.
   const readyDocs = allDocs.filter((d) => d.status === "READY");
@@ -141,8 +141,8 @@ export default function ProjectInsightsPage() {
             label="Compared with your portfolio"
             value={isReady && higherThan !== null ? `${higherThan}%` : "—"}
             hint={isReady && higherThan !== null
-              ? `of the ${peers.length} other analysed document${peers.length === 1 ? "" : "s"} have fewer high or critical clauses`
-              : "Needs this and at least one other analysed document"}
+              ? `of the ${peers.length} other analyzed document${peers.length === 1 ? "" : "s"} have fewer high or critical clauses`
+              : "Needs this and at least one other analyzed document"}
             icon={<TrendingUp size={16} />}
           />
         </section>

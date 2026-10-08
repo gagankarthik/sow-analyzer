@@ -38,7 +38,7 @@ export function RedlineButton({ contract, clauses, note, variant = "outline", si
       });
       toast.success("Redline downloaded", { description: "Send it to the other side with the agreement." });
     } catch (e) {
-      toast.error("Couldn't build the redline", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't build the redline", { description: e instanceof Error ? e.message : "Try again." });
     } finally {
       setBusy(false);
     }

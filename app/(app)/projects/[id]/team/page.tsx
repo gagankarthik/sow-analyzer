@@ -48,7 +48,7 @@ export default function TeamPage() {
     return (
       <div className="app-container py-20 flex flex-col items-center text-center">
         <p role="alert" className="max-w-md break-words text-base text-[var(--danger)]">
-          {error instanceof Error ? error.message : "Failed to load document"}
+          {error instanceof Error ? error.message : "Couldn't load this document"}
         </p>
         <Button variant="outline" size="lg" className="mt-4" onClick={() => void refetch()} disabled={isFetching}>
           Try again
@@ -164,7 +164,7 @@ export default function TeamPage() {
                     ? "The analysis did not extract any named parties from this document."
                     : doc.status === "FAILED"
                       ? "The analysis of this document failed, so no parties were extracted."
-                      : "This document is still being analysed. Parties appear here if the analysis extracts any."}
+                      : "This document is still being analyzed. Parties appear here if the analysis extracts any."}
                 </p>
               </section>
             )}

@@ -282,7 +282,7 @@ function NewPasswordStep({
             disabled={waiting || resending}
             className={`${secondaryPillClass} h-11 px-5 text-sm tabular-nums`}
           >
-            {resending ? "Sending" : waiting ? `Send again in ${cooldown.left}s` : "Send a new code"}
+            {resending ? "Sending…" : waiting ? `Send again in ${cooldown.left}s` : "Send a new code"}
           </button>
         </div>
         <div className="mt-4 min-h-11">{resent && <FormNotice>New code sent. Use the most recent email.</FormNotice>}</div>

@@ -3,7 +3,7 @@
 // the classification first and the document row second.
 //
 // Every value is null / [] when the API did not send it. `assessed` says
-// whether the document was analysed by a version that reports these at all, so
+// whether the document was analyzed by a version that reports these at all, so
 // an older document reads "not assessed" rather than "nothing to review".
 
 import type { ApiClassification } from "./types"

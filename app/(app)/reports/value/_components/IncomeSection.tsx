@@ -4,6 +4,7 @@
 // calendar quarter. Percent-only terms (a 3% royalty) have no amount, so they
 // are listed in words rather than charted as zero.
 
+import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +12,7 @@ import { ACCENT } from "@/lib/chart-theme";
 import { fmtMoney } from "@/lib/contract-value";
 import { INCOME_KIND_LABEL, plural } from "@/lib/govern/labels";
 import { formatCompact } from "@/lib/govern/metrics";
-import { ColumnChart } from "../../_components/TrendCharts";
+const ColumnChart = dynamic(() => import("../../_components/TrendCharts").then((m) => m.ColumnChart), { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
 import { INCOME_DETAIL_CAP, LICENSING_KINDS, quarterOf, type IncomeRow } from "./licensing-income";
 
 export function incomeByKind(rows: IncomeRow[], currency: string | null) {

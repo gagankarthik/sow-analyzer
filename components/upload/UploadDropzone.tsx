@@ -50,7 +50,7 @@ const DOC_TYPE_OPTIONS: { value: DocType; label: string }[] = [
   { value: "MSA", label: "Master Service Agreement (MSA)" },
   { value: "AMENDMENT", label: "Amendment" },
   { value: "NDA", label: "Non-Disclosure Agreement (NDA)" },
-  { value: "LICENSE", label: "Licence / Technology Agreement" },
+  { value: "LICENSE", label: "License or technology agreement" },
   { value: "DPA", label: "Data Processing Agreement (DPA)" },
   { value: "BAA", label: "Business Associate Agreement (BAA)" },
   { value: "COMPLIANCE", label: "Compliance (SOC 2 / VPAT / Policy)" },
@@ -97,7 +97,7 @@ function uploadFailure(e: unknown, intoProject: boolean): string {
       : "You do not have permission to do this.";
   }
   if (intoProject && errorStatus(e) === 404) return "This project no longer exists, or is no longer shared with you.";
-  return e instanceof Error && e.message ? e.message : "Upload failed.";
+  return e instanceof Error && e.message ? e.message : "Couldn't upload this file. Try again, or check it is a PDF, DOCX or TXT under 50 MB.";
 }
 
 export type UploadDropzoneProps = {
@@ -376,7 +376,7 @@ function UploadItem({
               notFound = 0;
               safe(() => setDocStatus(d.document.status));
               if (d.document.status === "READY") { safe(() => setPhase("ready")); cbRef.current.onDocReady?.(id); cbRef.current.invalidateDocuments(); }
-              else if (d.document.status === "FAILED") { cbRef.current.invalidateDocuments(); safe(() => { setPhase("failed"); setErrorMsg(d.document.errorMessage || "Processing failed. The pipeline reported no reason."); }); }
+              else if (d.document.status === "FAILED") { cbRef.current.invalidateDocuments(); safe(() => { setPhase("failed"); setErrorMsg(d.document.errorMessage || "Sonar couldn't read this document. Re-analyze it, or upload it again."); }); }
               else timerRef.current = setTimeout(poll, 4000);
             })
             .catch((e: unknown) => {

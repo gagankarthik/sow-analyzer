@@ -97,7 +97,7 @@ export default function RenewalsPage() {
 
   // What is listed, and why.
   //
-  // A document analysed with key-date extraction lists EACH of its dated
+  // A document analyzed with key-date extraction lists EACH of its dated
   // renewal, term-end, notice-deadline, payment, milestone and deliverable
   // dates (see kindOf above):
   //  • expired  — a term-end date that has passed, or lifecycle "expired"
@@ -108,7 +108,7 @@ export default function RenewalsPage() {
   //               not tracked)
   //  • upcoming — any of those dates within the next 180 days
   //
-  // A document analysed before key dates existed keeps the older single row,
+  // A document analyzed before key dates existed keeps the older single row,
   // from the fields on the document row: its renewal date, else its term-end
   // date, else its effective date (labelled as such). A document with no date
   // at all keeps `date: null` and is shown as "No date extracted".
@@ -303,7 +303,7 @@ export default function RenewalsPage() {
               {docs.length === 0
                 ? "You have no documents yet."
                 : `None of your ${docs.length} document${docs.length === 1 ? " is" : "s are"} expired, in renewal, or has an extracted date in the next 6 months.`}
-              {processingCount > 0 ? ` ${processingCount} ${processingCount === 1 ? "is" : "are"} still being analysed, so dates may yet appear.` : ""}
+              {processingCount > 0 ? ` ${processingCount} ${processingCount === 1 ? "is" : "are"} still being analyzed, so dates may yet appear.` : ""}
             </p>
             {legacyCount > 0 && <LegacyNote count={legacyCount} className="mt-3 max-w-sm" />}
           </div>
@@ -426,11 +426,11 @@ function KindMark({ kind }: { kind: Item["kind"] }) {
   );
 }
 
-/** Documents analysed before key-date extraction list fewer dates: say so. */
+/** Documents analyzed before key-date extraction list fewer dates: say so. */
 function LegacyNote({ count, className = "" }: { count: number; className?: string }) {
   return (
     <p className={`text-sm leading-relaxed text-[var(--ink-600)] ${className}`}>
-      {count} analysed document{count === 1 ? " was" : "s were"} analysed before full date extraction, so only {count === 1 ? "its" : "their"} renewal, term-end or effective date can be listed. Re-analyse {count === 1 ? "it" : "them"} to list notice deadlines, payments, milestones and deliverables.
+      {count} analyzed document{count === 1 ? " was" : "s were"} analyzed before full date extraction, so only {count === 1 ? "its" : "their"} renewal, term-end or effective date can be listed. Re-analyze {count === 1 ? "it" : "them"} to list notice deadlines, payments, milestones and deliverables.
     </p>
   );
 }

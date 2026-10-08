@@ -108,7 +108,7 @@ function useSearchIndex(): SearchHit[] {
     // owner and Huron / Workday IDs, in plain words.
     const contractHits: SearchHit[] = (contracts ?? []).map((c) => ({
       id: `c-${c.contractId}`,
-      label: c.title || "Untitled agreement",
+      label: c.title || "Untitled contract",
       sub: [AGREEMENT_TYPE_LABEL[c.agreementType], c.sponsor || c.counterparty, STAGE_LABEL[c.stage]].filter(Boolean).join(" · "),
       href: `/contracts/${encodeURIComponent(c.contractId)}`,
       group: "Contracts",
@@ -470,9 +470,10 @@ function NotificationBell() {
             No notifications. Nothing in your documents or project invitations is flagged right now.
           </div>
         ) : (
-          <ul className="max-h-[min(360px,60dvh)] overflow-y-auto">
+          <ul className="max-h-[min(360px,60dvh)] overflow-y-auto overscroll-contain">
             {recent.map((n) => (
               <li key={n.id}>
+                <DropdownMenuItem asChild className="rounded-none p-0 focus:bg-muted">
                 <Link
                   href={n.href}
                   onClick={() => markRead(n.id)}
@@ -493,11 +494,13 @@ function NotificationBell() {
                     </p>
                   </div>
                 </Link>
+                </DropdownMenuItem>
               </li>
             ))}
           </ul>
         )}
         <div className="border-t border-border p-2">
+          <DropdownMenuItem asChild className="p-0 focus:bg-transparent">
           <Link
             href="/notifications"
             className="w-full inline-flex items-center justify-center gap-1.5 h-10 px-3 rounded-lg text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] hover:bg-[var(--brand-primary-50)] transition-colors"
@@ -505,6 +508,7 @@ function NotificationBell() {
             {known && notifications.length > recent.length ? `View all ${notifications.length} notifications` : "View all notifications"}
             <ArrowRight size={14} strokeWidth={2} />
           </Link>
+          </DropdownMenuItem>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

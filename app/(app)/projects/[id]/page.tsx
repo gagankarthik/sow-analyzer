@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { docTypesFor } from "@/lib/doc-types";
 import { useEditionFeature } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
@@ -30,12 +31,13 @@ import {
   Building2, FileText, ShieldAlert, AlertTriangle, Info,
 } from "@/components/ui/icons";
 import { apiDocToProject, errorStatus } from "@/lib/api";
-import { ProjectWorkspace } from "@/components/ProjectWorkspace";
+// Only projects with several documents use the workspace; single documents never load it.
+const ProjectWorkspace = dynamic(() => import("@/components/ProjectWorkspace").then((m) => m.ProjectWorkspace), { loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
 import { isProjectId } from "@/lib/projects-store";
 import { useDocument, useClassification, useTimeline, useUpdateDocument, useReprocess } from "@/lib/queries/documents";
 import { formatDate } from "@/lib/format";
 import { useNow } from "@/lib/use-now";
-import { buildKeyDateTimeline, canReanalyse, documentKeyDates } from "@/lib/key-dates";
+import { buildKeyDateTimeline, canReanalyze, documentKeyDates } from "@/lib/key-dates";
 import { can } from "@/lib/projects-store";
 import { clauseTypeLabel } from "@/lib/clause-categories";
 import type { ApiClause, ApiKeyFinding, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
@@ -156,7 +158,7 @@ function DocumentOverview() {
       await reprocess.mutateAsync(id);
       toast.success("Re-analyzing", { description: "This document is being analyzed again." });
     } catch (e) {
-      toast.error("Couldn't re-analyze", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't re-analyze", { description: e instanceof Error ? e.message : "Try again." });
     }
   }
   async function handleSave() {
@@ -170,7 +172,7 @@ function DocumentOverview() {
       toast.success("Document updated");
       setShowEdit(false);
     } catch (e) {
-      toast.error("Update failed", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Update failed", { description: e instanceof Error ? e.message : "Try again." });
     }
   }
 
@@ -183,7 +185,7 @@ function DocumentOverview() {
           <h2 className="text-lg font-semibold tracking-tight text-foreground">Overview</h2>
           <div className="flex flex-wrap items-center gap-2">
             {/* Owners and editors only; the API enforces it either way. */}
-            {canReanalyse(doc.role) && (
+            {canReanalyze(doc.role) && (
               <Button variant="outline" size="lg" className="md:h-9" onClick={onReanalyze} disabled={reprocess.isPending || isProcessing} title="Re-run the analysis pipeline on this document">
                 <RefreshCw size={14} className={reprocess.isPending ? "animate-spin" : undefined} />{reprocess.isPending ? "Re-analyzing…" : "Re-analyze"}
               </Button>
@@ -291,10 +293,10 @@ function DocumentOverview() {
         ) : (
           <>
             {!dateSource.extracted && !(classError && !classification) && (
-              <ReanalyseNotice docId={id} role={doc.role} busy={isProcessing} title="Analysed before full date extraction">
+              <ReanalyseNotice docId={id} role={doc.role} busy={isProcessing} title="Analyzed before full date extraction">
                 {dateSource.source === "legacy"
-                  ? "The dates below are the ones the earlier analysis recorded. Re-analyse this document to extract every date, deadline and payment."
-                  : "The earlier analysis recorded no dates. Re-analyse this document to extract dates."}
+                  ? "The dates below are the ones the earlier analysis recorded. Re-analyze this document to extract every date, deadline and payment."
+                  : "The earlier analysis recorded no dates. Re-analyze this document to extract dates."}
               </ReanalyseNotice>
             )}
             <KeyDatesCard docId={id} source={dateSource} timeline={keyDates} />

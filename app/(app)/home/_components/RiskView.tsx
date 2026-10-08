@@ -1,7 +1,7 @@
 "use client";
 
 // Home's "Risk and documents" view (formerly the Dashboard). Every figure is a count, a sum or a date difference over
-// what the API returned: the shared documents list, each analysed document's
+// what the API returned: the shared documents list, each analyzed document's
 // classification, the projects list and the per-document compliance figures the
 // backend stored. Anything the API did not provide stays unknown ("Not
 // assessed", "No value yet", "—"): it is never shown as zero, as "low" or as
@@ -74,7 +74,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString
  * without a risk level. With the classification loaded the counts are taken
  * clause by clause, so an unrated clause is never counted as "low"; before it
  * loads, the counts stored on the document row are used. `rc` is null when the
- * document has no rated clause at all (still processing, failed, or analysed
+ * document has no rated clause at all (still processing, failed, or analyzed
  * with nothing rated) — that is "not assessed", not "low".
  */
 function docRisk(d: ApiDocument, c: ApiClassification | undefined): { rc: Counts | null; unrated: number } {
@@ -101,7 +101,7 @@ type Agg = {
   project: LocalProject;
   docs: ApiDocument[];
   docCount: number;
-  /** Clauses across the analysed documents; null when none has a clause count. */
+  /** Clauses across the analyzed documents; null when none has a clause count. */
   clauseCount: number | null;
   rc: Counts;
   /** Rated clauses (sum of rc). 0 means no risk data — not "low". */
@@ -243,7 +243,7 @@ export function RiskView() {
 
   const riskyContracts = aggregates.filter((a) => isRisky(a.overallRisk));
   const unassessedContracts = aggregates.filter((a) => a.overallRisk === null).length;
-  // "All clear" may only be said when every document is analysed and rated.
+  // "All clear" may only be said when every document is analyzed and rated.
   const everythingAssessed = docs.length > 0 && risk.notAssessed === 0 && risk.unrated === 0 && classLoading === 0;
 
   /* ── Money: per-currency totals over contracts that have an extracted value ── */
@@ -458,7 +458,7 @@ export function RiskView() {
   const notAssessedParts = [
     risk.processing > 0 ? `${risk.processing} still processing` : "",
     risk.failed > 0 ? `${risk.failed} failed` : "",
-    risk.readyUnrated > 0 ? `${risk.readyUnrated} analysed without a risk level` : "",
+    risk.readyUnrated > 0 ? `${risk.readyUnrated} analyzed without a risk level` : "",
   ].filter(Boolean);
   // Why "nothing flagged" is not yet "all clear".
   const pendingNote = risk.notAssessed > 0
@@ -535,7 +535,7 @@ export function RiskView() {
                   hint={attention.length > 0
                     ? `A high or critical clause, or a failed document · ${risk.rc.critical} critical and ${risk.rc.high} high clauses`
                     : everythingAssessed
-                      ? "Every document is analysed and rated; none has a high or critical clause"
+                      ? "Every document is analyzed and rated; none has a high or critical clause"
                       : `None found so far · ${pendingNote}`}
                 />
                 <MetricCard
@@ -582,7 +582,7 @@ export function RiskView() {
               <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
                 <Card className="lg:col-span-7" title="Risk by category" icon={<BarChart3 size={15} />} sub="Clauses per category and risk level">
                   {allClauses.length === 0
-                    ? (clausesPending ? <Skeleton className="h-48 rounded-lg" /> : <Empty text="The clause heatmap appears once a document has been analysed." />)
+                    ? (clausesPending ? <Skeleton className="h-48 rounded-lg" /> : <Empty text="The clause heatmap appears once a document has been analyzed." />)
                     : <ClauseHeatmap clauses={allClauses} />}
                 </Card>
                 <Card
@@ -638,11 +638,11 @@ export function RiskView() {
                   title="Compliance coverage"
                   icon={<ShieldCheck size={15} />}
                   sub={coverage.mean !== null
-                    ? `${coverage.scored.length} of ${plural(readyDocs.length, "analysed document")} scored · mean ${coverage.mean}% · ${coverage.withGaps} with gaps`
+                    ? `${coverage.scored.length} of ${plural(readyDocs.length, "analyzed document")} scored · mean ${coverage.mean}% · ${coverage.withGaps} with gaps`
                     : undefined}
                 >
                   {coverage.scored.length === 0 ? (
-                    <Empty text="No compliance coverage has been recorded for your documents yet. Coverage is scored when a document is analysed with a compliance pack enabled." />
+                    <Empty text="No compliance coverage has been recorded for your documents yet. Coverage is scored when a document is analyzed with a compliance pack enabled." />
                   ) : (
                     <>
                       <ul className="space-y-3">
@@ -668,7 +668,7 @@ export function RiskView() {
                     </>
                   )}
                   <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs text-muted-foreground">
-                    <span className="min-w-0 flex-1 basis-64">Coverage and gap counts are the figures stored with each document when it was analysed, lowest coverage first. The mean is the plain average of those percentages.</span>
+                    <span className="min-w-0 flex-1 basis-64">Coverage and gap counts are the figures stored with each document when it was analyzed, lowest coverage first. The mean is the plain average of those percentages.</span>
                     <Link href="/settings/compliance" className={TEXT_LINK}>Manage packs<ArrowRight size={14} strokeWidth={2} /></Link>
                   </div>
                 </Card>
@@ -686,7 +686,7 @@ export function RiskView() {
                   </div>
                   {attention.length === 0 ? (
                     everythingAssessed ? (
-                      <div className="flex flex-col items-center px-5 py-10 text-center"><CheckCircle2 size={24} className="mb-2 text-[var(--success)]" /><p className="text-base font-semibold text-foreground">All clear</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">All {plural(docs.length, "document")} are analysed and rated, and no clause is rated high or critical.</p></div>
+                      <div className="flex flex-col items-center px-5 py-10 text-center"><CheckCircle2 size={24} className="mb-2 text-[var(--success)]" /><p className="text-base font-semibold text-foreground">All clear</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">All {plural(docs.length, "document")} are analyzed and rated, and no clause is rated high or critical.</p></div>
                     ) : (
                       <div className="flex flex-col items-center px-5 py-10 text-center"><Info size={24} className="mb-2 text-muted-foreground" /><p className="text-base font-semibold text-foreground">Nothing flagged so far</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">No assessed document has a high or critical clause, but {pendingNote}.</p></div>
                     )

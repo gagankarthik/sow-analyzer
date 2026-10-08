@@ -786,7 +786,7 @@
   .lp-hero3 { padding-block: 5.5rem 0; }
   @media (max-width: 767px) { .lp-hero3 { padding-block: 3.5rem 0; } }
   .lp-hero3-copy { display: flex; flex-direction: column; align-items: center; text-align: center; }
-  .lp-hero3-title {
+  .lp-hero3-title { text-wrap: balance;
     font-size: clamp(2.75rem, 1.4rem + 4.6vw, 5.5rem); line-height: 1; letter-spacing: -0.035em; font-weight: 500; color: var(--lp-ink);
   }
   .lp-hero3-accent {

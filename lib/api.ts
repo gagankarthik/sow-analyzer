@@ -390,8 +390,8 @@ export async function getClassification(docId: string): Promise<ApiClassificatio
     structuralHash: data.structuralHash ?? "",
     // Each clause, with its playbook result joined in (see lib/classification.ts).
     clauses: normaliseClauses(data.clauses, raw.playbook),
-    // Newer analysis only. Each stays undefined for a document analysed before
-    // the field existed, so the UI can say "re-analyse" instead of "none".
+    // Newer analysis only. Each stays undefined for a document analyzed before
+    // the field existed, so the UI can say "re-analyze" instead of "none".
     keyDates: Array.isArray(raw.keyDates) ? normaliseKeyDates(raw.keyDates) : undefined,
     playbook: normalisePlaybookSummary(raw.playbook) ?? undefined,
     needsReview: typeof raw.needsReview === "boolean" ? raw.needsReview : undefined,

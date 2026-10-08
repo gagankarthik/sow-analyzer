@@ -234,7 +234,7 @@ export function SubmitButton({
       {loading ? (
         <>
           <Loader2 size={16} className="animate-spin" aria-hidden />
-          {loadingLabel}
+          {loadingLabel}…
         </>
       ) : (
         children

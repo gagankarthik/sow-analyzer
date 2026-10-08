@@ -80,6 +80,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Don't leak the framework version.
   poweredByHeader: false,
+  // Tree-shake the unified Radix package (lucide-react and recharts are optimised by default).
+  experimental: { optimizePackageImports: ["radix-ui"] },
   async headers() {
     return [
       {

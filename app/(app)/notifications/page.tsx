@@ -163,7 +163,7 @@ export default function NotificationsPage() {
               </span>
               <p className="mb-1 text-lg font-semibold text-foreground">You&apos;re all caught up</p>
               <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
-                Risk findings, renewal dates, failed analyses and pending invitations appear here as your documents are analysed.
+                Risk findings, renewal dates, failed analyses and pending invitations appear here as your documents are analyzed.
               </p>
             </div>
           ) : (

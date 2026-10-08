@@ -45,7 +45,7 @@ export type KeyDateKind = (typeof KEY_DATE_KINDS)[number];
 export type KeyDatePrecision = "day" | "month" | "quarter" | "half" | "year";
 export type KeyDateConfidence = "high" | "medium" | "low";
 /** Where the entry came from. "legacy" is built in this file from the older
- *  date fields of a document analysed before key dates existed. */
+ *  date fields of a document analyzed before key dates existed. */
 export type KeyDateOrigin = "structured" | "extracted" | "derived" | "legacy";
 
 export interface KeyDate {
@@ -510,7 +510,7 @@ export function ruleText(kd: Pick<KeyDate, "offsetValue" | "offsetUnit" | "offse
     : `${n.toLocaleString()} ${unitText} ${direction} a starting point the document does not identify`;
 }
 
-// ── Documents analysed before key dates existed ────────────────────────────
+// ── Documents analyzed before key dates existed ────────────────────────────
 
 /** The older date fields of a document row. */
 export interface LegacyDateFields {
@@ -546,7 +546,7 @@ function legacyDay(value: string | null | undefined): string | null {
 }
 
 /**
- * Key dates for a document analysed before the `keyDates` field existed, built
+ * Key dates for a document analyzed before the `keyDates` field existed, built
  * only from the dates that analysis did extract (effective, term end, renewal,
  * notice period; plus start, phases, milestones, deliverables and execution
  * date when its classification is given). `origin` is "legacy" on every entry.
@@ -643,7 +643,7 @@ export type KeyDateSource =
 export interface DocumentKeyDates {
   dates: KeyDate[];
   source: KeyDateSource;
-  /** False when the document was analysed before key dates existed, so the
+  /** False when the document was analyzed before key dates existed, so the
    *  list may be missing dates a re-analysis would find. */
   extracted: boolean;
   /** True when the stored list was cut off to fit the document row. */
@@ -664,7 +664,7 @@ export interface KeyDateDocument extends LegacyDateFields {
  * The key dates of one document, from the best source available:
  * the classification's full list, else the list on the document row, else the
  * older date fields. `extracted` tells the caller which case it is, so a
- * document that predates the feature can say "re-analyse to extract dates"
+ * document that predates the feature can say "re-analyze to extract dates"
  * instead of looking as if it simply had none.
  */
 export function documentKeyDates(
@@ -691,6 +691,6 @@ export function portfolioDates(doc: KeyDateDocument, now: number | Date): Derive
 
 /** Who may start a re-analysis: owners and editors. A document row with no
  *  `role` (an older API) is treated as allowed; the server decides either way. */
-export function canReanalyse(role: string | null | undefined): boolean {
+export function canReanalyze(role: string | null | undefined): boolean {
   return role == null || role === "" || role === "owner" || role === "editor";
 }

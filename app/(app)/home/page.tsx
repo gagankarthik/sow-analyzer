@@ -10,6 +10,7 @@
 // first load shows a retry; a failed refresh keeps the last figures and
 // says so; an empty workspace says what to do; a manual refresh confirms.
 
+import dynamic from "next/dynamic";
 import { LeaderHome } from "./_components/LeaderHome";
 import { ViewsCard } from "./_components/ViewsCard";
 import { Suspense, useMemo, useState } from "react";
@@ -34,7 +35,8 @@ import { ContractRow } from "./_components/ContractRow";
 import {
   AllClear, AttentionPanel, HomeSkeleton, OpportunitiesPanel, KpiStrip, LongestPanel, MoneyPanel, StepsPanel, WaitingPanel, type Kpi,
 } from "./_components/HomeSections";
-import { RiskView } from "./_components/RiskView";
+// Loaded when the Risk view opens: it carries the charts.
+const RiskView = dynamic(() => import("./_components/RiskView").then((m) => m.RiskView), { loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
 import { TrendGlance } from "./_components/TrendGlance";
 import { buildHomeReport } from "./_components/home-export";
 

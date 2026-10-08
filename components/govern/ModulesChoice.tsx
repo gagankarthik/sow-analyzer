@@ -30,7 +30,7 @@ export function ModulesChoice({ enabled, canEdit }: { enabled: string[] | null; 
     const next = on ? [...new Set([...current, f])] : current.filter((x) => x !== f);
     save.mutate({ organization: { enabledModules: next.length === offered.length ? null : next } }, {
       onSuccess: () => { void me.refetch(); toast.success(`${MODULE_LABEL[f]?.name} turned ${on ? "on" : "off"} for your organization`); },
-      onError: (e) => toast.error("Couldn't save", { description: e instanceof Error ? e.message : "Please try again." }),
+      onError: (e) => toast.error(`Couldn't turn ${MODULE_LABEL[f]?.name} ${on ? "on" : "off"}`, { description: e instanceof Error ? e.message : "Try again." }),
     });
   };
 

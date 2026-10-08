@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft } from "@/components/ui/icons";
 import { TIER_LABEL } from "@/lib/govern/labels";
 import { NOINDEX } from "@/lib/seo";
+import { AppProviders } from "@/components/providers/AppProviders";
 
 // Sign-in, sign-up, confirm and reset have nothing to rank for.
 export const metadata: Metadata = { title: "Account", robots: NOINDEX };
@@ -40,6 +41,7 @@ function WhiteLogo({ height }: { height: number }) {
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
+    <AppProviders>
     <div className="flex min-h-dvh flex-col bg-background lg:grid lg:h-dvh lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] lg:overflow-hidden">
       {/* Brand panel: full height on lg+, a slim bar on smaller screens. */}
       <aside
@@ -93,5 +95,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-full max-w-[26rem]">{children}</div>
       </main>
     </div>
+    </AppProviders>
   );
 }

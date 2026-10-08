@@ -72,7 +72,7 @@ export function LeaderHome({ contracts, attention, summary, currency }: {
                   <tr key={c.contractId} className="group relative flex flex-col gap-2 px-4 py-3 hover:bg-[var(--ink-50)] md:table-row md:p-0">
                     <td className="md:px-4 md:py-3 md:align-top">
                       <Link href={contractHref(c.contractId)} className="font-semibold text-foreground after:absolute after:inset-0 hover:underline">
-                        {c.title || "Untitled agreement"}
+                        {c.title || "Untitled contract"}
                       </Link>
                       <p className="mt-0.5 text-xs text-[var(--ink-600)]">
                         {[c.sponsor || c.counterparty, c.value !== null ? contractValueText(c) : null, byEdition(c.piName ? `PI ${c.piName}` : null, null)].filter(Boolean).join(" · ")}
@@ -103,7 +103,7 @@ export function LeaderHome({ contracts, attention, summary, currency }: {
                 <Link href={contractHref(c.contractId)} className="group flex items-center gap-4 px-4 py-3.5 hover:bg-[var(--ink-50)]">
                   <span className={cn("size-2 shrink-0 rounded-full", c.slaStatus === "red" ? "bg-[var(--danger)]" : c.slaStatus === "amber" ? "bg-[var(--warning)]" : "bg-[var(--ink-300)]")} aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold text-foreground">{c.title || "Untitled agreement"}</span>
+                    <span className="block truncate font-semibold text-foreground">{c.title || "Untitled contract"}</span>
                     <span className="block text-sm text-[var(--ink-600)]">{attentionSentence(c)}</span>
                   </span>
                   {c.owner ? <Avatar name={personName(c.owner)} email={c.owner.email} size="sm" /> : <span className="hidden text-xs text-[var(--ink-600)] sm:inline">No reviewer</span>}

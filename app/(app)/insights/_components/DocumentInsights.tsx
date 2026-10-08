@@ -1,7 +1,7 @@
 "use client";
 
 // Portfolio insights. Six questions, each answered only from data already
-// fetched: the shared documents list, each analysed document's classification,
+// fetched: the shared documents list, each analyzed document's classification,
 // the projects list and the tenant's enabled compliance packs. Nothing on this
 // page is a fixed number or a canned sentence — every figure is a count, a sum
 // or a date difference over those responses, and anything the API did not
@@ -269,7 +269,7 @@ export function DocumentInsights() {
     return PRICING_KEYS.filter((k) => m.has(k)).map((k) => ({ key: k, label: PRICING_LABEL[k], value: m.get(k) ?? 0, color: categoricalColor(PRICING_KEYS.indexOf(k)) }));
   }, [readyDocs, classByDoc]);
 
-  // Value × risk scatter — one point per analysed document that has both an
+  // Value × risk scatter — one point per analyzed document that has both an
   // extracted value and clause risk counts. Risk index: see the caption below.
   const scatterPoints: ScatterPoint[] = useMemo(() => {
     const out: ScatterPoint[] = [];
@@ -283,11 +283,11 @@ export function DocumentInsights() {
   }, [readyDocs, classByDoc]);
 
   /* ── 4. What is coming up? ─────────────────────────────────────────────
-     For a document analysed with key-date extraction: every dated renewal,
+     For a document analyzed with key-date extraction: every dated renewal,
      term end, notice deadline, payment, milestone and deliverable in its
      `keyDates`. Renewal and term-end dates are always listed; the other kinds
      once passed stay listed for 90 days (whether they were met is not tracked).
-     For a document analysed before that: its renewal and term-end dates as
+     For a document analyzed before that: its renewal and term-end dates as
      extracted, plus the notice deadline (renewal date minus the notice period)
      when both are known. Days are counted from the real current date. */
   const dateRows = useMemo<DateRow[]>(() => {
@@ -327,7 +327,7 @@ export function DocumentInsights() {
     }
     return out.sort((a, b) => a.t - b.t);
   }, [scoped, now]);
-  /** Analysed documents in scope that predate key-date extraction. */
+  /** Analyzed documents in scope that predate key-date extraction. */
   const legacyDateDocs = scoped.filter((d) => d.status === "READY" && !documentKeyDates(d).extracted).length;
   const dateGroups = [
     { key: "overdue", label: "Date passed", rows: dateRows.filter((r) => r.days < 0).reverse() },
@@ -381,9 +381,9 @@ export function DocumentInsights() {
         (top && affected.length > 1 ? `; ${top.title || "an untitled document"} has the most, with ${n}.` : "."),
       );
     } else if (totalRated > 0) {
-      s.push(`None of the ${plural(totalRated, "rated clause")} in ${plural(readyDocs.length, "analysed document")} is high or critical.`);
+      s.push(`None of the ${plural(totalRated, "rated clause")} in ${plural(readyDocs.length, "analyzed document")} is high or critical.`);
     } else {
-      s.push(`${plural(readyDocs.length, "analysed document")} in scope; none has clause risk counts yet.`);
+      s.push(`${plural(readyDocs.length, "analyzed document")} in scope; none has clause risk counts yet.`);
     }
     const overdue = dateGroups[0].rows.length;
     const soon = dateGroups[1].rows.length;
@@ -443,7 +443,7 @@ export function DocumentInsights() {
               </Button>
             )}
             <p className="w-full text-sm text-[var(--ink-600)] sm:ml-auto sm:w-auto" aria-live="polite">
-              Showing <span className="font-semibold tabular-nums text-foreground">{scoped.length}</span> of <span className="tabular-nums">{docs.length}</span> document{docs.length === 1 ? "" : "s"} · <span className="tabular-nums">{readyDocs.length}</span> analysed
+              Showing <span className="font-semibold tabular-nums text-foreground">{scoped.length}</span> of <span className="tabular-nums">{docs.length}</span> document{docs.length === 1 ? "" : "s"} · <span className="tabular-nums">{readyDocs.length}</span> analyzed
             </p>
           </div>
         )}
@@ -459,7 +459,7 @@ export function DocumentInsights() {
         ) : docs.length === 0 ? (
           <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
             <p className="mb-1 text-lg font-semibold text-foreground">No documents yet</p>
-            <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">Insights are computed from your analysed documents. Upload one to start.</p>
+            <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">Insights are computed from your analyzed documents. Upload one to start.</p>
             <Button variant="outline" className="mt-5 h-10 sm:h-9" asChild><Link href="/projects/new">Add a document</Link></Button>
           </div>
         ) : noMatches ? (
@@ -483,7 +483,7 @@ export function DocumentInsights() {
                         {[
                           clausesPending ? "Clause detail is still loading for some documents." : "",
                           classFailed > 0 ? `Clause detail couldn’t be loaded for ${plural(classFailed, "document")}.` : "",
-                          docsWithoutRisk > 0 ? `${plural(docsWithoutRisk, "analysed document")} ${docsWithoutRisk === 1 ? "has" : "have"} no risk counts and ${docsWithoutRisk === 1 ? "is" : "are"} left out of the risk figures.` : "",
+                          docsWithoutRisk > 0 ? `${plural(docsWithoutRisk, "analyzed document")} ${docsWithoutRisk === 1 ? "has" : "have"} no risk counts and ${docsWithoutRisk === 1 ? "is" : "are"} left out of the risk figures.` : "",
                         ].filter(Boolean).join(" ")}
                       </p>
                     )}
@@ -508,7 +508,7 @@ export function DocumentInsights() {
                 {clausesPending && attention.length === 0 ? (
                   <div className="space-y-3 p-4 md:p-6">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
                 ) : attention.length === 0 ? (
-                  <EmptyNote icon={<CheckCircle2 size={20} />} title="Nothing needs attention" text={readyDocs.length === 0 ? "No analysed documents in scope yet." : `No clause in the ${plural(readyDocs.length, "analysed document")} in scope is rated critical or high.`} />
+                  <EmptyNote icon={<CheckCircle2 size={20} />} title="Nothing needs attention" text={readyDocs.length === 0 ? "No analyzed documents in scope yet." : `No clause in the ${plural(readyDocs.length, "analyzed document")} in scope is rated critical or high.`} />
                 ) : (
                   <>
                     <ol className="divide-y divide-border">
@@ -550,7 +550,7 @@ export function DocumentInsights() {
                 {/* 2. Where does risk concentrate? */}
                 <ChartCard title="Where does risk concentrate?" icon={<BarChart3 size={15} />} sub={`${plural(totalRated, "rated clause")} · ${plural(categoryCount, "category", "categories")}`}>
                   {totalRated === 0 && ratedClauses.length === 0 ? (
-                    clausesPending ? <Skeleton className="h-48 rounded-lg" /> : <EmptyNote title="No rated clauses" text="Risk by category appears once a document in scope has been analysed." bare />
+                    clausesPending ? <Skeleton className="h-48 rounded-lg" /> : <EmptyNote title="No rated clauses" text="Risk by category appears once a document in scope has been analyzed." bare />
                   ) : (
                     <div className="space-y-6">
                       <div>
@@ -576,7 +576,7 @@ export function DocumentInsights() {
                 {/* 3. How much money is exposed? */}
                 <ChartCard title="How much money is exposed?" icon={<DollarSign size={15} />} sub={`${valuedContracts} of ${plural(valueRows.length, "contract")} valued`}>
                   {valueRows.length === 0 ? (
-                    <EmptyNote title="No analysed contracts" text="Contract value appears once a document in scope has been analysed." bare />
+                    <EmptyNote title="No analyzed contracts" text="Contract value appears once a document in scope has been analyzed." bare />
                   ) : (
                     <div className="space-y-6">
                       <div>
@@ -640,7 +640,7 @@ export function DocumentInsights() {
 
                       {pricingMix.length > 0 && (
                         <div>
-                          <h3 className="text-base font-semibold mb-2 text-foreground">Pricing model · {plural(readyDocs.length, "analysed document")}</h3>
+                          <h3 className="text-base font-semibold mb-2 text-foreground">Pricing model · {plural(readyDocs.length, "analyzed document")}</h3>
                           <CompositionBar segments={pricingMix} />
                         </div>
                       )}
@@ -654,7 +654,7 @@ export function DocumentInsights() {
                     <EmptyNote
                       title="No dates extracted yet"
                       text={legacyDateDocs > 0
-                        ? `${plural(legacyDateDocs, "document")} in scope ${legacyDateDocs === 1 ? "was" : "were"} analysed before full date extraction and recorded no renewal or term-end date. Re-analyse ${legacyDateDocs === 1 ? "it" : "them"} to extract dates.`
+                        ? `${plural(legacyDateDocs, "document")} in scope ${legacyDateDocs === 1 ? "was" : "were"} analyzed before full date extraction and recorded no renewal or term-end date. Re-analyze ${legacyDateDocs === 1 ? "it" : "them"} to extract dates.`
                         : "Renewal, term-end, notice, payment, milestone and deliverable dates appear here when the analysis finds them in a document."}
                       bare
                     />
@@ -690,7 +690,7 @@ export function DocumentInsights() {
                       ))}
                       {legacyDateDocs > 0 && (
                         <p className="text-xs leading-relaxed text-muted-foreground">
-                          {plural(legacyDateDocs, "document")} in scope {legacyDateDocs === 1 ? "was" : "were"} analysed before full date extraction: only {legacyDateDocs === 1 ? "its" : "their"} renewal, term-end and notice dates are listed. Re-analyse {legacyDateDocs === 1 ? "it" : "them"} to list payments, milestones and deliverables.
+                          {plural(legacyDateDocs, "document")} in scope {legacyDateDocs === 1 ? "was" : "were"} analyzed before full date extraction: only {legacyDateDocs === 1 ? "its" : "their"} renewal, term-end and notice dates are listed. Re-analyze {legacyDateDocs === 1 ? "it" : "them"} to list payments, milestones and deliverables.
                         </p>
                       )}
                     </div>
@@ -700,13 +700,13 @@ export function DocumentInsights() {
                 {/* 5. What is missing? */}
                 <ChartCard title="What is missing?" icon={<Files size={15} />} sub={plural(missingTotal, "item")}>
                   {missingTotal === 0 && !(packsEnabled && missing.scoredCount === 0 && readyDocs.length > 0) ? (
-                    <EmptyNote icon={<CheckCircle2 size={20} />} title="Nothing is missing" text="Every document in scope is analysed, with a contract value and at least one date extracted." bare />
+                    <EmptyNote icon={<CheckCircle2 size={20} />} title="Nothing is missing" text="Every document in scope is analyzed, with a contract value and at least one date extracted." bare />
                   ) : (
                     <div className="space-y-5">
                       <MissingList title="Analysis failed" tone="danger" rows={missing.failed} empty="No failed documents." />
                       <MissingList title="Still processing" rows={missing.processing} empty="Nothing is processing." />
-                      <MissingList title="No contract value extracted" rows={missing.noValue} empty="Every analysed document has a value." />
-                      <MissingList title="No dates extracted" rows={missing.noDates} empty="Every analysed document has at least one date." />
+                      <MissingList title="No contract value extracted" rows={missing.noValue} empty="Every analyzed document has a value." />
+                      <MissingList title="No dates extracted" rows={missing.noDates} empty="Every analyzed document has at least one date." />
                       {packsEnabled && (
                         <MissingList
                           title="Compliance coverage gaps"

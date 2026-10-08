@@ -1,5 +1,6 @@
 "use client";
 
+import { STAGE_LABEL } from "@/lib/govern/labels";
 import { byEdition, noun } from "@/lib/edition-runtime";
 import { docTypesFor } from "@/lib/doc-types";
 import { useEditionFeature } from "@/lib/govern/queries";
@@ -74,16 +75,8 @@ import { cn } from "@/lib/utils";
 const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "LICENSE", "DPA", "BAA", "COMPLIANCE", "OTHER"];
 
 
-const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
-  draft: "Draft",
-  review: "Review",
-  negotiation: "Negotiation",
-  approval: "Approval",
-  signed: "Signed",
-  active: "Active",
-  renewal: "Renewal",
-  expired: "Expired",
-};
+// The same words as the workflow board, so a stage reads the same everywhere.
+const LIFECYCLE_LABEL: Record<Lifecycle, string> = STAGE_LABEL;
 
 type SortKey = "title" | "docType" | "lifecycle" | "createdAt" | "latestVersion";
 
@@ -151,8 +144,8 @@ export default function LibraryPage() {
       toast.success("Document deleted", { description: deleteTarget.title || "Untitled" });
       setDeleteTarget(null);
     } catch (e) {
-      toast.error("Delete failed", {
-        description: e instanceof Error ? e.message : "Please try again.",
+      toast.error("Couldn't delete the document", {
+        description: e instanceof Error ? e.message : "Try again.",
       });
     }
   }
@@ -175,8 +168,8 @@ export default function LibraryPage() {
       toast.success("Document updated");
       setEditTarget(null);
     } catch (e) {
-      toast.error("Update failed", {
-        description: e instanceof Error ? e.message : "Please try again.",
+      toast.error("Couldn't save the changes", {
+        description: e instanceof Error ? e.message : "Try again.",
       });
     }
   }
@@ -232,14 +225,14 @@ export default function LibraryPage() {
   return (
     <>
       <PageHeader
-        title="Contract library"
+        title="Document library"
         subtitle={showSow ? "Every SOW, MSA and amendment in one place." : "Every agreement and document you have uploaded, in one place."}
         actions={
           <>
             <Button asChild className="h-10 md:h-9">
               <Link href="/projects/upload">
                 <Plus size={15} strokeWidth={2.25} />
-                New document
+                Upload a contract
               </Link>
             </Button>
           </>
@@ -258,7 +251,7 @@ export default function LibraryPage() {
               <Input
                 type="search"
                 aria-label="Search documents"
-                placeholder={byEdition("Search by title or project…", "Search by title or engagement…")}
+                placeholder={byEdition("Search by title or project", "Search by title or engagement")}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 className="h-9 rounded-lg border-[var(--ink-300)] bg-card pl-9 pr-3 placeholder:text-[var(--ink-500)]"
@@ -364,7 +357,7 @@ export default function LibraryPage() {
           <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-4 text-sm text-[var(--danger)]">
             <AlertTriangle size={16} className="mt-0.5 shrink-0" />
             <span className="min-w-0 flex-1 break-words">
-              {failed ? "Failed to load documents: " : "Couldn\u2019t refresh, so this list may be out of date: "}{error}
+              {failed ? "Couldn't load your documents: " : "Couldn\u2019t refresh, so this list may be out of date: "}{error}
             </span>
             <button type="button" onClick={() => refetch()} className="shrink-0 rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]">Try again</button>
           </div>

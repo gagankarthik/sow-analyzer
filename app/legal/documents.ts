@@ -32,7 +32,7 @@ export const LEGAL: Record<string, LegalDoc> = {
     sections: [
       { h: "Your account", p: "You're responsible for the accuracy of your account information, for keeping credentials secure, and for activity under your account. You must have authority to upload the documents you submit." },
       { h: "Acceptable use", p: "Use the service lawfully. Don't attempt to disrupt it, reverse-engineer it, or use it to process content you have no right to process." },
-      { h: "Your content", p: "You retain all rights to the contracts and data you upload. You grant Blue-IQ the limited rights needed to host, process, and analyse that content to provide the service." },
+      { h: "Your content", p: "You retain all rights to the contracts and data you upload. You grant Blue-IQ the limited rights needed to host, process, and analyze that content to provide the service." },
       { h: "For guidance only, not legal advice", p: "Blue-IQ uses AI to analyze and draft contract content, and it can be incomplete or wrong. Verify every figure, date, clause, and obligation against the source document, your own company's policies, and the laws that govern your contract before relying on it or acting. Blue-IQ accepts no liability for decisions made from this analysis." },
       { h: "Availability & changes", p: "We aim for high availability but the service is provided “as is”. We may update features and these terms; material changes will be notified." },
       { h: "Contact", p: "Questions about these terms can be sent to legal@blue-iq.ai." },

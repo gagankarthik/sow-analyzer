@@ -15,7 +15,7 @@ const OFFICE_HINT: Record<Office, string> = editionMap({
   sponsored_programs: "Budgets, sponsor terms and grant flow-down.",
   export_control: "Foreign parties, restricted technology and export rules.",
   risk_management: "Insurance limits and risk transfer.",
-  procurement: "Software and vendor pricing, renewals, licence metrics and audit rights.",
+  procurement: "Software and vendor pricing, renewals, license metrics and audit rights.",
   it_security: "Data protection, security reviews (SOC 2, HECVAT), breach notice and service levels.",
   accessibility: "WCAG 2.1 AA conformance and VPATs for software and digital content.",
 }, {

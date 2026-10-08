@@ -26,7 +26,7 @@ export function WorkflowList({ contracts, loading, previewId, onPreview }: {
       columns={COLUMNS}
       rows={contracts}
       getRowId={(c) => c.contractId}
-      getRowLabel={(c) => `Preview ${c.title || "Untitled agreement"}`}
+      getRowLabel={(c) => `Preview ${c.title || "Untitled contract"}`}
       onRowClick={(c) => onPreview(c.contractId)}
       activeRowId={previewId}
       state={loading ? "loading" : "ready"}

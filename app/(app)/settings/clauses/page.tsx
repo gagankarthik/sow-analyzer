@@ -30,7 +30,7 @@ const RISK_TEXT: Record<RiskLevel, string> = {
 type CategoryRow = {
   key: string;
   label: string;
-  /** Clauses in this category across all analysed documents. */
+  /** Clauses in this category across all analyzed documents. */
   clauses: number;
   /** Documents that contain at least one clause in this category. */
   docs: number;
@@ -46,7 +46,7 @@ type RiskFilter = "all" | RiskLevel | "unrated";
 
 /**
  * Clause library: an index of the clauses Sonar actually extracted from this
- * workspace's analysed documents, grouped by the category the backend assigned.
+ * workspace's analyzed documents, grouped by the category the backend assigned.
  * Every number is a count over the classification responses — there is no
  * fixed category list, so a category the backend starts sending tomorrow shows
  * up here on its own.
@@ -120,7 +120,7 @@ export default function ClauseLibraryPage() {
     <>
       <PageHeader
         title="Clause library"
-        subtitle="Every clause Sonar extracted from your analysed documents, grouped by category."
+        subtitle="Every clause Sonar extracted from your analyzed documents, grouped by category."
         back={{ href: "/settings", label: "Settings" }}
       />
 
@@ -147,9 +147,9 @@ export default function ClauseLibraryPage() {
               <h3 className="text-base font-semibold tracking-tight text-foreground">No clauses yet</h3>
               <p className="mt-2 max-w-sm text-base leading-relaxed text-[var(--ink-600)]">
                 {docs.length === 0
-                  ? "Upload a document and its clauses appear here once it has been analysed."
+                  ? "Upload a document and its clauses appear here once it has been analyzed."
                   : processingCount > 0
-                    ? `${processingCount} document${processingCount === 1 ? " is" : "s are"} still being analysed. Clauses appear here as each one finishes.`
+                    ? `${processingCount} document${processingCount === 1 ? " is" : "s are"} still being analyzed. Clauses appear here as each one finishes.`
                     : failedCount > 0
                       ? "The analysis for your documents couldn’t be read. Refresh to try again."
                       : "None of your documents has an analysis with clauses."}

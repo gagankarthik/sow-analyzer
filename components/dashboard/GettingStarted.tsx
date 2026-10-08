@@ -69,7 +69,7 @@ export function GettingStarted({
       title: "Read the analysis",
       body:
         documentCount > 0 && !firstReadyDocId
-          ? "Your contract is still being analysed. It appears here when it is ready."
+          ? "Your contract is still being analyzed. It appears here when it is ready."
           : "See how many clauses were found and review the ones rated high or critical.",
       done: false,
       action: firstReadyDocId ? { label: "Open the clause analysis", href: `/projects/${firstReadyDocId}/sow` } : undefined,

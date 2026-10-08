@@ -1,13 +1,13 @@
 "use client";
 
-// Shown when a document was analysed before a feature existed (key dates,
+// Shown when a document was analyzed before a feature existed (key dates,
 // playbook grading), so what is on screen is incomplete rather than empty.
-// It says so, and offers Re-analyse to people whose role allows it.
+// It says so, and offers Re-analyze to people whose role allows it.
 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Info, RefreshCw } from "@/components/ui/icons";
-import { canReanalyse } from "@/lib/key-dates";
+import { canReanalyze } from "@/lib/key-dates";
 import { useReprocess } from "@/lib/queries/documents";
 import { cn } from "@/lib/utils";
 
@@ -24,19 +24,19 @@ export function ReanalyseNotice({
   role: string | null | undefined;
   title: string;
   children: React.ReactNode;
-  /** The document is already being analysed. */
+  /** The document is already being analyzed. */
   busy?: boolean;
   className?: string;
 }) {
   const reprocess = useReprocess();
-  const allowed = canReanalyse(role);
+  const allowed = canReanalyze(role);
 
   async function run() {
     try {
       await reprocess.mutateAsync(docId);
-      toast.success("Re-analysing", { description: "This document is being analysed again. This page updates when it finishes." });
+      toast.success("Re-analyzing", { description: "This document is being analyzed again. This page updates when it finishes." });
     } catch (e) {
-      toast.error("Couldn't start the re-analysis", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't start the re-analysis", { description: e instanceof Error ? e.message : "Try again." });
     }
   }
 
@@ -47,13 +47,13 @@ export function ReanalyseNotice({
         <p className="text-base font-semibold text-foreground">{title}</p>
         <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-700)]">{children}</p>
         {!allowed && (
-          <p className="mt-1.5 text-sm text-[var(--ink-700)]">Your role on this document is view-only. Ask its owner or an editor to re-analyse it.</p>
+          <p className="mt-1.5 text-sm text-[var(--ink-700)]">Your role on this document is view-only. Ask its owner or an editor to re-analyze it.</p>
         )}
       </div>
       {allowed && (
         <Button variant="outline" size="lg" className="w-full shrink-0 sm:w-auto md:h-9" onClick={run} disabled={reprocess.isPending || busy}>
           <RefreshCw size={14} className={reprocess.isPending ? "animate-spin motion-reduce:animate-none" : undefined} />
-          {reprocess.isPending ? "Starting…" : busy ? "Analysing…" : "Re-analyse"}
+          {reprocess.isPending ? "Starting…" : busy ? "Analyzing…" : "Re-analyze"}
         </Button>
       )}
     </div>

@@ -210,7 +210,7 @@ function fromDocs(docs: ApiDocument[], now: number): AppNotification[] {
           id: `analysis:${d.docId}`,
           type: "analysis",
           title: "Analysis complete",
-          body: `${title} has been analysed.`,
+          body: `${title} has been analyzed.`,
           href,
           timestamp: when,
           severity: "info",

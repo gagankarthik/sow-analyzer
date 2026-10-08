@@ -36,12 +36,12 @@ function methodLabel(m: string): string {
 }
 
 /** What the API records for a version: its analysis artifacts. A version with a
- *  classification artifact was analysed; the current version follows the
+ *  classification artifact was analyzed; the current version follows the
  *  document's live status. Nothing is assumed "Processed". */
 function versionState(v: ApiVersion, isCurrent: boolean, docStatus: string): { label: string; tone: "ok" | "busy" | "bad" | "none" } {
   if (isCurrent && docStatus === "FAILED") return { label: "Failed", tone: "bad" };
   if (isCurrent && docStatus !== "READY") return { label: "Processing", tone: "busy" };
-  return v.classificationKey ? { label: "Analysed", tone: "ok" } : { label: "No analysis", tone: "none" };
+  return v.classificationKey ? { label: "Analyzed", tone: "ok" } : { label: "No analysis", tone: "none" };
 }
 
 export default function DocumentsPage() {
@@ -102,7 +102,7 @@ export default function DocumentsPage() {
       toast.success(`Version ${versionTarget} deleted`);
       setVersionTarget(null);
     } catch (e) {
-      toast.error("Delete failed", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't delete the document", { description: e instanceof Error ? e.message : "Try again." });
     }
   }
 
@@ -112,7 +112,7 @@ export default function DocumentsPage() {
       toast.success("Document deleted");
       router.push("/projects");
     } catch (e) {
-      toast.error("Delete failed", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't delete the document", { description: e instanceof Error ? e.message : "Try again." });
       setConfirmDeleteDoc(false);
     }
   }

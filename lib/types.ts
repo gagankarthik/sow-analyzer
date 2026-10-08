@@ -156,7 +156,7 @@ export interface ApiClause {
    *  when the API provides it. */
   specificType?: string | null
   customType?: string | null
-  // ── Fields added by the newer analysis. All optional: a document analysed
+  // ── Fields added by the newer analysis. All optional: a document analyzed
   // before they existed simply does not have them (shown as "not assessed" /
   // left out, never filled in).
   /** Stable id within the document ("c007"); what key dates and playbook
@@ -325,9 +325,9 @@ export interface ApiClassification {
   amendment?: ApiAmendmentInfo
   confidence?: ApiConfidence
   validation?: ApiValidation
-  // ── Added by the newer analysis; undefined for documents analysed before it.
+  // ── Added by the newer analysis; undefined for documents analyzed before it.
   /** Every dated event / obligation in the document (the full list). Undefined
-   *  = analysed before key dates existed; [] = analysed, none found. */
+   *  = analyzed before key dates existed; [] = analyzed, none found. */
   keyDates?: KeyDate[]
   /** Document-level playbook counts; undefined = clauses were not graded. */
   playbook?: PlaybookSummary

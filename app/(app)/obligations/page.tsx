@@ -227,7 +227,7 @@ function Obligations() {
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
             <p className="text-base font-semibold text-foreground">No open obligations</p>
             <p className="max-w-md text-sm text-[var(--ink-600)]">When an agreement is signed, Sonar reads it for {byEdition("reports, payments, milestones", "deliverables, invoices, milestones")} and the term end, and lists them here for you to verify. You can also add one on any contract page.</p>
-            <Button asChild><Link href="/contracts?view=signed">Signed contracts</Link></Button>
+            <Button asChild><Link href="/contracts?view=signed">View signed contracts</Link></Button>
           </div>
         }
       />

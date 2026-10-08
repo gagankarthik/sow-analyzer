@@ -58,7 +58,7 @@ export default function NewProjectPage() {
           <div className="space-y-5">
             <div className="space-y-1.5">
               <label htmlFor="project-name" className="block text-sm font-medium text-foreground">
-                Project name <span className="text-[var(--danger)]" aria-hidden="true">*</span>
+                {byEdition("Project name", "Engagement name")} <span className="text-[var(--danger)]" aria-hidden="true">*</span>
                 <span className="sr-only">(required)</span>
               </label>
               <Input
@@ -75,7 +75,7 @@ export default function NewProjectPage() {
               />
               {nameError ? (
                 <p id="project-name-error" role="alert" className="flex items-center gap-1.5 text-xs font-medium text-[var(--danger)]">
-                  <AlertCircle size={13} className="shrink-0" />Enter a project name.
+                  <AlertCircle size={13} className="shrink-0" />{byEdition("Enter a project name.", "Enter an engagement name.")}
                 </p>
               ) : (
                 <p id="project-name-hint" className="text-xs text-muted-foreground">
@@ -106,9 +106,9 @@ export default function NewProjectPage() {
           )}
 
           <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">You will own the project. You upload documents and invite people in the next step.</p>
+            <p className="text-sm text-muted-foreground">{byEdition("You will own the project.", "You will own the engagement.")} You upload documents and invite people in the next step.</p>
             <Button type="submit" size="lg" disabled={creating} className="w-full sm:w-auto">
-              {creating ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project", "Creating engagement")}</> : <>{byEdition("Create project", "Create engagement")} <ArrowRight size={15} /></>}
+              {creating ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project…", "Creating engagement…")}</> : <>{byEdition("Create project", "Create engagement")} <ArrowRight size={15} /></>}
             </Button>
           </div>
         </form>

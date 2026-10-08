@@ -1,9 +1,9 @@
 "use client";
 
-// Sonar: questions answered from one contract's analysed clauses, with the
+// Sonar: questions answered from one contract's analyzed clauses, with the
 // clauses it used cited. It works from any page: the contract you are viewing
 // is picked for you, and the picker in the header switches to any other
-// analysed contract.
+// analyzed contract.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -49,9 +49,9 @@ export function CopilotPanel({ open, onClose }: Props) {
   const project = useProject(inProject ? routeId : "");
   const { data: allDocs, isLoading: docsLoading } = useDocuments();
 
-  // Every contract Sonar can answer from: analysed ones only.
+  // Every contract Sonar can answer from: analyzed ones only.
   const ready = useMemo(() => (allDocs ?? []).filter((d) => d.status === "READY"), [allDocs]);
-  // The one the page points at: this document, or the first analysed one in this project.
+  // The one the page points at: this document, or the first analyzed one in this project.
   const pageDocId = useMemo(() => {
     if (!routeId) return null;
     if (inProject) return ready.find((d) => project?.docIds.includes(d.docId))?.docId ?? null;
@@ -94,7 +94,7 @@ export function CopilotPanel({ open, onClose }: Props) {
       const res = await askSonar(docId, q);
       setMessages((m) => [...m, { role: "assistant", content: res.answer, citations: res.citations }]);
     } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", content: e instanceof Error ? e.message : "Something went wrong. Please try again.", error: true }]);
+      setMessages((m) => [...m, { role: "assistant", content: e instanceof Error ? e.message : "Sonar couldn't answer. Try again.", error: true }]);
     } finally {
       setBusy(false);
     }
@@ -156,10 +156,10 @@ export function CopilotPanel({ open, onClose }: Props) {
             <div className="flex justify-center py-10"><TypingDots /></div>
           ) : ready.length === 0 ? (
             <Intro
-              title={routeDoc && routeDoc.status !== "FAILED" ? "Still analysing" : "No analysed contract yet"}
+              title={routeDoc && routeDoc.status !== "FAILED" ? "Still analyzing" : "No analyzed contract yet"}
               body={routeDoc?.status === "FAILED"
-                ? "This document's analysis failed, so there are no clauses to answer from. Re-analyse it first."
-                : "Sonar answers from a contract's analysed clauses. Upload an agreement and ask as soon as its analysis finishes."}
+                ? "This document's analysis failed, so there are no clauses to answer from. Re-analyze it first."
+                : "Sonar answers from a contract's analyzed clauses. Upload an agreement and ask as soon as its analysis finishes."}
             />
           ) : !docId ? (
             <Intro title="Ask about a contract" body="Choose a contract above. Every answer comes from its clauses, with the clauses cited." />

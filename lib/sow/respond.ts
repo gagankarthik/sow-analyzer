@@ -6,7 +6,7 @@
 import { OpenAIConfigError, OpenAIRequestError } from "./openai";
 import { ProviderNotAllowedError } from "./guardrails";
 
-const GENERIC = "Drafting failed. Please try again.";
+const GENERIC = "Drafting failed. Try again.";
 
 function logFailure(kind: string, e: unknown, status?: number): void {
   console.error(

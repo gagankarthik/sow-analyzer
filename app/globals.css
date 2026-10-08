@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "./landing.css";
 
 /* Light theme only. The variant is pinned to a `.dark` class that is never
    set, so stray `dark:` utilities stay inert instead of following the OS. */
@@ -758,6 +757,12 @@ html { scroll-behavior: smooth; }
   border: 2px solid var(--background);
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--ink-300); }
+
+/* Taps act at once (no double-tap zoom delay) and show no grey flash. */
+:where(a, button, input, select, textarea, label, summary, [role="button"], [role="tab"], [role="option"]) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* Visible keyboard focus on every interactive element (WCAG 2.4.7). */
 :where(a, button, input, select, textarea, summary, [tabindex], [role="button"], [role="tab"], [role="link"]):focus-visible {

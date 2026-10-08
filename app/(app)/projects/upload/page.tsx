@@ -59,7 +59,7 @@ export default function UploadPage() {
     <>
       <PageHeader
         back={{ href: "/projects", label: `Back to ${terms.projects.toLowerCase()}` }}
-        title="Add a document"
+        title="Upload a contract"
         subtitle={showSow ? "Upload a SOW, MSA or amendment for analysis." : "Upload an agreement: Sonar reads it and checks it against your review matrix."}
       />
 
@@ -69,7 +69,7 @@ export default function UploadPage() {
             <label htmlFor={pickerId} className="mb-1.5 block text-sm font-medium text-foreground">{noun("Project")}</label>
             <Select value={choice} onValueChange={setPicked} disabled={loading}>
               <SelectTrigger id={pickerId} className="w-full sm:max-w-sm">
-                <SelectValue placeholder={loading ? byEdition("Loading your projects", "Loading your engagements") : undefined} />
+                <SelectValue placeholder={loading ? byEdition("Loading your projects…", "Loading your engagements…") : undefined} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_PROJECT}>{byEdition("No project", "No engagement")}</SelectItem>
@@ -80,7 +80,7 @@ export default function UploadPage() {
             </Select>
             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
               {loading
-                ? byEdition("Loading the projects you can upload to.", "Loading the engagements you can upload to.")
+                ? byEdition("Loading the projects you can upload to…", "Loading the engagements you can upload to…")
                 : project
                   ? `Files you add next go into ${project.name} and are shared with everyone on it.${owner ? ` It is owned by ${owner}; you are ${ROLE_META[project.role ?? "viewer"].label.toLowerCase()}.` : ""}`
                   : byEdition("Files you add next belong to no project. Only you can see them until you file them in one.", "Files you add next belong to no engagement. Only you can see them until you file them in one.")}

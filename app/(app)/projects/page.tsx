@@ -49,7 +49,7 @@ const STATUS_META: Record<string, { label: string; Icon: typeof Check }> = {
 type Agg = {
   project: LocalProject;
   docCount: number;
-  /** Clauses across the analysed documents; null when none has a clause count yet. */
+  /** Clauses across the analyzed documents; null when none has a clause count yet. */
   clauseCount: number | null;
   rc: { low: number; medium: number; high: number; critical: number };
   /** Rated clauses (sum of rc). 0 = no risk data, which is not the same as "low". */
@@ -255,7 +255,7 @@ export default function ProjectsPage() {
             <div className="flex flex-col gap-2 md:flex-row md:items-start">
               <div className="relative w-full md:w-[260px] md:shrink-0">
                 <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={byEdition("Search projects…", "Search engagements…")} aria-label={byEdition("Search projects", "Search engagements")}
+                <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={byEdition("Search projects", "Search engagements")} aria-label={byEdition("Search projects", "Search engagements")}
                   className="h-9 w-full rounded-lg border border-[var(--ink-300)] bg-card pl-9 pr-3 text-sm text-foreground outline-none transition-shadow placeholder:text-[var(--ink-500)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)]" />
               </div>
               <div className={FILTER_ROW}>
@@ -567,7 +567,7 @@ function SharedNote({ project }: { project: LocalProject }) {
   );
 }
 
-/** `null` = not known yet (nothing analysed), shown as a dash rather than 0. */
+/** `null` = not known yet (nothing analyzed), shown as a dash rather than 0. */
 function Stat({ value, label, tone }: { value: number | null; label: string; tone?: "danger" }) {
   return (
     <div className="min-w-0">

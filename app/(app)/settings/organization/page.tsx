@@ -64,7 +64,7 @@ export default function OrganizationSetupPage() {
   const saveOrg = (organization: Partial<OrganizationSettings>, success: string) =>
     save.mutate({ organization }, {
       onSuccess: () => toast.success(success),
-      onError: (e) => toast.error("Couldn't save", { description: e instanceof Error ? e.message : "Please try again." }),
+      onError: (e) => toast.error("Couldn't save the organization settings", { description: e instanceof Error ? e.message : "Try again." }),
     });
   const confirm = (step: "matrix" | "workflow", success: string) =>
     saveOrg({ confirmedSteps: [...new Set([...(org?.confirmedSteps ?? []), step])] }, success);
@@ -125,7 +125,7 @@ export default function OrganizationSetupPage() {
                       });
                     },
                     (err: unknown) => {
-                      toast.error("Couldn't switch the edition", { description: err instanceof Error ? err.message : "Please try again." });
+                      toast.error("Couldn't switch the edition", { description: err instanceof Error ? err.message : "Try again." });
                       throw err;
                     },
                   )}

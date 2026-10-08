@@ -11,7 +11,7 @@ const RISK_PILL: Record<RiskLevel, string> = {
   low: "bg-[var(--success-soft)] text-[var(--success-fg)]",
 };
 
-/** Results, read straight from the analysed document's own fields. */
+/** Results, read straight from the analyzed document's own fields. */
 export function DoneStep({ doc, onAnother }: { doc: ApiDocument; onAnother: () => void }) {
   const clauses = doc.clauseCount;
   // Clauses with a risk level. With none, there is no rating to report: the
@@ -45,7 +45,7 @@ export function DoneStep({ doc, onAnother }: { doc: ApiDocument; onAnother: () =
   ];
 
   return (
-    <StepCard title="Your first analysis is ready" lead={`${name} has been analysed. This is what Sonar found.`}>
+    <StepCard title="Your first analysis is ready" lead={`${name} has been analyzed. This is what Sonar found.`}>
       {/* The one focal block of the flow */}
       <div className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
         <div className="flex flex-wrap items-center gap-2.5">

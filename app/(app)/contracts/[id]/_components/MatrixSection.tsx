@@ -36,7 +36,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
 
   const currentVersion = matrix.data?.current.version ?? null;
   const outdated = review && currentVersion !== null && currentVersion > review.matrixVersion;
-  const analysing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
+  const analyzing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
 
   async function recheck() {
     try {
@@ -49,7 +49,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
   }
 
   const recheckButton = (
-    <Button type="button" variant={outdated ? "default" : "outline"} onClick={recheck} disabled={rescore.isPending || analysing}>
+    <Button type="button" variant={outdated ? "default" : "outline"} onClick={recheck} disabled={rescore.isPending || analyzing}>
       {rescore.isPending ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
       Re-check against current matrix
     </Button>
@@ -59,7 +59,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
     return (
       <Section title="Matrix review" description="How each clause compares with your accepted positions.">
         <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-[var(--ink-300)] p-6">
-          {analysing ? (
+          {analyzing ? (
             <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-700)]"><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />Sonar is still reading this agreement. The review appears here when it is done.</p>
           ) : (
             <>

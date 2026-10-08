@@ -32,7 +32,7 @@ function failureMessage(err: unknown, projectName: string): string {
   if (isForbidden(err)) return `${PERMISSION_DENIED} Only the owner of ${projectName} can invite people.`;
   if (status === 409 && errorCode(err) === "conflict") return message;
   if (status === 409) return `Already on ${projectName}.`;
-  if (status === 400) return message || "The server did not accept this email address.";
+  if (status === 400) return message || "Check the email address and try again.";
   if (status === 404) return `${projectName} no longer exists, or is no longer shared with you.`;
   return message || "Could not send the invitation.";
 }

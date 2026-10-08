@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { noun } from "@/lib/edition-runtime";
 import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
@@ -15,7 +17,7 @@ import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
-import { ContractValueChart } from "@/components/charts/ContractValueChart";
+const ContractValueChart = dynamic(() => import("@/components/charts/ContractValueChart").then((m) => m.ContractValueChart), { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
 import { SowTimeline } from "@/components/SowTimeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
@@ -118,7 +120,7 @@ type View = {
   reconciledAll: boolean | null;
   classByDoc: Map<string, ApiClassification>;
   analyzingClauses: boolean;
-  /** Clauses across the analysed documents; null when no count is known yet. */
+  /** Clauses across the analyzed documents; null when no count is known yet. */
   totalClauses: number | null;
   highRisk: number;
   /** Worst rated clause level; null when no clause has a risk level. */
@@ -197,10 +199,10 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
       await deleteProject(projectId);
       // Its documents are kept, but are no longer shared with the other members.
       void qc.invalidateQueries({ queryKey: documentKeys.all });
-      toast.success("Project deleted", { description: "The project was removed. Its documents stay with whoever uploaded them." });
+      toast.success(`${noun("Project")} deleted`, { description: "Its documents stay in your library and can be grouped again later." });
       router.push("/projects");
     } catch (e) {
-      toast.error("The project was not deleted", { description: e instanceof Error ? e.message : "The server did not accept the change. Try again." });
+      toast.error(`Couldn't delete the ${noun("project")}`, { description: e instanceof Error ? e.message : "Try again." });
       setDeletingProject(false);
       setConfirmDeleteProject(false);
     }
@@ -218,10 +220,10 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
     setSavingRename(true);
     try {
       await renameProject(projectId, renameName, renameClient);
-      toast.success("Project updated");
+      toast.success(`${noun("Project")} updated`);
       setRenaming(false);
     } catch (e) {
-      toast.error("The project was not changed", { description: e instanceof Error ? e.message : "The server did not accept the change. Try again." });
+      toast.error(`Couldn't save the ${noun("project")}`, { description: e instanceof Error ? e.message : "Try again." });
     } finally {
       setSavingRename(false);
     }
@@ -236,9 +238,9 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
       await removeDocFromProject(projectId, doc.docId);
       // Whether the remover still sees the document depends on who uploaded it.
       void qc.invalidateQueries({ queryKey: documentKeys.all });
-      toast.success("Removed from project", { description: doc.title || "Untitled document" });
+      toast.success(`Removed from the ${noun("project")}`, { description: doc.title || "Untitled document" });
     } catch (e) {
-      toast.error("The document was not removed", { description: e instanceof Error ? e.message : "The server did not accept the change. Try again." });
+      toast.error("Couldn't remove the document", { description: e instanceof Error ? e.message : "Try again." });
     } finally {
       setRemoving(false);
       setToRemove(null);
@@ -366,7 +368,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
       await del.mutateAsync(doc.docId);
       toast.success("Document deleted", { description: doc.title || "Untitled document" });
     } catch (e) {
-      toast.error("Delete failed", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Delete failed", { description: e instanceof Error ? e.message : "Try again." });
     } finally {
       setToDelete(null);
     }
@@ -387,8 +389,8 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
       const ok = results.filter((r) => r.status === "fulfilled").length;
       const failed = results.length - ok;
       qc.invalidateQueries({ queryKey: documentKeys.all });
-      if (ok > 0) toast.success("Re-analyzing project", { description: `${ok} document${ok === 1 ? "" : "s"} are being analyzed again.` });
-      if (failed > 0) toast.error("Some documents couldn't be re-analyzed", { description: `${failed} failed to re-queue. Try again.` });
+      if (ok > 0) toast.success(`Re-analyzing the ${noun("project")}`, { description: `${ok} document${ok === 1 ? "" : "s"} are being analyzed again.` });
+      if (failed > 0) toast.error("Some documents couldn't be re-analyzed", { description: `${failed} couldn't be restarted. Try again.` });
     } finally {
       setReanalyzing(false);
     }
@@ -430,7 +432,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
               open={confirmReanalyze}
               onOpenChange={setConfirmReanalyze}
               title="Re-analyze every document?"
-              description={`Sonar reads all ${reanalyzable.filter((d) => !isProcessing(d.status)).length} documents in this project again and replaces their current analysis. It can take a few minutes; reviews already done on Govern contracts are re-checked against the matrix.`}
+              description={`Sonar reads all ${reanalyzable.filter((d) => !isProcessing(d.status)).length} documents in this ${noun("project")} again and replaces their current analysis. It can take a few minutes; reviews already done on Govern contracts are re-checked against the matrix.`}
               confirmLabel="Re-analyze all"
               onConfirm={() => reanalyzeAll()}
             />
@@ -470,10 +472,10 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
       <Dialog open={confirmDeleteProject} onOpenChange={(o) => !deletingProject && setConfirmDeleteProject(o)}>
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>Delete this project?</DialogTitle>
+            <DialogTitle>{`Delete this ${noun("project")}?`}</DialogTitle>
           </DialogHeader>
           <p className="text-base leading-relaxed text-[var(--ink-600)]">
-            <strong className="font-semibold text-foreground">{project.name}</strong> will be removed as a project. Its documents stay in your library and can be regrouped later.
+            <strong className="font-semibold text-foreground">{project.name}</strong> will be deleted. Its documents stay in your library and can be grouped again later.
           </p>
           <DialogFooter>
             <Button variant="outline" size="lg" className="md:h-9" onClick={() => setConfirmDeleteProject(false)} disabled={deletingProject}>Cancel</Button>
@@ -512,7 +514,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
 
       <Dialog open={!!toRemove} onOpenChange={(o) => !o && !removing && setToRemove(null)}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Remove from this project?</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{`Remove from this ${noun("project")}?`}</DialogTitle></DialogHeader>
           <p className="py-1 text-base leading-relaxed text-[var(--ink-600)]">
             <span className="font-semibold text-foreground">{toRemove?.title || "Untitled document"}</span> will be taken out of {project.name}. It is not deleted: it stays with whoever uploaded it, and the other people on this project lose access to it.
           </p>
@@ -654,7 +656,7 @@ function OverviewPanel({ v }: { v: View }) {
             <div className="flex items-center gap-2"><ShieldAlert size={16} className="shrink-0 text-[var(--danger)]" /><h3 className="text-base font-semibold tracking-tight text-foreground">Clauses that need attention</h3></div>
             <button onClick={() => v.goTo("sow")} type="button" className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0">All clauses<ArrowRight size={13} strokeWidth={2.25} /></button>
           </div>
-          <div className="space-y-2.5">{v.attention.slice(0, 5).map((c, i) => <AttentionRow key={`${c._docId}-${c.number}-${i}`} c={c} />)}</div>
+          <div className="space-y-2.5">{v.attention.slice(0, 5).map((c) => <AttentionRow key={`${c._docId}-${c.number}`} c={c} />)}</div>
           {v.attention.length > 5 && (
             <p className="mt-3 text-sm text-[var(--ink-600)]">
               Showing the first 5 of {v.attention.length} clauses rated high or critical.{" "}
@@ -991,10 +993,10 @@ function SowPanel({ v }: { v: View }) {
       ) : (
         <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
           <ul className="divide-y divide-[var(--ink-100)] lg:max-h-[640px] lg:overflow-y-auto">
-            {filtered.map((c, i) => {
+            {filtered.map((c) => {
               const m = clauseRiskMeta(c);
               return (
-                <li key={`${c._docId}-${c.number}-${i}`}>
+                <li key={`${c._docId}-${c.number}`}>
                   <button type="button" onClick={() => setSelected(c)} className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring md:px-5">
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1.5">
@@ -1501,7 +1503,7 @@ function DocRow({ doc, value, currency, now, depth, canRemove, onRemove, onDelet
       await reprocess.mutateAsync(doc.docId);
       toast.success("Re-analyzing", { description: `${doc.title || "Document"} is being analyzed again.` });
     } catch (e) {
-      toast.error("Couldn't re-analyze", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't re-analyze", { description: e instanceof Error ? e.message : "Try again." });
     }
   }
 

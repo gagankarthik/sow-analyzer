@@ -396,7 +396,7 @@ function normalizeError(err: unknown): AuthError {
     PasswordResetRequiredException:
       "A password reset is required. Contact your administrator.",
   };
-  return new AuthError(code, map[code] || e.message || "Something went wrong. Please try again.");
+  return new AuthError(code, map[code] || e.message || "Something went wrong. Try again.");
 }
 
 // Expose the configured region for callers that need to build issuer URLs, etc.

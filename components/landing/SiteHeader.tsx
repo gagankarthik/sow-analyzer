@@ -2,8 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { SESSION_MARKER_COOKIE } from "@/lib/auth/session";
 import { ArrowRight, ChevronDown, Menu, X } from "@/components/ui/icons";
 import { Logo } from "@/components/landing/primitives";
 import { NAV_MENUS, PRODUCT_SECTIONS, landingHref, type NavItem, type NavMenu } from "@/components/landing/site-nav";
@@ -27,8 +27,9 @@ export function SiteHeader() {
   const headerRef = useRef<HTMLElement | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { status } = useAuth();
-  const isSignedIn = status === "authenticated";
+  // The session marker cookie says whether someone is signed in, without
+  // loading the sign-in library on the public site.
+  const isSignedIn = useSyncExternalStore(noopSubscribe, hasSessionCookie, () => false);
 
   useEffect(() => {
     if (!openMenu && !isDrawerOpen) return;
@@ -130,7 +131,7 @@ export function SiteHeader() {
           ) : (
             <>
               <Link href="/login" className="lp-btn lp-btn-quiet lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
-                Log in
+                Sign in
               </Link>
               <Link href="/signup" className="lp-btn lp-btn-primary lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
                 Request a demo
@@ -221,7 +222,7 @@ export function SiteHeader() {
                     <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
                   </Link>
                   <Link href="/login" onClick={closeAll} className="lp-btn lp-btn-outline lp-btn-lg w-full">
-                    Log in
+                    Sign in
                   </Link>
                 </>
               )}
@@ -290,4 +291,10 @@ function MenuLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void 
       <ArrowRight size={16} strokeWidth={2} className="lp-menu-arrow" aria-hidden="true" />
     </Link>
   );
+}
+
+const noopSubscribe = () => () => {};
+
+function hasSessionCookie(): boolean {
+  return document.cookie.split("; ").some((c) => c.startsWith(`${SESSION_MARKER_COOKIE}=`) && c.length > SESSION_MARKER_COOKIE.length + 1);
 }

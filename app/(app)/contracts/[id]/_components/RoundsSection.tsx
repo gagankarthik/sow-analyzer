@@ -127,7 +127,7 @@ function RevisionUpload({ contract: c, buttonRef }: { contract: ContractDetail; 
   const onError = useGovernErrorToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<UploadState>({ kind: "idle" });
-  const analysing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
+  const analyzing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
   const busy = state.kind === "uploading";
 
   async function upload(file: File) {
@@ -168,10 +168,10 @@ function RevisionUpload({ contract: c, buttonRef }: { contract: ContractDetail; 
           <progress max={100} value={state.pct} aria-label={`Uploading ${state.name}`} className="h-1.5 w-full overflow-hidden rounded-full [&::-moz-progress-bar]:bg-[var(--brand-primary-600)] [&::-webkit-progress-bar]:bg-[var(--ink-100)] [&::-webkit-progress-value]:bg-[var(--brand-primary-600)]" />
         </div>
       )}
-      {(state.kind === "done" || analysing) && (
+      {(state.kind === "done" || analyzing) && (
         <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ai-ink)]" aria-live="polite">
-          {analysing ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <CheckCircle2 size={14} />}
-          {analysing ? "Sonar is reading the new version and re-checking it against the matrix…" : `${state.kind === "done" ? state.name : "The new version"} is checked. See the results below.`}
+          {analyzing ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <CheckCircle2 size={14} />}
+          {analyzing ? "Sonar is reading the new version and re-checking it against the matrix…" : `${state.kind === "done" ? state.name : "The new version"} is checked. See the results below.`}
         </p>
       )}
     </div>

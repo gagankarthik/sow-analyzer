@@ -2,7 +2,7 @@
 
 // Value × risk — "are the expensive contracts the risky ones?"
 // x = contract value, y = weighted risk index (0–100), bubble area = clauses
-// analysed, colour = overall risk level.
+// analyzed, colour = overall risk level.
 //
 // Contract values routinely span orders of magnitude (one $13M master agreement
 // next to several $100k SOWs). On a linear axis that pins everything but the
@@ -96,7 +96,7 @@ function ScatterTip({ active, payload }: { active?: boolean; payload?: { payload
       <TooltipRow label="Contract value" value={fmtMoney(p.value, p.currency)} />
       <TooltipRow label="Risk index" value={`${p.risk} out of 100`} />
       <TooltipRow color={RISK_COLOR[p.level]} label="Overall risk" value={RISK_LABEL[p.level]} />
-      <TooltipRow label="Clauses analysed" value={p.clauses.toLocaleString()} />
+      <TooltipRow label="Clauses analyzed" value={p.clauses.toLocaleString()} />
     </TooltipShell>
   );
 }
@@ -200,7 +200,7 @@ export function ValueRiskScatter({
           </ScatterChart>
         </ResponsiveContainer>
       </div>
-      {!sameSize && <p className="mt-1 text-xs text-muted-foreground">Larger circles have more clauses analysed.</p>}
+      {!sameSize && <p className="mt-1 text-xs text-muted-foreground">Larger circles have more clauses analyzed.</p>}
     </ChartFigure>
   );
 }

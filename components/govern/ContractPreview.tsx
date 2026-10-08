@@ -36,7 +36,7 @@ export function ContractPreview({ contract: c, me, onClose }: { contract: Contra
     <aside
       ref={panelRef}
       tabIndex={-1}
-      aria-label={`Preview: ${c.title || "Untitled agreement"}`}
+      aria-label={`Preview: ${c.title || "Untitled contract"}`}
       className="fixed inset-y-0 right-0 z-40 flex w-full max-w-[30rem] flex-col border-l border-border bg-background shadow-[0_0_48px_-16px_rgba(10,13,20,0.28)] outline-none lg:top-16"
     >
       <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-4 py-2.5">
@@ -51,8 +51,8 @@ export function ContractPreview({ contract: c, me, onClose }: { contract: Contra
         <Button asChild size="sm"><Link href={href}>Open contract</Link></Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-10 pt-5">
-        <h2 className="text-xl font-semibold leading-snug tracking-tight text-foreground">{c.title || "Untitled agreement"}</h2>
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-5">
+        <h2 className="text-xl font-semibold leading-snug tracking-tight text-foreground">{c.title || "Untitled contract"}</h2>
         <p className="mt-1.5 text-sm text-[var(--ink-600)]">
           {[c.owner ? `Owned by ${personName(c.owner)}` : "No owner yet", shortDate(c.createdAt) ? `Created ${shortDate(c.createdAt)}` : null].filter(Boolean).join(" · ")}
         </p>

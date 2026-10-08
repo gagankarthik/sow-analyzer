@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Sans, Instrument_Serif } from "next/font/google";
 import "./globals.css";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/components/auth/AuthProvider";
-import { QueryProvider } from "@/components/providers/QueryProvider";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 // IBM Plex Sans for the interface and body: an institutional grotesk with
@@ -47,6 +43,11 @@ const DEFAULT_TITLE = "Blue-IQ Govern | Contract review against your matrix";
 // Site-wide defaults. Each public page sets its own title, description and
 // canonical through `pageMetadata` (lib/seo.ts); the share image comes from
 // app/opengraph-image.tsx.
+export const viewport: Viewport = {
+  themeColor: "#F8F7F4",
+  colorScheme: "light",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
@@ -73,12 +74,8 @@ export default function RootLayout({
       className={`${plexSans.variable} ${plexMono.variable} ${instrument.variable} ${instrumentSerif.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <QueryProvider>
-          <AuthProvider>
-            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
-          </AuthProvider>
-        </QueryProvider>
-        <Toaster richColors closeButton position="bottom-right" />
+        {/* App providers live in the (app) and (auth) layouts, not here. */}
+        {children}
       </body>
     </html>
   );

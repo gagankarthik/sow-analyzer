@@ -97,7 +97,7 @@ function BulkExport({ contracts, viewLabel }: { contracts: Contract[]; viewLabel
       });
       toast.success("Excel file downloaded");
     } catch (e) {
-      toast.error("Couldn't create the file", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't create the file", { description: e instanceof Error ? e.message : "Try again." });
     } finally {
       setBusy(false);
     }

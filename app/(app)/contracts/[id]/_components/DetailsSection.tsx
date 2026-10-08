@@ -300,7 +300,7 @@ function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming
             {gap === "agreementTypeUnsure" ? (
               <span className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-[var(--ink-600)]">Is it a {AGREEMENT_TYPE_LABEL[c.agreementType].toLowerCase()}?</span>
-                <Button type="button" size="sm" onClick={onConfirmType} disabled={confirming}><Check size={13} />Yes</Button>
+                <Button type="button" size="sm" onClick={onConfirmType} disabled={confirming}><Check size={13} />Confirm type</Button>
                 <Button type="button" size="sm" variant="outline" onClick={() => onFill(gap)}>Change type</Button>
               </span>
             ) : gap === "value" ? (

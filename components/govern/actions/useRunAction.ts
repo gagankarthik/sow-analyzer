@@ -29,7 +29,7 @@ export function useGovernErrorToast() {
       return;
     }
     toast.error(`Couldn't ${what.toLowerCase()}`, {
-      description: e instanceof Error ? e.message : "Please try again.",
+      description: e instanceof Error ? e.message : "Try again.",
     });
   };
 }

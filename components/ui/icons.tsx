@@ -4,7 +4,88 @@
 // brand-icons.tsx; utility glyphs come from lucide at the same stroke weight.
 // Several exports keep their historical lucide names so call sites stay stable.
 
-import * as L from "lucide-react";
+import {
+  AlertCircle as LAlertCircle,
+  AlertTriangle as LAlertTriangle,
+  ArrowDown as LArrowDown,
+  ArrowLeftRight as LArrowLeftRight,
+  ArrowRight as LArrowRight,
+  ArrowUp as LArrowUp,
+  ArrowUpRight as LArrowUpRight,
+  BadgeCheck as LBadgeCheck,
+  Ban as LBan,
+  Boxes as LBoxes,
+  Building2 as LBuilding2,
+  Calendar as LCalendar,
+  Check as LCheck,
+  CheckCircle2 as LCheckCircle2,
+  ChevronDown as LChevronDown,
+  ChevronLeft as LChevronLeft,
+  ChevronRight as LChevronRight,
+  ChevronUp as LChevronUp,
+  CircleDashed as LCircleDashed,
+  CircleDot as LCircleDot,
+  Clock as LClock,
+  Coins as LCoins,
+  Command as LCommand,
+  Copy as LCopy,
+  Database as LDatabase,
+  DollarSign as LDollarSign,
+  Download as LDownload,
+  Edit3 as LEdit3,
+  ExternalLink as LExternalLink,
+  Eye as LEye,
+  EyeOff as LEyeOff,
+  FileDown as LFileDown,
+  FileSpreadsheet as LFileSpreadsheet,
+  Filter as LFilter,
+  Gauge as LGauge,
+  Gavel as LGavel,
+  Globe2 as LGlobe2,
+  Grid3x3 as LGrid3x3,
+  History as LHistory,
+  Hourglass as LHourglass,
+  House as LHouse,
+  Layers as LLayers,
+  LayoutGrid as LLayoutGrid,
+  LineChart as LLineChart,
+  Link2 as LLink2,
+  ListChecks as LListChecks,
+  Loader2 as LLoader2,
+  Lock as LLock,
+  LogOut as LLogOut,
+  Mail as LMail,
+  Maximize2 as LMaximize2,
+  Menu as LMenu,
+  MessageSquare as LMessageSquare,
+  Minus as LMinus,
+  Moon as LMoon,
+  MoreHorizontal as LMoreHorizontal,
+  PanelLeft as LPanelLeft,
+  PenLine as LPenLine,
+  Pencil as LPencil,
+  PieChart as LPieChart,
+  Play as LPlay,
+  Plug as LPlug,
+  Plus as LPlus,
+  RefreshCw as LRefreshCw,
+  Repeat as LRepeat,
+  Route as LRoute,
+  Scale as LScale,
+  ScatterChart as LScatterChart,
+  Search as LSearch,
+  Send as LSend,
+  ShieldX as LShieldX,
+  Sun as LSun,
+  Trash2 as LTrash2,
+  TrendingDown as LTrendingDown,
+  TrendingUp as LTrendingUp,
+  Undo2 as LUndo2,
+  User as LUser,
+  UserRound as LUserRound,
+  X as LX,
+  XCircle as LXCircle,
+} from "lucide-react";
 import {
   AmendmentIcon, ClauseIcon, ComplianceIcon, DashboardIcon, DraftIcon, HelpIcon,
   InfoIcon, InsightsIcon, LibraryIcon, NotificationsIcon, PlaybookIcon, ProjectsIcon,
@@ -39,85 +120,85 @@ export const Users = TeamIcon;
 export const Bell = NotificationsIcon;
 
 /* ─── Utility glyphs (lucide) ─────────────────────────────────── */
-export const AlertCircle = withBrandStroke(L.AlertCircle, "AlertCircle");
-export const AlertTriangle = withBrandStroke(L.AlertTriangle, "AlertTriangle");
-export const ArrowDown = withBrandStroke(L.ArrowDown, "ArrowDown");
-export const ArrowRight = withBrandStroke(L.ArrowRight, "ArrowRight");
-export const ArrowUp = withBrandStroke(L.ArrowUp, "ArrowUp");
-export const ArrowUpRight = withBrandStroke(L.ArrowUpRight, "ArrowUpRight");
-export const Boxes = withBrandStroke(L.Boxes, "Boxes");
-export const Building2 = withBrandStroke(L.Building2, "Building2");
-export const Calendar = withBrandStroke(L.Calendar, "Calendar");
-export const Check = withBrandStroke(L.Check, "Check");
-export const CheckCircle2 = withBrandStroke(L.CheckCircle2, "CheckCircle2");
-export const ChevronDown = withBrandStroke(L.ChevronDown, "ChevronDown");
-export const ChevronLeft = withBrandStroke(L.ChevronLeft, "ChevronLeft");
-export const ChevronRight = withBrandStroke(L.ChevronRight, "ChevronRight");
-export const ChevronUp = withBrandStroke(L.ChevronUp, "ChevronUp");
-export const CircleDot = withBrandStroke(L.CircleDot, "CircleDot");
-export const Clock = withBrandStroke(L.Clock, "Clock");
-export const Command = withBrandStroke(L.Command, "Command");
-export const Copy = withBrandStroke(L.Copy, "Copy");
-export const Database = withBrandStroke(L.Database, "Database");
-export const DollarSign = withBrandStroke(L.DollarSign, "DollarSign");
-export const Download = withBrandStroke(L.Download, "Download");
-export const Edit3 = withBrandStroke(L.Edit3, "Edit3");
-export const ExternalLink = withBrandStroke(L.ExternalLink, "ExternalLink");
-export const Eye = withBrandStroke(L.Eye, "Eye");
-export const EyeOff = withBrandStroke(L.EyeOff, "EyeOff");
-export const Filter = withBrandStroke(L.Filter, "Filter");
-export const Gavel = withBrandStroke(L.Gavel, "Gavel");
-export const Globe2 = withBrandStroke(L.Globe2, "Globe2");
-export const Layers = withBrandStroke(L.Layers, "Layers");
-export const LayoutGrid = withBrandStroke(L.LayoutGrid, "LayoutGrid");
-export const LineChart = withBrandStroke(L.LineChart, "LineChart");
-export const Loader2 = withBrandStroke(L.Loader2, "Loader2");
-export const Lock = withBrandStroke(L.Lock, "Lock");
-export const LogOut = withBrandStroke(L.LogOut, "LogOut");
-export const Mail = withBrandStroke(L.Mail, "Mail");
-export const Maximize2 = withBrandStroke(L.Maximize2, "Maximize2");
-export const Menu = withBrandStroke(L.Menu, "Menu");
-export const Minus = withBrandStroke(L.Minus, "Minus");
-export const Moon = withBrandStroke(L.Moon, "Moon");
-export const MoreHorizontal = withBrandStroke(L.MoreHorizontal, "MoreHorizontal");
-export const PanelLeft = withBrandStroke(L.PanelLeft, "PanelLeft");
-export const Pencil = withBrandStroke(L.Pencil, "Pencil");
-export const PieChart = withBrandStroke(L.PieChart, "PieChart");
-export const Play = withBrandStroke(L.Play, "Play");
-export const Plus = withBrandStroke(L.Plus, "Plus");
-export const RefreshCw = withBrandStroke(L.RefreshCw, "RefreshCw");
-export const Repeat = withBrandStroke(L.Repeat, "Repeat");
-export const Scale = withBrandStroke(L.Scale, "Scale");
-export const ScatterChart = withBrandStroke(L.ScatterChart, "ScatterChart");
-export const Search = withBrandStroke(L.Search, "Search");
-export const Send = withBrandStroke(L.Send, "Send");
-export const Sun = withBrandStroke(L.Sun, "Sun");
-export const Trash2 = withBrandStroke(L.Trash2, "Trash2");
-export const TrendingDown = withBrandStroke(L.TrendingDown, "TrendingDown");
-export const TrendingUp = withBrandStroke(L.TrendingUp, "TrendingUp");
-export const User = withBrandStroke(L.User, "User");
-export const X = withBrandStroke(L.X, "X");
-export const XCircle = withBrandStroke(L.XCircle, "XCircle");
+export const AlertCircle = /*#__PURE__*/ withBrandStroke(LAlertCircle, "AlertCircle");
+export const AlertTriangle = /*#__PURE__*/ withBrandStroke(LAlertTriangle, "AlertTriangle");
+export const ArrowDown = /*#__PURE__*/ withBrandStroke(LArrowDown, "ArrowDown");
+export const ArrowRight = /*#__PURE__*/ withBrandStroke(LArrowRight, "ArrowRight");
+export const ArrowUp = /*#__PURE__*/ withBrandStroke(LArrowUp, "ArrowUp");
+export const ArrowUpRight = /*#__PURE__*/ withBrandStroke(LArrowUpRight, "ArrowUpRight");
+export const Boxes = /*#__PURE__*/ withBrandStroke(LBoxes, "Boxes");
+export const Building2 = /*#__PURE__*/ withBrandStroke(LBuilding2, "Building2");
+export const Calendar = /*#__PURE__*/ withBrandStroke(LCalendar, "Calendar");
+export const Check = /*#__PURE__*/ withBrandStroke(LCheck, "Check");
+export const CheckCircle2 = /*#__PURE__*/ withBrandStroke(LCheckCircle2, "CheckCircle2");
+export const ChevronDown = /*#__PURE__*/ withBrandStroke(LChevronDown, "ChevronDown");
+export const ChevronLeft = /*#__PURE__*/ withBrandStroke(LChevronLeft, "ChevronLeft");
+export const ChevronRight = /*#__PURE__*/ withBrandStroke(LChevronRight, "ChevronRight");
+export const ChevronUp = /*#__PURE__*/ withBrandStroke(LChevronUp, "ChevronUp");
+export const CircleDot = /*#__PURE__*/ withBrandStroke(LCircleDot, "CircleDot");
+export const Clock = /*#__PURE__*/ withBrandStroke(LClock, "Clock");
+export const Command = /*#__PURE__*/ withBrandStroke(LCommand, "Command");
+export const Copy = /*#__PURE__*/ withBrandStroke(LCopy, "Copy");
+export const Database = /*#__PURE__*/ withBrandStroke(LDatabase, "Database");
+export const DollarSign = /*#__PURE__*/ withBrandStroke(LDollarSign, "DollarSign");
+export const Download = /*#__PURE__*/ withBrandStroke(LDownload, "Download");
+export const Edit3 = /*#__PURE__*/ withBrandStroke(LEdit3, "Edit3");
+export const ExternalLink = /*#__PURE__*/ withBrandStroke(LExternalLink, "ExternalLink");
+export const Eye = /*#__PURE__*/ withBrandStroke(LEye, "Eye");
+export const EyeOff = /*#__PURE__*/ withBrandStroke(LEyeOff, "EyeOff");
+export const Filter = /*#__PURE__*/ withBrandStroke(LFilter, "Filter");
+export const Gavel = /*#__PURE__*/ withBrandStroke(LGavel, "Gavel");
+export const Globe2 = /*#__PURE__*/ withBrandStroke(LGlobe2, "Globe2");
+export const Layers = /*#__PURE__*/ withBrandStroke(LLayers, "Layers");
+export const LayoutGrid = /*#__PURE__*/ withBrandStroke(LLayoutGrid, "LayoutGrid");
+export const LineChart = /*#__PURE__*/ withBrandStroke(LLineChart, "LineChart");
+export const Loader2 = /*#__PURE__*/ withBrandStroke(LLoader2, "Loader2");
+export const Lock = /*#__PURE__*/ withBrandStroke(LLock, "Lock");
+export const LogOut = /*#__PURE__*/ withBrandStroke(LLogOut, "LogOut");
+export const Mail = /*#__PURE__*/ withBrandStroke(LMail, "Mail");
+export const Maximize2 = /*#__PURE__*/ withBrandStroke(LMaximize2, "Maximize2");
+export const Menu = /*#__PURE__*/ withBrandStroke(LMenu, "Menu");
+export const Minus = /*#__PURE__*/ withBrandStroke(LMinus, "Minus");
+export const Moon = /*#__PURE__*/ withBrandStroke(LMoon, "Moon");
+export const MoreHorizontal = /*#__PURE__*/ withBrandStroke(LMoreHorizontal, "MoreHorizontal");
+export const PanelLeft = /*#__PURE__*/ withBrandStroke(LPanelLeft, "PanelLeft");
+export const Pencil = /*#__PURE__*/ withBrandStroke(LPencil, "Pencil");
+export const PieChart = /*#__PURE__*/ withBrandStroke(LPieChart, "PieChart");
+export const Play = /*#__PURE__*/ withBrandStroke(LPlay, "Play");
+export const Plus = /*#__PURE__*/ withBrandStroke(LPlus, "Plus");
+export const RefreshCw = /*#__PURE__*/ withBrandStroke(LRefreshCw, "RefreshCw");
+export const Repeat = /*#__PURE__*/ withBrandStroke(LRepeat, "Repeat");
+export const Scale = /*#__PURE__*/ withBrandStroke(LScale, "Scale");
+export const ScatterChart = /*#__PURE__*/ withBrandStroke(LScatterChart, "ScatterChart");
+export const Search = /*#__PURE__*/ withBrandStroke(LSearch, "Search");
+export const Send = /*#__PURE__*/ withBrandStroke(LSend, "Send");
+export const Sun = /*#__PURE__*/ withBrandStroke(LSun, "Sun");
+export const Trash2 = /*#__PURE__*/ withBrandStroke(LTrash2, "Trash2");
+export const TrendingDown = /*#__PURE__*/ withBrandStroke(LTrendingDown, "TrendingDown");
+export const TrendingUp = /*#__PURE__*/ withBrandStroke(LTrendingUp, "TrendingUp");
+export const User = /*#__PURE__*/ withBrandStroke(LUser, "User");
+export const X = /*#__PURE__*/ withBrandStroke(LX, "X");
+export const XCircle = /*#__PURE__*/ withBrandStroke(LXCircle, "XCircle");
 
 /* ─── Govern (workflow, matrix, reporting, integrations) ──────── */
-export const UserRound = withBrandStroke(L.UserRound, "UserRound");
-export const PenLine = withBrandStroke(L.PenLine, "PenLine");
-export const CircleDashed = withBrandStroke(L.CircleDashed, "CircleDashed");
-export const House = withBrandStroke(L.House, "House");
-export const Grid3x3 = withBrandStroke(L.Grid3x3, "Grid3x3");
-export const Route = withBrandStroke(L.Route, "Route");
-export const Plug = withBrandStroke(L.Plug, "Plug");
-export const FileSpreadsheet = withBrandStroke(L.FileSpreadsheet, "FileSpreadsheet");
-export const History = withBrandStroke(L.History, "History");
-export const Undo2 = withBrandStroke(L.Undo2, "Undo2");
-export const ShieldX = withBrandStroke(L.ShieldX, "ShieldX");
-export const Hourglass = withBrandStroke(L.Hourglass, "Hourglass");
-export const MessageSquare = withBrandStroke(L.MessageSquare, "MessageSquare");
-export const ListChecks = withBrandStroke(L.ListChecks, "ListChecks");
-export const Coins = withBrandStroke(L.Coins, "Coins");
-export const Link2 = withBrandStroke(L.Link2, "Link2");
-export const ArrowLeftRight = withBrandStroke(L.ArrowLeftRight, "ArrowLeftRight");
-export const Gauge = withBrandStroke(L.Gauge, "Gauge");
-export const FileDown = withBrandStroke(L.FileDown, "FileDown");
-export const Ban = withBrandStroke(L.Ban, "Ban");
-export const BadgeCheck = withBrandStroke(L.BadgeCheck, "BadgeCheck");
+export const UserRound = /*#__PURE__*/ withBrandStroke(LUserRound, "UserRound");
+export const PenLine = /*#__PURE__*/ withBrandStroke(LPenLine, "PenLine");
+export const CircleDashed = /*#__PURE__*/ withBrandStroke(LCircleDashed, "CircleDashed");
+export const House = /*#__PURE__*/ withBrandStroke(LHouse, "House");
+export const Grid3x3 = /*#__PURE__*/ withBrandStroke(LGrid3x3, "Grid3x3");
+export const Route = /*#__PURE__*/ withBrandStroke(LRoute, "Route");
+export const Plug = /*#__PURE__*/ withBrandStroke(LPlug, "Plug");
+export const FileSpreadsheet = /*#__PURE__*/ withBrandStroke(LFileSpreadsheet, "FileSpreadsheet");
+export const History = /*#__PURE__*/ withBrandStroke(LHistory, "History");
+export const Undo2 = /*#__PURE__*/ withBrandStroke(LUndo2, "Undo2");
+export const ShieldX = /*#__PURE__*/ withBrandStroke(LShieldX, "ShieldX");
+export const Hourglass = /*#__PURE__*/ withBrandStroke(LHourglass, "Hourglass");
+export const MessageSquare = /*#__PURE__*/ withBrandStroke(LMessageSquare, "MessageSquare");
+export const ListChecks = /*#__PURE__*/ withBrandStroke(LListChecks, "ListChecks");
+export const Coins = /*#__PURE__*/ withBrandStroke(LCoins, "Coins");
+export const Link2 = /*#__PURE__*/ withBrandStroke(LLink2, "Link2");
+export const ArrowLeftRight = /*#__PURE__*/ withBrandStroke(LArrowLeftRight, "ArrowLeftRight");
+export const Gauge = /*#__PURE__*/ withBrandStroke(LGauge, "Gauge");
+export const FileDown = /*#__PURE__*/ withBrandStroke(LFileDown, "FileDown");
+export const Ban = /*#__PURE__*/ withBrandStroke(LBan, "Ban");
+export const BadgeCheck = /*#__PURE__*/ withBrandStroke(LBadgeCheck, "BadgeCheck");

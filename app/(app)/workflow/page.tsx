@@ -117,15 +117,15 @@ function Workflow() {
   const header = (
     <PageHeader
       title="Workflow"
-      subtitle="Every agreement, who has it, how long it has waited and what happens next."
+      subtitle="Every contract, who has it, how long it has waited and what happens next."
       actions={
         <>
           <LayoutSwitch value={layout} onChange={setLayout} />
           <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9">
-            <Link href="/draft"><FileSignature size={15} />Draft an SOW</Link>
+            <Link href="/draft"><FileSignature size={15} />Draft a SOW</Link>
           </Button></EditionOnly>
           <Button asChild size="lg" className="md:h-9">
-            <Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />New agreement</Link>
+            <Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />Upload a contract</Link>
           </Button>
         </>
       }
@@ -154,11 +154,11 @@ function Workflow() {
         {header}
         <StatePanel
           art="empty"
-          title={showClosed ? "No agreements yet" : "No open agreements"}
-          description="Upload an agreement to start. Sonar checks it against your matrix and it appears here with its next step."
+          title={showClosed ? "No contracts yet" : "No open contracts"}
+          description="Upload a contract to start. Sonar checks it against your matrix and it appears here with its next step."
         >
-          <Button asChild size="lg"><Link href="/projects/upload"><Plus size={15} />Upload an agreement</Link></Button>
-          {!showClosed && <Button variant="outline" size="lg" onClick={() => setShowClosed(true)}>Show all agreements</Button>}
+          <Button asChild size="lg"><Link href="/projects/upload"><Plus size={15} />Upload a contract</Link></Button>
+          {!showClosed && <Button variant="outline" size="lg" onClick={() => setShowClosed(true)}>Show all contracts</Button>}
         </StatePanel>
       </>
     );

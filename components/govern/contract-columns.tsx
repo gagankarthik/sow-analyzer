@@ -26,7 +26,7 @@ export const CONTRACT_COLUMNS: DataTableColumn<Contract>[] = [
     // the table's own width (cqw); a table with fewer columns raises --name-cap.
     cell: (c) => (
       <span className="flex min-w-0 max-w-[min(30rem,var(--name-cap,33cqw))] flex-col">
-        <span className="truncate" title={c.title}>{c.title || "Untitled agreement"}</span>
+        <span className="truncate" title={c.title}>{c.title || "Untitled contract"}</span>
         {(c.counterparty || c.sponsor) && <span className="truncate text-xs font-normal text-[var(--ink-600)]">{c.counterparty || c.sponsor}</span>}
       </span>
     ),

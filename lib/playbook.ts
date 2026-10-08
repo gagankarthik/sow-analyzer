@@ -6,8 +6,8 @@
 // How grading works (decided by the API, described here so the UI words it
 // correctly):
 //   • A document is graded against the playbook of the workspace it was
-//     uploaded into, when it is analysed. Changing a rule does not change the
-//     result of a document already analysed: it applies from the next analysis
+//     uploaded into, when it is analyzed. Changing a rule does not change the
+//     result of a document already analyzed: it applies from the next analysis
 //     or re-analysis.
 //   • Every clause gets exactly one outcome. "No rule" and "not classified" are
 //     not passes: nothing was checked.
@@ -103,7 +103,7 @@ const source = (v: unknown): PlaybookSource | null =>
   typeof v === "string" && SOURCE_SET.has(v) ? (v as PlaybookSource) : null;
 
 /** A clause's playbook result, or null when the API sent none (a document
- *  analysed before clauses were graded) or sent an outcome this app does not
+ *  analyzed before clauses were graded) or sent an outcome this app does not
  *  know. Null is shown as "Not assessed", never as a pass. */
 export function normaliseClausePlaybook(raw: unknown): ClausePlaybookResult | null {
   if (typeof raw !== "object" || raw === null) return null;
@@ -372,7 +372,7 @@ export interface FoundClauseType {
 
 /**
  * Custom clause types (outside the fixed category list) that the analysis
- * found, gathered from each document's `clauseTypes`. Documents analysed
+ * found, gathered from each document's `clauseTypes`. Documents analyzed
  * before that field existed contribute nothing. Most frequent first.
  */
 export function foundCustomTypes(docs: object[]): FoundClauseType[] {

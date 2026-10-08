@@ -69,7 +69,7 @@ export function useContract(id: string): UseQueryResult<ContractDetail> {
     queryFn: () => getContract(id),
     enabled: !!id,
     staleTime: 15_000,
-    // A revision being analysed changes the contract when Sonar finishes.
+    // A revision being analyzed changes the contract when Sonar finishes.
     refetchInterval: (query) => {
       if (isPermanentError(query.state.error)) return false;
       const c = query.state.data as ContractDetail | undefined;

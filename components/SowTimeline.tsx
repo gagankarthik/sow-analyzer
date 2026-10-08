@@ -4,7 +4,7 @@
 // and its amendments). It reads each classification's `keyDates` when the
 // analysis produced them, and otherwise the older structured fields (effective
 // date, start / end, phases, milestones, deliverable due dates), so documents
-// analysed before key dates existed still show what was extracted.
+// analyzed before key dates existed still show what was extracted.
 //
 // Whether a date is completed, today or upcoming is derived from the live clock
 // (lib/key-dates.ts); nothing about that is stored.
@@ -87,7 +87,7 @@ export function SowTimeline({ classifications, currency }: { classifications: Ap
 
       {legacyDocs > 0 && (
         <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-          {legacyDocs === classifications.length ? "These documents were" : `${legacyDocs} of these documents ${legacyDocs === 1 ? "was" : "were"}`} analysed before full date extraction, so some dates may be missing. Re-analyse a document to extract every date.
+          {legacyDocs === classifications.length ? "These documents were" : `${legacyDocs} of these documents ${legacyDocs === 1 ? "was" : "were"}`} analyzed before full date extraction, so some dates may be missing. Re-analyze a document to extract every date.
         </p>
       )}
     </section>

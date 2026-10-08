@@ -171,7 +171,7 @@ function ConfirmForm() {
             disabled={waiting || resending}
             className={`${secondaryPillClass} h-11 px-5 text-sm tabular-nums`}
           >
-            {resending ? "Sending" : waiting ? `Resend in ${cooldown.left}s` : "Resend code"}
+            {resending ? "Sending…" : waiting ? `Resend in ${cooldown.left}s` : "Resend code"}
           </button>
         </div>
         <div className="mt-4 min-h-11">{resent && <FormNotice>New code sent. Use the most recent email.</FormNotice>}</div>

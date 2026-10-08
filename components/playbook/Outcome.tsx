@@ -61,7 +61,7 @@ export function ClausePlaybookPanel({ result }: { result: ClausePlaybookResult |
       <div className="rounded-lg border border-dashed border-[var(--ink-300)] p-3.5">
         <p className="text-sm font-semibold text-foreground">Playbook: not assessed</p>
         <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">
-          This clause was analysed before clauses were compared with the playbook. Re-analyse the document to grade it.
+          This clause was analyzed before clauses were compared with the playbook. Re-analyze the document to grade it.
         </p>
       </div>
     );

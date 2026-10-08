@@ -1,3 +1,5 @@
+// The public site's stylesheet loads with its pages only, not inside the app.
+import "@/app/landing.css";
 import type { ReactNode } from "react";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { AnnouncementBar } from "@/components/landing/AnnouncementBar";

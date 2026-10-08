@@ -65,7 +65,7 @@ export default function CompliancePacksPage() {
     save.mutate([...next], {
       onError: (err: unknown) =>
         toast.error("Couldn't save compliance packs", {
-          description: `${err instanceof Error ? err.message : "Please try again."} The switch was put back.`,
+          description: `${err instanceof Error ? err.message : "Try again."} The switch was put back.`,
         }),
     });
   };
@@ -130,7 +130,7 @@ export default function CompliancePacksPage() {
                   ? isError ? "Couldn\u2019t load your settings." : "Loading your settings…"
                   : data.explicit ? "Saved for your workspace." : "Using the default selection. Your workspace hasn\u2019t chosen yet."}
             </span>{" "}
-            Changes apply on the next analysis. Re-analyse a document to grade it against a newly enabled pack.
+            Changes apply on the next analysis. Re-analyze a document to grade it against a newly enabled pack.
           </p>
         </div>
 

@@ -34,7 +34,7 @@ export function ExportButtons({
       else await downloadPdf(report);
       toast.success(kind === "xlsx" ? "Excel file downloaded" : "PDF downloaded");
     } catch (e) {
-      toast.error("Couldn't create the file", { description: e instanceof Error ? e.message : "Please try again." });
+      toast.error("Couldn't create the file", { description: e instanceof Error ? e.message : "Try again." });
     } finally {
       setBusy(null);
     }

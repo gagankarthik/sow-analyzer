@@ -129,7 +129,7 @@ export function useDocument(id: string): UseQueryResult<ApiDocumentDetail> {
       const next = await getDocument(id);
       const prev = qc.getQueryData<ApiDocumentDetail>(documentKeys.detail(id));
       if (prev && changed(prev.document, next.document)) {
-        // The document moved on (finished, failed, re-analysed, new version):
+        // The document moved on (finished, failed, re-analyzed, new version):
         // its analysis output and every list that counts it are now out of date.
         void qc.invalidateQueries({ queryKey: documentKeys.classification(id) });
         void qc.invalidateQueries({ queryKey: documentKeys.diff(id) });
