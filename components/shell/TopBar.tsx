@@ -673,7 +673,7 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
             className="sonar-button mx-1 inline-flex h-8 shrink-0 items-center gap-1.5 !rounded-full px-3 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
           >
             <SonarIcon size={15} strokeWidth={1.75} className="shrink-0 text-[var(--brand-primary-600)]" />
-            <span className="hidden sm:inline">Sonar</span>
+            <span className="hidden sm:inline">Ask Sonar</span>
           </button>
         )}
         <Tooltip>
