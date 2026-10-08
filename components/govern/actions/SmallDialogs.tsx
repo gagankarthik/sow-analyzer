@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { useGovernFeature, usePatchContract } from "@/lib/govern/queries";
+import { useGovernFeature, useOrgCurrency, usePatchContract } from "@/lib/govern/queries";
 import type { Contract } from "@/lib/govern/types";
 import { ActionDialog, Field, NoteField } from "./ActionDialog";
 import { useGovernErrorToast, useRunContractAction } from "./useRunAction";
@@ -97,7 +97,8 @@ export function AddValueDialog({ contract, open, onOpenChange }: { contract: Con
   const patch = usePatchContract(contract.contractId);
   const onError = useGovernErrorToast();
   const [amount, setAmount] = useState(contract.manualValue !== null ? String(contract.manualValue) : "");
-  const [currency, setCurrency] = useState(contract.currency ?? "USD");
+  const orgCurrency = useOrgCurrency();
+  const [currency, setCurrency] = useState(contract.currency ?? orgCurrency);
   const parsed = Number(amount.replace(/[,\s]/g, ""));
   const valid = amount.trim() !== "" && Number.isFinite(parsed) && parsed >= 0;
 

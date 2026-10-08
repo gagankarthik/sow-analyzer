@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { AnnouncementBar } from "@/components/landing/AnnouncementBar";
 import { Footer } from "@/components/landing/Footer";
+import { CookieNotice } from "@/components/landing/CookieNotice";
 
 /* Shared frame for every public page: tokens, skip link, header, footer. */
 export function MarketingShell({ children }: { children: ReactNode }) {
@@ -16,6 +17,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
         {children}
       </main>
       <Footer />
+      <CookieNotice />
     </div>
   );
 }

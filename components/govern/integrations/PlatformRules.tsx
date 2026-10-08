@@ -14,7 +14,7 @@ const SECURITY = [
   { icon: ShieldCheck, text: "Least privilege: each connection only asks for the access it needs to read or write its own fields." },
   { icon: Lock, text: "Encrypted transport for every call. Credentials are stored in a secret store and never shown again." },
   { icon: Globe2, text: "Data stays where you require it. Nothing is copied to a region you have not approved." },
-  { icon: Upload, text: "Built for volume: about 2,500 new contracts a year plus the backlog, using batch upload of up to 200 documents per call, without slowing the leader view." },
+  { icon: Upload, text: "Built for volume: thousands of contracts a year plus your backlog, with batch upload of up to 200 documents per call, without slowing the leader view." },
 ];
 
 export function PlatformRules() {

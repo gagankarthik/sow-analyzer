@@ -15,7 +15,7 @@ export const LEGAL: Record<string, LegalDoc> = {
       "This policy explains what data Blue-IQ processes, why, and the choices you have. It applies to the Blue-IQ contract-intelligence platform and website.",
     sections: [
       { h: "What we process", p: "Account data (name, email, organization) you provide, and the contract documents you upload for analysis. We also process limited usage and diagnostic logs to operate and secure the service." },
-      { h: "Why we process it", p: "To provide the service — extracting clauses, scoring risk against your playbook, and tracking value across amendments — and to secure, support, and improve it. We do not sell your data." },
+      { h: "Why we process it", p: "To provide the service — extracting clauses, rating each clause against your review matrix, and tracking value across amendments — and to secure, support, and improve it. We do not sell your data." },
       { h: "AI processing", p: "Extracted contract text is sent to OpenAI's API to pull out facts and label clauses. Original files are not sent. Under OpenAI's API terms, inputs are not used to train its models, and they may be kept for up to 30 days for abuse monitoring. Rating each clause against your matrix is done by the matrix's own rules, not by the AI, and every rating names the rule behind it. Blue-IQ does not train any model on your documents." },
       { h: "Where your data is stored", p: "Documents and records are stored and processed in the United States, on cloud infrastructure run by our hosting provider. The providers who process data for us are listed on our Sub-processors page." },
       { h: "Cookies and browser storage", p: "We use one session cookie to keep you signed in, and no advertising or tracking cookies. The app keeps a few preferences and unsent drafts in your browser; drafts and history are cleared when you sign out." },
@@ -66,6 +66,20 @@ export const LEGAL: Record<string, LegalDoc> = {
       { h: "Breach notification", p: "In the event of a personal-data breach, we will notify affected customers without undue delay and within 72 hours of becoming aware, with the information needed to meet your obligations." },
       { h: "Data subject requests", p: "We assist you in responding to data-subject requests and, on termination, delete or return the personal data we process for you." },
       { h: "Request a signed DPA", p: "Contact dpa@blue-iq.ai to execute a Data Processing Agreement." },
+    ],
+  },
+  cookies: {
+    title: "Cookie Policy",
+    updated: UPDATED,
+    intro:
+      "Blue-IQ uses one strictly necessary cookie and no advertising, analytics or tracking cookies. Because nothing optional is set, there is nothing to opt in to; this page lists exactly what is stored and why.",
+    sections: [
+      { h: "The one cookie we set", p: "bq.idtoken keeps you signed in to Govern. It is first-party, sent only to Blue-IQ over HTTPS (Secure, SameSite=Strict), and expires with your sign-in session or when you sign out. It is strictly necessary, so the law does not require consent for it." },
+      { h: "What we do not use", p: "No advertising cookies, no analytics or session-recording tools, no social media pixels and no third-party cookies of any kind, on the website or in the app." },
+      { h: "Browser storage in the app", p: "The app keeps a few things in your browser's local storage so it behaves the way you left it: whether the sidebar is collapsed, table and report layout, your notification read marks, onboarding progress and unsent drafts. This stays on your device, is never sent to advertisers, and drafts and history are cleared when you sign out." },
+      { h: "Your cookie notice choice", p: "When you close the cookie notice, the website remembers that in your browser's local storage so it does not show again. Clearing your browser data shows it again." },
+      { h: "Your controls", p: "You can block or delete cookies in your browser settings. Blocking bq.idtoken signs you out and you will not be able to use Govern until it is allowed again." },
+      { h: "Contact", p: "Questions about cookies or browser storage can be sent to privacy@blue-iq.ai." },
     ],
   },
   subprocessors: {

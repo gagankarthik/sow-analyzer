@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUp } from "lucide-react";
+import { FooterBackdrop } from "@/components/landing/FooterBackdrop";
 import { Logo } from "@/components/landing/primitives";
 import { INDUSTRY_SECTIONS, PRODUCT_SECTIONS, SOLUTION_SECTIONS, landingHref } from "@/components/landing/site-nav";
 import { COMING_SOON_LABEL, isComingSoon } from "@/components/landing/ComingSoon";
@@ -46,18 +47,29 @@ const COLUMNS: { id: string; title: string; links: FooterLink[] }[] = [
       { label: "Privacy policy", href: "/legal/privacy" },
       { label: "Terms of service", href: "/legal/terms" },
       { label: "Data processing", href: "/legal/dpa" },
+      { label: "Cookie policy", href: "/legal/cookies" },
       { label: "Sub-processors", href: "/legal/subprocessors" },
     ],
   },
 ];
 
-/* Navy footer: full-width link columns, then the logo with the full legal
-   notice under it, then copyright and a back-to-top button. The notice is the same fixed copy the app shows under
+/* Navy footer over a shape backdrop: the brand row with the promise (the one
+   call to action is the StartCta band above), then full-width link columns, then the full legal notice, then copyright and a back-to-top button. The notice is the same fixed copy the app shows under
    every analysis (components/ui/AnalysisDisclaimer): do not reword it. */
 export function Footer() {
   return (
     <footer className="lp-footer">
-      <div className="lp-wrap">
+      <FooterBackdrop />
+      <div className="lp-wrap relative">
+        <div className="lp-footer-brand">
+          <div>
+            <Logo height={30} variant="dark" />
+            <p className="lp-footer-promise">
+              Every agreement checked against your matrix, <span className="lp-serif">moving to signature.</span>
+            </p>
+          </div>
+        </div>
+
         <div className="lp-footer-columns">
           {COLUMNS.map((column) => (
             <nav key={column.id} aria-labelledby={`footer-${column.id}`}>
@@ -80,8 +92,7 @@ export function Footer() {
         {/* Logo, then the full legal notice under it, then copyright and
             the back-to-top button on one row. */}
         <div className="lp-footer-legal">
-          <Logo height={28} variant="dark" />
-          <div role="note" aria-labelledby="footer-legal-title" className="mt-6">
+          <div role="note" aria-labelledby="footer-legal-title">
             <h2 id="footer-legal-title" className="lp-footer-title">
               For guidance only, not legal advice.
             </h2>

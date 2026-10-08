@@ -25,6 +25,7 @@ export function SiteHeader() {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { status } = useAuth();
   const isSignedIn = status === "authenticated";
 
@@ -48,6 +49,25 @@ export function SiteHeader() {
 
   useEffect(() => () => clearTimeout(closeTimer.current), []);
 
+  // The mobile menu is a full-screen panel: the page behind it must not scroll.
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isDrawerOpen]);
+
+  // At the top the bar is part of the page; once content scrolls under it,
+  // it becomes a white bar with a hairline.
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const open = (label: string) => {
     clearTimeout(closeTimer.current);
     setOpenMenu(label);
@@ -70,6 +90,7 @@ export function SiteHeader() {
     <header
       ref={headerRef}
       className="lp-header sticky top-0 z-50"
+      data-raised={isScrolled || Boolean(openMenu) || isDrawerOpen ? "true" : undefined}
       onMouseLeave={closeSoon}
       onMouseEnter={() => clearTimeout(closeTimer.current)}
       onBlur={closeOnBlur}
@@ -80,7 +101,7 @@ export function SiteHeader() {
           <span className="lp-product-tag">Govern</span>
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center justify-center gap-1 lg:flex">
+        <nav aria-label="Primary" className="lp-navgroup hidden lg:flex">
           {NAV_MENUS.map((menu) => {
             const isOpen = openMenu === menu.label;
             return (
@@ -100,18 +121,19 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="flex items-center justify-end gap-4">
+        <div className="flex items-center justify-end gap-2">
           {isSignedIn ? (
             <Link href="/home" className="lp-btn lp-btn-primary lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
               Open Govern
             </Link>
           ) : (
             <>
-              <Link href="/login" className="lp-navlink hidden font-medium sm:inline" onClick={closeAll}>
+              <Link href="/login" className="lp-btn lp-btn-quiet lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
                 Log in
               </Link>
               <Link href="/signup" className="lp-btn lp-btn-primary lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
                 Request a demo
+                <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
               </Link>
             </>
           )}
@@ -132,7 +154,21 @@ export function SiteHeader() {
 
       {isDrawerOpen && (
         <nav id={MOBILE_NAV_ID} aria-label="Primary" className="lp-drawer lg:hidden">
-          <div className="lp-wrap py-2">
+          <div className="lp-drawer-bar lp-wrap">
+            <Link href="/" aria-label="Blue-IQ Govern home" className="flex items-center gap-3" onClick={closeAll}>
+              <Logo height={26} />
+              <span className="lp-product-tag">Govern</span>
+            </Link>
+            <button
+              type="button"
+              aria-label="Close menu"
+              onClick={() => setIsDrawerOpen(false)}
+              className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-full text-lp-ink hover:bg-lp-subtle"
+            >
+              <X size={22} strokeWidth={2} />
+            </button>
+          </div>
+          <div className="lp-drawer-body lp-wrap">
             {NAV_MENUS.map((menu) => {
               const isOpen = openSection === menu.label;
               const sectionId = `lp-mobile-${menu.label.toLowerCase()}`;
@@ -140,7 +176,7 @@ export function SiteHeader() {
                 <div key={menu.label} className="border-b border-lp-line">
                   <button
                     type="button"
-                    className="flex h-14 w-full items-center justify-between font-semibold text-lp-ink"
+                    className="lp-drawer-row"
                     aria-expanded={isOpen}
                     aria-controls={sectionId}
                     onClick={() => setOpenSection(isOpen ? null : menu.label)}
@@ -171,22 +207,23 @@ export function SiteHeader() {
                 </div>
               );
             })}
-            <div className="flex gap-3 py-5">
+          </div>
+          <div className="lp-drawer-actions lp-wrap">
               {isSignedIn ? (
                 <Link href="/home" onClick={closeAll} className="lp-btn lp-btn-primary flex-1">
                   Open Govern
                 </Link>
               ) : (
                 <>
-                  <Link href="/login" onClick={closeAll} className="lp-btn lp-btn-outline flex-1">
-                    Log in
-                  </Link>
-                  <Link href="/signup" onClick={closeAll} className="lp-btn lp-btn-primary flex-1">
+                  <Link href="/signup" onClick={closeAll} className="lp-btn lp-btn-primary lp-btn-lg w-full">
                     Request a demo
+                    <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+                  </Link>
+                  <Link href="/login" onClick={closeAll} className="lp-btn lp-btn-outline lp-btn-lg w-full">
+                    Log in
                   </Link>
                 </>
               )}
-            </div>
           </div>
         </nav>
       )}

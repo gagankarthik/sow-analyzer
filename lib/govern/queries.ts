@@ -127,6 +127,13 @@ export function useEdition(): Edition {
   return resolveEdition(settings.data?.organization?.edition);
 }
 
+/** The organization's default currency (Settings → Organization), used
+ *  wherever an amount has no currency of its own. USD until settings load. */
+export function useOrgCurrency(): string {
+  const settings = useWorkflowSettings();
+  return settings.data?.organization?.defaultCurrency || "USD";
+}
+
 export function useEditionFeature(feature: EditionFeature): boolean {
   return editionHas(useEdition(), feature);
 }

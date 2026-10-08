@@ -21,6 +21,7 @@ import { Pencil, Plus, Route, Trash2 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, DIRECTION_LABEL, OFFICES, OFFICE_LABEL } from "@/lib/govern/labels";
 import type { Direction, RoutingRule } from "@/lib/govern/types";
+import { useOrgCurrency } from "@/lib/govern/queries";
 import { newId, routingErrors, routingSentence, type SettingsDraft } from "./draft";
 import { ToggleChips } from "./ToggleChips";
 
@@ -35,6 +36,7 @@ export function RoutingRules({
   onChange: (next: SettingsDraft) => void;
   readOnly: boolean;
 }) {
+  const currency = useOrgCurrency();
   const [editing, setEditing] = useState<{ rule: RoutingRule; isNew: boolean } | null>(null);
   const [removing, setRemoving] = useState<RoutingRule | null>(null);
   const rules = draft.routingRules;
@@ -87,7 +89,7 @@ export function RoutingRules({
                     {!r.enabled && <span className="rounded-md border border-border px-1.5 text-xs font-medium text-[var(--ink-500)]">Off</span>}
                   </div>
                   <p className={cn("mt-1 text-base leading-snug", r.enabled ? "text-foreground" : "text-[var(--ink-500)] line-through decoration-[var(--ink-300)]")}>
-                    {routingSentence(r)}
+                    {routingSentence(r, currency)}
                   </p>
                   {problem && <div className="mt-1"><ErrorText>{problem}</ErrorText></div>}
                 </div>
@@ -140,7 +142,7 @@ export function RoutingRules({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete &ldquo;{removing?.name || "this rule"}&rdquo;?</AlertDialogTitle>
             <AlertDialogDescription>
-              {removing ? routingSentence(removing) : ""} After you save, contracts approved from then on no longer need this sign-off. To pause it instead, turn it off.
+              {removing ? routingSentence(removing, currency) : ""} After you save, contracts approved from then on no longer need this sign-off. To pause it instead, turn it off.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -164,6 +166,7 @@ function RoutingRuleForm({
   onSave: (r: RoutingRule) => void;
 }) {
   const uid = useId();
+  const currency = useOrgCurrency();
   const [rule, setRule] = useState<RoutingRule>(initial);
   const [valueText, setValueText] = useState(initial.when.minValue !== undefined ? String(initial.when.minValue) : "");
   const [tried, setTried] = useState(false);
@@ -197,7 +200,7 @@ function RoutingRuleForm({
       {/* The sentence is the rule: shown first and updated as you choose. */}
       <div className="rounded-lg border border-structure-border bg-structure-soft px-4 py-3" aria-live="polite">
         <div className="text-xs font-semibold text-structure-soft-fg">This rule says</div>
-        <p className="mt-1 text-base leading-snug text-foreground">{routingSentence(rule)}</p>
+        <p className="mt-1 text-base leading-snug text-foreground">{routingSentence(rule, currency)}</p>
       </div>
 
       <Field label="Rule name" htmlFor={`${uid}-name`} required error={tried ? errs.name : null}>

@@ -105,7 +105,8 @@ export function IntegrationsDiagram({ connectors, planned = false }: { connector
   const statusText = (s: Status) => (planned ? "Planned" : liveStatusText(s));
   const ids = Object.keys(NODES) as ConnectorId[];
   const summary = ids.map((id) => `${CONNECTOR_NAME[id]}: ${statusText(statusOf(id))}`).join("; ");
-  const title = planned ? "Planned: Blue IQ integrations · 4 platforms" : "Blue IQ integrations · 4 connected platforms";
+  const live = planned ? 0 : ids.filter((id) => statusOf(id) === "connected").length;
+  const title = planned ? `Planned: Blue IQ integrations · ${ids.length} platforms` : `Blue IQ integrations · ${live} of ${ids.length} connected`;
 
   return (
     <figure className="min-w-0">

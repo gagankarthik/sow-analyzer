@@ -11,12 +11,20 @@ export function HeroBackdrop() {
       focusable="false"
     >
       <defs>
-        <pattern id="lp-hero-dots" width="28" height="28" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="1.2" fill="#D9D5CB" />
+        {/* A review matrix: wide clause rows split into rating columns. */}
+        <pattern id="lp-hero-matrix" width="240" height="48" patternUnits="userSpaceOnUse">
+          <path d="M0 47.5 H240 M120 0 V48 M180 0 V48 M239.5 0 V48" fill="none" stroke="#EAE7DF" strokeWidth="1" />
         </pattern>
+        <linearGradient id="lp-hero-fade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity="1" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <mask id="lp-hero-mask">
+          <rect x="0" y="0" width="1440" height="620" fill="url(#lp-hero-fade)" />
+        </mask>
       </defs>
-      {/* faint dot field across the top */}
-      <rect x="0" y="0" width="1440" height="560" fill="url(#lp-hero-dots)" opacity="0.7" />
+      {/* the matrix grid, fading out before the product card */}
+      <rect x="0" y="0" width="1440" height="620" fill="url(#lp-hero-matrix)" mask="url(#lp-hero-mask)" />
       {/* left: a blue quarter circle with a sand square tucked under it */}
       <path d="M0 120 A260 260 0 0 1 260 380 L0 380 Z" fill="#DCE8FE" />
       <rect x="0" y="380" width="150" height="150" fill="#F1E7D6" />

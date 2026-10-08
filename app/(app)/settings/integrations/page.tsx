@@ -75,7 +75,7 @@ function LiveIntegrations() {
           <div className="flex flex-col gap-2 border-b border-border px-4 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-5">
             <div className="min-w-0">
               <h2 id="int-map-heading" className="text-lg font-semibold tracking-tight text-foreground">
-                Blue IQ integrations · 4 connected platforms
+                Integrations{connectors.data ? ` · ${connectors.data.filter((c) => c.status === "connected").length} of ${connectors.data.length} connected` : ""}
               </h2>
               <p className="mt-1 max-w-[58ch] text-sm leading-relaxed text-muted-foreground">
                 Huron records flow into Govern and findings flow back; Workday and DocuSign feed data in; Microsoft 365

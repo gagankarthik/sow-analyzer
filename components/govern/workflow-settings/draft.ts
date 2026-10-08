@@ -138,8 +138,12 @@ export function joinWords(words: string[], last = "and"): string {
   return `${words.slice(0, -1).join(", ")} ${last} ${words[words.length - 1]}`
 }
 
-export function formatUsd(amount: number): string {
-  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount)
+export function formatMoneyIn(amount: number, currency = "USD"): string {
+  try {
+    return new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 }).format(amount)
+  } catch {
+    return `${currency} ${Math.round(amount).toLocaleString()}`
+  }
 }
 
 /**
@@ -149,7 +153,8 @@ export function formatUsd(amount: number): string {
  * Agreement types and money direction narrow which contracts the rule looks
  * at; value, an unacceptable term and risk each trigger it on their own.
  */
-export function routingSentence(rule: RoutingRule): string {
+/** `currency` is the organization's default currency, which value thresholds are set in. */
+export function routingSentence(rule: RoutingRule, currency = "USD"): string {
   const w = rule.when
   const types = (w.agreementTypes ?? []).filter((t) => AGREEMENT_TYPES.includes(t))
   let subject = types.length === 0 ? "agreement" : joinWords(types.map((t) => TYPE_NOUN[t]), "or")
@@ -157,7 +162,7 @@ export function routingSentence(rule: RoutingRule): string {
   if (w.direction === "outgoing") subject += " that pays money out"
 
   const triggers: string[] = []
-  if (w.minValue !== undefined && Number.isFinite(w.minValue)) triggers.push(`worth ${formatUsd(w.minValue)} or more`)
+  if (w.minValue !== undefined && Number.isFinite(w.minValue)) triggers.push(`worth ${formatMoneyIn(w.minValue, currency)} or more`)
   if (w.anyUnacceptable) triggers.push("with a term you do not accept")
   if (w.minRisk === "high") triggers.push("rated high risk or worse")
   if (w.minRisk === "critical") triggers.push("rated critical risk")

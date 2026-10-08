@@ -20,7 +20,7 @@ import { NotificationsSection } from "@/components/govern/workflow-settings/Noti
 import { countProblems, routingSentence, toDraft, type SettingsDraft } from "@/components/govern/workflow-settings/draft";
 import { isForbidden } from "@/lib/api";
 import { PRE_SIGNATURE_STAGES, STAGE_LABEL, plural } from "@/lib/govern/labels";
-import { useGovernFeatures, useSaveWorkflowSettings, useWorkflowSettings } from "@/lib/govern/queries";
+import { useGovernFeatures, useOrgCurrency, useSaveWorkflowSettings, useWorkflowSettings } from "@/lib/govern/queries";
 import type { GovernFeatureFlags } from "@/lib/govern/features";
 import { ComingSoonPanel } from "@/components/govern/ComingSoon";
 import type { WorkflowSettingsInput } from "@/lib/govern/types";
@@ -135,6 +135,7 @@ export default function WorkflowSettingsPage() {
 
 /** Focal block: the review target and the routing rule most people ask about. */
 function Summary({ draft, features }: { draft: SettingsDraft; features: GovernFeatureFlags }) {
+  const currency = useOrgCurrency();
   const review = draft.stageTargetDays.review ?? null;
   const total = PRE_SIGNATURE_STAGES.reduce((sum, s) => sum + (draft.stageTargetDays[s] ?? 0), 0);
   const firstRule = features.routingRules ? draft.routingRules.find((r) => r.enabled) : undefined;
@@ -164,7 +165,7 @@ function Summary({ draft, features }: { draft: SettingsDraft; features: GovernFe
             <>and {plural(draft.assignmentRules.length, "assignment rule")} on.</>
           )}
         </p>
-        {firstRule && <p className="text-foreground">{routingSentence(firstRule)}</p>}
+        {firstRule && <p className="text-foreground">{routingSentence(firstRule, currency)}</p>}
         {features.notifications && (
           <p>{channels.length ? `Alerts go out by ${channels.join(" and ")}.` : "Alerts are off."}</p>
         )}
