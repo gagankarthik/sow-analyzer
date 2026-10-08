@@ -1,13 +1,15 @@
 "use client";
 
-// One contract on the board: what it is, who has it, how long, what blocks it,
-// and the one thing to do next. The whole card opens the contract; the owner
-// prompt, the next-step button and the "…" menu sit above that link.
+// One contract on the board: what it is, where it is, who has it, how long,
+// what blocks it, and the one thing to do next. On the board the whole card
+// opens the preview panel (elsewhere it links to the contract); the owner
+// prompt, the next-step button and the "…" menu sit above that layer.
 
 import { memo, useState } from "react";
 import Link from "next/link";
 import { Loader2, ShieldAlert, CheckCircle2, CircleDashed, UserRound } from "@/components/ui/icons";
 import { DaysInStage, WaitingOnChip } from "@/components/govern/primitives";
+import { useOpenPreview } from "./preview-context";
 import { AvatarStack } from "@/components/ds/Avatar";
 import { contractPeople } from "@/lib/govern/people";
 import { ActionDialogHost, ContractActionsMenu, NextStepButton, availableActions } from "@/components/govern/actions";
@@ -30,6 +32,8 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
   const party = partyLine(c);
   const gaps = c.captureGaps?.length ?? 0;
   const href = `/contracts/${encodeURIComponent(c.contractId)}`;
+  const openPreview = useOpenPreview();
+  const cover = "rounded-sm text-start after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[var(--brand-primary-400)] group-hover:text-[var(--brand-primary-700)]";
 
   return (
     <article
@@ -52,12 +56,13 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
       {/* Title: the link that covers the card */}
       <div className="-mt-1.5">
         <h3 className="text-base font-semibold line-clamp-2 break-words leading-snug text-foreground">
-          <Link
-            href={href}
-            className="rounded-sm after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[var(--brand-primary-400)] group-hover:text-[var(--brand-primary-700)]"
-          >
-            {c.title || "Untitled agreement"}
-          </Link>
+          {openPreview ? (
+            <button type="button" onClick={() => openPreview(c.contractId)} className={cover}>
+              {c.title || "Untitled agreement"}
+            </button>
+          ) : (
+            <Link href={href} className={cover}>{c.title || "Untitled agreement"}</Link>
+          )}
         </h3>
         {party && <p className="mt-0.5 truncate text-sm text-[var(--ink-600)]">{party}</p>}
       </div>

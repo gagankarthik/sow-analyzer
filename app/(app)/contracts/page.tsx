@@ -22,9 +22,10 @@ import type { Contract } from "@/lib/govern/types";
 import type { RiskLevel } from "@/lib/types";
 import { BulkActions } from "./_components/BulkActions";
 import { CONTRACT_COLUMNS } from "./_components/columns";
-import { ContractPreview } from "./_components/ContractPreview";
+import { ContractPreview } from "@/components/govern/ContractPreview";
 import { type PanelGroup } from "@/components/govern/ViewsPanel";
 import { RecordDashboard } from "@/components/govern/RecordDashboard";
+import { LayoutSwitch } from "@/components/govern/LayoutSwitch";
 
 const GROUPS: ViewGroup[] = ["all", "workflows", "signed"];
 
@@ -113,6 +114,7 @@ function Contracts() {
       description={view.description}
       actions={
         <>
+          <LayoutSwitch current="list" otherHref={["in-progress", "mine", "unassigned", "overdue", "other-side"].includes(view.id) && view.id !== "in-progress" ? `/workflow?view=${view.id}` : "/workflow"} />
           <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9"><Link href="/draft"><FileSignature size={15} />Draft an SOW</Link></Button></EditionOnly>
           <Button asChild size="lg" className="md:h-9"><Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />New agreement</Link></Button>
         </>

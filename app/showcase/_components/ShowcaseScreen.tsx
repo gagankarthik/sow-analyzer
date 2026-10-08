@@ -31,6 +31,7 @@ import WorkflowPage from "@/app/(app)/workflow/page";
 import ContractPage from "@/app/(app)/contracts/[id]/page";
 import ContractsPage from "@/app/(app)/contracts/page";
 import ObligationsPage from "@/app/(app)/obligations/page";
+import CounterpartiesPage from "@/app/(app)/counterparties/page";
 import DataManagerPage from "@/app/(app)/settings/data/page";
 import ValueReportPage from "@/app/(app)/reports/value/page";
 import BottlenecksPage from "@/app/(app)/reports/bottlenecks/page";
@@ -40,6 +41,7 @@ const PAGES: Record<ShowcaseScreenId, ComponentType> = {
   board: WorkflowPage,
   contracts: ContractsPage,
   obligations: ObligationsPage,
+  counterparties: CounterpartiesPage,
   data: DataManagerPage,
   home: HomePage,
   contract: ContractPage,

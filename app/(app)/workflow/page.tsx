@@ -4,13 +4,16 @@
 // card with its owner, clock, blockers and one next step. Status changes only
 // through actions people take, so there is no drag-and-drop.
 //
-// Layout: a pipeline strip shows all eight stages in order with their counts
-// and health; selecting a stage drives the board. On a wide screen the board
+// Layout: quick views (the Contracts dashboard's saved filters) narrow the
+// board; a pipeline strip shows all eight stages in order with their counts
+// and health; selecting a stage drives the board. A card opens the preview
+// panel; "List" shows the same contracts as the Contracts table. On a wide screen the board
 // shows the four lanes of that stage's phase (before or after signature);
 // below that it shows the selected stage's agreements as a grid.
 
 import { EditionOnly } from "@/components/govern/EditionOnly";
-import { useDeferredValue, useMemo, useState } from "react";
+import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -19,8 +22,13 @@ import { StatePanel } from "@/components/ui/StatePanel";
 import { FileSignature, Plus, Search } from "@/components/ui/icons";
 import { isForbidden } from "@/lib/api";
 import { PRE_SIGNATURE_STAGES, STAGES, STAGE_LABEL, plural } from "@/lib/govern/labels";
-import { NO_FILTERS, applyFilters, byUrgency, filterOptions, isFiltering, isOpen, type ContractFilters } from "@/lib/govern/metrics";
-import { useContracts } from "@/lib/govern/queries";
+import { NO_FILTERS, applyFilters, byUrgency, filterOptions, isFiltering, type ContractFilters } from "@/lib/govern/metrics";
+import { useContracts, useGovernMe } from "@/lib/govern/queries";
+import { CONTRACT_VIEWS } from "@/lib/govern/views";
+import { ContractPreview } from "@/components/govern/ContractPreview";
+import { QuickViews } from "./_components/BoardHeader";
+import { LayoutSwitch } from "@/components/govern/LayoutSwitch";
+import { PreviewContext } from "./_components/preview-context";
 import type { Stage } from "@/lib/govern/types";
 import { BoardFilters } from "./_components/BoardFilters";
 import { ContractCard } from "./_components/ContractCard";
@@ -28,7 +36,25 @@ import { PipelineStrip, StageLane, summariseStage, type StageSummary } from "./_
 
 const POST_SIGNATURE_STAGES = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
 
+const QUICK_VIEWS = ["in-progress", "mine", "unassigned", "overdue", "other-side"];
+
 export default function WorkflowPage() {
+  return (
+    <Suspense fallback={null}>
+      <Workflow />
+    </Suspense>
+  );
+}
+
+function Workflow() {
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const quickId = QUICK_VIEWS.includes(params.get("view") ?? "") ? (params.get("view") as string) : "in-progress";
+  const me = useGovernMe().data?.email?.toLowerCase() ?? null;
+  const [now] = useState(() => Date.now());
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const closePreview = useCallback(() => setPreviewId(null), []);
   const [showClosed, setShowClosed] = useState(false);
   const [filters, setFilters] = useState<ContractFilters>(NO_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -40,7 +66,15 @@ export default function WorkflowPage() {
   // Typing in the search box stays smooth on a large board.
   const deferredFilters = useDeferredValue(filters);
 
-  const visible = useMemo(() => applyFilters(all, deferredFilters).sort(byUrgency), [all, deferredFilters]);
+  const quickViews = useMemo(() => QUICK_VIEWS.map((id) => {
+    const v = CONTRACT_VIEWS.find((x) => x.id === id)!;
+    return { id, label: id === "in-progress" ? "All open" : v.label, count: all.filter((c) => v.test(c, { me, now })).length, test: v.test };
+  }), [all, me, now]);
+  const quick = quickViews.find((v) => v.id === quickId)!;
+  // "All open" keeps closed agreements when the Open/All switch asks for them.
+  const inQuick = useMemo(() => (quickId === "in-progress" ? all : all.filter((c) => quick.test(c, { me, now }))), [all, quick, quickId, me, now]);
+  const visible = useMemo(() => applyFilters(inQuick, deferredFilters).sort(byUrgency), [inQuick, deferredFilters]);
+  const setQuick = (id: string) => router.replace(id === "in-progress" ? pathname : `${pathname}?view=${id}`, { scroll: false });
   const options = useMemo(() => filterOptions(all), [all]);
   const summaries = useMemo(() => {
     const map = new Map<Stage, StageSummary>();
@@ -48,20 +82,22 @@ export default function WorkflowPage() {
     return map;
   }, [visible]);
   const totals = useMemo(() => {
-    const open = all.filter(isOpen);
+    // The figures follow the quick view, so they match its chip.
+    const open = all.filter((c) => quick.test(c, { me, now }));
     return {
       open: open.length,
       overdue: open.filter((c) => c.slaStatus === "red").length,
       late: open.filter((c) => c.slaStatus === "amber").length,
       unassigned: open.filter((c) => !c.owner).length,
     };
-  }, [all]);
+  }, [all, quick, me, now]);
 
   // Below the wide layout, show the stage picked, else the busiest open stage.
   const defaultStage = PRE_SIGNATURE_STAGES.find((s) => (summaries.get(s)?.contracts.length ?? 0) > 0)
     ?? STAGES.find((s) => (summaries.get(s)?.contracts.length ?? 0) > 0) ?? "review";
   const selectedStage = pickedStage ?? defaultStage;
 
+  const preview = previewId ? all.find((c) => c.contractId === previewId) ?? null : null;
   const failed = isError && !data;
   const filtering = isFiltering(filters);
   const noMatches = !isLoading && all.length > 0 && visible.length === 0;
@@ -72,6 +108,7 @@ export default function WorkflowPage() {
       subtitle="Every agreement, who has it, how long it has waited and what happens next."
       actions={
         <>
+          <LayoutSwitch current="board" otherHref={`/contracts?view=${quickId}`} />
           <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9">
             <Link href="/draft"><FileSignature size={15} />Draft an SOW</Link>
           </Button></EditionOnly>
@@ -116,7 +153,7 @@ export default function WorkflowPage() {
   }
 
   return (
-    <>
+    <PreviewContext.Provider value={setPreviewId}>
       {header}
       <div className="app-container app-page">
         {isError && (
@@ -125,6 +162,8 @@ export default function WorkflowPage() {
             <button type="button" onClick={() => refetch()} className="rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]">Try again</button>
           </div>
         )}
+
+        <QuickViews views={quickViews} active={quickId} onChange={setQuick} />
 
         <BoardFilters
           filters={filters}
@@ -176,7 +215,8 @@ export default function WorkflowPage() {
           </>
         )}
       </div>
-    </>
+      {preview && <ContractPreview contract={preview} me={me} onClose={closePreview} />}
+    </PreviewContext.Provider>
   );
 }
 

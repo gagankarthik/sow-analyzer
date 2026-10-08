@@ -6,6 +6,7 @@ export const SHOWCASE_SCREENS = {
   board: { pathname: "/workflow", params: {} },
   contracts: { pathname: "/contracts", params: {} },
   obligations: { pathname: "/obligations", params: {} },
+  counterparties: { pathname: "/counterparties", params: {} },
   data: { pathname: "/settings/data", params: {} },
   home: { pathname: "/home", params: {} },
   contract: { pathname: `/contracts/${FEATURED_CONTRACT_ID}`, params: { id: FEATURED_CONTRACT_ID }, tab: "matrix" },
