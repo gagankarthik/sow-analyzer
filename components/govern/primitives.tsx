@@ -119,3 +119,25 @@ export function PersonDot({ name, email, className }: { name: string | null; ema
   const label = (name || email).trim();
   return <Avatar name={name} email={email} size="base" title={label} className={className} />;
 }
+
+/** Whose turn and how long, as one pill for dense tables: "Other side · 45d".
+ *  The days take the step's timing colour; the full sentence is the tooltip. */
+export function TurnPill({ waitingOn, days, sla, className }: { waitingOn: WaitingOn; days: number; sla: SlaStatus; className?: string }) {
+  const Icon = WAITING_ICON[waitingOn.kind] ?? CircleDashed;
+  const late = sla === "amber" || sla === "red";
+  return (
+    <span
+      title={`${waitingOn.label || WAITING_ON_LABEL[waitingOn.kind]} · ${daysLabel(days)} in this step${late ? ` · ${SLA_LABEL[sla]}` : ""}`}
+      className={cn("inline-flex h-6 max-w-full items-center overflow-hidden whitespace-nowrap rounded-md border border-border bg-card text-xs font-medium text-[var(--ink-800)]", className)}
+    >
+      <span className="inline-flex min-w-0 items-center gap-1.5 px-2">
+        <Icon size={12} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
+        <span className="truncate">{WAITING_ON_SHORT[waitingOn.kind] ?? waitingOn.kind}</span>
+      </span>
+      <span className={cn("inline-flex h-full items-center border-l border-border px-1.5 font-semibold tabular-nums", SLA_TONE[sla])}>
+        {days}d{late && <span className="sr-only">, {SLA_LABEL[sla]}</span>}
+      </span>
+    </span>
+  );
+}
+

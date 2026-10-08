@@ -104,7 +104,7 @@ export default function CapturePage() {
                     <button
                       type="button"
                       onClick={() => setSelected(null)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--ink-300)] px-3 text-sm font-medium text-[var(--ink-700)] hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--ink-300)] px-3 text-sm font-medium text-[var(--ink-700)] hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
                     >
                       Show all <X size={14} aria-hidden />
                     </button>

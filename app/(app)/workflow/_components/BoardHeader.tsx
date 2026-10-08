@@ -21,7 +21,7 @@ export function QuickViews({ views, active, onChange }: {
             aria-checked={on}
             onClick={() => onChange(v.id)}
             className={cn(
-              "inline-flex h-8 items-center gap-2 rounded-full border px-3 text-sm transition-colors",
+              "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm transition-colors",
               on ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)] font-semibold text-[var(--brand-primary-800)]" : "border-border bg-card text-[var(--ink-700)] hover:border-[var(--ink-300)] hover:text-foreground",
             )}
           >

@@ -27,7 +27,8 @@ import { useContracts, useGovernMe } from "@/lib/govern/queries";
 import { CONTRACT_VIEWS } from "@/lib/govern/views";
 import { ContractPreview } from "@/components/govern/ContractPreview";
 import { QuickViews } from "./_components/BoardHeader";
-import { LayoutSwitch } from "@/components/govern/LayoutSwitch";
+import { LayoutSwitch, type Layout } from "@/components/govern/LayoutSwitch";
+import { WorkflowList } from "./_components/WorkflowList";
 import { PreviewContext } from "./_components/preview-context";
 import type { Stage } from "@/lib/govern/types";
 import { BoardFilters } from "./_components/BoardFilters";
@@ -74,7 +75,16 @@ function Workflow() {
   // "All open" keeps closed agreements when the Open/All switch asks for them.
   const inQuick = useMemo(() => (quickId === "in-progress" ? all : all.filter((c) => quick.test(c, { me, now }))), [all, quick, quickId, me, now]);
   const visible = useMemo(() => applyFilters(inQuick, deferredFilters).sort(byUrgency), [inQuick, deferredFilters]);
-  const setQuick = (id: string) => router.replace(id === "in-progress" ? pathname : `${pathname}?view=${id}`, { scroll: false });
+  const layout: Layout = params.get("layout") === "list" ? "list" : "board";
+  const urlFor = (view: string, nextLayout: Layout) => {
+    const q = new URLSearchParams();
+    if (view !== "in-progress") q.set("view", view);
+    if (nextLayout === "list") q.set("layout", "list");
+    const qs = q.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  };
+  const setQuick = (id: string) => router.replace(urlFor(id, layout), { scroll: false });
+  const setLayout = (next: Layout) => router.replace(urlFor(quickId, next), { scroll: false });
   const options = useMemo(() => filterOptions(all), [all]);
   const summaries = useMemo(() => {
     const map = new Map<Stage, StageSummary>();
@@ -108,7 +118,7 @@ function Workflow() {
       subtitle="Every agreement, who has it, how long it has waited and what happens next."
       actions={
         <>
-          <LayoutSwitch current="board" otherHref={`/contracts?view=${quickId}`} />
+          <LayoutSwitch value={layout} onChange={setLayout} />
           <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9">
             <Link href="/draft"><FileSignature size={15} />Draft an SOW</Link>
           </Button></EditionOnly>
@@ -197,6 +207,8 @@ function Workflow() {
             <p className="mt-1.5 max-w-sm text-sm text-[var(--ink-600)]">Try a sponsor name, a PI&rsquo;s surname or a department. Closed and rejected agreements show under All.</p>
             <Button variant="outline" size="lg" className="mt-5" onClick={() => setFilters(NO_FILTERS)}>Clear search and filters</Button>
           </div>
+        ) : layout === "list" ? (
+          <WorkflowList contracts={visible} loading={isLoading} previewId={previewId} onPreview={setPreviewId} />
         ) : (
           <>
             <PipelineStrip summaries={summaries} selected={selectedStage} onSelect={setPickedStage} loading={isLoading} />

@@ -7,6 +7,7 @@
 // verify or complete many at once. Sonar-found obligations stay "Needs
 // verification" until a person confirms them.
 
+import { SearchField } from "@/components/ds/inputs";
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -17,8 +18,7 @@ import { FilterPill, optionsFrom } from "@/components/ds/FilterPill";
 import { RecordDashboard } from "@/components/govern/RecordDashboard";
 import type { PanelGroup } from "@/components/govern/ViewsPanel";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { BadgeCheck, Check, Search, Sparkles } from "@/components/ui/icons";
+import { BadgeCheck, Check, Sparkles } from "@/components/ui/icons";
 import { updateObligation } from "@/lib/govern/api";
 import { OBLIGATION_KIND_LABEL, plural } from "@/lib/govern/labels";
 import { formatCompact } from "@/lib/govern/metrics";
@@ -157,12 +157,10 @@ function Obligations() {
 
   return (
     <RecordDashboard
-      page="obligations"
       label="Obligation views"
       groups={groups}
       activeId={view.id}
       hrefFor={hrefFor}
-      onSelectView={goToView}
       title={view.label}
       count={isLoading ? null : rows.length}
       description={view.description}
@@ -189,7 +187,6 @@ function Obligations() {
         activeRowId={previewId}
         defaultSort={{ columnId: "due", direction: "asc" }}
         pageSize={25}
-        densityKey="obligations-density"
         columnsKey="obligations-table"
         state={isLoading ? "loading" : isError && !data ? "error" : "ready"}
         onRetry={() => void refetch()}
@@ -209,14 +206,11 @@ function Obligations() {
         )}
         toolbar={
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full sm:w-60">
-              <Search size={15} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-500)]" />
-              <Input type="search" aria-label={`Search ${view.label.toLowerCase()}`} placeholder="Search this view" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 rounded-full pl-9 text-sm" />
-            </div>
+            <SearchField label={`Search ${view.label.toLowerCase()}`} hideLabel placeholder="Search this view" value={q} onChange={setQ} className="sm:w-60" />
             <FilterPill label="Type" selected={kind} onChange={setKind} options={optionsFrom(inView, (o) => o.kind, (v) => OBLIGATION_KIND_LABEL[v as PortfolioObligation["kind"]] ?? v)} />
             <FilterPill label="Verification" selected={verification} onChange={setVerification}
               options={[{ value: "needs", label: "Needs verification", count: inView.filter((o) => !o.verified).length }, { value: "verified", label: "Verified", count: inView.filter((o) => o.verified).length }].filter((o) => o.count > 0)} />
-            {filtering && <button type="button" onClick={clearAll} className="h-9 rounded-full px-2 text-sm font-medium text-[var(--brand-primary-700)] hover:underline">Clear all</button>}
+            {filtering && <button type="button" onClick={clearAll} className="h-9 rounded-lg px-2 text-sm font-medium text-[var(--brand-primary-700)] hover:underline">Clear all</button>}
           </div>
         }
         empty={

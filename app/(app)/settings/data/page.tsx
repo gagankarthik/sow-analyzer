@@ -5,13 +5,13 @@
 // properties are the facts Govern keeps on every contract. Each row shows
 // where it is used across your contracts; click one for its details.
 
+import { SearchField } from "@/components/ds/inputs";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable, type DataTableColumn } from "@/components/ds/DataTable";
 import { ProgressMeter } from "@/components/ds/Meter";
-import { Input } from "@/components/ui/input";
-import { Search, X } from "@/components/ui/icons";
+import { X } from "@/components/ui/icons";
 import { SettingsLayout } from "@/components/settings/SettingsNav";
 import { agreementTypeRows, propertyUsage, type AgreementTypeRow, type PropertyUsage } from "@/lib/govern/data-model";
 import { plural } from "@/lib/govern/labels";
@@ -73,10 +73,7 @@ export default function DataManagerPage() {
               </button>
             ))}
           </div>
-          <div className="relative w-full sm:w-64">
-            <Search size={15} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-500)]" />
-            <Input type="search" aria-label="Search by name" placeholder="Search by name" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 rounded-full pl-9 text-sm" />
-          </div>
+          <SearchField label="Search by name" hideLabel placeholder="Search by name" value={q} onChange={setQ} className="sm:w-64" />
         </div>
 
         <div className={cn("grid grid-cols-1 gap-6", (openType || openProp) && "xl:grid-cols-[minmax(0,1fr)_22rem]")}>

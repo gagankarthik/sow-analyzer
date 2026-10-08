@@ -74,7 +74,7 @@ export function SearchField({
               onChange("");
             }
           }}
-          className="border-border-control ps-9 pe-9 text-base md:text-sm [&::-webkit-search-cancel-button]:hidden"
+          className="h-9 rounded-lg border-border-control ps-9 pe-9 text-base md:text-sm [&::-webkit-search-cancel-button]:hidden"
           {...props}
         />
         {value && (

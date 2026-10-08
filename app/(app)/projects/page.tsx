@@ -253,7 +253,7 @@ export default function ProjectsPage() {
               <div className="relative w-full md:w-[260px] md:shrink-0">
                 <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search projects…" aria-label="Search projects"
-                  className="h-10 w-full rounded-lg border border-[var(--ink-300)] bg-card pl-9 pr-3 text-base text-foreground outline-none transition-shadow placeholder:text-[var(--ink-400)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)]" />
+                  className="h-9 w-full rounded-lg border border-[var(--ink-300)] bg-card pl-9 pr-3 text-sm text-foreground outline-none transition-shadow placeholder:text-[var(--ink-400)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)]" />
               </div>
               <div className={FILTER_ROW}>
                 <Select value={risk} onValueChange={(v) => setRisk(v as RiskFilter)}>

@@ -222,7 +222,7 @@ export default function BottlenecksPage() {
                     <button
                       type="button"
                       onClick={() => setFocus(null)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--brand-primary-300)] bg-[var(--brand-primary-50)] px-3 text-sm font-medium text-[var(--brand-primary-700)] hover:bg-[var(--brand-primary-100)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--brand-primary-300)] bg-[var(--brand-primary-50)] px-3 text-sm font-medium text-[var(--brand-primary-700)] hover:bg-[var(--brand-primary-100)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
                     >
                       Show all open contracts <X size={14} aria-hidden />
                     </button>

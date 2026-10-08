@@ -1,119 +1,75 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-/* The Views panel shared by the record dashboards (Contracts, Obligations):
-   saved filters down the left, each with a live count, in titled groups.
-   Every view is a URL so it can be bookmarked and shared. Collapses to a
-   rail; on small screens the same views are one select (ViewsSelect). */
+/* Views for the record dashboards (Contracts, Obligations): saved filters
+   with live counts, in titled groups. The page title is the switcher: it
+   names the open view and opens a menu of every view, so the table keeps the
+   full width. Every view is a URL, so it can be bookmarked and shared. */
 
 export type PanelView = { id: string; label: string; count: number; hideWhenEmpty?: boolean };
 export type PanelGroup = { label: string | null; views: PanelView[] };
 
-export function ViewsPanel({
+export function ViewSwitcher({
   label,
   groups,
   activeId,
-  collapsed,
-  onToggle,
+  title,
+  count,
   hrefFor,
 }: {
-  /** Accessible name, e.g. "Contract views". */
+  /** Accessible name of the menu, e.g. "Contract views". */
   label: string;
   groups: PanelGroup[];
   activeId: string;
-  collapsed: boolean;
-  onToggle: () => void;
+  title: string;
+  count: number | null;
   hrefFor: (id: string) => string;
 }) {
-  if (collapsed) {
-    return (
-      <div className="hidden lg:block">
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button
           type="button"
-          onClick={onToggle}
-          aria-label="Show views"
-          className="sticky top-20 inline-flex size-9 items-center justify-center rounded-lg border border-border bg-card text-[var(--ink-600)] shadow-xs hover:text-foreground"
+          aria-label={`${title}. Change view`}
+          className="group -ms-2 inline-flex max-w-full items-baseline gap-2.5 rounded-lg px-2 py-1 text-start transition-colors hover:bg-[var(--ink-100)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary-600)]"
         >
-          <ChevronsRight size={16} aria-hidden />
+          <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground md:text-[1.75rem]">{title}</h1>
+          {count !== null && <span className="shrink-0 text-base font-medium tabular-nums text-[var(--ink-500)]">{count.toLocaleString()}</span>}
+          <ChevronDown size={18} aria-hidden className="shrink-0 self-center text-[var(--ink-500)] transition-transform group-data-[state=open]:rotate-180" />
         </button>
-      </div>
-    );
-  }
-
-  return (
-    <nav aria-label={label} className="hidden lg:block">
-      <div className="sticky top-20 flex max-h-[calc(100dvh-6rem)] flex-col overflow-y-auto pb-6 pe-2">
-        <div className="flex items-center justify-between pb-2">
-          <p className="text-sm font-semibold text-foreground">Views</p>
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label="Hide views"
-            className="inline-flex size-8 items-center justify-center rounded-md text-[var(--ink-500)] hover:bg-[var(--ink-100)] hover:text-foreground"
-          >
-            <ChevronsLeft size={16} aria-hidden />
-          </button>
-        </div>
-
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-[70vh] w-72 overflow-y-auto" aria-label={label}>
         {groups.map((group, gi) => {
           const views = group.views.filter((v) => !v.hideWhenEmpty || v.count > 0 || v.id === activeId);
           if (views.length === 0) return null;
           return (
-            <div key={group.label ?? `group-${gi}`} className={cn(gi > 0 && "mt-4 border-t border-border pt-4")}>
-              {group.label && <p className="px-2.5 pb-1.5 text-xs font-semibold text-[var(--ink-500)]">{group.label}</p>}
-              <ul className="flex flex-col gap-0.5">
-                {views.map((v) => {
-                  const active = v.id === activeId;
-                  return (
-                    <li key={v.id}>
-                      <Link
-                        href={hrefFor(v.id)}
-                        aria-current={active ? "page" : undefined}
-                        scroll={false}
-                        className={cn(
-                          "flex h-9 items-center justify-between gap-3 rounded-lg px-2.5 text-sm transition-colors",
-                          active ? "bg-[var(--brand-primary-50)] font-semibold text-[var(--brand-primary-800)]" : "text-[var(--ink-700)] hover:bg-[var(--ink-100)] hover:text-foreground",
-                        )}
-                      >
+            <DropdownMenuGroup key={group.label ?? `g-${gi}`}>
+              {gi > 0 && <DropdownMenuSeparator />}
+              {group.label && <DropdownMenuLabel className="text-xs font-semibold text-[var(--ink-500)]">{group.label}</DropdownMenuLabel>}
+              {views.map((v) => {
+                const active = v.id === activeId;
+                return (
+                  <DropdownMenuItem key={v.id} asChild>
+                    <Link href={hrefFor(v.id)} scroll={false} aria-current={active ? "page" : undefined} className={cn("flex items-center justify-between gap-3", active && "font-semibold")}>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Check size={14} aria-hidden className={cn("shrink-0", active ? "text-[var(--brand-primary-700)]" : "invisible")} />
                         <span className="truncate">{v.label}</span>
-                        <span className={cn("shrink-0 text-xs tabular-nums", active ? "text-[var(--brand-primary-700)]" : "text-[var(--ink-500)]")}>
-                          {v.count.toLocaleString()}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+                      </span>
+                      <span className="shrink-0 text-xs tabular-nums text-[var(--ink-500)]">{v.count.toLocaleString()}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuGroup>
           );
         })}
-      </div>
-    </nav>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
-
-/** Phones and tablets: the same views as one select above the table. */
-export function ViewsSelect({ groups, activeId, onChange }: { groups: PanelGroup[]; activeId: string; onChange: (id: string) => void }) {
-  return (
-    <label className="flex items-center gap-2 lg:hidden">
-      <span className="text-sm font-medium text-[var(--ink-700)]">View</span>
-      <select
-        value={activeId}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--border-control)] bg-card px-3 text-sm text-foreground"
-      >
-        {groups.map((g, gi) => (
-          <optgroup key={g.label ?? `g-${gi}`} label={g.label ?? "All"}>
-            {g.views.map((v) => <option key={v.id} value={v.id}>{v.label} ({v.count.toLocaleString()})</option>)}
-          </optgroup>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-/** Remembered open/closed state of a dashboard's Views panel. */
-export const viewsPanelKey = (page: string) => `blueiq:${page}-views-panel`;

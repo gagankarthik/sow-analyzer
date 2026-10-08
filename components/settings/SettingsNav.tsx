@@ -122,7 +122,7 @@ export function SettingsSearch({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="border-[var(--ink-300)] pl-9 text-base md:text-base"
+          className="h-9 rounded-lg border-[var(--ink-300)] pl-9 text-base md:text-sm"
         />
       </div>
     </div>
@@ -154,7 +154,7 @@ export function FilterChips<T extends string>({
               aria-pressed={active}
               onClick={() => onChange(o.value)}
               className={cn(
-                "inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition-colors sm:h-8",
+                "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-lg border px-3.5 text-sm font-medium transition-colors sm:h-8",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                 active
                   ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-600)] text-white"

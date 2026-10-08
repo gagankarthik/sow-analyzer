@@ -3,10 +3,10 @@
 // Search is always there and needs nothing else (Requirement 5); the filters
 // (Requirement 3) sit folded away until someone asks for them.
 
+import { SearchField } from "@/components/ds/inputs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, Filter, Search, X } from "@/components/ui/icons";
+import { ChevronDown, Filter, X } from "@/components/ui/icons";
 import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
 import { NO_FILTERS, VALUE_BAND_LABEL, type ContractFilters, type ValueBand } from "@/lib/govern/metrics";
 import { cn } from "@/lib/utils";
@@ -44,26 +44,16 @@ export function BoardFilters({
   return (
     <section aria-label="Search and filters" className="flex flex-col gap-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1 sm:max-w-md">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-500)]" aria-hidden />
-          <Input
-            type="search"
-            aria-label="Search agreements"
-            placeholder="Search by title, sponsor, PI or department"
-            value={filters.q}
-            onChange={(e) => set("q", e.target.value)}
-            className="h-11 border-[var(--ink-300)] pl-9 text-base md:h-10 md:text-sm"
-          />
-        </div>
+        <SearchField label="Search agreements" hideLabel placeholder="Search by title, sponsor, PI or department" value={filters.q} onChange={(v) => set("q", v)} className="flex-1 sm:max-w-md md:max-w-md" />
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
-            size="lg"
+            size="sm"
             aria-expanded={open}
             aria-controls="board-filters"
             onClick={() => onOpenChange(!open)}
-            className="md:h-10"
+            className="h-9"
           >
             <Filter size={14} />Filters
             {activeCount > 0 && (
@@ -73,7 +63,7 @@ export function BoardFilters({
           </Button>
           {/* List scope, the standard Open | All convention: "All" adds
               closed and rejected agreements. */}
-          <div role="radiogroup" aria-label="Agreements to show" className="inline-flex h-10 items-center rounded-lg border border-border bg-[var(--ink-50)] p-0.5">
+          <div role="radiogroup" aria-label="Agreements to show" className="inline-flex h-9 items-center rounded-lg border border-border bg-[var(--ink-50)] p-0.5">
             {([
               [false, "Open", "Agreements still in progress or in force"],
               [true, "All", "Include closed and rejected agreements"],

@@ -8,7 +8,7 @@
 import { memo, useState } from "react";
 import Link from "next/link";
 import { Loader2, ShieldAlert, CheckCircle2, CircleDashed, UserRound } from "@/components/ui/icons";
-import { DaysInStage, WaitingOnChip } from "@/components/govern/primitives";
+import { TurnPill } from "@/components/govern/primitives";
 import { useOpenPreview } from "./preview-context";
 import { AvatarStack } from "@/components/ds/Avatar";
 import { contractPeople } from "@/lib/govern/people";
@@ -73,8 +73,7 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
           <span className="inline-flex h-6 items-center rounded-md bg-[var(--ink-100)] px-2 text-xs font-semibold text-[var(--ink-700)]">{STATE_LABEL[c.state]}</span>
         ) : (
           <>
-            <WaitingOnChip waitingOn={c.waitingOn} className="min-w-0" />
-            <DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} compact />
+            <TurnPill waitingOn={c.waitingOn} days={c.daysInStage} sla={c.slaStatus} className="min-w-0" />
           </>
         )}
         {analysing && (

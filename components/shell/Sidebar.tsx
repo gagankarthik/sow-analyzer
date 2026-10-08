@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useUIStore } from "@/lib/stores/ui";
 import {
   LayoutDashboard, Kanban, BarChart3, Briefcase, Sonar,
-  Settings, Library, DraftSow, CalendarClock, House, Gauge, ChevronLeft, ChevronRight, ListChecks, FileText, Building2,
+  Settings, Library, DraftSow, CalendarClock, House, Gauge, ChevronLeft, ChevronRight, ListChecks, FileText,
 } from "@/components/ui/icons";
 import { SETTINGS_ITEMS } from "@/components/settings/SettingsNav";
 import { editionHas, type EditionFeature } from "@/lib/edition";
@@ -33,7 +33,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/home", icon: House },
   { label: "Workflow", href: "/workflow", icon: Kanban },
   { label: "Contracts", href: "/contracts", icon: FileText },
-  { label: "Counterparties", href: "/counterparties", icon: Building2 },
   { label: "Projects", href: "/projects", icon: Briefcase },
   { label: "Library", href: "/library", icon: Library },
   { label: "Renewals", href: "/renewals", icon: CalendarClock },

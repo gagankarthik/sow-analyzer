@@ -29,7 +29,7 @@ export function ToggleChips<T extends string>({
               disabled={disabled}
               onClick={() => toggle(o.value)}
               className={cn(
-                "inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors sm:min-h-8",
+                "inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors sm:min-h-8",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60",
                 on
                   ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]"

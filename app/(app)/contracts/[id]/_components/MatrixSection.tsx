@@ -125,7 +125,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
             aria-pressed={view === v}
             onClick={() => setView(v)}
             className={cn(
-              "inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]",
+              "inline-flex h-9 items-center gap-1.5 rounded-lg border px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]",
               view === v ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-600)] text-white" : "border-[var(--ink-300)] bg-card text-[var(--ink-700)] hover:border-[var(--ink-400)]",
             )}
           >

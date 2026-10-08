@@ -1,6 +1,6 @@
 import type { DataTableColumn } from "@/components/ds/DataTable";
 import { AvatarStack } from "@/components/ds/Avatar";
-import { DaysInStage, WaitingOnChip } from "@/components/govern/primitives";
+import { TurnPill } from "@/components/govern/primitives";
 import { StageDots } from "@/components/govern/StageDots";
 import { RISK_LABEL } from "@/lib/chart-theme";
 import { AGREEMENT_TYPE_LABEL, STAGES } from "@/lib/govern/labels";
@@ -11,14 +11,15 @@ import type { RiskLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /* The Contracts dashboard's columns: name and party, where it is (stage
-   dots), whose turn and for how long, the people on it, then value, type,
-   risk and last update for wider screens. */
+   dots), whose turn with how long it has waited, the people on it and the
+   value; type, risk and last update join on the widest screens (or from the
+   Columns menu), so the table fits beside the Views panel at 1280px. */
 
 const RISK_ORDER: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
 export const CONTRACT_COLUMNS: DataTableColumn<Contract>[] = [
   {
-    id: "title", header: "Name", card: "title", className: "min-w-[16rem] max-w-[26rem]",
+    id: "title", header: "Name", card: "title", className: "min-w-[13rem] max-w-[26rem]",
     sortValue: (c) => c.title.toLowerCase(),
     cell: (c) => (
       <span className="flex min-w-0 flex-col">
@@ -27,18 +28,21 @@ export const CONTRACT_COLUMNS: DataTableColumn<Contract>[] = [
       </span>
     ),
   },
-  { id: "stage", header: "Stage", card: "status", className: "w-36", sortValue: (c) => STAGES.indexOf(c.stage), cell: (c) => <StageDots contract={c} /> },
-  { id: "waiting", header: "Turn", card: "status", cell: (c) => <WaitingOnChip waitingOn={c.waitingOn} short />, sortValue: (c) => c.waitingOn.kind },
-  { id: "days", header: "In step", numeric: true, sortFirst: "desc", sortValue: (c) => c.daysInStage, cell: (c) => <DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} /> },
+  { id: "stage", header: "Stage", card: "status", className: "w-32", sortValue: (c) => STAGES.indexOf(c.stage), cell: (c) => <StageDots contract={c} /> },
+  {
+    // Whose turn, and how long it has waited there: one cell, sorted by days.
+    id: "days", header: "Turn", card: "status", sortFirst: "desc", sortValue: (c) => c.daysInStage,
+    cell: (c) => <TurnPill waitingOn={c.waitingOn} days={c.daysInStage} sla={c.slaStatus} />,
+  },
   { id: "value", header: "Value", numeric: true, sortFirst: "desc", sortValue: (c) => c.value, cell: (c) => contractValueText(c) },
   {
-    id: "owner", header: "People", priority: 2,
+    id: "owner", header: "People",
     sortValue: (c) => c.owner?.name?.toLowerCase() ?? c.owner?.email ?? null,
     cell: (c) => <AvatarStack people={contractPeople(c)} emptyLabel="Unassigned" />,
   },
-  { id: "type", header: "Type", priority: 2, sortValue: (c) => AGREEMENT_TYPE_LABEL[c.agreementType], cell: (c) => AGREEMENT_TYPE_LABEL[c.agreementType] },
+  { id: "type", header: "Type", priority: 4, sortValue: (c) => AGREEMENT_TYPE_LABEL[c.agreementType], cell: (c) => AGREEMENT_TYPE_LABEL[c.agreementType] },
   {
-    id: "risk", header: "Risk", priority: 3,
+    id: "risk", header: "Risk", priority: 4,
     sortValue: (c) => (c.overallRisk ? RISK_ORDER[c.overallRisk] : null),
     cell: (c) => c.overallRisk ? (
       <span className={cn("text-sm font-medium", c.overallRisk === "critical" ? "text-[var(--danger)]" : c.overallRisk === "high" ? "text-[var(--warning-fg)]" : "text-[var(--ink-700)]")}>
@@ -46,5 +50,5 @@ export const CONTRACT_COLUMNS: DataTableColumn<Contract>[] = [
       </span>
     ) : <span className="text-[var(--ink-500)]">Not assessed</span>,
   },
-  { id: "updated", header: "Updated", priority: 3, numeric: true, sortFirst: "desc", sortValue: (c) => c.updatedAt, cell: (c) => new Date(c.updatedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" }) },
+  { id: "updated", header: "Updated", priority: 4, numeric: true, sortFirst: "desc", sortValue: (c) => c.updatedAt, cell: (c) => new Date(c.updatedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" }) },
 ];

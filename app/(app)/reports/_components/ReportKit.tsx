@@ -235,7 +235,7 @@ export function SearchField({
         onChange={(e) => onChange(e.target.value)}
         className={cn(
           "border-[var(--ink-300)] bg-card",
-          large ? "h-14 rounded-xl pl-12 pr-12 text-lg md:text-lg" : "h-10 pl-9 pr-9 text-base md:text-sm",
+          large ? "h-14 rounded-xl pl-12 pr-12 text-lg md:text-lg" : "h-9 rounded-lg pl-9 pr-9 text-base md:text-sm",
         )}
       />
       {value && (

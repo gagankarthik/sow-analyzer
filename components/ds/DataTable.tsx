@@ -41,7 +41,7 @@ import { formatDate, formatRelative, formatValue } from "./format";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 
-export type ColumnPriority = 1 | 2 | 3;
+export type ColumnPriority = 1 | 2 | 3 | 4;
 
 export type DataTableColumn<T> = {
   id: string;
@@ -55,7 +55,7 @@ export type DataTableColumn<T> = {
   sortable?: boolean;
   /** First click direction: numbers and dates usually want "desc". */
   sortFirst?: SortDirection;
-  /** P1 always visible · P2 hidden < lg · P3 hidden < xl. Default 1. */
+  /** P1 always visible · P2 hidden < lg · P3 hidden < xl · P4 hidden < 2xl. Default 1. */
   priority?: ColumnPriority;
   /** Right-align with tabular figures (numbers, money, days). */
   numeric?: boolean;
@@ -141,6 +141,7 @@ const PRIORITY_CELL: Record<ColumnPriority, string> = {
   1: "",
   2: "hidden lg:table-cell",
   3: "hidden xl:table-cell",
+  4: "hidden 2xl:table-cell",
 };
 
 /* ─── Component ──────────────────────────────────────────────────── */
@@ -194,7 +195,9 @@ export function DataTable<T>(props: DataTableProps<T>) {
   const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set());
 
   const titleColumn = columns.find((c) => c.card === "title") ?? columns[0];
-  const hiddenColumns = columns.filter((c) => (c.priority ?? 1) > 1);
+  // Rows expand to show P2/P3 columns hidden on smaller screens; P4 columns
+  // are extras for wide screens, reached from the Columns menu instead.
+  const hiddenColumns = columns.filter((c) => (c.priority ?? 1) > 1 && c.priority !== 4);
 
   // Sort (client-side unless controlled).
   const sorted = React.useMemo(() => {
@@ -256,6 +259,8 @@ export function DataTable<T>(props: DataTableProps<T>) {
   const rowHeight = density === "compact" ? "h-(--table-row-compact)" : "h-(--table-row-comfortable)";
   const cellPad = density === "compact" ? "px-3 py-1.5" : "px-4 py-2.5";
   const hasExpand = hiddenColumns.length > 0;
+  // The expand toggle stays until the widest hidden column is on screen.
+  const expandHide = hiddenColumns.some((c) => c.priority === 4) ? "2xl:hidden" : "xl:hidden";
 
   // Selection is scoped to what exists: ids that are no longer in `rows` are ignored.
   const rowIds = React.useMemo(() => new Set(rows.map(getRowId)), [rows, getRowId]);
@@ -283,9 +288,12 @@ export function DataTable<T>(props: DataTableProps<T>) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-3", className)}>
       {(toolbar || densityKey || columnsKey) && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">{toolbar}</div>
-          <div className="flex items-center gap-2">
+        // Filters take the row and wrap; table controls sit at the end, or on
+        // their own line when space runs out. Phones show cards, so the
+        // column and density controls are not shown there.
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 grow basis-[34rem]">{toolbar}</div>
+          <div className="ms-auto hidden items-center gap-2 md:flex">
             {columnsKey && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -374,7 +382,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                     </th>
                   )}
                   {hasExpand && (
-                    <th scope="col" className="sticky top-0 z-(--z-sticky) w-10 border-b border-border-default bg-surface-sunken xl:hidden">
+                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default bg-surface-sunken", expandHide)}>
                       <span className="sr-only">Details</span>
                     </th>
                   )}
@@ -502,7 +510,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
               </td>
             )}
             {hasExpand && (
-              <td className={cn("relative z-(--z-raised) border-b border-border-subtle ps-2 align-middle xl:hidden", rowHeight)}>
+              <td className={cn("relative z-(--z-raised) border-b border-border-subtle ps-2 align-middle", expandHide, rowHeight)}>
                 <button
                   type="button"
                   aria-expanded={isOpen}
@@ -566,11 +574,11 @@ export function DataTable<T>(props: DataTableProps<T>) {
             )}
           </tr>
           {hasExpand && isOpen && (
-            <tr className="xl:hidden">
+            <tr className={expandHide}>
               <td colSpan={colCount} className="border-b border-border-subtle bg-surface-sunken px-4 py-3">
                 <dl className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
                   {hiddenColumns.map((col) => (
-                    <div key={col.id} className={cn("flex min-w-0 flex-col gap-0.5", col.priority === 2 && "lg:hidden")}>
+                    <div key={col.id} className={cn("flex min-w-0 flex-col gap-0.5", col.priority === 2 && "lg:hidden", col.priority === 3 && "xl:hidden")}>
                       <dt className="text-caption text-fg-tertiary">{col.header}</dt>
                       <dd className={cn("min-w-0 text-body text-fg-primary", col.numeric && "tabular-nums")}>{renderCell(col, row)}</dd>
                     </div>
@@ -604,11 +612,11 @@ export function DataTable<T>(props: DataTableProps<T>) {
           )}
           <li className="relative flex flex-col gap-2 rounded-container border border-border-default bg-surface-raised p-4 shadow-raised">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 text-body-lg font-semibold text-fg-primary">
+              <div className="min-w-0 flex-1 text-body-lg font-semibold text-fg-primary">
                 {href ? (
                   <Link
                     href={href}
-                    className="outline-none after:absolute after:inset-0 after:rounded-container after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-focus"
+                    className="block min-w-0 max-w-full outline-none after:absolute after:inset-0 after:rounded-container after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-focus"
                   >
                     {renderCell(titleColumn, row)}
                   </Link>
@@ -616,7 +624,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                   <button
                     type="button"
                     onClick={() => onRowClick(row)}
-                    className="text-start outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-focus"
+                    className="block w-full min-w-0 text-start outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:outline-2 focus-visible:after:outline-focus"
                   >
                     {renderCell(titleColumn, row)}
                   </button>

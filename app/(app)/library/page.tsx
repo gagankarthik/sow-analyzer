@@ -259,7 +259,7 @@ export default function LibraryPage() {
                 placeholder="Search by title or project…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="h-10 border-[var(--ink-300)] bg-card pl-9 pr-3 placeholder:text-[var(--ink-400)]"
+                className="h-9 rounded-lg border-[var(--ink-300)] bg-card pl-9 pr-3 placeholder:text-[var(--ink-400)]"
               />
             </div>
 

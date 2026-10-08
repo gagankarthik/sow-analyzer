@@ -285,7 +285,6 @@ export function GovernExample() {
           defaultSort={{ columnId: "days", direction: "desc" }}
           pageSize={25}
           noun="agreements"
-          densityKey="ds-example-density"
           groupBy={
             grouped
               ? {
