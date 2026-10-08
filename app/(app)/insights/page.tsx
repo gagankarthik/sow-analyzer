@@ -53,9 +53,9 @@ const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: R
 };
 const RISK_PILL: Record<RiskLevel, string> = {
   critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
   medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
-  low: "bg-[var(--success-soft)] text-[var(--success)]",
+  low: "bg-[var(--success-soft)] text-[var(--success-fg)]",
 };
 // Fixed orders, so a group keeps its colour whatever the filters leave on screen.
 const DOC_TYPE_KEYS = Object.keys(DOC_TYPE_META) as DocType[];
@@ -425,7 +425,7 @@ export default function InsightsPage() {
         actions={<LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />}
       />
 
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
+      <div className="app-container app-page">
         {/* Filter bar — applies to every block on the page */}
         {!loading && !failedLoad && docs.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
@@ -485,7 +485,7 @@ export default function InsightsPage() {
                   <SonarMark size="lg" tile />
                   <div className="min-w-0 flex-1">
                     <h2 className="mb-1.5 text-sm font-semibold text-[var(--ai-text)]">Summary of {plural(scoped.length, "document")}{activeFilters > 0 ? " matching the filters" : ""}</h2>
-                    <p className="max-w-[78ch] text-lg leading-relaxed text-foreground">{summary.join(" ")}</p>
+                    <p className="max-w-[60ch] text-lg leading-relaxed text-foreground">{summary.join(" ")}</p>
                     {(clausesPending || classFailed > 0 || docsWithoutRisk > 0) && (
                       <p className="mt-2 text-sm text-[var(--ink-600)]">
                         {[
@@ -738,7 +738,7 @@ export default function InsightsPage() {
               >
                 <ValueRiskScatter points={scatterPoints} onSelect={(id) => router.push(`/projects/${id}`)} />
                 <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-                  <p className="max-w-[72ch] text-sm leading-relaxed text-[var(--ink-600)]">
+                  <p className="max-w-[58ch] text-sm leading-relaxed text-[var(--ink-600)]">
                     Risk index = the average clause weight in a document (low 12, medium 42, high 74, critical 100), so 0 to 100. Dashed line: High-risk threshold ({HIGH_RISK_THRESHOLD}).
                     {" "}{plural(scatterPoints.length, "document")} of {readyDocs.length} plotted; the rest lack a value or risk counts.
                   </p>
@@ -854,7 +854,7 @@ function FilterChip({ active, onClick, dot, children }: { active: boolean; onCli
   return (
     <button
       type="button" onClick={onClick} aria-pressed={active}
-      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-[var(--brand-primary-300)] aria-[pressed=true]:bg-[var(--brand-primary-50)] aria-[pressed=true]:text-[var(--brand-primary-700)] sm:h-8"
+      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-structure-border aria-[pressed=true]:bg-structure-soft aria-[pressed=true]:text-structure-soft-fg sm:h-8"
     >
       {dot && <span className="h-2 w-2 rounded-full" style={{ background: dot }} />}
       {children}

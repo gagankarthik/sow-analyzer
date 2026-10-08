@@ -4,7 +4,7 @@ export default function ProjectLoading() {
   return (
     <>
       {/* Header skeleton */}
-      <div className="border-b border-border bg-card">
+      <div>
         <div className="app-container pt-6 md:pt-8 pb-5 md:pb-6 space-y-4">
           <div className="flex items-center gap-2">
             <Skeleton className="h-3.5 w-24" />
@@ -16,7 +16,7 @@ export default function ProjectLoading() {
         </div>
       </div>
       {/* Tabs skeleton */}
-      <div className="border-b border-border bg-card">
+      <div>
         <div className="app-container">
           <div className="flex h-11 items-center gap-6 overflow-hidden">
             {Array.from({ length: 8 }).map((_, i) => (

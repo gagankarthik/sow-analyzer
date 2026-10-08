@@ -25,6 +25,7 @@ import { can } from "@/lib/projects-store";
 import { ROLE_META } from "@/components/team/roles";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { formatRelativeDays, formatDate } from "@/lib/format";
+import { WorkflowLinkChip } from "@/components/govern/WorkflowLinkChip";
 
 /** Header for one document. Every value shown is read from the API row
  *  (`project._raw`); there are no fallbacks that could pass for real data. */
@@ -70,7 +71,7 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
   }
 
   return (
-    <div className="border-b border-border bg-card">
+    <div>
       <div className="app-container pb-5 pt-4 md:pt-6">
         <Link
           href="/projects"
@@ -82,7 +83,7 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
           {/* Title block */}
           <div className="flex min-w-0 flex-1 items-start gap-3">
-            <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] sm:inline-flex">
+            <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg sm:inline-flex">
               <FileText size={18} strokeWidth={1.75} />
             </span>
             <div className="min-w-0 flex-1">
@@ -91,6 +92,7 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
                   {title}
                 </h1>
                 <StatusBadge status={status} lifecycle={raw.lifecycle} />
+                <WorkflowLinkChip docId={docId} />
               </div>
 
               {/* Meta row */}
@@ -180,7 +182,7 @@ function Dot() {
 function StatusBadge({ status, lifecycle }: { status: string; lifecycle: string }) {
   if (status === "READY") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[var(--success-soft)] text-[var(--success)] shrink-0 capitalize">
+      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[var(--success-soft)] text-[var(--success-fg)] shrink-0 capitalize">
         <CheckCircle2 size={12} />{lifecycle}
       </span>
     );

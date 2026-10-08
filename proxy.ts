@@ -14,6 +14,8 @@ import { SESSION_COOKIE, isTokenValid } from "@/lib/auth/session";
 // signed-out visitors to /login, so a missed entry still does not open a page.
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/reports",
+  "/contracts",
   "/draft",
   "/help",
   "/insights",
@@ -24,6 +26,7 @@ const PROTECTED_PREFIXES = [
   "/renewals",
   "/settings",
   "/workflow",
+  "/design-system",
 ];
 
 // Screens a signed-in user has no reason to sit on.

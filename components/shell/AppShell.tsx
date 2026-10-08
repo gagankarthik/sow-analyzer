@@ -70,14 +70,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
       if (mod || e.altKey || isTyping()) return;
 
-      // Sequence: "g" primes, then "d"/"p"/"l"/"w" within 800ms navigates.
+      // Sequence: "g" primes, then "d"/"p"/"l"/"w"/"r" within 800ms navigates.
       const now = Date.now();
       if (e.key.toLowerCase() === "g") {
         lastG = now;
         return;
       }
       if (now - lastG < 800) {
-        const map: Record<string, string> = { d: "/dashboard", p: "/projects", l: "/library", w: "/workflow" };
+        const map: Record<string, string> = { d: "/dashboard", p: "/projects", l: "/library", w: "/workflow", r: "/reports" };
         const dest = map[e.key.toLowerCase()];
         if (dest) {
           e.preventDefault();

@@ -80,6 +80,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Don't leak the framework version.
   poweredByHeader: false,
+  // The leader home was retired; old links and bookmarks land on the dashboard.
+  async redirects() {
+    return [{ source: "/home", destination: "/dashboard", permanent: true }];
+  },
   async headers() {
     return [
       {

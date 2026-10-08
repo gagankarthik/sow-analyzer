@@ -21,11 +21,11 @@ export type MetricCardProps = {
 
 const ICON_TONE: Record<Tone, string> = {
   neutral: "bg-muted text-[var(--ink-600)]",
-  success: "bg-[var(--success-soft)] text-[var(--success)]",
+  success: "bg-[var(--success-soft)] text-[var(--success-fg)]",
   danger:  "bg-[var(--danger-soft)] text-[var(--danger)]",
-  warning: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  warning: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
   ai:      "bg-[var(--ai-surface)] text-[var(--ai-ink)]",
-  brand:   "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]",
+  brand:   "bg-structure-soft text-structure-soft-fg",
 };
 
 export function MetricCard({
@@ -94,7 +94,7 @@ function DeltaPill({
 }) {
   const cls =
     direction === "up"
-      ? "bg-[var(--success-soft)] text-[var(--success)]"
+      ? "bg-[var(--success-soft)] text-[var(--success-fg)]"
       : direction === "down"
       ? "bg-[var(--danger-soft)] text-[var(--danger)]"
       : "bg-muted text-muted-foreground";

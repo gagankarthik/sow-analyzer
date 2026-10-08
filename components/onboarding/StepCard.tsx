@@ -25,7 +25,7 @@ export function StepCard({
       >
         {title}
       </h2>
-      {lead && <p className="mt-2 max-w-[60ch] text-base leading-relaxed text-[var(--ink-600)]">{lead}</p>}
+      {lead && <p className="mt-2 max-w-[54ch] text-base leading-relaxed text-[var(--ink-600)]">{lead}</p>}
       {children && <div className="mt-6">{children}</div>}
       {footer && (
         <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">

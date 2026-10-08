@@ -33,7 +33,7 @@ const TYPE_META: Record<
   renewal: { icon: CalendarClock, label: "Renewal", tint: "text-[var(--warning)]", bg: "bg-[var(--warning-soft)]" },
   analysis: { icon: CheckCircle2, label: "Analysis", tint: "text-[var(--success)]", bg: "bg-[var(--success-soft)]" },
   failed: { icon: AlertTriangle, label: "Failed", tint: "text-[var(--danger)]", bg: "bg-[var(--danger-soft)]" },
-  team: { icon: Users, label: "Team", tint: "text-[var(--brand-primary-700)]", bg: "bg-[var(--brand-primary-50)]" },
+  team: { icon: Users, label: "Team", tint: "text-structure-soft-fg", bg: "bg-structure-soft" },
 };
 
 const FILTERS: { key: NotificationType | "all"; label: string }[] = [
@@ -46,7 +46,7 @@ const FILTERS: { key: NotificationType | "all"; label: string }[] = [
 ];
 
 const CHIP =
-  "h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-[var(--brand-primary-300)] aria-[pressed=true]:bg-[var(--brand-primary-50)] aria-[pressed=true]:text-[var(--brand-primary-700)] sm:h-8";
+  "h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-structure-border aria-[pressed=true]:bg-structure-soft aria-[pressed=true]:text-structure-soft-fg sm:h-8";
 
 function bucketOf(ts: number, now: number): "Today" | "This week" | "Earlier" {
   const startToday = new Date(now).setHours(0, 0, 0, 0);
@@ -108,7 +108,7 @@ export default function NotificationsPage() {
       />
 
       {/* A reading column, not a full-bleed table: the list stays at a comfortable measure on wide screens. */}
-      <div className="app-container py-6 md:py-8">
+      <div className="app-container app-page">
         <div className="max-w-[880px]">
           {/* Filter bar — read state + type; one row that scrolls sideways on narrow screens */}
           <div className="mb-5 space-y-2.5">
@@ -186,7 +186,7 @@ export default function NotificationsPage() {
                             href={n.href}
                             onClick={() => markRead(n.id)}
                             data-read={read}
-                            className="group relative flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--brand-primary-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)] data-[read=true]:bg-[var(--panel)] data-[read=true]:hover:bg-muted sm:gap-3.5 sm:px-5"
+                            className="group relative flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)] data-[read=true]:bg-[var(--panel)] data-[read=true]:hover:bg-muted sm:gap-3.5 sm:px-5"
                           >
                             {!read && <span className="absolute inset-y-0 left-0 w-[3px] bg-[var(--brand-primary-600)]" aria-hidden />}
                             <span className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${meta.bg}`}>

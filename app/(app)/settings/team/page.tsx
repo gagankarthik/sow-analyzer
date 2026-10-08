@@ -232,7 +232,7 @@ export default function TeamSettingsPage() {
             </div>
           ) : teammates === 0 ? (
             <div className="flex flex-col items-start px-4 py-10 sm:px-8 sm:py-12">
-              <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-100)] text-[var(--brand-primary-700)]">
+              <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft text-structure-soft-fg">
                 <Users size={22} strokeWidth={1.5} />
               </span>
               <p className="text-xl font-semibold tracking-tight text-foreground">It&apos;s just you so far</p>
@@ -469,7 +469,7 @@ function PersonRow({
         )}
       >
         <span className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-50)] text-sm font-semibold text-[var(--brand-primary-700)]">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-structure-soft text-sm font-semibold text-structure-soft-fg">
             {initialsFromEmail(person.email)}
           </span>
           <span className="min-w-0 flex-1">
@@ -478,7 +478,7 @@ function PersonRow({
                 {person.email}
               </span>
               {isYou && (
-                <span className="shrink-0 rounded-md bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-xs font-medium text-[var(--brand-primary-700)]">
+                <span className="shrink-0 rounded-md bg-structure-soft px-1.5 py-0.5 text-xs font-medium text-structure-soft-fg">
                   You
                 </span>
               )}

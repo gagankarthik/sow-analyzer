@@ -3,77 +3,80 @@ import { MarketingShell, PageIntro } from "@/components/landing/MarketingShell";
 import { ClauseIndex } from "@/components/landing/ClauseIndex";
 import { StartCta } from "@/components/landing/StartCta";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { PRODUCT_SECTIONS, type ProductSectionId } from "@/components/landing/site-nav";
+import { ComingSoonBadge } from "@/components/landing/ComingSoon";
 import { breadcrumbSchema, pageMetadata, softwareApplicationSchema } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Clause extraction, playbook scoring, SOW drafting",
+  title: "Matrix review, workflow and value reporting",
   description:
-    "What Blue-IQ does with a contract: clause extraction, playbook scoring, amendment tracking, SOW drafting and a portfolio view of workflow and renewals.",
+    "What Blue-IQ Govern does: matrix review of every clause, workflow with one next step, value and spend reporting, trends and bottlenecks, document capture, and integrations.",
   path: "/product",
 });
 
-const CAPABILITIES = [
-  {
-    id: "extraction",
-    title: "Clause extraction",
-    body: "Sonar reads the whole document and files every clause by type. Nothing is sampled, and scanned PDFs are read with OCR down to the individual clause.",
-    points: ["PDF, Word and text files, including scanned PDFs", "SOWs, MSAs, NDAs and amendments", "Each clause linked back to its section"],
+/* Section copy, keyed by the ids the header and footer link to. */
+const SECTION_COPY: Record<ProductSectionId, { body: string; points: string[] }> = {
+  matrix: {
+    body: "Your acceptance matrix holds a standard position, an acceptable fallback and a reviewing office for each clause. Govern rates every agreement against it with deterministic rules, so the same clause always gets the same result, and marks terms that favour you.",
+    points: ["Within matrix, acceptable fallback, needs changes or not acceptable", "Each finding names its rule and matrix version", "Suggested language for anything sent back"],
   },
-  {
-    id: "scoring",
-    title: "Playbook scoring",
-    body: "Your playbook holds your firm's standard positions. Each clause is checked against it and marked as within playbook, watch, deviates or flagged.",
-    points: ["Findings cited to the exact section", "Suggested redlines from your clause library", "Answers from Sonar that point to the clause"],
+  workflow: {
+    body: "Every contract shows who holds it, how long it has been in its stage against the target, what is blocking signature, and one recommended next step: sign, send back, escalate or reject.",
+    points: ["Assignment by agreement type and department", "Days in stage against a target for each stage", "Every action recorded in an append-only activity log"],
   },
-  {
-    id: "amendments",
-    title: "Amendment tracking",
-    body: "Each amendment is compared against the version before it. You see which terms moved and what the change did to total contract value.",
-    points: ["Version-to-version comparison", "Contract value recalculated per amendment", "A timeline of the contract's history"],
+  value: {
+    body: "See money signed, money in the pipeline, and money held up by contracts past their target, with incoming and outgoing value reported separately.",
+    points: ["Current against potential value", "Breakdowns by sponsor, department, PI and agreement type", "Excel and PDF export (coming soon)"],
   },
-  {
-    id: "drafting",
-    title: "SOW drafting",
-    body: "Answer a short questionnaire and Sonar writes a first statement of work using the same clause types it extracts. Revise it, then export to Word.",
-    points: ["Built from your chosen clause types", "Revise in place with Sonar", "Word export for negotiation"],
+  trends: {
+    body: "Open contracts grouped by stage and by who they are waiting on, with average days per stage, so leaders can see where the queue backs up.",
+    points: ["Average days per stage", "Grouped by who each contract is waiting on", "Filters by type, department, reviewer and value"],
   },
-  {
-    id: "workflow",
-    title: "Workflow and insights",
-    body: "A pipeline view shows where each contract is waiting. Portfolio insights add up value and risk, and renewals are surfaced before the notice window closes.",
-    points: ["Pipeline by stage", "Renewal and notice-date tracking", "Clause-level audit trail per project"],
+  capture: {
+    body: "Sonar reads the whole agreement, pulls out parties, dates and amounts, and files every clause by type. Scanned PDFs are read with OCR.",
+    points: ["PDF, Word and text files, including scanned PDFs", "Research and licensing clause types", "Each clause linked back to its section"],
   },
-];
+  integrations: {
+    body: "Govern is built to connect to Huron Research Suite, Workday, DocuSign and Microsoft Teams, so nobody enters a contract twice. Each connection is set up with your team and runs only when your administrator enables it.",
+    points: ["Huron: agreements in, findings and status back", "Workday: award and spend data for reporting", "DocuSign signature status and Teams alerts"],
+  },
+};
 
 export default function ProductPage() {
   return (
     <MarketingShell>
       <JsonLd data={softwareApplicationSchema} />
       <JsonLd data={breadcrumbSchema([{ name: "Product", path: "/product" }])} />
-      <PageIntro title="Everything Blue-IQ does with a contract.">
-        One system reads the document, measures it against your standard, and keeps track of how it
-        changes after signing.
+      <PageIntro title="Everything Govern does with an agreement.">
+        One platform reads the agreement, checks it against your matrix, moves it to signature and
+        reports what it is worth.
       </PageIntro>
 
-      <section className="lp-wrap pb-20 md:pb-28">
+      <section className="lp-wrap lp-section">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,9fr)] lg:gap-16">
           <nav aria-label="On this page" className="lp-sidenav hidden lg:sticky lg:top-24 lg:block lg:self-start">
-            {CAPABILITIES.map((c) => (
-              <a key={c.id} href={`#${c.id}`}>
-                {c.title}
+            {PRODUCT_SECTIONS.map((section) => (
+              <a key={section.id} href={`#${section.id}`}>
+                {section.label}
               </a>
             ))}
           </nav>
 
           <div>
-            {CAPABILITIES.map((c) => (
-              <article key={c.id} id={c.id} className="lp-spec scroll-mt-24">
-                <h2 className="lp-h3">{c.title}</h2>
+            {PRODUCT_SECTIONS.map((section) => (
+              <article key={section.id} id={section.id} className="lp-spec scroll-mt-24">
+                <h2 className="lp-h3">
+                  <section.icon size={32} className="lp-spec-icon" />
+                  <span className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {section.label}
+                    {"feature" in section ? <ComingSoonBadge feature={section.feature} /> : null}
+                  </span>
+                </h2>
                 <div>
-                  <p className="max-w-xl text-base text-lp-ink-2">{c.body}</p>
+                  <p className="max-w-xl text-lp-ink-2">{SECTION_COPY[section.id].body}</p>
                   <ul className="lp-list mt-4 text-sm text-lp-ink-2">
-                    {c.points.map((p) => (
-                      <li key={p}>{p}</li>
+                    {SECTION_COPY[section.id].points.map((point) => (
+                      <li key={point}>{point}</li>
                     ))}
                   </ul>
                 </div>

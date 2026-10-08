@@ -19,7 +19,9 @@ export default function CalculatorPage() {
         Set the sliders to your own volume and rates. Sonar runs the slow first pass on upload, so
         the hours your team spends reading boilerplate come back to the calendar.
       </PageIntro>
-      <SavingsCalculator />
+      <div className="lp-section">
+        <SavingsCalculator />
+      </div>
     </MarketingShell>
   );
 }

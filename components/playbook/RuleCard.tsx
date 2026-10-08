@@ -50,7 +50,7 @@ export function RuleCard({
         </div>
       </div>
 
-      <p className="mt-3 max-w-[72ch] text-base leading-relaxed text-foreground [overflow-wrap:anywhere]">
+      <p className="mt-3 max-w-[58ch] text-base leading-relaxed text-foreground [overflow-wrap:anywhere]">
         {rule.standard || <span className="text-[var(--ink-600)]">No standard position is written for this rule.</span>}
       </p>
 

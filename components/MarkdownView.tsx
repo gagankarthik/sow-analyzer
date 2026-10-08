@@ -55,5 +55,5 @@ export function MarkdownView({ markdown, className }: { markdown: string; classN
   }
   flush();
 
-  return <div className={cn("max-w-[72ch] break-words", className)}>{out}</div>;
+  return <div className={cn("max-w-[58ch] break-words", className)}>{out}</div>;
 }

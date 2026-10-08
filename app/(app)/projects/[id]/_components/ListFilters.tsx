@@ -122,7 +122,7 @@ export function ListFilters({ search, onSearch, placeholder, groups = [], sort, 
       <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
         <p className="text-[var(--ink-600)]" aria-live="polite">
           <span className="font-semibold tabular-nums text-foreground">{shown}</span> of <span className="tabular-nums">{total}</span> {noun}
-          {active > 0 && <span className="ml-2 rounded-md bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-xs font-semibold text-[var(--brand-primary-700)]">{active} filter{active === 1 ? "" : "s"} active</span>}
+          {active > 0 && <span className="ml-2 rounded-md bg-structure-soft px-1.5 py-0.5 text-xs font-semibold text-structure-soft-fg">{active} filter{active === 1 ? "" : "s"} active</span>}
         </p>
         {active > 0 && (
           <button

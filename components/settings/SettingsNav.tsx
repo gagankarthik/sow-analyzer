@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { FeatureComingSoonBadge } from "@/components/govern/ComingSoon";
+import type { GovernFeature } from "@/lib/govern/features";
 import {
   BookMarked,
   Briefcase,
@@ -11,10 +13,16 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  Grid3x3,
+  Route,
+  Plug,
 } from "@/components/ui/icons";
 
-const ITEMS = [
+const ITEMS: { label: string; href: string; icon: typeof Settings; feature?: GovernFeature }[] = [
   { label: "Overview", href: "/settings", icon: Settings },
+  { label: "Review matrix", href: "/settings/matrix", icon: Grid3x3 },
+  { label: "Workflow & routing", href: "/settings/workflow", icon: Route },
+  { label: "Integrations", href: "/settings/integrations", icon: Plug, feature: "integrations" },
   { label: "Playbook", href: "/settings/playbook", icon: BookMarked },
   { label: "Clause library", href: "/settings/clauses", icon: Briefcase },
   { label: "Compliance packs", href: "/settings/compliance", icon: ShieldCheck },
@@ -53,6 +61,7 @@ export function SettingsNav() {
               >
                 <Icon size={16} strokeWidth={active ? 2 : 1.75} className="hidden shrink-0 xl:block" />
                 {item.label}
+                {item.feature && <FeatureComingSoonBadge feature={item.feature} />}
               </Link>
             </li>
           );

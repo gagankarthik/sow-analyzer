@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useUIStore } from "@/lib/stores/ui";
 import {
   LayoutDashboard, Kanban, BarChart3, Briefcase, Sonar,
-  Settings, Library, DraftSow, CalendarClock,
+  Settings, Library, DraftSow, CalendarClock, Gauge,
 } from "@/components/ui/icons";
 
 type NavItem = {
@@ -29,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Renewals", href: "/renewals", icon: CalendarClock },
   { label: "Draft SOW", href: "/draft", icon: DraftSow },
   { label: "Sonar", action: "copilot", icon: Sonar },
+  { label: "Reports", href: "/reports", icon: Gauge },
   { label: "Insights", href: "/insights", icon: BarChart3 },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
@@ -122,12 +123,11 @@ export function Sidebar({
       <aside
         className={cn(
           "flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
-          "fixed inset-y-0 left-0 z-50 h-screen w-[264px] shadow-2xl",
+          "fixed inset-y-0 left-0 z-50 h-dvh w-[240px] shadow-2xl",
           "transition-transform duration-300 ease-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0 lg:shadow-none lg:sticky lg:top-0 lg:z-30 lg:shrink-0",
-          "lg:transition-[width] lg:duration-200 lg:ease-out lg:will-change-[width]",
-          collapsed ? "lg:w-[72px]" : "lg:w-[248px]",
+          collapsed ? "lg:w-[60px]" : "lg:w-[208px]",
         )}
       >
         {/* Workspace identity */}
@@ -135,26 +135,27 @@ export function Sidebar({
           href="/"
           aria-label="Blue-IQ home"
           className={cn(
-            "h-16 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/60",
+            "h-16 shrink-0 flex items-center border-b border-sidebar-border transition-colors hover:bg-sidebar-accent/60",
             collapsed ? "px-5 lg:px-0 lg:justify-center" : "px-5",
           )}
         >
           {collapsed ? (
-            <Image src="/logo-icon.svg" alt="" width={28} height={28} priority className="hidden select-none lg:block" />
+            <Image src="/logo-icon.svg" alt="" width={24} height={24} priority className="hidden select-none lg:block" />
           ) : null}
           <Image
             src="/logo.svg"
             alt="Blue-IQ"
-            width={113}
-            height={28}
+            width={97}
+            height={24}
             priority
             className={cn("select-none", collapsed && "lg:hidden")}
           />
         </Link>
 
-        {/* Nav — flat list */}
-        <nav className={cn("flex-1 overflow-y-auto overflow-x-hidden py-3", collapsed ? "px-2.5" : "px-3")}>
-          <ul className="flex flex-col gap-1">
+        {/* Nav: one flat list. Logo (px-5) and icons (px-3 + px-2) share a
+            20px left edge, so the rail reads as one column. */}
+        <nav aria-label="Workspace" className="sidebar-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-3">
+          <ul className="flex flex-col gap-0.5">
             {NAV_ITEMS.map((item) => (
               <NavRow key={item.label} item={item} active={isActive(item.href)} collapsed={collapsed} onAction={onAction} />
             ))}
@@ -180,7 +181,7 @@ function NavRow({
   const inner = (
     <>
       <Icon
-        size={18}
+        size={16}
         strokeWidth={active ? 2 : 1.75}
         className="shrink-0"
       />
@@ -189,11 +190,11 @@ function NavRow({
   );
 
   const cls = cn(
-    "group/nav relative flex items-center h-10 rounded-lg text-base transition-colors duration-150 w-full",
+    "group/nav relative flex items-center h-9 rounded-lg text-sm transition-colors duration-150 w-full",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-    collapsed ? "w-10 mx-auto justify-center" : "gap-3 px-3",
+    collapsed ? "w-9 mx-auto justify-center" : "justify-start gap-3 px-2",
     active
-      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold shadow-sm"
+      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
       : "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
   );
 

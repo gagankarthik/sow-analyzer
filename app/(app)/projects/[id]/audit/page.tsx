@@ -24,6 +24,10 @@ import { formatDate } from "@/lib/format";
 import { docTypeShort } from "@/lib/doc-types";
 import type { ApiVersion } from "@/lib/types";
 import { ALL, ListFilters, NoResults, type FilterGroup } from "../_components/ListFilters";
+import { ActivityFeed } from "@/components/govern/ActivityFeed";
+import { useContractForDoc } from "@/components/govern/useContractForDoc";
+import { useContract } from "@/lib/govern/queries";
+import { STATE_LABEL } from "@/lib/govern/labels";
 
 type Project = ReturnType<typeof apiDocToProject>;
 
@@ -72,9 +76,9 @@ function stageStatus(currentStatus: string, stageKey: StageKey, latest: ApiVersi
 
 const STAGE_STATUS_LABEL: Record<StageState, string> = { done: "Done", active: "Running", pending: "Pending", unknown: "Not reported", "no-output": "No output" };
 const STATUS_CHIP = {
-  success: "bg-[var(--success-soft)] text-[var(--success)]",
+  success: "bg-[var(--success-soft)] text-[var(--success-fg)]",
   danger: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  warning: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  warning: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
 } as const;
 
 function versionArtifacts(version: ApiVersion) {
@@ -147,6 +151,9 @@ export default function AuditPage() {
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
       <div className="app-container space-y-6 py-6 md:space-y-8 md:py-8">
+
+        {/* ── Govern activity: who reviewed, approved or sent back, and when ── */}
+        <ContractActivity docId={id} />
 
         {/* ── Status (focal) + document integrity ───────────── */}
         <LastUpdated className="justify-end" updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />
@@ -341,6 +348,51 @@ export default function AuditPage() {
   );
 }
 
+/** The Govern activity log of the contract this document belongs to
+ *  (Requirement 2: "Extend the Audit tab to show it"). */
+function ContractActivity({ docId }: { docId: string }) {
+  const found = useContractForDoc(docId);
+  const detail = useContract(found.contract?.contractId ?? "");
+
+  let body: React.ReactNode;
+  if (found.isLoading || (found.contract && detail.isLoading)) {
+    body = <Skeleton className="h-32 w-full rounded-xl" />;
+  } else if (found.isError && !found.contract) {
+    body = <p className="text-sm text-[var(--ink-600)]">The workflow activity could not be loaded right now. The document&rsquo;s processing record is below.</p>;
+  } else if (!found.contract) {
+    body = <p className="text-sm text-[var(--ink-600)]">This document is not part of a workflow contract, so there is no review or approval activity to show.</p>;
+  } else if (!detail.data) {
+    body = (
+      <p className="text-sm text-[var(--ink-600)]">
+        Couldn&rsquo;t load the activity.{" "}
+        <button type="button" onClick={() => detail.refetch()} className="font-semibold text-[var(--brand-primary-600)] underline-offset-2 hover:underline">Try again</button>
+      </p>
+    );
+  } else {
+    body = <ActivityFeed entries={detail.data.activity} limit={12} />;
+  }
+
+  return (
+    <section aria-labelledby="govern-activity-heading" className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="govern-activity-heading" className="text-xl font-semibold tracking-tight text-foreground">Activity</h2>
+          <p className="mt-0.5 text-sm text-[var(--ink-600)]">
+            Who reviewed, approved, sent back or commented, and when.
+            {found.contract && <> Currently: <span className="font-medium text-foreground">{STATE_LABEL[found.contract.state]}</span>.</>}
+          </p>
+        </div>
+        {found.contract && (
+          <Link href={`/contracts/${encodeURIComponent(found.contract.contractId)}#activity`} className="inline-flex h-9 items-center rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            Open in workflow
+          </Link>
+        )}
+      </div>
+      {body}
+    </section>
+  );
+}
+
 function IntegrityField({
   label,
   value,
@@ -371,7 +423,7 @@ function IntegrityField({
 function AuditSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card">
+      <div>
         <div className="app-container space-y-3 pb-5 pt-4 md:pt-6">
           <Skeleton className="h-3.5 w-28" />
           <Skeleton className="h-8 w-2/3" />

@@ -111,24 +111,24 @@ export default function PlaybookPage() {
 
       <SettingsLayout>
         {/* Focal block: how many rules, and exactly when a change takes effect. */}
-        <div className="grid grid-cols-1 gap-4 rounded-xl bg-[var(--brand-primary-600)] p-5 text-white md:grid-cols-12 md:gap-8">
+        <div className="grid grid-cols-1 gap-4 rounded-xl bg-[var(--navy-800)] p-5 text-white md:grid-cols-12 md:gap-8">
           <div className="min-w-0 md:col-span-4">
-            <div className="text-sm font-medium text-[var(--brand-primary-100)]">Rules in your playbook</div>
+            <div className="text-sm font-medium text-[var(--navy-100)]">Rules in your playbook</div>
             <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
               <span className="text-4xl font-semibold leading-none tracking-tight tabular-nums">{playbook ? rules.length : "—"}</span>
               {playbook && (
-                <span className="text-base text-[var(--brand-primary-100)]">
+                <span className="text-base text-[var(--navy-100)]">
                   {playbook.customRuleCount === 0 ? "all built-in defaults" : `${playbook.customRuleCount} yours`}
                 </span>
               )}
             </div>
             {playbook && (
-              <p className="mt-2 text-sm text-[var(--brand-primary-100)]">
+              <p className="mt-2 text-sm text-[var(--navy-100)]">
                 {autoCount} with an automatic check · {rules.length - autoCount} flagged for you to compare
               </p>
             )}
           </div>
-          <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--brand-primary-100)] md:col-span-8">
+          <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--navy-100)] md:col-span-8">
             {playbook ? (
               <>
                 <p><span className="font-semibold text-white">A change applies the next time a document is analysed or re-analysed.</span> Documents already analysed keep the result they were given.</p>

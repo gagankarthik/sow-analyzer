@@ -65,7 +65,7 @@ export function ProcessingState({
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
                 done
-                  ? "border-transparent bg-[var(--success-soft)] text-[var(--success)]"
+                  ? "border-transparent bg-[var(--success-soft)] text-[var(--success-fg)]"
                   : active
                     ? "border-[var(--ai-ink)] bg-card text-[var(--ai-text)]"
                     : "border-border bg-card text-muted-foreground",

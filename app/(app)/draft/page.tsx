@@ -164,7 +164,7 @@ function IntakeForm({
   const scopeError = touched.scope && !answers.scope.trim() ? "Describe the scope of work." : undefined;
 
   return (
-    <div className="app-container py-6 md:py-8">
+    <div className="app-container app-page">
       <div className="flex max-w-3xl flex-col gap-4 md:gap-6">
         {error && (
           <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-3">
@@ -297,7 +297,7 @@ function Section({ step, title, subtitle, children }: { step: number; title: str
   return (
     <section className="rounded-xl border border-border bg-card p-4 shadow-xs sm:p-6">
       <div className="mb-4 flex items-start gap-3">
-        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-50)] text-sm font-semibold tabular-nums text-[var(--brand-primary-700)]" aria-hidden="true">{step}</span>
+        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-structure-soft text-sm font-semibold tabular-nums text-structure-soft-fg" aria-hidden="true">{step}</span>
         <div className="min-w-0">
           <h2 className="text-lg font-semibold leading-7 tracking-tight text-foreground">{title}</h2>
           {subtitle && <p className="text-sm text-[var(--ink-600)]">{subtitle}</p>}
@@ -364,7 +364,7 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
   }
 
   return (
-    <div className="app-container py-6 md:py-8">
+    <div className="app-container app-page">
       {/* Stacks on phones and tablets; the revise rail sits beside the document from lg. */}
       <div className="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Document */}

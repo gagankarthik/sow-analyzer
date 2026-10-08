@@ -28,6 +28,13 @@ const OVERRIDES: Record<string, string> = {
   BreachNotification: "Breach Notification",
   DataRetention: "Data Retention",
   SecurityControls: "Security Controls",
+  // Research and university licensing (OSU review matrix)
+  PublicationRights: "Publication Rights",
+  BackgroundIP: "Background IP",
+  ExportControl: "Export Control",
+  DataRights: "Data Rights",
+  SponsorReporting: "Sponsor Reporting",
+  Diligence: "Diligence",
 };
 
 /** Shown when a clause carries no category at all (the API sent none). */
@@ -88,4 +95,55 @@ export function clauseSpecificType(c: ClauseTypeFields): string | null {
 export function clauseTypeLabel(c: ClauseTypeFields): string {
   const specific = clauseSpecificType(c);
   return specific ? categoryLabel(specific) : categoryLabel(c.category);
+}
+
+// ── Review-matrix clause types (Govern, Requirement 1) ──────────────────────
+// The category ids a matrix clause can carry, with the longer labels the
+// matrix uses. Research and licensing types come first: they are what OSU's
+// reviewers grade most. Mirrors KNOWN_CATEGORIES in the backend's
+// shared/clause_types.py.
+
+export interface MatrixClauseTypeOption {
+  id: string;
+  label: string;
+  group: "research" | "commercial";
+}
+
+export const RESEARCH_CLAUSE_TYPES: MatrixClauseTypeOption[] = [
+  { id: "PublicationRights", label: "Publication rights and review period", group: "research" },
+  { id: "BackgroundIP", label: "Background and foreground IP", group: "research" },
+  { id: "LicenseScope", label: "License grant scope", group: "research" },
+  { id: "Royalties", label: "Royalties, milestones, equity and sublicense income", group: "research" },
+  { id: "Indemnity", label: "Indemnification and insurance limits", group: "research" },
+  { id: "GoverningLaw", label: "Governing law and sovereign immunity", group: "research" },
+  { id: "ExportControl", label: "Export control and foreign parties", group: "research" },
+  { id: "DataRights", label: "Data rights, confidentiality term and use of name", group: "research" },
+  { id: "SponsorReporting", label: "Sponsor reporting and flow-down terms", group: "research" },
+  { id: "Diligence", label: "Diligence and termination for failure to commercialise", group: "research" },
+];
+
+export const COMMERCIAL_CLAUSE_TYPES: MatrixClauseTypeOption[] = [
+  { id: "Liability", label: "Limitation of liability", group: "commercial" },
+  { id: "Payment", label: "Payment terms", group: "commercial" },
+  { id: "Fees", label: "Fees", group: "commercial" },
+  { id: "IP", label: "Intellectual property", group: "commercial" },
+  { id: "Term", label: "Term and renewal", group: "commercial" },
+  { id: "Termination", label: "Termination", group: "commercial" },
+  { id: "Confidentiality", label: "Confidentiality", group: "commercial" },
+  { id: "Warranty", label: "Warranties", group: "commercial" },
+  { id: "Insurance", label: "Insurance", group: "commercial" },
+  { id: "DataProtection", label: "Data protection", group: "commercial" },
+  { id: "DisputeResolution", label: "Dispute resolution", group: "commercial" },
+  { id: "Assignment", label: "Assignment", group: "commercial" },
+  { id: "LicenseGrant", label: "License grant", group: "commercial" },
+  { id: "Sublicensing", label: "Sublicensing", group: "commercial" },
+  { id: "Compliance", label: "Compliance with law", group: "commercial" },
+  { id: "ForceMajeure", label: "Force majeure", group: "commercial" },
+];
+
+export const MATRIX_CLAUSE_TYPES: MatrixClauseTypeOption[] = [...RESEARCH_CLAUSE_TYPES, ...COMMERCIAL_CLAUSE_TYPES];
+
+/** The matrix label for a clause type id; any other id is humanised. */
+export function matrixClauseTypeLabel(id: string): string {
+  return MATRIX_CLAUSE_TYPES.find((t) => t.id === id)?.label ?? categoryLabel(id);
 }

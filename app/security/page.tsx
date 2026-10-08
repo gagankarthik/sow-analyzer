@@ -7,18 +7,19 @@ import { breadcrumbSchema, pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Security and data protection",
   description:
-    "How Blue-IQ protects contract data: authentication, encryption in transit and at rest, tenant isolation, AI processing terms, retention and compliance.",
+    "How Blue-IQ protects contract data: authentication, encryption in transit and at rest, access control, the audit log, AI processing, retention and certifications.",
   path: "/security",
 });
 
 // Mirrors the controls documented in /legal/security, /legal/privacy and /legal/dpa.
 const CONTROLS = [
-  { term: "Authentication", detail: "Sign-in uses the Secure Remote Password protocol through Amazon Cognito, so passwords never cross the network. Every API request carries a verified token, and MFA can be enforced per tenant." },
-  { term: "Encryption", detail: "All traffic is encrypted in transit. Files, database records and search indices are encrypted at rest." },
-  { term: "Tenant isolation", detail: "Each customer's data is partitioned by tenant. Every request re-checks that the record's tenant matches the caller's verified token." },
-  { term: "AI processing", detail: "Contract text is sent to our model provider for clause classification under an enterprise data-handling agreement. It is not used to train shared models and is not retained by the provider." },
-  { term: "Retention and deletion", detail: "Documents are kept while your account is active. Deleting one removes the original file, all processed artefacts, the search index and the database records." },
-  { term: "Breach notification", detail: "Affected customers are notified without undue delay, and within 72 hours of our becoming aware." },
+  { term: "Authentication", detail: "Sign-in uses Amazon Cognito. Every API request must carry a valid, verified token, and identity is taken only from verified claims." },
+  { term: "Encryption", detail: "Traffic is encrypted in transit over HTTPS, with TLS 1.2 as the minimum. Files, database records and search indices are encrypted at rest using AWS-managed encryption." },
+  { term: "Access control", detail: "Each organisation's data is kept in its own workspace. Within it, people see a document only if they uploaded it or belong to a project that includes it, as owner, editor or viewer." },
+  { term: "Audit log", detail: "Every assignment, decision, comment and stage change on a contract is written to an append-only activity log with the person and time." },
+  { term: "AI processing", detail: "Extracted text is sent to OpenAI's API to pull out facts and label clauses; original files are not sent. Under OpenAI's API terms, inputs are not used to train its models, and they may be kept for up to 30 days for abuse monitoring. Matrix review uses no AI model: it runs deterministic rules, and each finding records the rule and matrix version applied." },
+  { term: "Retention and deletion", detail: "Documents are kept while your account is active. Deleting one removes the original file, its processed copies, its search records and its database rows." },
+  { term: "Certifications", detail: "Blue-IQ does not hold SOC 2, ISO 27001 or other certifications today. The underlying AWS infrastructure carries AWS's own certifications." },
 ];
 
 const DOCS = [
@@ -37,7 +38,7 @@ export default function SecurityPage() {
         request.
       </PageIntro>
 
-      <section className="lp-wrap pb-20 md:pb-28">
+      <section className="lp-wrap lp-section">
         <dl>
           {CONTROLS.map((c) => (
             <div key={c.term} className="lp-spec">

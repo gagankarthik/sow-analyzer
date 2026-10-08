@@ -46,7 +46,7 @@ const BADGE = {
   created: { label: "Created", bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]" },
   version: { label: "Version", bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]" },
   amendment: { label: "Amendment", bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]" },
-  current: { label: "Now", bg: "bg-[var(--brand-primary-50)]", text: "text-[var(--brand-primary-700)]" },
+  current: { label: "Now", bg: "bg-structure-soft", text: "text-structure-soft-fg" },
   forecast: { label: "Forecast", bg: "bg-[var(--ai-surface)]", text: "text-[var(--ai-ink)]" },
 };
 
@@ -287,7 +287,7 @@ export default function TimelinePage() {
                     <li key={e.id} className="relative flex gap-3 pb-4 last:pb-0 md:gap-4">
                       {i < events.length - 1 && <span className="absolute bottom-0 left-4 top-8 w-px -translate-x-1/2 bg-[var(--ink-300)]" aria-hidden />}
                       <Node state={e.state} icon={e.icon} />
-                      <div className={`min-w-0 flex-1 rounded-xl px-4 py-3 ${focal ? "bg-[var(--brand-primary-600)] text-white" : "border border-border bg-card shadow-xs"}`}>
+                      <div className={`min-w-0 flex-1 rounded-xl px-4 py-3 ${focal ? "bg-[var(--navy-800)] text-white" : "border border-border bg-card shadow-xs"}`}>
                         <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${focal ? "bg-white text-[var(--brand-primary-700)]" : `${e.badge.bg} ${e.badge.text}`}`}>{e.badge.label}</span>
                           {e.meta && <span className={`text-xs capitalize ${focal ? "text-white" : "text-[var(--ink-600)]"}`}>{e.meta}</span>}
@@ -428,7 +428,7 @@ function NotFound() {
 function TimelineSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card"><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
+      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
       <div className="app-container py-6 md:py-8"><div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12"><div className="space-y-4 lg:col-span-8">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div><div className="space-y-4 lg:col-span-4"><Skeleton className="h-32 rounded-xl" /><Skeleton className="h-40 rounded-xl" /></div></div></div>
     </>
   );

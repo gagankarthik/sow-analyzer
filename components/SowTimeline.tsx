@@ -23,7 +23,7 @@ import type { ApiClassification } from "@/lib/types";
 const TONE: Record<KeyDateState, string> = {
   completed: "bg-[var(--ink-100)] text-[var(--ink-600)]",
   current: "bg-[var(--brand-primary-600)] text-white",
-  upcoming: "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]",
+  upcoming: "bg-structure-soft text-structure-soft-fg",
   undated: "bg-[var(--ink-100)] text-[var(--ink-600)]",
 };
 

@@ -1,22 +1,42 @@
 import Link from "next/link";
+import { ArrowRight } from "@/components/ui/icons";
 
-/* Closing call to action — the night surface again, so the page opens and
-   closes on the same note. */
+/* Closing call to action, shared by the public pages: one navy panel with
+   the offer on the left and what happens after the request on the right. */
+
+const WHAT_HAPPENS = [
+  "Send one agreement and your current matrix, as a spreadsheet or a document.",
+  "We load both and run the review before the call.",
+  "Your team walks through every rating and the next step with us.",
+];
+
 export function StartCta() {
   return (
-    <section id="start" className="lp-wrap scroll-mt-20 pb-20 md:pb-28">
-      <div className="lp-cta px-6 py-16 text-center md:py-24">
-        <h2 className="lp-h2 mx-auto max-w-2xl">See Sonar read your hardest contract.</h2>
-        <p className="mx-auto mt-4 max-w-md text-lg">
-          Upload one document and see every clause rated. Your first analysis is free.
-        </p>
-        <div className="mt-9 flex flex-wrap justify-center gap-3">
-          <Link href="/signup" className="lp-btn lp-btn-light">
-            Start free
-          </Link>
-          <Link href="/product" className="lp-btn lp-btn-ghost">
-            See the product
-          </Link>
+    <section id="start" className="lp-section scroll-mt-20" aria-labelledby="start-title">
+      <div className="lp-wrap">
+        <div className="lp-cta">
+          <div>
+            <h2 id="start-title" className="lp-h2 max-w-xl">
+              See your own agreements against your own matrix.
+            </h2>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/signup" className="lp-btn lp-btn-on-navy">
+                Request a demo
+                <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+              </Link>
+              <Link href="/calculator" className="lp-btn lp-btn-ghost">
+                Estimate your savings
+              </Link>
+            </div>
+          </div>
+          <div>
+            <p className="lp-cta-label">What happens next</p>
+            <ol className="lp-cta-steps mt-4">
+              {WHAT_HAPPENS.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </div>
         </div>
       </div>
     </section>

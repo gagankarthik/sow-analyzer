@@ -100,3 +100,26 @@ export const TrendingUp = withBrandStroke(L.TrendingUp, "TrendingUp");
 export const User = withBrandStroke(L.User, "User");
 export const X = withBrandStroke(L.X, "X");
 export const XCircle = withBrandStroke(L.XCircle, "XCircle");
+
+/* ─── Govern (workflow, matrix, reporting, integrations) ──────── */
+export const UserRound = withBrandStroke(L.UserRound, "UserRound");
+export const PenLine = withBrandStroke(L.PenLine, "PenLine");
+export const CircleDashed = withBrandStroke(L.CircleDashed, "CircleDashed");
+export const House = withBrandStroke(L.House, "House");
+export const Grid3x3 = withBrandStroke(L.Grid3x3, "Grid3x3");
+export const Route = withBrandStroke(L.Route, "Route");
+export const Plug = withBrandStroke(L.Plug, "Plug");
+export const FileSpreadsheet = withBrandStroke(L.FileSpreadsheet, "FileSpreadsheet");
+export const History = withBrandStroke(L.History, "History");
+export const Undo2 = withBrandStroke(L.Undo2, "Undo2");
+export const ShieldX = withBrandStroke(L.ShieldX, "ShieldX");
+export const Hourglass = withBrandStroke(L.Hourglass, "Hourglass");
+export const MessageSquare = withBrandStroke(L.MessageSquare, "MessageSquare");
+export const ListChecks = withBrandStroke(L.ListChecks, "ListChecks");
+export const Coins = withBrandStroke(L.Coins, "Coins");
+export const Link2 = withBrandStroke(L.Link2, "Link2");
+export const ArrowLeftRight = withBrandStroke(L.ArrowLeftRight, "ArrowLeftRight");
+export const Gauge = withBrandStroke(L.Gauge, "Gauge");
+export const FileDown = withBrandStroke(L.FileDown, "FileDown");
+export const Ban = withBrandStroke(L.Ban, "Ban");
+export const BadgeCheck = withBrandStroke(L.BadgeCheck, "BadgeCheck");

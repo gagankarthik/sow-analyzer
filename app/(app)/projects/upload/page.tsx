@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw } from "@/components/ui/icons";
 import { can, projectOwnerEmail, refreshProjects, useProjects, useProjectsSync } from "@/lib/projects-store";
 import { ROLE_META } from "@/components/team/roles";
+import { ContractIntakePanel } from "@/components/upload/ContractIntakePanel";
+import { EMPTY_INTAKE, intakePatch, type IntakeValues } from "@/components/upload/contract-intake";
 
 const NO_PROJECT = "none";
 
@@ -37,6 +39,17 @@ export default function UploadPage() {
   const choice = uploadable.some((p) => p.id === picked) ? picked : NO_PROJECT;
   const project = uploadable.find((p) => p.id === choice);
   const owner = project && project.role !== "owner" ? projectOwnerEmail(project) : undefined;
+
+  // Optional contract details for the next single file (Govern intake). Once a
+  // file takes them the form clears, so they never leak onto the next upload.
+  const [intake, setIntake] = useState<IntakeValues>(EMPTY_INTAKE);
+  const [lastApplied, setLastApplied] = useState<string | null>(null);
+  const details = useMemo(() => intakePatch(intake), [intake]);
+  const onDetailsApplied = useCallback((fileName: string) => {
+    setLastApplied(fileName);
+    setIntake(EMPTY_INTAKE);
+  }, []);
+  const governIntake = useMemo(() => ({ details, onDetailsApplied }), [details, onDetailsApplied]);
 
   return (
     <>
@@ -84,7 +97,9 @@ export default function UploadPage() {
             )}
           </div>
 
-          <UploadDropzone defaultDocType="SOW" projectId={project?.id} />
+          <ContractIntakePanel values={intake} onChange={setIntake} lastApplied={lastApplied} />
+
+          <UploadDropzone defaultDocType="SOW" projectId={project?.id} governIntake={governIntake} />
         </div>
       </div>
     </>

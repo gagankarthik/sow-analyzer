@@ -10,12 +10,11 @@ import { DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   Sonar, FileText, Kanban, BarChart3, BookMarked, ShieldAlert, Files,
-  Plus, Settings, Briefcase, LayoutDashboard, Clock, Sun, Info, Command, X,
+  Plus, Settings, Briefcase, LayoutDashboard, Clock, Info, Command, X,
   CalendarClock, DraftSow, Help,
 } from "@/components/ui/icons";
 import { useDocuments } from "@/lib/queries/documents";
 import { getRecentDocs } from "@/lib/recent";
-import { toggleTheme } from "@/lib/theme";
 import type { ApiDocument } from "@/lib/types";
 
 type Props = { open: boolean; onClose: () => void };
@@ -111,10 +110,6 @@ export function CommandPalette({ open, onClose }: Props) {
           <CommandItem onSelect={() => go("/projects/new")} keywords={["upload", "new", "contract"]}>
             <Plus />
             <span>Upload a new document</span>
-          </CommandItem>
-          <CommandItem onSelect={() => { toggleTheme(); onClose(); }} keywords={["dark", "light", "theme"]}>
-            <Sun />
-            <span>Toggle theme</span>
           </CommandItem>
         </CommandGroup>
 

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
+import { FeatureComingSoonBadge } from "@/components/govern/ComingSoon";
+import type { GovernFeature } from "@/lib/govern/features";
 import { SettingsLayout, SettingsSection } from "@/components/settings/SettingsNav";
 import {
   BookMarked,
@@ -8,8 +10,11 @@ import {
   ChevronRight,
   Database,
   Globe2,
+  Grid3x3,
   Lock,
   Mail,
+  Plug,
+  Route,
   ShieldCheck,
   Users,
 } from "@/components/ui/icons";
@@ -22,6 +27,8 @@ type NavItem = {
   desc: string;
   href: string;
   soon?: boolean;
+  /** A "Later" feature: the row still links (its page explains), with a Coming soon badge while it is off. */
+  feature?: GovernFeature;
 };
 
 type NavGroup = {
@@ -31,6 +38,15 @@ type NavGroup = {
 };
 
 const groups: NavGroup[] = [
+  {
+    label: "Contract workflow",
+    desc: "How OSU agreements are checked, routed and connected to the systems of record.",
+    items: [
+      { icon: Grid3x3, title: "Review matrix", desc: "OSU's accepted positions per agreement type. Edit, import from Excel, and keep dated versions.", href: "/settings/matrix" },
+      { icon: Route, title: "Workflow & routing", desc: "Stage targets, reviewers, auto-assignment, approval routing and alerts.", href: "/settings/workflow" },
+      { icon: Plug, title: "Integrations", desc: "Huron, Workday, Microsoft 365 and DocuSign: status, field mapping and the sync log.", href: "/settings/integrations", feature: "integrations" },
+    ],
+  },
   {
     label: "Contract intelligence",
     desc: "Standards, libraries, and rules Sonar uses to evaluate every clause.",
@@ -45,8 +61,8 @@ const groups: NavGroup[] = [
     desc: "People, permissions, and external systems your contracts flow through.",
     items: [
       { icon: Users, title: "Team & roles", desc: "Invite people to your projects, set their role and remove them.", href: "/settings/team" },
-      { icon: Lock, title: "Approval routing", desc: "Define routing rules by contract value and risk.", href: "#", soon: true },
-      { icon: Globe2, title: "Integrations", desc: "DocuSign, Salesforce, Workday, Slack, MS Teams.", href: "#", soon: true },
+      { icon: Lock, title: "Approval routing", desc: "Route contracts to OSU offices by type, value and risk.", href: "/settings/workflow", feature: "routingRules" },
+      { icon: Globe2, title: "Integrations", desc: "Huron, Workday, Microsoft 365 and DocuSign.", href: "/settings/integrations", feature: "integrations" },
     ],
   },
   {
@@ -54,7 +70,7 @@ const groups: NavGroup[] = [
     desc: "How long data lives in the system and how you hear about changes.",
     items: [
       { icon: Database, title: "Data & retention", desc: "Where your contracts live and for how long.", href: "#", soon: true },
-      { icon: Mail, title: "Notifications", desc: "Brief, digest, and alert preferences.", href: "#", soon: true },
+      { icon: Mail, title: "Notifications", desc: "Email and Teams alerts for assignments, send-backs, approvals and overdue contracts.", href: "/settings/workflow", feature: "notifications" },
     ],
   },
 ];
@@ -93,7 +109,10 @@ function SettingsRow({ item }: { item: NavItem }) {
         <Icon size={16} className={item.soon ? "text-muted-foreground" : "text-[var(--ink-700)]"} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-base font-semibold text-foreground">{item.title}</span>
+        <span className="flex flex-wrap items-center gap-2 text-base font-semibold text-foreground">
+          {item.title}
+          {item.feature && <FeatureComingSoonBadge feature={item.feature} />}
+        </span>
         <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground">
           {item.desc}
         </span>

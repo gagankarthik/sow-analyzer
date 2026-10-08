@@ -15,6 +15,11 @@ import {
 import { noteDocFiled, removeDocFromAllProjects } from "@/lib/projects-store";
 import { useInvalidateDocuments } from "@/lib/queries/documents";
 import type { DocType } from "@/lib/types";
+import { useCreateContract } from "@/lib/govern/queries";
+import { AGREEMENT_TYPE_LABEL, plural } from "@/lib/govern/labels";
+import type { ContractDetail, ContractPatch } from "@/lib/govern/types";
+import { CaptureGapChecklist } from "./CaptureGapChecklist";
+import { intakeSummary } from "./contract-intake";
 
 // Mirrors the backend upload-url handler: it signs uploads for .pdf, .docx and
 // .txt only (legacy .doc has no parser) and accepts file names of 1 to 200
@@ -49,7 +54,13 @@ const DOC_TYPE_OPTIONS: { value: DocType; label: string }[] = [
   { value: "OTHER", label: "Other" },
 ];
 
-type QueueItem = { id: string; file: File; docType: DocType; projectId?: string };
+/** `intake` is set when uploads also open a Govern contract: the details given
+ *  for this file (empty for a file from a multi-file drop). */
+type QueueItem = { id: string; file: File; docType: DocType; projectId?: string; intake?: ContractPatch };
+
+type ContractPhase = "none" | "creating" | "created" | "failed";
+/** What each queue row reports up, for the batch summary. */
+type ItemStatus = { upload: "pending" | "stored" | "failed"; contract: ContractPhase };
 
 // The API signs an upload link for 5 minutes. A retry inside this window sends
 // the file to the same link (and the same document) instead of asking for a new one.
@@ -106,6 +117,12 @@ export type UploadDropzoneProps = {
   onDocReady?: (docId: string) => void;
   /** Show a per-item "Open" link to the document workspace. */
   linkOnReady?: boolean;
+  /**
+   * Also open a Govern contract for every upload (POST /contracts), so it shows
+   * on the board as "New" while Sonar reads it. `details` go with a single-file
+   * drop only; files dropped together get contracts with no extra details.
+   */
+  governIntake?: { details: ContractPatch | null; onDetailsApplied?: (fileName: string) => void };
 };
 
 export function UploadDropzone({
@@ -116,9 +133,15 @@ export function UploadDropzone({
   onDocCreated,
   onDocReady,
   linkOnReady = true,
+  governIntake,
 }: UploadDropzoneProps) {
   const [docType, setDocType] = useState<DocType>(defaultDocType);
   const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [statuses, setStatuses] = useState<Record<string, ItemStatus>>({});
+  const [retryToken, setRetryToken] = useState(0);
+  const reportStatus = useCallback((id: string, status: ItemStatus) => {
+    setStatuses((prev) => (prev[id]?.upload === status.upload && prev[id]?.contract === status.contract ? prev : { ...prev, [id]: status }));
+  }, []);
   const [dragOver, setDragOver] = useState(false);
   const [reject, setReject] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -135,12 +158,22 @@ export function UploadDropzone({
       else accepted.push({ id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, file: f, docType, projectId });
     });
     const notes: string[] = [];
+    if (governIntake) {
+      const details = governIntake.details && Object.keys(governIntake.details).length > 0 ? governIntake.details : null;
+      if (accepted.length === 1) {
+        accepted[0].intake = details ?? {};
+        if (details) governIntake.onDetailsApplied?.(accepted[0].file.name);
+      } else {
+        accepted.forEach((a) => { a.intake = {}; });
+        if (details && accepted.length > 1) notes.push("Contract details go with one file at a time, so these contracts were created without them. Your details are kept for the next single file.");
+      }
+    }
     if (rejected > 0) notes.push(`${rejected} file${rejected === 1 ? "" : "s"} skipped. Only PDF, DOCX and TXT are accepted.`);
     if (wrongSize > 0) notes.push(`${wrongSize} file${wrongSize === 1 ? "" : "s"} skipped. Files must not be empty or larger than 50 MB.`);
     setReject(notes.length ? notes.join(" ") : null);
     if (accepted.length) setQueue((q) => [...accepted, ...q]);
     if (inputRef.current) inputRef.current.value = "";
-  }, [docType, projectId]);
+  }, [docType, projectId, governIntake]);
 
   return (
     <div className="space-y-4">
@@ -190,10 +223,24 @@ export function UploadDropzone({
               linkOnReady={linkOnReady}
               onDocCreated={onDocCreated}
               onDocReady={onDocReady}
-              onRemove={() => setQueue((q) => q.filter((x) => x.id !== item.id))}
+              onRemove={() => {
+                setQueue((q) => q.filter((x) => x.id !== item.id));
+                setStatuses((prev) => {
+                  const next = { ...prev };
+                  delete next[item.id];
+                  return next;
+                });
+              }}
+              onStatus={reportStatus}
+              retryToken={retryToken}
+              onUploadAnother={() => inputRef.current?.click()}
             />
           ))}
         </ul>
+      )}
+
+      {governIntake && queue.length > 1 && (
+        <BatchSummary items={queue} statuses={statuses} onRetryFailed={() => setRetryToken((t) => t + 1)} />
       )}
     </div>
   );
@@ -202,13 +249,17 @@ export function UploadDropzone({
 type Phase = "uploading" | "processing" | "ready" | "failed";
 
 function UploadItem({
-  item, onRemove, onDocCreated, onDocReady, linkOnReady,
+  item, onRemove, onDocCreated, onDocReady, linkOnReady, onStatus, retryToken, onUploadAnother,
 }: {
   item: QueueItem;
   onRemove: () => void;
   onDocCreated?: (docId: string, file: File) => void;
   onDocReady?: (docId: string) => void;
   linkOnReady: boolean;
+  onStatus: (id: string, status: ItemStatus) => void;
+  /** Bumped by "Retry failed" in the batch summary. */
+  retryToken: number;
+  onUploadAnother: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>("uploading");
   const [progress, setProgress] = useState(0);
@@ -216,6 +267,9 @@ function UploadItem({
   const [docStatus, setDocStatus] = useState("PENDING");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [contractPhase, setContractPhase] = useState<ContractPhase>("none");
+  const [contract, setContract] = useState<ContractDetail | null>(null);
+  const createContract = useCreateContract();
 
   // Every upload refreshes the shared document list — when the row is created
   // (so it shows up everywhere as "processing" and polling starts) and again
@@ -224,8 +278,8 @@ function UploadItem({
 
   // Latest callbacks kept in a ref so the upload effect doesn't re-run when the
   // parent re-renders with new closures.
-  const cbRef = useRef({ onDocCreated, onDocReady, invalidateDocuments });
-  cbRef.current = { onDocCreated, onDocReady, invalidateDocuments };
+  const cbRef = useRef({ onDocCreated, onDocReady, invalidateDocuments, createContract: createContract.mutateAsync });
+  cbRef.current = { onDocCreated, onDocReady, invalidateDocuments, createContract: createContract.mutateAsync };
 
   // Refs survive React Strict Mode's mount→unmount→mount cycle. getUploadUrl
   // creates a document row server-side, so it must fire EXACTLY ONCE per
@@ -238,6 +292,26 @@ function UploadItem({
   // upload-url call and has no way to re-issue a link for an existing one, so a
   // retry reuses this row wherever it can instead of creating another.
   const ticketRef = useRef<Ticket | null>(null);
+
+  // One contract per document: "creating"/"created" stops a retry from asking
+  // twice (the API is idempotent too, but there is no need to lean on that).
+  const contractRef = useRef<ContractPhase>("none");
+  const ensureContract = useCallback((docId: string) => {
+    if (item.intake === undefined || contractRef.current === "creating" || contractRef.current === "created") return;
+    contractRef.current = "creating";
+    if (mountedRef.current) setContractPhase("creating");
+    cbRef.current.createContract({ docId, ...item.intake })
+      .then((c) => {
+        contractRef.current = "created";
+        if (mountedRef.current) { setContract(c); setContractPhase("created"); }
+      })
+      .catch((e: unknown) => {
+        // The upload itself succeeded; only the board entry is missing.
+        console.warn("Govern intake: could not create the contract", { docId, error: e });
+        contractRef.current = "failed";
+        if (mountedRef.current) setContractPhase("failed");
+      });
+  }, [item.intake]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -288,6 +362,7 @@ function UploadItem({
           ticket.stored = true;
         }
         const id = ticket.docId;
+        ensureContract(id);
         cbRef.current.invalidateDocuments();
         safe(() => setPhase("processing"));
         const poll = () => {
@@ -310,7 +385,22 @@ function UploadItem({
         safe(() => { setPhase("failed"); setErrorMsg(uploadFailure(e, !!item.projectId)); });
       }
     })();
-  }, [item, attempt]);
+  }, [item, attempt, ensureContract]);
+
+  // Report progress up for the batch summary. A file that reached storage
+  // counts as uploaded even if Sonar's analysis later fails.
+  const uploadState: ItemStatus["upload"] =
+    phase === "uploading" ? "pending" : phase === "failed" && !ticketRef.current?.stored ? "failed" : "stored";
+  useEffect(() => { onStatus(item.id, { upload: uploadState, contract: contractPhase }); }, [item.id, uploadState, contractPhase, onStatus]);
+
+  // "Retry failed" from the batch summary.
+  const lastRetryToken = useRef(retryToken);
+  useEffect(() => {
+    if (retryToken === lastRetryToken.current) return;
+    lastRetryToken.current = retryToken;
+    if (phase === "failed") setAttempt((a) => a + 1);
+    else if (contractPhase === "failed" && ticketRef.current) ensureContract(ticketRef.current.docId);
+  }, [retryToken, phase, contractPhase, ensureContract]);
 
   // Dismissing an upload whose file never reached storage also removes the
   // empty PENDING document it created, so nothing is left behind in the lists.
@@ -326,7 +416,7 @@ function UploadItem({
   return (
     <li className="px-4 py-4 sm:px-5">
       <div className="flex items-start gap-3">
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)]">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-structure-soft">
           <FileText size={16} className="text-[var(--brand-primary-600)]" />
         </span>
         <div className="min-w-0 flex-1">
@@ -362,6 +452,16 @@ function UploadItem({
             </Link>
           )}
 
+          {item.intake !== undefined && (
+            <ContractLine
+              phase={contractPhase}
+              contract={contract}
+              intake={item.intake}
+              onRetry={() => { if (ticketRef.current) ensureContract(ticketRef.current.docId); }}
+              onUploadAnother={onUploadAnother}
+            />
+          )}
+
           {phase === "failed" && (
             <div className="mt-2 space-y-2">
               {errorMsg && <p className="break-words text-sm leading-snug text-[var(--danger)]">{errorMsg.length > 160 ? errorMsg.slice(0, 160) + "…" : errorMsg}</p>}
@@ -383,9 +483,87 @@ function PhaseBadge({ phase, status }: { phase: Phase; status: string }) {
 
 function Pill({ tone, children }: { tone: "brand" | "success" | "danger"; children: React.ReactNode }) {
   const cls = {
-    brand: "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]",
-    success: "bg-[var(--success-soft)] text-[var(--success)]",
+    brand: "bg-structure-soft text-structure-soft-fg",
+    success: "bg-[var(--success-soft)] text-[var(--success-fg)]",
     danger: "bg-[var(--danger-soft)] text-[var(--danger)]",
   }[tone];
   return <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{children}</span>;
+}
+
+/** The Govern contract opened for this upload: on the board, or why not. */
+function ContractLine({
+  phase, contract, intake, onRetry, onUploadAnother,
+}: {
+  phase: ContractPhase;
+  contract: ContractDetail | null;
+  intake: ContractPatch;
+  onRetry: () => void;
+  onUploadAnother: () => void;
+}) {
+  const applied = intakeSummary(intake, (t) => AGREEMENT_TYPE_LABEL[t]);
+  if (phase === "none" || phase === "creating") {
+    return applied ? <p className="mt-1 text-xs text-muted-foreground">Details: {applied}</p> : null;
+  }
+  if (phase === "failed") {
+    return (
+      <div className="mt-2 rounded-lg border border-border bg-[var(--panel)] px-3 py-2 text-sm text-[var(--ink-700)]">
+        <p>
+          The file uploaded, but it isn&apos;t on the contract board yet{applied ? " and the details you entered weren’t saved" : ""}.
+          It will still appear once Sonar has read it.
+        </p>
+        <Button variant="outline" className="mt-2 h-10 md:h-8" onClick={onRetry}><RefreshCw size={13} />Try again</Button>
+      </div>
+    );
+  }
+  if (!contract) return null;
+  return (
+    <div className="mt-2">
+      <p className="text-sm text-[var(--ink-700)]">
+        <CheckCircle2 size={13} className="mr-1 inline align-[-2px] text-[var(--success)]" />
+        On the contract board as <span className="font-semibold text-foreground">New</span> while Sonar reads it{applied ? ` · ${applied}` : ""}.
+      </p>
+      <div className="mt-1 flex flex-wrap gap-x-4">
+        <Link href={`/contracts/${encodeURIComponent(contract.contractId)}`} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] md:min-h-8">
+          Open contract <ArrowRight size={13} strokeWidth={2.25} />
+        </Link>
+        <button type="button" onClick={onUploadAnother} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[var(--ink-700)] transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:min-h-8">
+          <Upload size={13} />Upload another
+        </button>
+      </div>
+      <CaptureGapChecklist contract={contract} />
+    </div>
+  );
+}
+
+/** After a multi-file drop: how many uploaded, how many are on the board, and
+ *  one retry for everything that failed. Nothing is dropped silently. */
+function BatchSummary({
+  items, statuses, onRetryFailed,
+}: { items: QueueItem[]; statuses: Record<string, ItemStatus>; onRetryFailed: () => void }) {
+  const list = items.map((i): ItemStatus => statuses[i.id] ?? { upload: "pending", contract: "none" });
+  const total = list.length;
+  const stored = list.filter((s) => s.upload === "stored").length;
+  const uploadFailed = list.filter((s) => s.upload === "failed").length;
+  const created = list.filter((s) => s.contract === "created").length;
+  const contractFailed = list.filter((s) => s.contract === "failed").length;
+  const isRunning = list.some((s) => s.upload === "pending" || s.contract === "creating" || (s.upload === "stored" && s.contract === "none"));
+  const failures = uploadFailed + contractFailed;
+
+  return (
+    <div role="status" aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-foreground">
+          {isRunning ? `Uploading ${plural(total, "file")}…` : failures ? "Batch finished with problems" : "Batch finished"}
+        </p>
+        <p className="mt-0.5 text-sm text-[var(--ink-700)]">
+          {stored} of {total} uploaded · {created} on the contract board
+          {uploadFailed > 0 && <span className="text-[var(--danger)]"> · {plural(uploadFailed, "upload")} failed</span>}
+          {contractFailed > 0 && <span className="text-[var(--danger)]"> · {plural(contractFailed, "contract")} not created</span>}
+        </p>
+      </div>
+      {!isRunning && failures > 0 && (
+        <Button variant="outline" className="h-10 shrink-0 md:h-9" onClick={onRetryFailed}><RefreshCw size={14} />Retry failed</Button>
+      )}
+    </div>
+  );
 }

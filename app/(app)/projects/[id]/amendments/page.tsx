@@ -28,10 +28,10 @@ function kindOf(c: ApiDiffChange): ChangeKind {
   if (c.before && !c.after) return "removed";
   return "modified";
 }
-const KIND_META: Record<ChangeKind, { label: string; border: string; bg: string; text: string }> = {
-  added: { label: "Added", border: "border-l-[var(--success)]", bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]" },
-  removed: { label: "Removed", border: "border-l-[var(--danger)]", bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]" },
-  modified: { label: "Modified", border: "border-l-[var(--warning)]", bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]" },
+const KIND_META: Record<ChangeKind, { label: string; bg: string; text: string }> = {
+  added: { label: "Added", bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]" },
+  removed: { label: "Removed", bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]" },
+  modified: { label: "Modified", bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]" },
 };
 /**
  * Impact band for a change. The score (0–100) comes from the API; the bands are
@@ -160,7 +160,7 @@ export default function AmendmentsPage() {
                         <div className="text-4xl font-bold leading-none tabular-nums tracking-tight">{changes.length}</div>
                         <div className="mt-1 text-sm text-[var(--navy-foreground)]">clause change{changes.length === 1 ? "" : "s"}</div>
                       </div>
-                      <p className="max-w-[68ch] text-base leading-relaxed text-white">{diff?.impactSummary || "No written summary was returned for these changes."}</p>
+                      <p className="max-w-[58ch] text-base leading-relaxed text-white">{diff?.impactSummary || "No written summary was returned for these changes."}</p>
                     </div>
                     {/* Counts per band, straight from the scored changes — no overall "risk" verdict is invented. */}
                     <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--navy-border)] pt-4 text-sm">
@@ -251,7 +251,7 @@ function ChangeCard({ change, isExpanded, onToggle }: { change: ApiDiffChange; i
   const band = bandOf(change.impactScore);
   const im = BAND_META[band];
   return (
-    <div className={`overflow-hidden rounded-xl border border-l-4 border-border bg-card shadow-xs ${km.border}`}>
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
       <button type="button" onClick={onToggle} aria-expanded={isExpanded} className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
@@ -298,7 +298,7 @@ function NotFound() {
 function AmendmentsSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card"><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
+      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
       <div className="app-container py-6 md:py-8"><div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12"><div className="space-y-4 lg:col-span-8"><Skeleton className="h-36 rounded-xl" /><Skeleton className="h-48 rounded-xl" /></div><div className="space-y-4 lg:col-span-4"><Skeleton className="h-48 rounded-xl" /><Skeleton className="h-36 rounded-xl" /></div></div></div>
     </>
   );

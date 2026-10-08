@@ -154,13 +154,13 @@ export default function ProjectInsightsPage() {
             <div className="min-w-0 flex-1">
               <h2 className="mb-1.5 text-sm font-semibold text-[var(--ai-ink)]">Summary from the analysis</h2>
               {summary ? (
-                <p className="max-w-[72ch] text-base leading-relaxed text-foreground">{summary}</p>
+                <p className="max-w-[58ch] text-base leading-relaxed text-foreground">{summary}</p>
               ) : !isReady ? (
-                <p className="max-w-[72ch] text-base leading-relaxed text-[var(--ink-600)]">The summary appears once processing completes.</p>
+                <p className="max-w-[58ch] text-base leading-relaxed text-[var(--ink-600)]">The summary appears once processing completes.</p>
               ) : classLoading ? (
                 <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
               ) : (
-                <p className="max-w-[72ch] text-base leading-relaxed text-[var(--ink-600)]">{classError ? "The summary couldn\u2019t be loaded." : "No summary was extracted for this document."}</p>
+                <p className="max-w-[58ch] text-base leading-relaxed text-[var(--ink-600)]">{classError ? "The summary couldn\u2019t be loaded." : "No summary was extracted for this document."}</p>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Button variant="ai" size="lg" className="md:h-9" onClick={toggleCopilot}><Sparkles size={14} />Ask Sonar</Button>
@@ -204,7 +204,7 @@ export default function ProjectInsightsPage() {
             </div>
           ) : findings.length === 0 ? (
             <div className="flex flex-col items-center px-4 py-10 text-center md:px-6">
-              <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--success-soft)] text-[var(--success)]"><CheckCircle2 size={18} /></span>
+              <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--success-soft)] text-[var(--success-fg)]"><CheckCircle2 size={18} /></span>
               <p className="mb-1 text-base font-semibold text-foreground">No key findings.</p>
               <p className="max-w-sm text-sm text-[var(--ink-600)]">The analysis of this document returned no key findings.</p>
             </div>
@@ -251,7 +251,7 @@ export default function ProjectInsightsPage() {
 const DAY = 86_400_000;
 const RISK_PILL: Record<"critical" | "high", string> = {
   critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
 };
 
 function relDays(days: number): string {
@@ -454,8 +454,8 @@ function Fact({ label, value, note, missing = "Not extracted" }: { label: string
 
 const STAT_TONE = {
   neutral: "bg-muted text-[var(--ink-700)]",
-  success: "bg-[var(--success-soft)] text-[var(--success)]",
-  warning: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  success: "bg-[var(--success-soft)] text-[var(--success-fg)]",
+  warning: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
   danger: "bg-[var(--danger-soft)] text-[var(--danger)]",
 } as const;
 
@@ -488,7 +488,7 @@ function NotFound() {
 function InsightsSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card"><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
+      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
       <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
         <Skeleton className="h-28 rounded-xl" />

@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -24,8 +23,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell,
-  Sun,
-  Moon,
   Search,
   Command,
   ChevronDown,
@@ -48,7 +45,6 @@ import { useDocuments } from "@/lib/queries/documents";
 import { useProjects } from "@/lib/projects-store";
 import { useUIStore } from "@/lib/stores/ui";
 import { useNow } from "@/lib/use-now";
-import { readDark, subscribeTheme, toggleTheme } from "@/lib/theme";
 
 type Props = {
   onCommandOpen?: () => void;
@@ -480,7 +476,6 @@ function ProfileMenu({ onCommandOpen }: { onCommandOpen?: () => void }) {
   const { user, status, signOut } = useAuth();
   const { unreadCount, isLoading: notifLoading, isError: notifError } = useNotifications();
   const mounted = useHasMounted();
-  const dark = useSyncExternalStore(subscribeTheme, readDark, () => false);
 
   const initials = initialsOf(user);
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
@@ -501,7 +496,7 @@ function ProfileMenu({ onCommandOpen }: { onCommandOpen?: () => void }) {
             "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           )}
         >
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-600)] text-xs font-semibold uppercase text-white">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--navy-700)] text-xs font-semibold uppercase text-white">
             {initials}
           </span>
           <span className="hidden max-w-[140px] truncate text-sm font-semibold text-foreground md:block">
@@ -513,7 +508,7 @@ function ProfileMenu({ onCommandOpen }: { onCommandOpen?: () => void }) {
       <DropdownMenuContent align="end" className="w-[min(18rem,calc(100vw-1.5rem))] p-0">
         {/* Identity */}
         <DropdownMenuLabel className="flex items-center gap-3 border-b border-border bg-[var(--panel)] px-4 py-3.5">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-600)] text-sm font-semibold uppercase text-white">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--navy-700)] text-sm font-semibold uppercase text-white">
             {initials}
           </span>
           <span className="min-w-0 flex-1">
@@ -545,16 +540,6 @@ function ProfileMenu({ onCommandOpen }: { onCommandOpen?: () => void }) {
 
         <DropdownMenuSeparator className="mx-0 my-0" />
         <DropdownMenuGroup className="p-1.5">
-          {/* Stays open on select so the switch can be seen flipping. */}
-          <DropdownMenuCheckboxItem
-            checked={mounted && dark}
-            onCheckedChange={toggleTheme}
-            onSelect={(e) => e.preventDefault()}
-            className={cn(MENU_ROW, "pr-10")}
-          >
-            {mounted && dark ? <Moon size={16} /> : <Sun size={16} />}
-            <span className="min-w-0 flex-1 truncate">Dark theme</span>
-          </DropdownMenuCheckboxItem>
           <DropdownMenuItem onSelect={onCommandOpen} className={MENU_ROW}>
             <Command size={16} />
             <span className="min-w-0 flex-1 truncate">Search &amp; commands</span>
@@ -652,7 +637,6 @@ export function TopBar({ onCommandOpen, onMenuClick }: Props) {
         </Tooltip>
         <NotificationBell />
 
-        {/* The theme switch lives in the account menu (one control, one behaviour). */}
         <Separator orientation="vertical" className="!h-6 mx-1 hidden sm:block" />
 
         <ProfileMenu onCommandOpen={onCommandOpen} />

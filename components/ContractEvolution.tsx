@@ -156,7 +156,7 @@ function Tag({ tone, children }: { tone: "add" | "remove" | "mod"; children: Rea
     // Change tags are not risk levels, so they stay off the risk colours:
     // brand tint for additions, neutral for removals and edits. The sign or
     // word in the tag carries the meaning.
-    add:    "bg-[var(--brand-primary-50)] text-[var(--brand-primary-800)]",
+    add:    "bg-structure-soft text-structure-soft-fg",
     remove: "bg-[var(--ink-100)] text-[var(--ink-700)]",
     mod:    "bg-[var(--ink-100)] text-[var(--ink-700)]",
   }[tone];

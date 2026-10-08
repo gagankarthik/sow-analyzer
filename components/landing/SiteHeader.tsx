@@ -3,98 +3,36 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import {
-  ArrowRight,
-  BarChart3,
-  BookMarked,
-  Briefcase,
-  ChevronDown,
-  DollarSign,
-  DraftSow,
-  FileText,
-  GitCompare,
-  Kanban,
-  LayoutDashboard,
-  Lock,
-  Menu,
-  Scale,
-  Settings,
-  ShieldCheck,
-  User,
-  Users,
-  X,
-  type LucideIcon,
-} from "@/components/ui/icons";
+import { ArrowRight, ChevronDown, Menu, X } from "@/components/ui/icons";
 import { Logo } from "@/components/landing/primitives";
+import { NAV_MENUS, type NavItem, type NavMenu } from "@/components/landing/site-nav";
+import { ComingSoonBadge } from "@/components/landing/ComingSoon";
 
-type MenuItem = { label: string; href: string; desc: string; icon: LucideIcon };
-type NavMenu = { label: string; items: MenuItem[]; foot: { label: string; href: string } };
+/* Public site header: the mark on the left, the three menus centred, the
+   actions on the right. A menu opens as a full-width sheet under the bar,
+   on hover or click; Escape, an outside click or leaving the header closes
+   it. On narrow screens the menus become an accordion in a drawer. */
 
-const MENUS: NavMenu[] = [
-  {
-    label: "Product",
-    items: [
-      { label: "Clause extraction", href: "/product#extraction", desc: "Every clause read and filed by type", icon: FileText },
-      { label: "Playbook scoring", href: "/product#scoring", desc: "Deviations flagged and cited to the section", icon: ShieldCheck },
-      { label: "Amendment tracking", href: "/product#amendments", desc: "Version comparison and value recalculation", icon: GitCompare },
-      { label: "SOW drafting", href: "/product#drafting", desc: "A first draft from a short questionnaire", icon: DraftSow },
-      { label: "Workflow and insights", href: "/product#workflow", desc: "Pipeline, renewals and portfolio risk", icon: Kanban },
-    ],
-    foot: { label: "Platform overview", href: "/product" },
-  },
-  {
-    label: "Solutions",
-    items: [
-      { label: "Legal", href: "/solutions#legal", desc: "General counsel and in-house teams", icon: BookMarked },
-      { label: "Procurement", href: "/solutions#procurement", desc: "Payment terms and renewal dates", icon: Briefcase },
-      { label: "Finance", href: "/solutions#finance", desc: "Contract value across amendments", icon: BarChart3 },
-      { label: "Sales operations", href: "/solutions#sales", desc: "Redlines back the same day", icon: Kanban },
-      { label: "Legal operations", href: "/solutions#legal-ops", desc: "One searchable contract record", icon: Users },
-      { label: "Compliance", href: "/solutions#compliance", desc: "Clause-level audit history", icon: Scale },
-    ],
-    foot: { label: "All teams", href: "/solutions" },
-  },
-  {
-    label: "Resources",
-    items: [
-      { label: "Savings calculator", href: "/calculator", desc: "Estimate review hours and cost saved", icon: DollarSign },
-      { label: "Security overview", href: "/security", desc: "How contract data is protected", icon: Lock },
-      { label: "Privacy policy", href: "/legal/privacy", desc: "What we process and why", icon: ShieldCheck },
-      { label: "Data processing", href: "/legal/dpa", desc: "Processor terms and sub-processors", icon: FileText },
-    ],
-    foot: { label: "Terms of service", href: "/legal/terms" },
-  },
-];
+const MOBILE_NAV_ID = "lp-mobile-nav";
+const CLOSE_DELAY_MS = 160;
 
-const ACCOUNT_ID = "Account";
+const menuId = (label: string) => `lp-menu-${label.toLowerCase()}`;
 
-/** `overNight`: the page opens on the night hero, so the bar starts transparent
- *  and turns solid once the visitor scrolls. */
-export function SiteHeader({ overNight = false }: { overNight?: boolean }) {
+export function SiteHeader() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [mobileSection, setMobileSection] = useState<string | null>(null);
-  const [scrolled, setScrolled] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { status } = useAuth();
-  const authed = status === "authenticated";
+  const isSignedIn = status === "authenticated";
 
   useEffect(() => {
-    if (!overNight) return;
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [overNight]);
-
-  // Escape and outside clicks close whatever is open.
-  useEffect(() => {
-    if (!openMenu && !mobileOpen) return;
+    if (!openMenu && !isDrawerOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       setOpenMenu(null);
-      setMobileOpen(false);
+      setIsDrawerOpen(false);
     };
     const onPointer = (e: PointerEvent) => {
       if (!headerRef.current?.contains(e.target as Node)) setOpenMenu(null);
@@ -105,192 +43,147 @@ export function SiteHeader({ overNight = false }: { overNight?: boolean }) {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPointer);
     };
-  }, [openMenu, mobileOpen]);
+  }, [openMenu, isDrawerOpen]);
 
-  const hoverOpen = (label: string) => {
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
+
+  const open = (label: string) => {
     clearTimeout(closeTimer.current);
     setOpenMenu(label);
   };
-  const hoverClose = () => {
-    closeTimer.current = setTimeout(() => setOpenMenu(null), 140);
+  const closeSoon = () => {
+    closeTimer.current = setTimeout(() => setOpenMenu(null), CLOSE_DELAY_MS);
   };
   const closeAll = () => {
     setOpenMenu(null);
-    setMobileOpen(false);
+    setIsDrawerOpen(false);
   };
-  // Tabbing out of a menu closes it.
-  const onBlurMenu = (e: React.FocusEvent<HTMLDivElement>) => {
+  // Tabbing out of the header closes the sheet.
+  const closeOnBlur = (e: React.FocusEvent<HTMLElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpenMenu(null);
   };
 
-  const accountItems: MenuItem[] = authed
-    ? [
-        { label: "Dashboard", href: "/dashboard", desc: "Your contracts and what needs attention", icon: LayoutDashboard },
-        { label: "Settings", href: "/settings", desc: "Playbook, team and compliance packs", icon: Settings },
-      ]
-    : [
-        { label: "Log in", href: "/login", desc: "Open your Govern workspace", icon: User },
-        { label: "Create an account", href: "/signup", desc: "Your first analysis is free", icon: Users },
-        { label: "Reset password", href: "/reset", desc: "Get a code by email", icon: Lock },
-      ];
-  const accountLabel = authed ? "Account" : "Log in";
-
-  // Transparent only while resting on the night hero with nothing open.
-  const night = overNight && !scrolled && !mobileOpen && !openMenu;
+  const activeMenu = NAV_MENUS.find((menu) => menu.label === openMenu);
 
   return (
-    <header ref={headerRef} className="lp-header fixed inset-x-0 top-0 z-50" data-over-night={night}>
-      <div className="lp-wrap flex h-18 items-center justify-between gap-6">
+    <header
+      ref={headerRef}
+      className="lp-header sticky top-0 z-50"
+      onMouseLeave={closeSoon}
+      onMouseEnter={() => clearTimeout(closeTimer.current)}
+      onBlur={closeOnBlur}
+    >
+      <div className="lp-wrap lp-header-bar">
         <Link href="/" aria-label="Blue-IQ Govern home" className="flex shrink-0 items-center gap-3" onClick={closeAll}>
-          <Logo height={28} priority variant={night ? "dark" : "light"} />
+          <Logo height={28} priority />
           <span className="lp-product-tag">Govern</span>
         </Link>
 
-        <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
-          {MENUS.map((m) => {
-            const isOpen = openMenu === m.label;
-            const id = `lp-menu-${m.label.toLowerCase()}`;
+        <nav aria-label="Primary" className="hidden items-center justify-center gap-1 lg:flex">
+          {NAV_MENUS.map((menu) => {
+            const isOpen = openMenu === menu.label;
             return (
-              <div
-                key={m.label}
-                className="relative"
-                onMouseEnter={() => hoverOpen(m.label)}
-                onMouseLeave={hoverClose}
-                onBlur={onBlurMenu}
+              <button
+                key={menu.label}
+                type="button"
+                className="lp-navbtn"
+                aria-expanded={isOpen}
+                aria-controls={menuId(menu.label)}
+                onMouseEnter={() => open(menu.label)}
+                onClick={() => (isOpen ? setOpenMenu(null) : open(menu.label))}
               >
-                <button
-                  type="button"
-                  className="lp-navbtn"
-                  aria-expanded={isOpen}
-                  aria-controls={id}
-                  onClick={() => setOpenMenu(isOpen ? null : m.label)}
-                >
-                  {m.label}
-                  <ChevronDown size={14} strokeWidth={2} className="lp-navbtn-chevron" aria-hidden="true" />
-                </button>
-                {isOpen && (
-                  <div id={id} className="lp-menu lp-menu-wide">
-                    <ul className="grid grid-cols-2 gap-1">
-                      {m.items.map((it) => (
-                        <li key={it.label}>
-                          <MenuLink item={it} onNavigate={closeAll} />
-                        </li>
-                      ))}
-                    </ul>
-                    <Link href={m.foot.href} className="lp-menu-foot" onClick={closeAll}>
-                      {m.foot.label}
-                      <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
-                    </Link>
-                  </div>
-                )}
-              </div>
+                {menu.label}
+                <ChevronDown size={16} strokeWidth={2} className="lp-navbtn-chevron" aria-hidden="true" />
+              </button>
             );
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <div
-            className="relative hidden sm:block"
-            onMouseEnter={() => hoverOpen(ACCOUNT_ID)}
-            onMouseLeave={hoverClose}
-            onBlur={onBlurMenu}
-          >
-            <button
-              type="button"
-              className="lp-navbtn"
-              aria-expanded={openMenu === ACCOUNT_ID}
-              aria-controls="lp-menu-account"
-              onClick={() => setOpenMenu(openMenu === ACCOUNT_ID ? null : ACCOUNT_ID)}
-            >
-              {accountLabel}
-              <ChevronDown size={14} strokeWidth={2} className="lp-navbtn-chevron" aria-hidden="true" />
-            </button>
-            {openMenu === ACCOUNT_ID && (
-              <div id="lp-menu-account" className="lp-menu lp-menu-end w-72">
-                <ul className="flex flex-col gap-1">
-                  {accountItems.map((it) => (
-                    <li key={it.label}>
-                      <MenuLink item={it} onNavigate={closeAll} />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          <Link
-            href={authed ? "/dashboard" : "/signup"}
-            className={`lp-btn lp-btn-sm hidden sm:inline-flex ${night ? "lp-btn-light" : "lp-btn-primary"}`}
-            onClick={closeAll}
-          >
-            {authed ? "Open Govern" : "Start free"}
-          </Link>
+        <div className="flex items-center justify-end gap-4">
+          {isSignedIn ? (
+            <Link href="/dashboard" className="lp-btn lp-btn-primary lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
+              Open Govern
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className="lp-navlink hidden font-medium sm:inline" onClick={closeAll}>
+                Log in
+              </Link>
+              <Link href="/signup" className="lp-btn lp-btn-primary lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
+                Request a demo
+              </Link>
+            </>
+          )}
           <button
             type="button"
-            aria-expanded={mobileOpen}
-            aria-controls="lp-mobile-nav"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMobileOpen((v) => !v)}
-            className="lp-header-icon inline-flex h-11 w-11 items-center justify-center rounded-full lg:hidden"
+            aria-expanded={isDrawerOpen}
+            aria-controls={MOBILE_NAV_ID}
+            aria-label={isDrawerOpen ? "Close menu" : "Open menu"}
+            onClick={() => setIsDrawerOpen((isOpen) => !isOpen)}
+            className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-lp-control text-lp-ink lg:hidden"
           >
-            {mobileOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
+            {isDrawerOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
           </button>
         </div>
       </div>
 
-      {mobileOpen && (
-        <nav
-          id="lp-mobile-nav"
-          aria-label="Primary"
-          className="max-h-[calc(100dvh-4.5rem)] overflow-y-auto border-t border-lp-line bg-lp-sheet lg:hidden"
-        >
+      {activeMenu ? <MenuSheet menu={activeMenu} onNavigate={closeAll} /> : null}
+
+      {isDrawerOpen && (
+        <nav id={MOBILE_NAV_ID} aria-label="Primary" className="lp-drawer lg:hidden">
           <div className="lp-wrap py-2">
-            {MENUS.map((m) => {
-              const isOpen = mobileSection === m.label;
-              const id = `lp-mobile-${m.label.toLowerCase()}`;
+            {NAV_MENUS.map((menu) => {
+              const isOpen = openSection === menu.label;
+              const sectionId = `lp-mobile-${menu.label.toLowerCase()}`;
               return (
-                <div key={m.label} className="border-b border-lp-line">
+                <div key={menu.label} className="border-b border-lp-line">
                   <button
                     type="button"
-                    className="flex h-14 w-full items-center justify-between text-lg font-semibold text-lp-ink"
+                    className="flex h-14 w-full items-center justify-between font-semibold text-lp-ink"
                     aria-expanded={isOpen}
-                    aria-controls={id}
-                    onClick={() => setMobileSection(isOpen ? null : m.label)}
+                    aria-controls={sectionId}
+                    onClick={() => setOpenSection(isOpen ? null : menu.label)}
                   >
-                    {m.label}
-                    <ChevronDown
-                      size={18}
-                      strokeWidth={2}
-                      className={`lp-navbtn-chevron ${isOpen ? "rotate-180" : ""}`}
-                      aria-hidden="true"
-                    />
+                    {menu.label}
+                    <ChevronDown size={18} strokeWidth={2} className="lp-navbtn-chevron" aria-hidden="true" />
                   </button>
                   {isOpen && (
-                    <ul id={id} className="flex flex-col gap-1 pb-4">
-                      {m.items.map((it) => (
-                        <li key={it.label}>
-                          <MenuLink item={it} onNavigate={closeAll} />
-                        </li>
+                    <div id={sectionId} className="pb-4">
+                      {menu.groups.map((group) => (
+                        <div key={group.label} className="mt-2">
+                          {menu.groups.length > 1 ? <p className="lp-sheet-label px-3">{group.label}</p> : null}
+                          <ul className="mt-1 flex flex-col">
+                            {group.items.map((item) => (
+                              <li key={item.href}>
+                                <MenuLink item={item} onNavigate={closeAll} />
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       ))}
-                      <li>
-                        <Link href={m.foot.href} className="lp-menu-foot" onClick={closeAll}>
-                          {m.foot.label}
-                          <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
-                        </Link>
-                      </li>
-                    </ul>
+                      <Link href={menu.foot.href} className="lp-sheet-foot mt-2 px-3" onClick={closeAll}>
+                        {menu.foot.label}
+                        <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+                      </Link>
+                    </div>
                   )}
                 </div>
               );
             })}
             <div className="flex gap-3 py-5">
-              <Link href={authed ? "/dashboard" : "/login"} onClick={closeAll} className="lp-btn lp-btn-quiet flex-1">
-                {authed ? "Dashboard" : "Log in"}
-              </Link>
-              {!authed && (
-                <Link href="/signup" onClick={closeAll} className="lp-btn lp-btn-primary flex-1">
-                  Start free
+              {isSignedIn ? (
+                <Link href="/dashboard" onClick={closeAll} className="lp-btn lp-btn-primary flex-1">
+                  Open Govern
                 </Link>
+              ) : (
+                <>
+                  <Link href="/login" onClick={closeAll} className="lp-btn lp-btn-outline flex-1">
+                    Log in
+                  </Link>
+                  <Link href="/signup" onClick={closeAll} className="lp-btn lp-btn-primary flex-1">
+                    Request a demo
+                  </Link>
+                </>
               )}
             </div>
           </div>
@@ -300,16 +193,51 @@ export function SiteHeader({ overNight = false }: { overNight?: boolean }) {
   );
 }
 
-function MenuLink({ item, onNavigate }: { item: MenuItem; onNavigate: () => void }) {
-  const Icon = item.icon;
+/* The full-width sheet: what the menu covers on the left, its links
+   grouped on the right. */
+function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void }) {
+  const isGrouped = menu.groups.length > 1;
+  return (
+    <div id={menuId(menu.label)} className="lp-sheet hidden lg:block">
+      <div className="lp-wrap lp-sheet-grid">
+        <div>
+          <p className="lp-sheet-title">{menu.label}</p>
+          <p className="mt-2 text-sm text-lp-ink-2">{menu.intro}</p>
+          <Link href={menu.foot.href} className="lp-sheet-foot mt-5" onClick={onNavigate}>
+            {menu.foot.label}
+            <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+          </Link>
+        </div>
+        <div className={isGrouped ? "grid grid-cols-2 gap-8" : undefined}>
+          {menu.groups.map((group) => (
+            <div key={group.label}>
+              {isGrouped ? <p className="lp-sheet-label px-3">{group.label}</p> : null}
+              <ul className={isGrouped ? "mt-2 grid gap-1" : "grid grid-cols-2 gap-1"}>
+                {group.items.map((item) => (
+                  <li key={item.href}>
+                    <MenuLink item={item} onNavigate={onNavigate} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MenuLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
+  const ItemIcon = item.icon;
   return (
     <Link href={item.href} className="lp-menu-item" onClick={onNavigate}>
-      <span className="lp-icon-tile lp-menu-icon">
-        <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
-      </span>
+      <ItemIcon size={20} className="lp-menu-icon" />
       <span className="min-w-0">
-        <span className="block text-sm font-semibold text-lp-ink">{item.label}</span>
-        <span className="block text-sm text-lp-ink-3">{item.desc}</span>
+        <span className="flex flex-wrap items-center gap-x-2 text-sm font-semibold text-lp-ink">
+          {item.label}
+          {item.feature ? <ComingSoonBadge feature={item.feature} /> : null}
+        </span>
+        <span className="mt-0.5 block text-sm text-lp-ink-2">{item.description}</span>
       </span>
     </Link>
   );

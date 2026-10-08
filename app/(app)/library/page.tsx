@@ -246,7 +246,7 @@ export default function LibraryPage() {
         }
       />
 
-      <div className="app-container flex flex-col gap-4 py-6 md:gap-6 md:py-8">
+      <div className="app-container app-page">
         {/* Filter bar: full-width search, then a chip row that scrolls sideways on a phone. */}
         <section aria-label="Filters" className="flex flex-col gap-2">
           <div className="flex flex-col gap-2 md:flex-row md:items-start">
@@ -349,7 +349,7 @@ export default function LibraryPage() {
             )}
             {activeFilters > 0 && (
               <>
-                <span className="rounded-full bg-[var(--brand-primary-50)] px-2 py-0.5 text-xs font-semibold text-[var(--brand-primary-700)]">
+                <span className="rounded-full bg-structure-soft px-2 py-0.5 text-xs font-semibold text-structure-soft-fg">
                   {activeFilters} filter{activeFilters === 1 ? "" : "s"} active
                 </span>
                 <button type="button" onClick={clearFilters} className="inline-flex min-h-10 items-center rounded font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:min-h-0">
@@ -381,7 +381,7 @@ export default function LibraryPage() {
               </div>
             ) : empty ? (
               <div className="flex flex-col items-center justify-center px-4 py-12 text-center md:py-16">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-50)]">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft">
                   <FileText size={22} className="text-[var(--brand-primary-600)]" />
                 </div>
                 <h3 className="mb-1.5 text-lg font-semibold text-foreground">
@@ -696,7 +696,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function getStatusBadge(status: string) {
-  if (status === "READY") return { label: "Ready", cls: "bg-[var(--success-soft)] text-[var(--success)]" };
+  if (status === "READY") return { label: "Ready", cls: "bg-[var(--success-soft)] text-[var(--success-fg)]" };
   if (status === "FAILED") return { label: "Failed", cls: "bg-[var(--danger-soft)] text-[var(--danger)]" };
   return { label: "Processing", cls: "bg-[var(--ink-100)] text-[var(--ink-600)]" };
 }

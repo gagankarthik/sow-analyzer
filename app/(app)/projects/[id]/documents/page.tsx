@@ -219,7 +219,7 @@ export default function DocumentsPage() {
 
             {/* Upload zone */}
             <Link href="/projects/new" className="block rounded-xl border-2 border-dashed border-[var(--ink-300)] bg-card p-6 text-center transition-colors hover:border-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:p-8">
-              <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]"><Upload size={18} strokeWidth={1.75} /></span>
+              <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Upload size={18} strokeWidth={1.75} /></span>
               <h3 className="text-base font-semibold text-foreground">Upload a new version</h3>
               <p className="mx-auto mt-1 max-w-xs text-sm leading-relaxed text-[var(--ink-600)]">Add an updated document to your workspace.</p>
             </Link>
@@ -244,7 +244,7 @@ export default function DocumentsPage() {
                 <ul className="space-y-2.5">
                   {doc.parties.map((p) => (
                     <li key={p} className="flex items-center gap-2.5">
-                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]"><Building2 size={15} strokeWidth={1.75} /></span>
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={15} strokeWidth={1.75} /></span>
                       <span className="min-w-0 break-words text-sm font-medium text-foreground">{p}</span>
                     </li>
                   ))}
@@ -370,7 +370,7 @@ function NotFound() {
 function DocumentsSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card"><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
+      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
       <div className="app-container py-6 md:py-8"><div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12"><div className="space-y-4 lg:col-span-8"><Skeleton className="h-10 w-full" /><Skeleton className="h-32 rounded-xl" /><Skeleton className="h-48 rounded-xl" /></div><div className="lg:col-span-4 space-y-5"><Skeleton className="h-44 rounded-xl" /><Skeleton className="h-32 rounded-xl" /></div></div></div>
     </>
   );

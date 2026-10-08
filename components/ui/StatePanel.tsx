@@ -57,8 +57,8 @@ function StateArt({ art }: { art: Art }) {
       {art === "missing" && (
         <>
           <rect x="64" y="46" width="72" height="5" rx="2.5" className="fill-[var(--ink-200)]" />
-          <rect x="64" y="58" width="72" height="24" rx="5" className="fill-[var(--brand-primary-50)] stroke-[var(--brand-primary-400)]" strokeWidth="1.5" strokeDasharray="4 4" />
-          <text x="100" y="75" textAnchor="middle" className="fill-[var(--brand-primary-600)] font-mono text-xs font-semibold">
+          <rect x="64" y="58" width="72" height="24" rx="5" className="fill-[var(--navy-50)] stroke-[var(--navy-300)]" strokeWidth="1.5" strokeDasharray="4 4" />
+          <text x="100" y="75" textAnchor="middle" className="fill-[var(--navy-500)] font-mono text-xs font-semibold">
             404
           </text>
           <rect x="64" y="92" width="72" height="5" rx="2.5" className="fill-[var(--ink-200)]" />
@@ -83,7 +83,7 @@ function StateArt({ art }: { art: Art }) {
           <rect x="64" y="46" width="72" height="5" rx="2.5" className="fill-[var(--ink-100)]" />
           <rect x="64" y="58" width="72" height="5" rx="2.5" className="fill-[var(--ink-100)]" />
           <rect x="64" y="70" width="52" height="5" rx="2.5" className="fill-[var(--ink-100)]" />
-          <circle cx="140" cy="112" r="20" className="fill-[var(--brand-primary-600)]" />
+          <circle cx="140" cy="112" r="20" className="fill-[var(--navy-700)]" />
           <path d="M140 103v18M131 112h18" className="stroke-white" strokeWidth="3.5" strokeLinecap="round" />
         </>
       )}

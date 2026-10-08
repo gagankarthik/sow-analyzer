@@ -138,7 +138,7 @@ export default function TeamPage() {
                     key={party.key}
                     className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-xs md:p-5"
                   >
-                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg">
                       <Building2 size={18} strokeWidth={1.75} />
                     </span>
                     <div className="min-w-0">
@@ -196,7 +196,7 @@ function NotFound() {
 function TeamSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card">
+      <div>
         <div className="app-container pt-5 md:pt-6 pb-4 space-y-3">
           <Skeleton className="h-3.5 w-28" />
           <Skeleton className="h-7 w-1/2" />

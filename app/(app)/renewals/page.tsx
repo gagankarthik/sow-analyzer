@@ -76,7 +76,7 @@ const STATUS_OPTIONS: { key: Item["kind"] | "all"; label: string }[] = [
   { key: "upcoming", label: "Upcoming" },
 ];
 const CHIP =
-  "h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-[var(--brand-primary-300)] aria-[pressed=true]:bg-[var(--brand-primary-50)] aria-[pressed=true]:text-[var(--brand-primary-700)] sm:h-9";
+  "h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-structure-border aria-[pressed=true]:bg-structure-soft aria-[pressed=true]:text-structure-soft-fg sm:h-9";
 
 function monthLabel(ms: number): string {
   return new Date(ms).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -234,7 +234,7 @@ export default function RenewalsPage() {
     return (
       <>
         <PageHeader title="Obligations & renewals" subtitle="What's expiring, up for renewal, and coming due." />
-        <div className="app-container py-6 md:py-8">
+        <div className="app-container app-page">
           <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-14 text-center">
             <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={24} strokeWidth={1.5} /></span>
             <h2 className="text-xl font-semibold text-foreground">Couldn&apos;t load your contracts</h2>
@@ -254,14 +254,14 @@ export default function RenewalsPage() {
         actions={<LastUpdated updatedAt={dataUpdatedAt} isFetching={isFetching} onRefresh={() => refetch()} failed={isError} />}
       />
 
-      <div className="app-container space-y-6 py-6 md:space-y-8 md:py-8">
+      <div className="app-container app-page">
         {/* Summary — the 90-day window is the focal block; the other three figures sit beside it. */}
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          <section aria-labelledby="window-heading" className="rounded-xl bg-[var(--brand-primary-600)] p-5 text-white md:p-6 lg:col-span-7">
-            <h2 id="window-heading" className="text-base font-medium text-[var(--brand-primary-100)]">Due in the next 90 days</h2>
+          <section aria-labelledby="window-heading" className="rounded-xl bg-[var(--navy-800)] p-5 text-white md:p-6 lg:col-span-7">
+            <h2 id="window-heading" className="text-base font-medium text-[var(--navy-100)]">Due in the next 90 days</h2>
             <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-4xl font-bold leading-none tracking-[-0.025em] tabular-nums">{kpis.next90}</span>
-              <span className="text-base text-[var(--brand-primary-100)]">date{kpis.next90 === 1 ? "" : "s"} in that window: renewals, term ends, notice deadlines, payments, milestones and deliverables</span>
+              <span className="text-base text-[var(--navy-100)]">date{kpis.next90 === 1 ? "" : "s"} in that window: renewals, term ends, notice deadlines, payments, milestones and deliverables</span>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-5">
               {([["0–30 days", kpis.d30], ["31–60 days", kpis.d60], ["61–90 days", kpis.d90]] as const).map(([label, n]) => (
@@ -273,7 +273,7 @@ export default function RenewalsPage() {
                       style={{ width: `${(n / windowMax) * 100}%` }}
                     />
                   </div>
-                  <div className="mt-2 text-xs text-[var(--brand-primary-100)]">{label}</div>
+                  <div className="mt-2 text-xs text-[var(--navy-100)]">{label}</div>
                 </div>
               ))}
             </div>
@@ -297,7 +297,7 @@ export default function RenewalsPage() {
         {/* Timeline */}
         {items.length === 0 ? (
           <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
-            <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--success-soft)] text-[var(--success)]">
+            <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--success-soft)] text-[var(--success-fg)]">
               <CheckCircle2 size={22} />
             </span>
             <p className="mb-1 text-lg font-semibold text-foreground">Nothing due right now</p>
@@ -384,7 +384,7 @@ export default function RenewalsPage() {
                             <span className="min-w-0 text-base font-semibold text-foreground [overflow-wrap:anywhere]">{i.doc.title || "Untitled"}</span>
                             <DocTypeBadge type={i.doc.docType} />
                             {i.autoRenews && (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--warning-soft)] px-1.5 py-0.5 text-xs font-medium text-[var(--warning)]">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--warning-soft)] px-1.5 py-0.5 text-xs font-medium text-[var(--warning-fg)]">
                                 <Repeat size={12} />Auto-renews
                               </span>
                             )}
@@ -395,7 +395,7 @@ export default function RenewalsPage() {
                             {i.value !== null && i.value > 0 ? <span className="tabular-nums"> · {fmtMoney(i.value, i.doc.currency)}</span> : null}
                           </div>
                         </div>
-                        <span className={`mt-0.5 shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums sm:mt-0 ${i.days === null ? "bg-muted text-[var(--ink-600)]" : i.days < 0 ? "bg-[var(--danger-soft)] text-[var(--danger)]" : i.days <= 30 ? "bg-[var(--warning-soft)] text-[var(--warning)]" : "bg-muted text-[var(--ink-600)]"}`}>
+                        <span className={`mt-0.5 shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums sm:mt-0 ${i.days === null ? "bg-muted text-[var(--ink-600)]" : i.days < 0 ? "bg-[var(--danger-soft)] text-[var(--danger)]" : i.days <= 30 ? "bg-[var(--warning-soft)] text-[var(--warning-fg)]" : "bg-muted text-[var(--ink-600)]"}`}>
                           {i.kind === "expired" && i.days === null ? "Marked expired" : i.kind !== "expired" && i.days !== null && i.days < 0 ? `${Math.abs(i.days)}d ago` : daysLabel(i.days)}
                         </span>
                         <ArrowRight size={16} className="hidden shrink-0 text-[var(--ink-300)] transition-colors group-hover:text-[var(--brand-primary-600)] sm:block" />
@@ -416,7 +416,7 @@ function KindMark({ kind }: { kind: Item["kind"] }) {
   const map = {
     expired: { icon: <XCircle size={16} className="text-[var(--danger)]" />, bg: "bg-[var(--danger-soft)]", label: "Expired" },
     renewal: { icon: <Repeat size={16} className="text-[var(--warning)]" />, bg: "bg-[var(--warning-soft)]", label: "Up for renewal" },
-    upcoming: { icon: <CalendarClock size={16} className="text-[var(--brand-primary-700)]" />, bg: "bg-[var(--brand-primary-50)]", label: "Upcoming" },
+    upcoming: { icon: <CalendarClock size={16} className="text-structure-soft-fg" />, bg: "bg-structure-soft", label: "Upcoming" },
     passed: { icon: <Clock size={16} className="text-[var(--danger)]" />, bg: "bg-[var(--danger-soft)]", label: "Due date passed" },
   } as const;
   const m = map[kind];
@@ -440,13 +440,13 @@ function LegacyNote({ count, className = "" }: { count: number; className?: stri
 function RenewalsSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card">
+      <div>
         <div className="app-container space-y-3 pb-5 pt-6 md:pb-7 md:pt-8">
           <Skeleton className="h-8 w-2/3 max-w-sm" />
           <Skeleton className="h-4 w-1/2 max-w-xs" />
         </div>
       </div>
-      <div className="app-container space-y-6 py-6 md:space-y-8 md:py-8">
+      <div className="app-container app-page">
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
           <Skeleton className="h-[208px] rounded-xl lg:col-span-7" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-5 lg:grid-cols-2">

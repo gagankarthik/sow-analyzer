@@ -218,7 +218,7 @@ function DocumentOverview() {
                 {!isReady ? (
                   <p className="text-base text-[var(--ink-600)]">The summary appears once processing completes.</p>
                 ) : summary ? (
-                  <p className="max-w-[78ch] text-base leading-relaxed text-foreground">{summary}</p>
+                  <p className="max-w-[60ch] text-base leading-relaxed text-foreground">{summary}</p>
                 ) : !classification && classError ? (
                   <p className="text-base text-[var(--ink-600)]">
                     The analysis for this document couldn&apos;t be loaded.{" "}
@@ -373,7 +373,7 @@ function DocumentOverview() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {doc.parties.map((party, i) => (
                   <div key={i} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)] shrink-0"><Building2 size={15} strokeWidth={1.75} /></span>
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg shrink-0"><Building2 size={15} strokeWidth={1.75} /></span>
                     <div className="min-w-0"><div className="break-words text-base font-semibold text-foreground">{party}</div><div className="text-xs text-muted-foreground">Party {i + 1}</div></div>
                   </div>
                 ))}
@@ -471,7 +471,7 @@ function NotFound() {
 function OverviewSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card">
+      <div>
         <div className="app-container pt-5 md:pt-6 pb-4 space-y-3">
           <Skeleton className="h-3.5 w-28" />
           <div className="flex items-center gap-2.5"><Skeleton className="h-9 w-9 rounded-lg" /><Skeleton className="h-7 w-1/2" /></div>

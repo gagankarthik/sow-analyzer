@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Script from "next/script";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -8,19 +7,30 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
-// Geist for display and body, Geist Mono for references and figures.
-const geistSans = Geist({
-  variable: "--font-geist",
+// IBM Plex Sans for the interface and body: an institutional grotesk with
+// clear figures, suited to research and legal offices. Plex Mono for
+// references and figures. Source Serif 4, upright, is the public site's
+// display face only (headlines), for a journal-like voice.
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
+const sourceSerif = Source_Serif_4({
+  variable: "--font-serif-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  display: "swap",
+});
 
 const DEFAULT_TITLE = "Blue-IQ | Contract review for SOWs, MSAs and amendments";
 
@@ -43,35 +53,16 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-// Inline theme bootstrap — runs before paint to avoid a flash of light theme
-// when the user has dark mode persisted in localStorage or prefers it via OS.
-const THEME_BOOTSTRAP = `
-try {
-  var t = localStorage.getItem('clausal-theme');
-  if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
-  }
-} catch (e) {}
-`;
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
-      suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${plexSans.variable} ${plexMono.variable} ${sourceSerif.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
-        {/* `beforeInteractive` injects this in <head> before hydration so the
-            theme class is set before any styled element paints. */}
-        <Script
-          id="theme-bootstrap"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }}
-        />
         <QueryProvider>
           <AuthProvider>
             <TooltipProvider delayDuration={200}>{children}</TooltipProvider>

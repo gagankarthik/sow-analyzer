@@ -85,7 +85,9 @@ function endSession(): void {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+// Exported for the feature API modules (lib/govern/api.ts) so every call shares
+// one auth, session and error path.
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   assertApiConfigured()
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,

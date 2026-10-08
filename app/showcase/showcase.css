@@ -1,0 +1,3 @@
+/* Dev-only capture routes: hide the Next.js dev badge so it never lands in a
+   marketing screenshot. */
+nextjs-portal { display: none !important; }

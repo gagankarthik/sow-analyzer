@@ -26,7 +26,7 @@ export function AnalysisDisclaimer({ className }: { className?: string }) {
           <p id="analysis-disclaimer-title" className="text-sm font-semibold text-foreground">
             For guidance only, not legal advice.
           </p>
-          <p className="mt-1 max-w-[100ch] text-sm leading-relaxed text-[var(--ink-600)]">
+          <p className="mt-1 max-w-[28rem] text-sm leading-relaxed text-[var(--ink-600)]">
             Blue-IQ uses AI to analyze and draft contract content, and it can be incomplete or
             wrong. Verify every figure, date, clause, and obligation against the source document,
             your own company&apos;s policies, and the laws that govern your contract before relying

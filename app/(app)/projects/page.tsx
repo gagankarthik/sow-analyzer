@@ -26,9 +26,9 @@ import type { ApiClassification, ApiDocument, Lifecycle, RiskLevel } from "@/lib
 const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const RISK_PILL: Record<RiskLevel, string> = {
   critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
   medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
-  low: "bg-[var(--success-soft)] text-[var(--success)]",
+  low: "bg-[var(--success-soft)] text-[var(--success-fg)]",
 };
 const RISK_HEX: Record<RiskLevel, string> = { critical: "var(--danger)", high: "var(--warning)", medium: "var(--ink-400)", low: "var(--success)" };
 const DAY = 86_400_000;
@@ -230,7 +230,7 @@ export default function ProjectsPage() {
         }
       />
 
-      <div className="app-container flex flex-col gap-4 py-6 md:gap-6 md:py-8">
+      <div className="app-container app-page">
         {/* Focal block: the one thing to act on. Hidden when nothing needs attention. */}
         {hasProjects && !isLoading && (attentionCount > 0 || risk === "attention") && (
           <section aria-label="Needs attention" className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl bg-[var(--navy)] p-4 text-white md:px-5">
@@ -312,7 +312,7 @@ export default function ProjectsPage() {
               </span>
               {activeFilters > 0 && (
                 <>
-                  <span className="rounded-full bg-[var(--brand-primary-50)] px-2 py-0.5 text-xs font-semibold text-[var(--brand-primary-700)]">
+                  <span className="rounded-full bg-structure-soft px-2 py-0.5 text-xs font-semibold text-structure-soft-fg">
                     {activeFilters} filter{activeFilters === 1 ? "" : "s"} active
                   </span>
                   <button type="button" onClick={resetFilters} className="inline-flex min-h-10 items-center rounded font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:min-h-0">
@@ -501,7 +501,7 @@ function AttentionTag({ reason, risk, expired, failed }: { reason: string | null
   if (!reason) return <Dash />;
   const danger = failed || expired || risk === "critical" || risk === "high";
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${danger ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "bg-[var(--warning-soft)] text-[var(--warning)]"}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${danger ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "bg-[var(--warning-soft)] text-[var(--warning-fg)]"}`}>
       <AlertTriangle size={12} />{reason}
     </span>
   );
@@ -523,7 +523,7 @@ function ProjectGridCard({ a }: { a: Agg }) {
         {a.overallRisk ? (
           <RiskPill level={a.overallRisk} />
         ) : a.processing > 0 ? (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--warning)]"><Loader2 size={12} className="animate-spin" />Analyzing</span>
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--warning-fg)]"><Loader2 size={12} className="animate-spin" />Analyzing</span>
         ) : null}
       </div>
 
@@ -595,7 +595,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 function EmptyState({ pristine, reset }: { pristine: boolean; reset?: () => void }) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center md:py-20">
-      <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]"><Layers size={24} strokeWidth={1.75} /></span>
+      <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft text-structure-soft-fg"><Layers size={24} strokeWidth={1.75} /></span>
       <h3 className="text-xl font-semibold text-foreground">{pristine ? "No projects yet" : "No projects match"}</h3>
       <p className="mt-2 max-w-sm text-base text-[var(--ink-600)]">
         {pristine ? "Create a project, then upload its SOW. Sonar extracts clauses, scores risk, and rolls it up here. Projects other people share with you appear here too." : "Try a different filter or clear your search."}

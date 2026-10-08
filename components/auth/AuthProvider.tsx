@@ -76,6 +76,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** A fixed signed-in session, for the dev-only /showcase screens that render
+ *  real app pages with sample data. Never mounted by the app itself. */
+export function StaticAuthProvider({ user, children }: { user: AuthUser; children: React.ReactNode }) {
+  const value = useMemo<AuthContextValue>(
+    () => ({ user, status: "authenticated", signIn: async () => user, signOut: () => {}, refresh: async () => {} }),
+    [user],
+  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) {

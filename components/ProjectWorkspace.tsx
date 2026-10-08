@@ -526,13 +526,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      <div className="border-b border-border bg-card">
+      <div>
         <div className="app-container">
           <nav className="-mb-px flex items-center gap-5 overflow-x-auto pr-4 scrollbar-none md:gap-6" aria-label="Project sections">
             {TABS.map((t) => (
               <button key={t.id} type="button" onClick={() => setTab(t.id)} data-active={tab === t.id || undefined} aria-current={tab === t.id ? "page" : undefined}
                 className={cn(
-                  "-mb-px inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-2 border-transparent px-1 text-base font-medium text-[var(--ink-600)] outline-none transition-colors hover:border-[var(--ink-300)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                  "-mb-px inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-1 text-base font-medium text-[var(--ink-600)] outline-none transition-colors hover:border-[var(--ink-300)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   "data-[active=true]:border-[var(--brand-primary-600)] data-[active=true]:font-semibold data-[active=true]:text-[var(--brand-primary-700)]",
                 )}>
                 {t.label}
@@ -675,8 +675,8 @@ function ValueBar({ segments, total, currency, reconciled }: { segments: ValueSe
           <div className="mt-1.5 break-words text-3xl font-bold leading-none tabular-nums tracking-tight md:text-4xl">{fmtMoney(total, currency)}</div>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          {reconciled === true && <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--success)]" title="The document's stated total and the component amounts reconcile."><CheckCircle2 size={12} />Reconciled</span>}
-          {reconciled === false && <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--warning)]" title="Showing the document's stated total. The amounts extracted per document do not add up to it."><AlertTriangle size={12} />Stated total, parts don&apos;t add up</span>}
+          {reconciled === true && <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--success-fg)]" title="The document's stated total and the component amounts reconcile."><CheckCircle2 size={12} />Reconciled</span>}
+          {reconciled === false && <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--warning-fg)]" title="Showing the document's stated total. The amounts extracted per document do not add up to it."><AlertTriangle size={12} />Stated total, parts don&apos;t add up</span>}
           {reconciled === null && <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white" title="Extracted from the documents. No stated total was available to reconcile it against.">Not reconciled</span>}
           <span className="text-sm text-[var(--navy-foreground)]">{segments.length} amount{segments.length === 1 ? "" : "s"}{currency ? "" : " · currency not extracted"}</span>
         </div>
@@ -887,7 +887,7 @@ function CommercialTerms({ v }: { v: View }) {
               {personnel.map((p, i) => (
                 <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2 text-sm">
                   <span className="flex min-w-0 flex-1 basis-[11rem] items-center gap-1.5"><span className="min-w-0 break-words text-foreground">{p.name || p.role}{p.name ? <span className="text-muted-foreground"> · {p.role}</span> : null}</span>{p._amend && <AmendTag />}</span>
-                  {p.keyPerson && <span className="shrink-0 rounded-full bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-xs font-semibold text-[var(--brand-primary-700)]">Key person</span>}
+                  {p.keyPerson && <span className="shrink-0 rounded-full bg-structure-soft px-1.5 py-0.5 text-xs font-semibold text-structure-soft-fg">Key person</span>}
                 </li>
               ))}
             </TermsBlock>
@@ -901,7 +901,7 @@ function CommercialTerms({ v }: { v: View }) {
 /** Small chip marking a row that an amendment introduced (vs. the original SOW). */
 function AmendTag() {
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--warning-soft)] px-1.5 py-0.5 text-xs font-semibold text-[var(--warning)]" title="Added or changed by an amendment">
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--warning-soft)] px-1.5 py-0.5 text-xs font-semibold text-[var(--warning-fg)]" title="Added or changed by an amendment">
       <GitBranch size={11} />Amended
     </span>
   );
@@ -1138,7 +1138,7 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-xs text-muted-foreground">{s.clauseNumber}</span>
                               <span className="min-w-0 flex-1 break-words text-sm font-medium text-foreground">{s.docTitle || "Untitled document"}</span>
-                              <span className="shrink-0 rounded-full bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-xs font-semibold text-[var(--brand-primary-700)]">{Math.min(100, Math.round(s.score * 100))}% similarity</span>
+                              <span className="shrink-0 rounded-full bg-structure-soft px-1.5 py-0.5 text-xs font-semibold text-structure-soft-fg">{Math.min(100, Math.round(s.score * 100))}% similarity</span>
                             </div>
                             {s.text && <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--ink-600)]">{s.text}</p>}
                             <div className="mt-1.5 flex items-center gap-1.5">
@@ -1215,7 +1215,7 @@ function AmendmentsPanel({ amendments, v }: { amendments: ApiDocument[]; v: View
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
           {shown.map((d) => (
             <Link key={d.docId} href={`/projects/${d.docId}/amendments`} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-xs transition-[box-shadow,border-color] hover:border-[var(--brand-primary-300)] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--warning-soft)] text-[var(--warning)]"><GitBranch size={18} /></span>
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--warning-soft)] text-[var(--warning-fg)]"><GitBranch size={18} /></span>
               <div className="min-w-0 flex-1">
                 <div className="break-words text-base font-semibold text-foreground">{d.title || "Untitled amendment"}</div>
                 <div className="mt-0.5 text-sm text-[var(--ink-600)]">v{d.latestVersion} · updated {formatRelativeDays(d.updatedAt, new Date(v.now))}{v.valueByDoc.get(d.docId) ? ` · ${fmtMoney(v.valueByDoc.get(d.docId)!, docCurrency(d, v.classByDoc.get(d.docId)))}` : ""}</div>
@@ -1261,7 +1261,7 @@ function TimelinePanel({ v }: { v: View }) {
   const filterGroups: FilterGroup[] = [typeGroup(v.docs, type, setType), statusGroup(v.docs, status, setStatus)];
   const clearFilters = () => { setQ(""); setType(ALL); setStatus(ALL); };
   const statusText = (d: ApiDocument) => d.status === "READY" ? "Analysis completed" : d.status === "FAILED" ? "Processing failed" : "Processing…";
-  const statusTone = (d: ApiDocument) => d.status === "READY" ? "bg-[var(--success-soft)] text-[var(--success)]" : d.status === "FAILED" ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "bg-[var(--warning-soft)] text-[var(--warning)]";
+  const statusTone = (d: ApiDocument) => d.status === "READY" ? "bg-[var(--success-soft)] text-[var(--success-fg)]" : d.status === "FAILED" ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "bg-[var(--warning-soft)] text-[var(--warning-fg)]";
   return (
     <>
       <ListFilters
@@ -1522,7 +1522,7 @@ function DocRow({ doc, value, currency, now, depth, canRemove, onRemove, onDelet
           </div>
         </div>
         {typeof value === "number" && value > 0 && (
-          <span className="hidden shrink-0 items-center gap-1 rounded-full bg-[var(--success-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--success)] sm:inline-flex" title="Value extracted for this document">{fmtMoney(value, currency)}</span>
+          <span className="hidden shrink-0 items-center gap-1 rounded-full bg-[var(--success-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--success-fg)] sm:inline-flex" title="Value extracted for this document">{fmtMoney(value, currency)}</span>
         )}
         {risk && (
           <span className={`hidden shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold sm:inline ${RISK_META[risk].bg} ${RISK_META[risk].text}`} title="Highest clause risk level in this document">{RISK_LABEL[risk]} risk</span>
@@ -1666,7 +1666,7 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
               </div>
             ) : file ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]"><FileText size={22} /></span>
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft text-structure-soft-fg"><FileText size={22} /></span>
                 <p className="text-sm font-medium text-foreground">Preview unavailable for .{file.filename.split(".").pop()?.toUpperCase()} files</p>
                 <p className="max-w-xs text-sm text-[var(--ink-600)]">Open the original to view it alongside the analysis. (PDF, DOCX and TXT render here directly.)</p>
                 <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--brand-primary-600)] px-4 text-base font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"><ExternalLink size={14} />Open original</a>
@@ -1777,7 +1777,7 @@ function AnalyzingOrEmpty({ v, label }: { v: View; label: string }) {
 function EmptyPanel({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-14 text-center">
-      <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]">{icon}</span>
+      <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg">{icon}</span>
       <p className="text-base font-semibold text-foreground">{title}</p>
       <p className="mt-1 max-w-xs text-sm leading-relaxed text-[var(--ink-600)]">{body}</p>
     </div>
@@ -1807,7 +1807,7 @@ function PartiesCard({ parties }: { parties: string[] }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {parties.map((party, i) => (
           <div key={i} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]"><Building2 size={16} strokeWidth={1.75} /></span>
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={16} strokeWidth={1.75} /></span>
             <div className="min-w-0"><div className="break-words text-base font-semibold text-foreground">{party}</div><div className="text-xs text-muted-foreground">Party {i + 1}</div></div>
           </div>
         ))}
@@ -1848,7 +1848,7 @@ function LoadFailed({ message, onRetry }: { message: string; onRetry: () => void
 function WorkspaceSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card">
+      <div>
         <div className="app-container space-y-3 pb-5 pt-6 md:pb-7 md:pt-8"><Skeleton className="h-3.5 w-24" /><Skeleton className="h-8 w-2/3 sm:w-1/2" /><Skeleton className="h-4 w-1/2 sm:w-1/3" /></div>
       </div>
       <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8"><Skeleton className="h-28 rounded-xl" /><Skeleton className="h-56 rounded-xl" /></div>

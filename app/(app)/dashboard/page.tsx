@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
+import { ValueTiles } from "../reports/_components/ValueTiles";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { GettingStarted } from "@/components/dashboard/GettingStarted";
 import { SetupPrompt } from "@/components/onboarding/SetupPrompt";
@@ -42,9 +43,9 @@ const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, 
 const UNRATED_RANK = 4; // contracts with no risk data sort after every rated one
 const RISK_PILL: Record<RiskLevel, string> = {
   critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
   medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
-  low: "bg-[var(--success-soft)] text-[var(--success)]",
+  low: "bg-[var(--success-soft)] text-[var(--success-fg)]",
 };
 const DAY = 86_400_000;
 const LIFECYCLE_ORDER: Lifecycle[] = ["draft", "review", "negotiation", "approval", "signed", "active", "renewal", "expired"];
@@ -486,7 +487,9 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
+      <div className="app-container app-page">
+        {/* Govern value tiles (Requirement 4): current, potential, held up. */}
+        <ValueTiles />
         {loading ? (
           <DashboardSkeleton />
         ) : loadFailed ? (
@@ -606,7 +609,7 @@ export default function DashboardPage() {
                       <ValueByYearBars rows={valueByYear.rows} multiCurrency={totals.length > 1} />
                       <div className="mt-4 space-y-2 border-t border-border pt-3 text-xs text-[var(--ink-600)]">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[var(--brand-primary-600)]" />Contract value</span>
+                          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[var(--viz-primary)]" />Contract value</span>
                           <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[var(--danger)]" />In contracts rated high or critical</span>
                         </div>
                         <p className="text-muted-foreground">
@@ -666,7 +669,7 @@ export default function DashboardPage() {
                                 </span>
                               </div>
                               <div className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
-                                <div className="h-full rounded-full bg-[var(--brand-primary-600)]" style={{ width: `${Math.max(0, Math.min(100, d.pct))}%` }} />
+                                <div className="h-full rounded-full bg-[var(--viz-primary)]" style={{ width: `${Math.max(0, Math.min(100, d.pct))}%` }} />
                               </div>
                             </Link>
                           </li>
@@ -907,7 +910,7 @@ function FocalValueAtRisk({ totals, atRiskTotals, riskyCount, riskyUnvalued, una
               <AlertTriangle size={12} />{plural(riskyCount, "contract")} rated high or critical
             </span>
           ) : unassessedContracts === 0 ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-[var(--success-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--success)]">
+            <span className="inline-flex items-center gap-1 rounded-md bg-[var(--success-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--success-fg)]">
               <CheckCircle2 size={12} />No high or critical contracts
             </span>
           ) : (
@@ -1037,7 +1040,7 @@ function ValueByYearBars({ rows, multiCurrency }: { rows: YearRow[]; multiCurren
               <span className="tabular-nums text-[var(--ink-600)]">{fmtMoney(r.value, r.currency || null)}{r.atRisk > 0 ? <span className="ml-1.5 font-medium text-[var(--danger)]">· {fmtMoney(r.atRisk, r.currency || null)} high or critical</span> : null}</span>
             </div>
             <div className="relative h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
-              <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--brand-primary-600)]" style={{ width: `${(r.value / scale) * 100}%` }} />
+              <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--viz-primary)]" style={{ width: `${(r.value / scale) * 100}%` }} />
               {r.atRisk > 0 && <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--danger)]" style={{ width: `${(r.atRisk / scale) * 100}%` }} />}
             </div>
           </div>
@@ -1070,7 +1073,7 @@ function ValueByProject({ rows, scaleRows }: { rows: Agg[]; scaleRows: Agg[] }) 
                 {r.overallRisk === null && <span className="ml-1.5 font-normal text-muted-foreground">· risk not assessed</span>}
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden><div className={`h-full rounded-full ${risky ? "bg-[var(--danger)]" : "bg-[var(--brand-primary-600)]"}`} style={{ width: `${(value / (max.get((r.currency ?? "").toUpperCase()) ?? 1)) * 100}%` }} /></div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden><div className={`h-full rounded-full ${risky ? "bg-[var(--danger)]" : "bg-[var(--viz-primary)]"}`} style={{ width: `${(value / (max.get((r.currency ?? "").toUpperCase()) ?? 1)) * 100}%` }} /></div>
           </Link>
         );
       })}

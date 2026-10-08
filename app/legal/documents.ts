@@ -3,9 +3,9 @@
 type Section = { h: string; p: string };
 export type LegalDoc = { title: string; updated: string; intro: string; sections: Section[] };
 
-const UPDATED = "1 June 2026";
+const UPDATED = "8 October 2026";
 /** Same date, machine-readable, for the sitemap. */
-export const LEGAL_UPDATED_ISO = "2026-06-01";
+export const LEGAL_UPDATED_ISO = "2026-10-08";
 
 export const LEGAL: Record<string, LegalDoc> = {
   privacy: {
@@ -16,9 +16,9 @@ export const LEGAL: Record<string, LegalDoc> = {
     sections: [
       { h: "What we process", p: "Account data (name, email, organisation) you provide, and the contract documents you upload for analysis. We also process limited usage and diagnostic logs to operate and secure the service." },
       { h: "Why we process it", p: "To provide the service — extracting clauses, scoring risk against your playbook, and tracking value across amendments — and to secure, support, and improve it. We do not sell your data." },
-      { h: "AI processing", p: "Contract text may be sent to our AI model provider for clause classification under an enterprise data-handling agreement: your text is not used to train shared models and is not retained by the provider." },
+      { h: "AI processing", p: "Extracted contract text is sent to OpenAI's API to pull out facts and label clauses. Original files are not sent. Under OpenAI's API terms, inputs are not used to train its models, and they may be kept for up to 30 days for abuse monitoring. Checking clauses against your matrix does not use an AI model. Blue-IQ does not train any model on your documents." },
       { h: "Retention & deletion", p: "Your documents and extracted data are kept while your account is active. Deleting a document removes the original file, all processed artefacts, the search index, and the database records. You can request full deletion at any time." },
-      { h: "Your rights", p: "Subject to applicable law (including GDPR), you may access, correct, export, or delete your personal data. Contact us to exercise these rights." },
+      { h: "Your rights", p: "Subject to applicable law, you may access, correct, export, or delete your personal data. Contact us to exercise these rights." },
       { h: "Contact", p: "Questions about this policy or your data can be sent to privacy@blue-iq.ai." },
     ],
   },
@@ -40,12 +40,13 @@ export const LEGAL: Record<string, LegalDoc> = {
     title: "Security",
     updated: UPDATED,
     intro:
-      "Security is engineered into Blue-IQ at every layer. This page summarises our controls; a detailed overview is available to customers on request.",
+      "This page summarises the security controls in place today. A detailed security overview is available to customers on request.",
     sections: [
-      { h: "Authentication", p: "Sign-in uses the Secure Remote Password protocol via Amazon Cognito, so passwords never traverse the network. Every API request is gated by a verified JSON Web Token; MFA can be enforced per tenant." },
-      { h: "Encryption", p: "All traffic is encrypted in transit with TLS 1.3. Files, database records, and search indices are encrypted at rest with AES-256." },
+      { h: "Authentication", p: "Sign-in uses Amazon Cognito. Every API request must carry a valid, verified token, and identity is taken only from verified claims." },
+      { h: "Encryption", p: "Traffic is encrypted in transit over HTTPS, with TLS 1.2 as the minimum. Files, database records and search indices are encrypted at rest using AWS-managed encryption." },
       { h: "Tenant isolation", p: "Each customer's data is partitioned by tenant, and every request re-checks that the record's tenant matches the caller's verified token — so one customer can never read another's data." },
-      { h: "Compliance", p: "Blue-IQ is aligned to SOC 2, GDPR, and HIPAA controls, plus WCAG 2.1 AA and ADA accessibility standards. Current reports are available under NDA." },
+      { h: "Audit log", p: "Every assignment, decision, comment and stage change on a contract is written to an append-only activity log with the person and time." },
+      { h: "Certifications", p: "Blue-IQ does not hold SOC 2, ISO 27001 or other certifications today. The underlying AWS infrastructure carries AWS's own certifications." },
       { h: "Reporting an issue", p: "Found a vulnerability? Please disclose it responsibly to security@blue-iq.ai." },
     ],
   },
@@ -67,12 +68,12 @@ export const LEGAL: Record<string, LegalDoc> = {
     title: "Sub-processors",
     updated: UPDATED,
     intro:
-      "Blue-IQ uses the following sub-processors to deliver the service. We provide advance notice of additions so customers may object where they have a right to.",
+      "Blue-IQ uses the following sub-processors to deliver the service. Integrations with your own systems are listed separately: they run only if you enable them.",
     sections: [
-      { h: "Cloud infrastructure", p: "Amazon Web Services (AWS) — hosting, storage, database, and search, in the region(s) configured for your account." },
-      { h: "AI model provider", p: "Our LLM provider processes clause text for classification under an enterprise agreement with no training on, or retention of, your content." },
-      { h: "Authentication", p: "Amazon Cognito — user authentication and token issuance." },
-      { h: "Notice of changes", p: "We post additions here before they take effect; customers on a DPA receive notice and a window to object." },
+      { h: "Amazon Web Services", p: "Hosting, storage, database, search, compute, email alerts and logging (Amazon S3, DynamoDB, OpenSearch Service, Lambda, Step Functions, API Gateway, SES, Secrets Manager, CloudWatch and Amplify Hosting). Sign-in runs on Amazon Cognito, and scanned PDFs are read with Amazon Textract. The default region is US East (Ohio)." },
+      { h: "OpenAI (API platform)", p: "Extracts facts from agreements, labels clauses, creates search embeddings and answers questions in Ask Sonar. It is not used for matrix review, workflow or reporting. Extracted text is sent, never original files. Under OpenAI's API terms, inputs are not used to train its models, and they may be kept for up to 30 days for abuse monitoring." },
+      { h: "Your own systems", p: "Huron Research Suite, Workday, DocuSign and Microsoft Teams or Microsoft 365 connect only when your administrator enables them and supplies credentials. They are your processors, not Blue-IQ's." },
+      { h: "Notice of changes", p: "We give at least 30 days' written notice before adding or replacing a sub-processor, with a right to object." },
       { h: "Contact", p: "Questions about our sub-processors can be sent to privacy@blue-iq.ai." },
     ],
   },

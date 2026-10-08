@@ -116,12 +116,12 @@ export default function CompliancePacksPage() {
 
       <SettingsLayout>
         {/* Summary — the page's focal block */}
-        <div className="flex flex-col gap-4 rounded-xl bg-[var(--brand-primary-600)] p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+        <div className="flex flex-col gap-4 rounded-xl bg-[var(--navy-800)] p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:gap-8">
           <div className="grid grid-cols-2 gap-6 sm:flex sm:gap-10">
             <Stat label="Packs enabled" value={loaded ? `${stats.packsOn}` : "—"} sub={loaded ? `of ${stats.totalPacks}` : isError ? "not available" : "loading"} />
             <Stat label="Clause categories checked" value={loaded ? `${stats.checks}` : "—"} sub="across enabled packs" />
           </div>
-          <p className="max-w-[44ch] text-sm leading-relaxed text-[var(--brand-primary-100)]" aria-live="polite">
+          <p className="max-w-[44ch] text-sm leading-relaxed text-[var(--navy-100)]" aria-live="polite">
             <span className="font-semibold text-white">
               {save.isPending
                 ? "Saving…"
@@ -219,7 +219,7 @@ export default function CompliancePacksPage() {
                 )
               }
             >
-              <p className="max-w-[72ch] text-base leading-relaxed text-[var(--ink-600)]">{p.blurb}</p>
+              <p className="max-w-[58ch] text-base leading-relaxed text-[var(--ink-600)]">{p.blurb}</p>
 
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {p.docTypes.map((t) => (
@@ -280,10 +280,10 @@ export default function CompliancePacksPage() {
 function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="min-w-0">
-      <div className="text-sm font-medium text-[var(--brand-primary-100)]">{label}</div>
+      <div className="text-sm font-medium text-[var(--navy-100)]">{label}</div>
       <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">{value}</span>
-        <span className="text-sm text-[var(--brand-primary-100)]">{sub}</span>
+        <span className="text-sm text-[var(--navy-100)]">{sub}</span>
       </div>
     </div>
   );

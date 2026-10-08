@@ -39,7 +39,7 @@ export function SonarMark({ size = "md", tile = false, className }: Props) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-lg border border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]",
+        "inline-flex shrink-0 items-center justify-center rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)] text-[var(--ai-ink)]",
         TILE[size],
         className,
       )}

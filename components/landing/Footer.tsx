@@ -1,98 +1,110 @@
 import Link from "next/link";
 import { Logo } from "@/components/landing/primitives";
+import { INDUSTRY_SECTIONS, PRODUCT_SECTIONS, SOLUTION_SECTIONS, landingHref } from "@/components/landing/site-nav";
+import { COMING_SOON_LABEL, isComingSoon } from "@/components/landing/ComingSoon";
 
-const COLUMNS = [
+type FooterLink = { label: string; href: string };
+
+const COLUMNS: { id: string; title: string; links: FooterLink[] }[] = [
   {
+    id: "product",
     title: "Product",
-    items: [
-      { label: "Platform overview", href: "/product" },
-      { label: "Clause extraction", href: "/product#extraction" },
-      { label: "Playbook scoring", href: "/product#scoring" },
-      { label: "Amendment tracking", href: "/product#amendments" },
-      { label: "SOW drafting", href: "/product#drafting" },
-      { label: "Workflow and insights", href: "/product#workflow" },
-    ],
+    links: PRODUCT_SECTIONS.map((section) => ({
+      label:
+        "feature" in section && isComingSoon(section.feature)
+          ? `${section.label} (${COMING_SOON_LABEL.toLowerCase()})`
+          : section.label,
+      href: landingHref(section.id),
+    })),
   },
   {
-    title: "Solutions",
-    items: [
-      { label: "Legal", href: "/solutions#legal" },
-      { label: "Procurement", href: "/solutions#procurement" },
-      { label: "Finance", href: "/solutions#finance" },
-      { label: "Sales operations", href: "/solutions#sales" },
-      { label: "Legal operations", href: "/solutions#legal-ops" },
-      { label: "Compliance", href: "/solutions#compliance" },
-    ],
+    id: "teams",
+    title: "Teams",
+    links: SOLUTION_SECTIONS.map(({ id, label }) => ({ label, href: landingHref(id) })),
   },
   {
+    id: "industries",
+    title: "Industries",
+    links: INDUSTRY_SECTIONS.map(({ id, label }) => ({ label, href: landingHref(id) })),
+  },
+  {
+    id: "resources",
     title: "Resources",
-    items: [
+    links: [
+      { label: "Platform overview", href: "/product" },
+      { label: "All solutions", href: "/solutions" },
+      { label: "Security overview", href: "/security" },
       { label: "Savings calculator", href: "/calculator" },
-      { label: "Create an account", href: "/signup" },
-      { label: "Log in", href: "/login" },
     ],
   },
   {
-    title: "Company",
-    items: [
+    id: "company",
+    title: "Company and legal",
+    links: [
       { label: "Blue-IQ", href: "https://www.blue-iq.ai/" },
-      { label: "Security and privacy", href: "/security" },
+      { label: "Privacy policy", href: "/legal/privacy" },
+      { label: "Terms of service", href: "/legal/terms" },
       { label: "Data processing", href: "/legal/dpa" },
       { label: "Sub-processors", href: "/legal/subprocessors" },
     ],
   },
 ];
 
+/* Navy footer: full-width link columns, then the logo beside the legal
+   notice, then the copyright line. The notice is the same fixed copy the app shows under
+   every analysis (components/ui/AnalysisDisclaimer): do not reword it. */
 export function Footer() {
   return (
-    <footer className="lp border-t border-lp-line pt-14 pb-8 md:pt-20">
+    <footer className="lp-footer">
       <div className="lp-wrap">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-16">
-          <div>
-            <Logo height={28} />
-            <p className="mt-5 max-w-xs text-base text-lp-ink-2">
-              Govern is Blue-IQ&apos;s contract review product. It reads SOWs, MSAs and amendments
-              and rates every clause against your playbook.
-            </p>
-          </div>
+        <div className="lp-footer-columns">
+          {COLUMNS.map((column) => (
+            <nav key={column.id} aria-labelledby={`footer-${column.id}`}>
+              <h2 id={`footer-${column.id}`} className="lp-footer-title">
+                {column.title}
+              </h2>
+              <ul className="mt-4 flex flex-col gap-3">
+                {column.links.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="lp-navlink">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+        </div>
 
-          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-4">
-            {COLUMNS.map((col) => (
-              <nav key={col.title} aria-label={col.title}>
-                <h2 className="text-sm font-semibold text-lp-ink">{col.title}</h2>
-                <ul className="mt-4 flex flex-col gap-2.5">
-                  {col.items.map((it) => (
-                    <li key={it.label}>
-                      <Link href={it.href} className="lp-navlink font-normal">
-                        {it.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            ))}
+        <div className="lp-footer-legal">
+          <div>
+            <Logo height={28} variant="dark" />
+          </div>
+          <div role="note" aria-labelledby="footer-legal-title">
+            <h2 id="footer-legal-title" className="lp-footer-title">
+              For guidance only, not legal advice.
+            </h2>
+            <p className="mt-2 max-w-[32rem] text-sm">
+              Blue-IQ uses AI to analyze and draft contract content, and it can be incomplete or wrong.
+              Verify every figure, date, clause, and obligation against the source document, your own
+              company&apos;s policies, and the laws that govern your contract before relying on it or
+              acting. Blue-IQ accepts no liability for decisions made from this analysis.
+            </p>
+            <p className="mt-3 text-sm">
+              Report a security issue to{" "}
+              <a href="mailto:security@blue-iq.ai" className="lp-link">
+                security@blue-iq.ai
+              </a>
+              .
+            </p>
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col gap-4 border-t border-lp-line pt-6 text-sm text-lp-ink-3 md:flex-row md:items-center md:justify-between">
+        <div className="lp-footer-bottom">
           <p>© 2026 Blue-IQ. All rights reserved.</p>
-          <ul className="flex flex-wrap gap-x-6 gap-y-2">
-            <li>
-              <Link href="/legal/privacy" className="lp-navlink font-normal">
-                Privacy
-              </Link>
-            </li>
-            <li>
-              <Link href="/legal/terms" className="lp-navlink font-normal">
-                Terms
-              </Link>
-            </li>
-            <li>
-              <a href="mailto:hello@blue-iq.ai" className="lp-navlink font-normal">
-                hello@blue-iq.ai
-              </a>
-            </li>
-          </ul>
+          <a href="#main-content" className="lp-navlink">
+            Back to top
+          </a>
         </div>
       </div>
     </footer>

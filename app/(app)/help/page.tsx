@@ -42,7 +42,7 @@ export default function HelpPage() {
       <PageHeader title="Help & getting started" />
 
       {/* Two columns from lg: the guide on the left, support + shortcuts held in a narrower rail. */}
-      <div className="app-container grid grid-cols-1 gap-6 py-6 md:gap-8 md:py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
+      <div className="app-container app-page lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] lg:items-start">
         <div className="min-w-0 space-y-6 md:space-y-8">
           {/* Quick start — one ordered list, not four cards */}
           <section aria-labelledby="quick-start">
@@ -60,7 +60,7 @@ export default function HelpPage() {
                 const Icon = s.icon;
                 return (
                   <li key={s.title} className="flex items-start gap-3.5 p-4 md:gap-4 md:p-5">
-                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-base font-semibold tabular-nums text-[var(--brand-primary-700)]" aria-hidden>
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-base font-semibold tabular-nums text-structure-soft-fg" aria-hidden>
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -68,7 +68,7 @@ export default function HelpPage() {
                         {s.title}
                         <Icon size={15} strokeWidth={1.85} className="shrink-0 text-muted-foreground" />
                       </h3>
-                      <p className="mt-1 max-w-[68ch] text-sm leading-relaxed text-[var(--ink-600)]">{s.body}</p>
+                      <p className="mt-1 max-w-[58ch] text-sm leading-relaxed text-[var(--ink-600)]">{s.body}</p>
                     </div>
                   </li>
                 );

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ChevronLeft } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
 
 type Props = {
   /** @deprecated No longer rendered; titles stand on their own. */
@@ -23,8 +22,10 @@ export function PageHeader({
   className,
 }: Props) {
   return (
-    <div className={cn("bg-card border-b border-border", className)}>
-      <div className="app-container pt-6 md:pt-8 pb-5 md:pb-7">
+    // Sits on the page canvas: no white band, no rule. The body below
+    // (`app-page`) carries on with the same background.
+    <div className={className}>
+      <div className="app-container pt-6 md:pt-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
           {/* Title block — own column, stacks safely */}
           <div className="min-w-0 flex-1 flex flex-col gap-2.5 md:gap-3">
@@ -43,7 +44,7 @@ export function PageHeader({
               {title}
             </h1>
             {subtitle && (
-              <p className="text-base text-[var(--ink-600)] max-w-[68ch] leading-[1.55]">
+              <p className="text-base text-[var(--ink-600)] max-w-[58ch] leading-[1.55]">
                 {subtitle}
               </p>
             )}

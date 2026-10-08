@@ -36,7 +36,7 @@ export function ProjectMemberList({
 }) {
   const [removeTarget, setRemoveTarget] = useState<RemoveTarget | null>(null);
   const isYou = (email: string) => !!currentEmail && currentEmail.toLowerCase() === email.toLowerCase();
-  const you = <span className="ml-2 rounded-md bg-[var(--brand-primary-50)] px-1.5 py-0.5 text-xs font-medium text-[var(--brand-primary-700)]">You</span>;
+  const you = <span className="ml-2 rounded-md bg-structure-soft px-1.5 py-0.5 text-xs font-medium text-structure-soft-fg">You</span>;
   const owner = projectOwnerEmail(project);
 
   return (
@@ -53,7 +53,7 @@ export function ProjectMemberList({
           const target = { email: m.email, projectId: project.id, projectName: project.name };
           return (
             <li key={m.email} className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
-              <span className={`${AVATAR} ${isOwner ? "bg-[var(--brand-primary-600)] text-white" : "bg-muted text-[var(--ink-600)]"}`}>
+              <span className={`${AVATAR} ${isOwner ? "bg-[var(--navy-700)] text-white" : "bg-muted text-[var(--ink-600)]"}`}>
                 {initialsFromEmail(m.email)}
               </span>
               <div className="min-w-0 flex-1 basis-40">
@@ -68,7 +68,7 @@ export function ProjectMemberList({
                     <>
                       {!canManage && ROLE_META[m.role].label}
                       {m.status === "invited" ? (
-                        <span className="rounded-md bg-[var(--warning-soft)] px-1.5 py-0.5 text-xs font-semibold text-[var(--warning)]">Invited · not signed in yet</span>
+                        <span className="rounded-md bg-[var(--warning-soft)] px-1.5 py-0.5 text-xs font-semibold text-[var(--warning-fg)]">Invited · not signed in yet</span>
                       ) : (
                         canManage && "Active"
                       )}

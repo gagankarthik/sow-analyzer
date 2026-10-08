@@ -239,7 +239,7 @@ export default function SowPage() {
                   {classLoading ? (
                     <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
                   ) : classification?.summary ? (
-                    <p className="max-w-[78ch] text-base leading-relaxed text-foreground">{classification.summary}</p>
+                    <p className="max-w-[60ch] text-base leading-relaxed text-foreground">{classification.summary}</p>
                   ) : classError ? (
                     <p className="text-base text-[var(--ink-600)]">The summary couldn&apos;t be loaded.</p>
                   ) : (
@@ -353,7 +353,7 @@ export default function SowPage() {
                   <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
                 ) : classError && !classification ? (
                   <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-10 text-center">
-                    <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--warning-soft)] text-[var(--warning)]"><AlertTriangle size={18} /></span>
+                    <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--warning-soft)] text-[var(--warning-fg)]"><AlertTriangle size={18} /></span>
                     <p className="mb-1 text-base font-semibold text-foreground">
                       {errorStatus(classErr) === 404 ? "No clause analysis for this document yet" : "Couldn't load clause analysis"}
                     </p>
@@ -416,7 +416,7 @@ export default function SowPage() {
                       <ul className="space-y-2.5">
                         {classification.parties.map((p) => (
                           <li key={p} className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]"><Building2 size={15} strokeWidth={1.75} /></span>
+                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={15} strokeWidth={1.75} /></span>
                             <span className="min-w-0 break-words text-sm font-medium text-foreground">{p}</span>
                           </li>
                         ))}
@@ -486,10 +486,10 @@ function ClauseCard({ clause, isExpanded, onToggle, depth }: { clause: ApiClause
           )}
           <OutcomeBadge result={clause.playbook} />
           {/* The specific clause type, when the API sends one, is the more precise label. */}
-          {specific && <span className="rounded-full bg-[var(--brand-primary-50)] px-2 py-0.5 text-xs font-medium text-[var(--brand-primary-800)]">{categoryLabel(specific)}{clause.typeIsCustom ? " · custom type" : ""}</span>}
+          {specific && <span className="rounded-full bg-structure-soft px-2 py-0.5 text-xs font-medium text-structure-soft-fg">{categoryLabel(specific)}{clause.typeIsCustom ? " · custom type" : ""}</span>}
           {!unclassified && <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-[var(--ink-600)]">{categoryLabel(clause.category)}</span>}
           {clause.needsReview && !unclassified && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--warning)]"><AlertTriangle size={12} />Needs review</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--warning-fg)]"><AlertTriangle size={12} />Needs review</span>
           )}
         </div>
         <h3 className="break-words text-lg font-semibold leading-snug text-foreground">{clause.title || clause.number}</h3>
@@ -550,7 +550,7 @@ function NotFound() {
 function SowSkeleton() {
   return (
     <>
-      <div className="border-b border-border bg-card"><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
+      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
       <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
         <Skeleton className="h-28 rounded-xl" />
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">

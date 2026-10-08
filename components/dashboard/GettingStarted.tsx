@@ -111,7 +111,7 @@ export function GettingStarted({
         {steps.map((step, i) => {
           const current = i === next;
           return (
-            <li key={step.title} className={cn("flex flex-col gap-3 p-5 md:p-6", current && "bg-[var(--brand-primary-50)]")}>
+            <li key={step.title} className={cn("flex flex-col gap-3 p-5 md:p-6", current && "bg-structure-soft")}>
               <span
                 className={cn(
                   "inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold",

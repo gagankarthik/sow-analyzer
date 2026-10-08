@@ -9,6 +9,8 @@ const PRIVATE = [
   "/confirm",
   "/reset",
   "/dashboard",
+  "/reports",
+  "/contracts",
   "/draft",
   "/help",
   "/insights",
@@ -19,6 +21,7 @@ const PRIVATE = [
   "/renewals",
   "/settings",
   "/workflow",
+  "/design-system",
 ];
 
 export default function robots(): MetadataRoute.Robots {

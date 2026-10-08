@@ -1,45 +1,63 @@
 import Link from "next/link";
-import { ProductWindow } from "@/components/landing/ProductWindow";
-import { RotatingWord } from "@/components/landing/RotatingWord";
-import { SonarField } from "@/components/landing/SonarField";
+import { ArrowRight } from "@/components/ui/icons";
+import { HolderCard, MatrixCard, NextStepCard } from "@/components/landing/ProductCards";
 
-/* ──────────────────────────────────────────────────────────────
-   Hero — the Blue-IQ family look on a light surface: a centred
-   statement with one rotating word, two pill actions, then the
-   product itself. Behind it, Sonar pings follow the cursor. The window is a working sample that steps through
-   the clauses needing review and can be clicked.
-   ────────────────────────────────────────────────────────────── */
-const DOCUMENTS = ["SOW", "MSA", "amendment", "NDA"];
+const AGREEMENT_TYPES = [
+  "Sponsored research",
+  "Licenses and options",
+  "Grants and subawards",
+  "Material transfer",
+  "Data use",
+  "Collaborations",
+  "NDAs",
+];
 
+/* The headline and two actions, then the product itself on a navy stage:
+   a sample license rated clause by clause, who holds it and for how long,
+   and the one recommended next step. Under it, the agreements Govern is
+   built for. */
 export function Hero() {
   return (
-    <section className="lp-hero pt-32 pb-16 md:pt-40 md:pb-24">
-      <SonarField className="lp-field" />
-      <div className="lp-wrap">
-        <h1 className="lp-h1 lp-hero-title lp-enter mx-auto max-w-4xl">
-          Review every <RotatingWord words={DOCUMENTS} /> against your playbook.
+    <section className="lp-hero" aria-labelledby="hero-title">
+      <div className="lp-wrap lp-hero-copy">
+        <h1 id="hero-title" className="lp-display">
+          Every agreement checked against your matrix, and moving to signature.
         </h1>
-
-        <p className="lp-lede lp-hero-lede lp-enter mt-6" data-step="1">
-          Govern reads the whole contract, rates each clause against your standard positions, and
-          tells you what to push back on before it is signed.
+        <p className="lp-lede mt-6">
+          Govern rates each clause against the positions your office has already agreed, shows who
+          holds every contract and for how long, and tells each reviewer the one thing to do next.
         </p>
-
-        <div className="lp-enter mt-9 flex flex-wrap justify-center gap-3" data-step="2">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/signup" className="lp-btn lp-btn-primary">
-            Start free
+            Request a demo
+            <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
           </Link>
-          <Link href="#how" className="lp-btn lp-btn-quiet bg-lp-sheet">
-            See how Govern works
+          <Link href="/product" className="lp-btn lp-btn-outline">
+            Explore the platform
           </Link>
         </div>
+      </div>
 
-        <div className="lp-frame lp-enter mt-14 md:mt-20" data-step="3">
-          <ProductWindow />
+      <div className="lp-wrap">
+        <figure className="lp-stage">
+          <div className="lp-stage-grid">
+            <HolderCard className="lp-stage-side lp-stage-top" />
+            <MatrixCard />
+            <NextStepCard className="lp-stage-side lp-stage-bottom" />
+          </div>
+          <figcaption className="lp-stage-caption">A sample license agreement in Govern.</figcaption>
+        </figure>
+      </div>
+
+      <div className="lp-wrap">
+        <div className="lp-types">
+          <p className="lp-types-label">Built for the agreements research offices handle</p>
+          <ul className="lp-types-list">
+            {AGREEMENT_TYPES.map((type) => (
+              <li key={type}>{type}</li>
+            ))}
+          </ul>
         </div>
-        <p className="mt-4 text-center text-sm text-lp-ink-3">
-          A sample document. Select a clause to see how it was rated.
-        </p>
       </div>
     </section>
   );

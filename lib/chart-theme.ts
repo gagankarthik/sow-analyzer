@@ -5,9 +5,13 @@
 // One meaning per colour:
 //  • RISK — the severity scale (low → critical). Used wherever risk is shown,
 //    and nowhere else. Always paired with a text label, never colour alone.
-//  • Brand blue + its tints / ink neutrals — every non-risk series (value,
-//    volume, document type, pricing model).
-//  • Violet stays reserved for AI / Sonar.
+//  • Navy (the 30% role) + warm neutrals — every non-risk series (value,
+//    volume, document type, pricing model). The primary series is navy;
+//    comparisons use navy-300 / warm grey.
+//  • Teal (the 10% accent) marks at most ONE highlighted series per chart.
+//    It is never a categorical slot.
+// Colours are tokens that re-step in dark mode (--viz-primary, --viz-compare,
+// --viz-seq-*), so every mark keeps ≥ 3:1 on the card in both themes.
 
 import type { RiskLevel, FindingSeverity } from "@/lib/types";
 import { currencySymbol } from "@/lib/format";
@@ -74,16 +78,19 @@ export const SEVERITY_COLOR: Record<FindingSeverity, string> = {
 export const SEVERITY_ORDER_DESC: FindingSeverity[] = ["critical", "high", "medium", "low", "info"];
 
 /**
- * Palette for non-risk groupings: brand blue, its tints and ink neutrals only.
- * Neighbours alternate light/dark so adjacent segments stay distinct, and each
- * step clears 3:1 against the card. No status colours, no violet. It repeats
- * past five groups, so fold a long tail into "Other" before colouring it.
+ * Palette for non-risk groupings: navy steps and warm neutrals only.
+ * Neighbours alternate dark/light so adjacent segments stay distinct, and each
+ * step clears 3:1 against the card in light (navy-800 15.97 · navy-300 3.08 ·
+ * ink-500 5.46 · navy-500 8.94 · ink-700 11.84) and dark. No status colours,
+ * no teal. It repeats past five groups, so fold a long tail into "Other"
+ * before colouring it. For more distinct hues use VIZ_CATEGORICAL from
+ * components/ds/tokens.
  */
 export const CATEGORICAL = [
-  "var(--brand-primary-600)",
-  "var(--ink-400)",
-  "var(--brand-primary-900)",
-  "var(--brand-primary-400)",
+  "var(--viz-primary)",
+  "var(--viz-compare)",
+  "var(--ink-500)",
+  "var(--viz-seq-5)",
   "var(--ink-700)",
 ];
 
@@ -91,12 +98,14 @@ export function categoricalColor(i: number): string {
   return CATEGORICAL[i % CATEGORICAL.length];
 }
 
-/** The single interactive accent — selected / focused / primary series. */
-export const ACCENT = "var(--brand-primary-600)";
-/** A second, quieter step of the brand ramp (e.g. additions on top of a base). */
-export const ACCENT_LIGHT = "var(--brand-primary-400)";
+/** The primary series colour: navy (re-steps to a lighter navy in dark mode). */
+export const ACCENT = "var(--viz-primary)";
+/** A second, quieter navy step (additions on top of a base, comparisons). */
+export const ACCENT_LIGHT = "var(--viz-compare)";
+/** Teal: the ONE highlighted series in a chart (selected item). Use sparingly. */
+export const HIGHLIGHT = "var(--viz-highlight)";
 /** Neutral mark for reductions / de-emphasised series. */
-export const NEUTRAL_MARK = "var(--ink-400)";
+export const NEUTRAL_MARK = "var(--viz-other)"; // #8A857B, 3.67:1 on white
 
 /** Compact money for ticks and labels: $950, $12.3k, $1.3M, −$40k. No symbol
  *  is printed when the currency is unknown (see currencySymbol). */

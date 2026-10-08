@@ -6,9 +6,9 @@ import { StepCard } from "./StepCard";
 
 const RISK_PILL: Record<RiskLevel, string> = {
   critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[var(--warning)]",
+  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
   medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
-  low: "bg-[var(--success-soft)] text-[var(--success)]",
+  low: "bg-[var(--success-soft)] text-[var(--success-fg)]",
 };
 
 /** Results, read straight from the analysed document's own fields. */
@@ -70,7 +70,7 @@ export function DoneStep({ doc, onAnother }: { doc: ApiDocument; onAnother: () =
       </div>
 
       {doc.summary && (
-        <p className="mt-5 line-clamp-4 max-w-[68ch] text-sm leading-relaxed text-[var(--ink-600)]">{doc.summary}</p>
+        <p className="mt-5 line-clamp-4 max-w-[58ch] text-sm leading-relaxed text-[var(--ink-600)]">{doc.summary}</p>
       )}
 
       <div className="mt-6 flex flex-col gap-2 border-t border-border pt-5 sm:flex-row sm:flex-wrap sm:items-center">

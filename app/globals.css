@@ -2,84 +2,109 @@
 @import "tw-animate-css";
 @import "./landing.css";
 
+/* Light theme only. The variant is pinned to a `.dark` class that is never
+   set, so stray `dark:` utilities stay inert instead of following the OS. */
 @custom-variant dark (&:is(.dark *));
 
 /* ═══════════════════════════════════════════════════════════════
    Blue-IQ app: design tokens, base styles, app utilities.
-   One brand blue, a cool gray ramp, a navy focal block and four
-   status colours. The public site has its own tokens in landing.css.
+   Navy & Teal, 60-30-10 (product-owner decision):
+     60% dominant  warm white canvas (#F8F7F4), white cards, warm neutrals
+     30% secondary deep navy #14213D (+ --navy-* ramp): sidebar, header
+                   bands, section headings, dark panels, primary chart series
+     10% accent    teal #0F766E (the --brand-primary-* ramp): primary
+                   buttons, links, focus, active nav, selected tab. Sparingly.
+   Status colours carry MEANING only. The public site has its own tokens in
+   landing.css (mirrored by the landing work).
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── 1. Tokens ───────────────────────────────────────────────── */
 :root {
   color-scheme: light;
 
-  /* Brand blue */
-  --brand-primary-50:  #EEF3FF;
-  --brand-primary-100: #DCE6FF;
-  --brand-primary-200: #BCCEFF;
-  --brand-primary-300: #8FADFF;
-  --brand-primary-400: #5C86F7;
-  --brand-primary-500: #3A6AF0;
-  --brand-primary-600: #2456E6;  /* buttons, links */
-  --brand-primary-700: #1A41B8;  /* hover, text on tint */
-  --brand-primary-800: #17358F;
-  --brand-primary-900: #162D70;
-  --brand-primary-950: #0E1C47;
+  /* Accent (10%): TEAL. The variable names stay "brand-primary" because
+     every component references them; the values are the teal ramp.
+     White on 600 = 5.47:1 · 600 on white = 5.47:1 · 700 on 50 = 7.15:1. */
+  --brand-primary-50:  #EFFAF8;
+  --brand-primary-100: #D3F0EC;
+  --brand-primary-200: #A6E0D8;
+  --brand-primary-300: #6CC8BC;
+  --brand-primary-400: #2FA798;
+  --brand-primary-500: #138A7D;
+  --brand-primary-600: #0F766E;  /* buttons, links, focus */
+  --brand-primary-700: #0B5E58;  /* hover, text on tint */
+  --brand-primary-800: #0A4A46;
+  --brand-primary-900: #083B38;
+  --brand-primary-950: #062B29;
+
+  /* Secondary (30%): NAVY. White on 800 = 15.97:1 · 600 on 50 = 9.6:1. */
+  --navy-50:  #EEF1F7;
+  --navy-100: #D9DFEC;
+  --navy-200: #B3BFD8;
+  --navy-300: #8293B9;
+  --navy-400: #52679A;
+  --navy-500: #33487A;
+  --navy-600: #243661;
+  --navy-700: #1B2A4D;
+  --navy-800: #14213D;
+  --navy-900: #0C1528;
   --brand-primary: var(--brand-primary-600);
   --brand-accent:  var(--brand-primary-600);
   --brand-subtle:  var(--brand-primary-50);
 
-  /* Surfaces and the gray ramp */
-  --paper:       #F3F5F9;    /* canvas */
+  /* Dominant (60%): warm white surfaces and the warm neutral ramp.
+     Ratios on #F8F7F4: ink-900 16.06 · ink-600 7.12 · ink-500 5.09. */
+  --paper:       #F8F7F4;    /* canvas */
   --paper-elev:  #FFFFFF;    /* cards */
-  --panel:       #F7F8FB;    /* nested panel */
+  --panel:       #F1EFEA;    /* nested panel */
   --ink-0:   #FFFFFF;
-  --ink-25:  #F7F8FB;
-  --ink-50:  #F3F5F9;        /* hover background */
-  --ink-100: #E9EDF4;        /* dividers */
-  --ink-200: #DDE2EA;        /* borders */
-  --ink-300: #C5CBD6;        /* strong borders, disabled */
-  --ink-400: #8A919E;        /* placeholder text */
-  --ink-500: #5C6470;        /* secondary text */
-  --ink-600: #414752;        /* body text */
-  --ink-700: #2F3540;        /* strong body text */
-  --ink-800: #1F242D;        /* headings */
-  --ink-900: #15181E;        /* highest emphasis */
+  --ink-25:  #FBFAF8;
+  --ink-50:  #F8F7F4;        /* hover background */
+  --ink-100: #F1EFEA;        /* dividers */
+  --ink-200: #E7E5DF;        /* borders */
+  --ink-300: #D6D3CB;        /* strong borders, disabled */
+  --ink-400: #A8A49A;        /* decorative marks only (2.49:1 on white: never text) */
+  --ink-500: #6E695F;        /* tertiary text: 5.09:1 on canvas (palette #78736A is 4.40, darkened for AA) */
+  --ink-600: #57534E;        /* secondary text: 7.12:1 */
+  --ink-700: #3A3733;        /* strong body text */
+  --ink-800: #2A2825;        /* headings */
+  --ink-900: #1C1B19;        /* highest emphasis, body */
 
-  /* Status */
-  --success: #0E7A4B;
-  --success-soft: #E3F5EC;
+  /* Status: meaning only, never decoration. Info is an indigo-blue, kept
+     distinct from the teal accent. Text on soft fills: success uses
+     --success-fg (#126B36, 5.88:1); warning --warning-fg (5.49:1);
+     danger 5.66:1; info 5.70:1. */
+  --success: #15803D;
+  --success-soft: #E8F5EC;
   --warning: #B45309;
-  --warning-soft: #FDF1DC;
-  --danger:  #C8281E;
-  --danger-soft: #FDEBE9;
-  --info:    #0E7490;
-  --info-soft: #E0F4F8;
+  --warning-soft: #FDF3E7;
+  --danger:  #B91C1C;
+  --danger-soft: #FDECEC;
+  --info:    #3B5BA9;
+  --info-soft: #EDF1FA;
 
   /* Risk tiers */
-  --risk-1: #C5CBD6;
+  --risk-1: #D6D3CB;
   --risk-2: #B45309;
   --risk-3: #C2410C;
-  --risk-4: #C8281E;
+  --risk-4: #B91C1C;
 
-  /* Sonar surfaces. Sonar is part of the product, so it wears the brand
-     blue: a tinted surface, a brand border and the Sonar mark. The `ai`
-     names are kept because components reference them. */
-  --ai-ink:     var(--brand-primary-700);
-  --ai-text:    var(--brand-primary-700);
-  --ai-surface: var(--brand-primary-50);
-  --ai-border:  var(--brand-primary-200);
+  /* Sonar provenance: navy-500 ink on navy-50 (7.90:1). Not teal (teal is
+     for actions), not violet. The `ai` names are kept for existing callers. */
+  --ai-ink:     var(--navy-500);
+  --ai-text:    var(--navy-500);
+  --ai-surface: var(--navy-50);
+  --ai-border:  var(--navy-200);
 
-  /* Deep navy: a page's single focal block (never the chrome) */
-  --navy:            #0E1630;
-  --navy-foreground: #B4BEDA;
-  --navy-border:     #202B52;
-  --navy-accent:     #1A2447;
+  /* Deep navy block (header bands, dark panels). Legacy names. */
+  --navy:            var(--navy-800);
+  --navy-foreground: var(--navy-100);
+  --navy-border:     var(--navy-700);
+  --navy-accent:     var(--navy-700);
 
   /* Type */
-  --font-display: var(--font-geist), ui-sans-serif, sans-serif;
-  --font-mono:    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: var(--font-plex), ui-sans-serif, sans-serif;
+  --font-mono:    var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Type scale. Eight steps, defined once, in rem so browser text zoom works.
      They re-point Tailwind's text-* names, so `text-sm` is the only way to ask
@@ -145,85 +170,27 @@
   --destructive-foreground: #FFFFFF;
   --border:               var(--ink-200);
   --border-soft:          var(--ink-100);
-  --input:                var(--ink-300);
+  --input:                #8A857B;   /* control border: 3.67:1 on white (WCAG 1.4.11) */
   --ring:                 var(--brand-accent);
 
-  --chart-1: var(--brand-primary);
-  --chart-2: var(--info);
+  /* Charts: primary series navy, comparison navy-300, status for meaning. */
+  --chart-1: var(--navy-800);
+  --chart-2: var(--navy-300);
   --chart-3: var(--success);
   --chart-4: var(--warning);
   --chart-5: var(--danger);
 
-  /* Sidebar */
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: var(--ink-600);
-  --sidebar-primary: var(--brand-primary-600);
-  --sidebar-primary-foreground: #FFFFFF;
+  /* Sidebar: light. White rail with an ink-200 edge; items ink-700
+     (10.9:1 on white), hover ink-100; the active item is teal-50 with
+     teal-700 text (7.15:1), the selection role of the accent. */
+  --sidebar: var(--paper-elev);
+  --sidebar-foreground: var(--ink-700);
+  --sidebar-primary: var(--brand-primary-50);
+  --sidebar-primary-foreground: var(--brand-primary-700);
   --sidebar-accent: var(--ink-100);
   --sidebar-accent-foreground: var(--ink-900);
   --sidebar-border: var(--ink-200);
   --sidebar-ring: var(--brand-primary-600);
-}
-
-.dark {
-  color-scheme: dark;
-  --paper:       #0D0E0B;
-  --paper-elev:  #14140F;
-  --panel:       #1B1B17;
-  --ink-900: #F4F3EF;
-  --ink-800: #E2E1DC;
-  --ink-700: #C8C6BE;
-  --ink-600: #9F9D94;
-  --ink-500: #7A786E;
-  --ink-400: #5C5A52;
-  --ink-300: #44423B;
-  --ink-200: #2B2A25;
-  --ink-100: #1F1F1B;
-  --ink-50:  #18181A;
-
-  --brand-primary: #4F8AD8;
-  --brand-accent:  #60A5FA;
-  --brand-subtle:  #1A2238;
-
-  --success-soft: #052E2A;
-  --warning-soft: #2A1F0A;
-  --danger-soft:  #2A1414;
-  --info-soft:    #07212B;
-
-  --ai-ink:     var(--brand-primary-300);
-  --ai-text:    var(--brand-primary-300);
-  --ai-surface: var(--brand-subtle);
-  --ai-border:  var(--brand-primary-800);
-
-  --background:           var(--paper);
-  --foreground:           var(--ink-900);
-  --card:                 var(--paper-elev);
-  --card-foreground:      var(--ink-900);
-  --popover:              var(--paper-elev);
-  --popover-foreground:   var(--ink-900);
-  --primary:              #4C7DFF;
-  --primary-foreground:   #0B0E14;
-  --secondary:            var(--ink-100);
-  --secondary-foreground: var(--ink-800);
-  --muted:                var(--ink-100);
-  --muted-foreground:     var(--ink-500);
-  --accent:               var(--ink-100);
-  --accent-foreground:    var(--ink-900);
-  --destructive:          #E06C6C;
-  --border:               #25241F;
-  --border-soft:          #1C1B17;
-  --input:                #2B2A25;
-  --ring:                 var(--brand-accent);
-
-  /* Sidebar */
-  --sidebar: var(--paper-elev);
-  --sidebar-foreground: var(--ink-700);
-  --sidebar-primary: var(--brand-primary-600);
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: var(--ink-100);
-  --sidebar-accent-foreground: var(--ink-900);
-  --sidebar-border: var(--ink-200);
-  --sidebar-ring: var(--brand-accent);
 }
 
 /* Tailwind bridge: exposes the tokens above as utilities (bg-card, text-muted-foreground, …). */
@@ -282,6 +249,493 @@
   --shadow-lg: var(--shadow-lg);
 }
 
+/* ─── 1b. Design-system tokens (components/ds) ────────────────────
+   Additive layer over section 1. Nothing above is renamed or removed:
+   these are SEMANTIC ROLES that point at the primitives, so a component
+   asks for "secondary text" or "raised surface", never for "ink-600".
+   Rule of use: components/ds reads only these roles; the primitives stay
+   for legacy call sites. Reference: docs/DESIGN_SYSTEM.md and /design-system.
+   ─────────────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces (the 60% dominant role): canvas (page) → raised (cards) → sunken (wells inside a card)
+     → overlay (menus, dialogs) → inverse (tooltips, the navy focal block). */
+  --surface-canvas:  var(--paper);
+  --surface-raised:  var(--paper-elev);
+  --surface-sunken:  var(--panel);
+  --surface-overlay: var(--paper-elev);
+  --surface-hover:   var(--ink-50);
+  --surface-selected: var(--brand-primary-50);
+  --surface-inverse: var(--ink-900);
+
+  /* Foreground (text + icons). Contrast on --surface-raised (light):
+     primary 17.21:1 · secondary 7.63:1 · tertiary 5.46:1 · disabled is
+     decorative only (never for information). */
+  --fg-primary:   var(--ink-900);
+  --fg-secondary: var(--ink-600);
+  --fg-tertiary:  var(--ink-500);
+  --fg-disabled:  var(--ink-400);
+  --fg-inverse:   var(--ink-0);
+  --fg-link:      var(--brand-primary-700);
+  --fg-on-interactive: #FFFFFF;
+
+  /* Borders: border-first elevation. subtle = dividers inside a surface,
+     default = the edge of a surface, strong = form controls (3:1 on canvas). */
+  --border-subtle:  var(--ink-100);
+  --border-default: var(--ink-200);
+  --border-strong:  var(--ink-300);
+  --border-control: #8A857B;   /* 3.67:1 on white, 3.43:1 on canvas (WCAG 1.4.11) */
+
+  /* Interactive = the 10% teal accent. focus is used by every focus ring
+     (#0F766E: 5.47:1 on white, 5.11:1 on canvas). */
+  --interactive:          var(--brand-primary-600);
+  --interactive-hover:    var(--brand-primary-700);
+  --interactive-pressed:  var(--brand-primary-800);
+  --interactive-subtle:   var(--brand-primary-50);
+  --interactive-subtle-hover: var(--brand-primary-100);
+  --focus:                var(--brand-primary-600);
+
+  /* Status. `-fg` is the text step (≥4.5:1 on both its soft fill and the
+     raised surface); `-border` outlines a soft fill. Status colours are
+     reserved: never reuse them as a chart series. --warning-fg is one step
+     darker than --warning because #B45309 on --warning-soft is 4.49:1
+     (just under AA); #A3480A is 5.39:1 on the soft fill, 6.0:1 on white. */
+  --success-fg: #126B36;          --success-border: color-mix(in srgb, var(--success) 24%, transparent);
+  --warning-fg: #A3480A;          --warning-border: color-mix(in srgb, var(--warning) 26%, transparent);
+  --danger-fg:  var(--danger);    --danger-border:  color-mix(in srgb, var(--danger) 24%, transparent);
+  --info-fg:    var(--info);      --info-border:    color-mix(in srgb, var(--info) 24%, transparent);
+  --neutral:      var(--ink-500);
+  --neutral-fg:   var(--ink-700);
+  --neutral-soft: var(--ink-100);
+  --neutral-border: var(--ink-300);
+
+  /* ── Status meaning (product-owner colour table) ──
+     One meaning per colour, everywhere. Components ask for a MEANING, not
+     a hue. Every status ships with words + a dot, icon or pattern.
+       ok          healthy · within matrix · on time · signed value
+       acceptable  acceptable but not ideal · fallback tier · informational
+       caution     attention · running late · needs changes · held-up value
+       blocked     blocking · overdue · not acceptable · rejected
+       unknown     neutral · no value yet · no target · check by hand · missing
+     --status-attention is an alias of caution (same meaning, two names
+     used in specs). Ratios (light): fg on soft — ok 4.75 · acceptable 4.71 ·
+     caution 5.39 · blocked 4.83 · unknown 10.49; mark on raised ≥ 3:1. */
+  --status-ok:          var(--success);
+  --status-ok-fg:       var(--success-fg);
+  --status-ok-soft:     var(--success-soft);
+  --status-ok-border:   var(--success-border);
+  --status-acceptable:        var(--info);
+  --status-acceptable-fg:     var(--info-fg);
+  --status-acceptable-soft:   var(--info-soft);
+  --status-acceptable-border: var(--info-border);
+  --status-caution:        var(--warning);
+  --status-caution-fg:     var(--warning-fg);
+  --status-caution-soft:   var(--warning-soft);
+  --status-caution-border: var(--warning-border);
+  --status-attention:      var(--status-caution);
+  --status-blocked:        var(--danger);
+  --status-blocked-fg:     var(--danger-fg);
+  --status-blocked-soft:   var(--danger-soft);
+  --status-blocked-border: var(--danger-border);
+  --status-unknown:        var(--ink-400);
+  --status-unknown-fg:     var(--neutral-fg);
+  --status-unknown-soft:   var(--neutral-soft);
+  --status-unknown-border: var(--neutral-border);
+
+  /* ── Matrix outcomes (Govern review) ──
+     A dedicated set, separate from risk and from brand. Each outcome is
+     colour + icon + word (see components/ds/OutcomeBadge):
+       within        check     "Within OSU terms"        fg/soft 4.75:1
+       fallback      half-circle "Acceptable fallback"   fg/soft 4.71:1
+       deviates      triangle  "Needs review"            fg/soft 5.39:1
+       unacceptable  octagon   "Not acceptable to OSU"   fg/soft 4.83:1
+       beneficial    "+" in a success outline "Benefits OSU" 5.88:1
+       missing       dashed outline "Missing"            fg/raised 12.3:1  */
+  --outcome-within:            var(--status-ok);
+  --outcome-within-fg:         var(--status-ok-fg);
+  --outcome-within-soft:       var(--status-ok-soft);
+  --outcome-fallback:          var(--status-acceptable);
+  --outcome-fallback-fg:       var(--status-acceptable-fg);
+  --outcome-fallback-soft:     var(--status-acceptable-soft);
+  --outcome-deviates:          var(--status-caution);
+  --outcome-deviates-fg:       var(--status-caution-fg);
+  --outcome-deviates-soft:     var(--status-caution-soft);
+  --outcome-unacceptable:      var(--status-blocked);
+  --outcome-unacceptable-fg:   var(--status-blocked-fg);
+  --outcome-unacceptable-soft: var(--status-blocked-soft);
+  --outcome-beneficial:        var(--status-ok);
+  --outcome-beneficial-fg:     var(--status-ok-fg);
+  --outcome-beneficial-soft:   transparent;   /* success OUTLINE with a "+" glyph */
+  --outcome-missing:           var(--ink-400);
+  --outcome-missing-fg:        var(--ink-700);
+  --outcome-missing-soft:      transparent;
+
+  /* SLA clocks: always printed with words ("3 days left", "2 days over"). */
+  --sla-on-track: var(--status-unknown);   /* on time is quiet, not green */
+  --sla-due-soon: var(--status-caution);
+  --sla-overdue:  var(--status-blocked);
+
+  /* ── Tenant brand layer ──
+     Brand chrome only (header band, logo bar). A tenant theme never touches
+     --interactive, status, outcome or chart tokens: in a review UI, red
+     stays reserved for "not acceptable". Opt in with
+     <html data-tenant-theme="osu">. */
+  --tenant-brand:     var(--navy-800);
+  --tenant-brand-fg:  #FFFFFF;
+  --tenant-brand-border: var(--navy-border);
+
+  /* ── Component tier (tier 3) ──
+     Tier 1 primitives (--ink-*, --brand-primary-*) → tier 2 semantic roles
+     (above) → tier 3 component decisions (below). Components read tier 3
+     where it exists, else tier 2; never tier 1. */
+  --target-min:        24px;    /* WCAG 2.5.8 minimum target */
+  --target-touch:      44px;    /* touch widths */
+  --control-height-sm: 2rem;    /* 32 */
+  --control-height-md: 2.25rem; /* 36 */
+  --control-height-lg: 2.5rem;  /* 40 */
+  --pill-height:       1.5rem;  /* 24 */
+  --table-header-height: 2.5rem;       /* 40 */
+  --table-row-comfortable: 3.25rem;    /* 52 */
+  --table-row-compact: 2.25rem;        /* 36 */
+  --chart-height-sm: 10rem;     /* 160 */
+  --chart-height-md: 15rem;     /* 240 */
+  --chart-height-lg: 20rem;     /* 320 */
+
+  /* Structure (the 30% navy role) for code: section headings, dark panels,
+     "OSU holds it" chips and other emphasis that is NOT an action. Use these
+     instead of teal tints so the accent stays near 10%.
+     structure-soft-fg on structure-soft = navy-600 on navy-50, 9.6:1. */
+  --structure:          var(--navy-800);
+  --structure-fg:       #FFFFFF;
+  --structure-soft:     var(--navy-50);
+  --structure-soft-fg:  var(--navy-600);
+  --structure-border:   var(--navy-200);
+
+  /* Sonar (AI) provenance mark: navy, marked by the Sonar glyph. */
+  --ai-accent: var(--navy-500);
+
+  /* ── Data visualisation ──
+     Categorical: 8 hues in a FIXED order (never cycled; a 9th series folds
+     into "Other"). Validated with the dataviz validator against #FFFFFF:
+     lightness band, chroma floor, adjacent CVD ΔE ≥ 9.1 (protan), normal-
+     vision ΔE ≥ 17.0, every slot ≥ 3:1. First 3 slots also pass all-pairs
+     (scatter / small multiples cap = 3). Slot 1 is navy (the 30% role);
+     teal is NOT a series colour: it marks a single highlighted series only. */
+  --viz-cat-1: #3D5490;  /* navy    */
+  --viz-cat-2: #D9581F;  /* orange  */
+  --viz-cat-3: #0E9468;  /* aqua    */
+  --viz-cat-4: #A87400;  /* ochre   */
+  --viz-cat-5: #CC4A85;  /* magenta */
+  --viz-cat-6: #3D7D0A;  /* green   */
+  --viz-cat-7: #7A52C7;  /* violet  */
+  --viz-cat-8: #D63A3A;  /* red     */
+  --viz-other: var(--border-control); /* the folded tail, de-emphasised marks (3.67:1) */
+  --viz-highlight: var(--brand-primary-600); /* the ONE highlighted series (teal accent) */
+  --viz-primary:   var(--navy-800);          /* single-series charts */
+  --viz-compare:   var(--navy-300);          /* comparison / previous period */
+
+  /* Sequential (magnitude, one hue light → dark; heatmaps). Step 1 means
+     "near zero" and may recede toward the surface; cells always print
+     their value, so no step relies on colour alone. */
+  --viz-seq-1: #EEF1F7;
+  --viz-seq-2: #B3BFD8;
+  --viz-seq-3: #8293B9;
+  --viz-seq-4: #52679A;
+  --viz-seq-5: #33487A;
+  --viz-seq-6: #1B2A4D;
+  --viz-seq-7: #0C1528;
+
+  /* Diverging (polarity around a meaningful zero): orange arm ← warm grey → navy arm. */
+  --viz-div-neg-3: #9A3412;
+  --viz-div-neg-2: #D9581F;
+  --viz-div-neg-1: #F2A57A;
+  --viz-div-mid:   #F1EFEA;
+  --viz-div-pos-1: #8293B9;
+  --viz-div-pos-2: #3D5490;
+  --viz-div-pos-3: #14213D;
+
+  /* Chart chrome: recessive grid, a visible baseline, ink labels. */
+  --viz-surface:  var(--paper-elev);
+  --viz-grid:     var(--ink-100);
+  --viz-axis:     var(--ink-300);
+  --viz-label:    var(--ink-600);
+  --viz-track:    var(--panel);
+
+  /* Spacing: a 4px grid. The steps match Tailwind's numeric scale exactly
+     (p-4 = --space-4 = 16px), so classes and tokens never disagree. */
+  --space-0:  0;
+  --space-1:  0.25rem;  /*  4 */
+  --space-2:  0.5rem;   /*  8 */
+  --space-3:  0.75rem;  /* 12 */
+  --space-4:  1rem;     /* 16 */
+  --space-5:  1.25rem;  /* 20 */
+  --space-6:  1.5rem;   /* 24 */
+  --space-8:  2rem;     /* 32 */
+  --space-10: 2.5rem;   /* 40 */
+  --space-12: 3rem;     /* 48 */
+  --space-16: 4rem;     /* 64 */
+  --space-20: 5rem;     /* 80 */
+  --space-24: 6rem;     /* 96 */
+
+  /* Radius roles over the existing --radius-* steps. */
+  --radius-control:   var(--radius-lg);  /* buttons, inputs, chips (10px) */
+  --radius-container: var(--radius-xl);  /* cards, sections, dialogs (14px) */
+  --radius-pill:      9999px;            /* status pills, avatars */
+
+  /* Elevation: border-first. Two shadow levels only.
+     0 = flat (border only) · 1 = raised card · 2 = overlay (menu, popover, dialog). */
+  --elevation-0: none;
+  --elevation-1: var(--shadow-xs);
+  --elevation-2: var(--shadow-lg);
+
+  /* Motion. Fast and purposeful; reduced motion collapses every duration to 0. */
+  --duration-instant: 75ms;    /* colour/opacity on hover and press */
+  --duration-fast:    150ms;   /* most UI state changes */
+  --duration-moderate: 200ms;  /* panels, popovers entering */
+  --duration-slow:    300ms;   /* page-level reveals, chart entrance */
+  --ease-standard: var(--ease-in-out);
+  --ease-enter:    var(--ease-out);
+  --ease-exit:     var(--ease-in);
+
+  /* Z-index layers. Existing primitives use z-50 for overlays; these name the stack. */
+  --z-base:    0;
+  --z-raised:  1;    /* a lifted card, a sticky table column */
+  --z-sticky:  20;   /* sticky table headers, filter bars */
+  --z-header:  30;   /* the app top bar */
+  --z-overlay: 40;   /* sheet / dialog scrim */
+  --z-modal:   50;   /* dialog, sheet, dropdown, popover (radix content) */
+  --z-toast:   60;
+  --z-skip:    100;  /* skip link */
+
+  /* Breakpoints (reference only: CSS cannot read vars in @media). They are
+     Tailwind's defaults: sm 640 · md 768 · lg 1024 · xl 1280 · 2xl 1536. */
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+  --bp-2xl: 1536px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-moderate: 0ms;
+    --duration-slow: 0ms;
+  }
+}
+
+/* Tenant brand: The Ohio State University (BUX Scarlet #BA0C2F, 6.6:1 with
+   white). Header and logo bar only; see the rule on --tenant-brand above. */
+[data-tenant-theme="osu"] {
+  --tenant-brand:        #BA0C2F;
+  --tenant-brand-fg:     #FFFFFF;
+  --tenant-brand-border: #8F0A24;
+}
+
+/* Type scale for components/ds: 12 / 14 / 16 / 20 / 24 / 32 / 40 / 56, in rem
+   so browser zoom works. These are NEW utility names (text-caption … text-
+   display-lg) and do not change the legacy text-xs … text-4xl steps above.
+     text-caption     12/16  meta, table headers, pill text, axis ticks
+     text-body        14/20  default UI and body text
+     text-body-lg     16/24  lead paragraphs, section titles in dense views
+     text-title-sm    20/28  section headings
+     text-title       24/32  page titles (mobile), KPI values
+     text-headline    32/40  page titles (desktop), focal KPI
+     text-display     40/48  a single hero number
+     text-display-lg  56/64  marketing / empty-canvas hero only            */
+@theme {
+  --text-caption: 0.75rem;     --text-caption--line-height: 1rem;
+  --text-body: 0.875rem;       --text-body--line-height: 1.25rem;
+  --text-body-lg: 1rem;        --text-body-lg--line-height: 1.5rem;
+  --text-title-sm: 1.25rem;    --text-title-sm--line-height: 1.75rem;
+  --text-title: 1.5rem;        --text-title--line-height: 2rem;
+  --text-headline: 2rem;       --text-headline--line-height: 2.5rem;
+  --text-display: 2.5rem;      --text-display--line-height: 3rem;
+  --text-display-lg: 3.5rem;   --text-display-lg--line-height: 4rem;
+
+  /* Content widths: max-w-page (the app container) and max-w-prose-ds. */
+  --container-page: 1480px;
+  --container-prose-ds: 68ch;
+}
+
+/* Tailwind bridge for the semantic roles: bg-surface-raised, text-fg-secondary,
+   border-border-subtle, bg-success-soft text-success-fg, fill-viz-cat-1 … */
+@theme inline {
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-selected: var(--surface-selected);
+  --color-surface-inverse: var(--surface-inverse);
+
+  --color-fg-primary: var(--fg-primary);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-tertiary: var(--fg-tertiary);
+  --color-fg-disabled: var(--fg-disabled);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-fg-link: var(--fg-link);
+  --color-fg-on-interactive: var(--fg-on-interactive);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-control: var(--border-control);
+
+  --color-interactive: var(--interactive);
+  --color-interactive-hover: var(--interactive-hover);
+  --color-interactive-pressed: var(--interactive-pressed);
+  --color-interactive-subtle: var(--interactive-subtle);
+  --color-interactive-subtle-hover: var(--interactive-subtle-hover);
+  --color-focus: var(--focus);
+
+  --color-success: var(--success);
+  --color-success-fg: var(--success-fg);
+  --color-success-soft: var(--success-soft);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+  --color-info: var(--info);
+  --color-info-fg: var(--info-fg);
+  --color-info-soft: var(--info-soft);
+  --color-info-border: var(--info-border);
+  --color-neutral: var(--neutral);
+  --color-neutral-fg: var(--neutral-fg);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-border: var(--neutral-border);
+
+  --color-status-ok: var(--status-ok);
+  --color-status-ok-fg: var(--status-ok-fg);
+  --color-status-ok-soft: var(--status-ok-soft);
+  --color-status-ok-border: var(--status-ok-border);
+  --color-status-acceptable: var(--status-acceptable);
+  --color-status-acceptable-fg: var(--status-acceptable-fg);
+  --color-status-acceptable-soft: var(--status-acceptable-soft);
+  --color-status-acceptable-border: var(--status-acceptable-border);
+  --color-status-caution: var(--status-caution);
+  --color-status-caution-fg: var(--status-caution-fg);
+  --color-status-caution-soft: var(--status-caution-soft);
+  --color-status-caution-border: var(--status-caution-border);
+  --color-status-blocked: var(--status-blocked);
+  --color-status-blocked-fg: var(--status-blocked-fg);
+  --color-status-blocked-soft: var(--status-blocked-soft);
+  --color-status-blocked-border: var(--status-blocked-border);
+  --color-status-unknown: var(--status-unknown);
+  --color-status-unknown-fg: var(--status-unknown-fg);
+  --color-status-unknown-soft: var(--status-unknown-soft);
+  --color-status-unknown-border: var(--status-unknown-border);
+
+  --color-outcome-within: var(--outcome-within);
+  --color-outcome-within-fg: var(--outcome-within-fg);
+  --color-outcome-within-soft: var(--outcome-within-soft);
+  --color-outcome-fallback: var(--outcome-fallback);
+  --color-outcome-fallback-fg: var(--outcome-fallback-fg);
+  --color-outcome-fallback-soft: var(--outcome-fallback-soft);
+  --color-outcome-deviates: var(--outcome-deviates);
+  --color-outcome-deviates-fg: var(--outcome-deviates-fg);
+  --color-outcome-deviates-soft: var(--outcome-deviates-soft);
+  --color-outcome-unacceptable: var(--outcome-unacceptable);
+  --color-outcome-unacceptable-fg: var(--outcome-unacceptable-fg);
+  --color-outcome-unacceptable-soft: var(--outcome-unacceptable-soft);
+  --color-outcome-beneficial: var(--outcome-beneficial);
+  --color-outcome-beneficial-fg: var(--outcome-beneficial-fg);
+  --color-outcome-beneficial-soft: var(--outcome-beneficial-soft);
+  --color-outcome-missing: var(--outcome-missing);
+  --color-outcome-missing-fg: var(--outcome-missing-fg);
+  --color-sla-on-track: var(--sla-on-track);
+  --color-sla-due-soon: var(--sla-due-soon);
+  --color-sla-overdue: var(--sla-overdue);
+  --color-tenant-brand: var(--tenant-brand);
+  --color-tenant-brand-fg: var(--tenant-brand-fg);
+  --color-tenant-brand-border: var(--tenant-brand-border);
+
+  --color-structure: var(--structure);
+  --color-structure-fg: var(--structure-fg);
+  --color-structure-soft: var(--structure-soft);
+  --color-structure-soft-fg: var(--structure-soft-fg);
+  --color-structure-border: var(--structure-border);
+  --color-navy-50: var(--navy-50);
+  --color-navy-100: var(--navy-100);
+  --color-navy-200: var(--navy-200);
+  --color-navy-300: var(--navy-300);
+  --color-navy-400: var(--navy-400);
+  --color-navy-500: var(--navy-500);
+  --color-navy-600: var(--navy-600);
+  --color-navy-700: var(--navy-700);
+  --color-navy-800: var(--navy-800);
+  --color-navy-900: var(--navy-900);
+  --color-viz-highlight: var(--viz-highlight);
+  --color-viz-primary: var(--viz-primary);
+  --color-viz-compare: var(--viz-compare);
+
+  --color-ai-accent: var(--ai-accent);
+  --color-ai-ink: var(--ai-ink);
+  --color-ai-surface: var(--ai-surface);
+  --color-ai-border: var(--ai-border);
+
+  --color-viz-cat-1: var(--viz-cat-1);
+  --color-viz-cat-2: var(--viz-cat-2);
+  --color-viz-cat-3: var(--viz-cat-3);
+  --color-viz-cat-4: var(--viz-cat-4);
+  --color-viz-cat-5: var(--viz-cat-5);
+  --color-viz-cat-6: var(--viz-cat-6);
+  --color-viz-cat-7: var(--viz-cat-7);
+  --color-viz-cat-8: var(--viz-cat-8);
+  --color-viz-other: var(--viz-other);
+  --color-viz-seq-1: var(--viz-seq-1);
+  --color-viz-seq-2: var(--viz-seq-2);
+  --color-viz-seq-3: var(--viz-seq-3);
+  --color-viz-seq-4: var(--viz-seq-4);
+  --color-viz-seq-5: var(--viz-seq-5);
+  --color-viz-seq-6: var(--viz-seq-6);
+  --color-viz-seq-7: var(--viz-seq-7);
+  --color-viz-div-neg-3: var(--viz-div-neg-3);
+  --color-viz-div-neg-2: var(--viz-div-neg-2);
+  --color-viz-div-neg-1: var(--viz-div-neg-1);
+  --color-viz-div-mid: var(--viz-div-mid);
+  --color-viz-div-pos-1: var(--viz-div-pos-1);
+  --color-viz-div-pos-2: var(--viz-div-pos-2);
+  --color-viz-div-pos-3: var(--viz-div-pos-3);
+  --color-viz-grid: var(--viz-grid);
+  --color-viz-axis: var(--viz-axis);
+  --color-viz-label: var(--viz-label);
+  --color-viz-track: var(--viz-track);
+
+  --shadow-raised: var(--elevation-1);
+  --shadow-overlay: var(--elevation-2);
+
+  --radius-control: var(--radius-control);
+  --radius-container: var(--radius-container);
+  --radius-pill: var(--radius-pill);
+
+  --ease-standard: var(--ease-standard);
+  --ease-enter: var(--ease-enter);
+  --ease-exit: var(--ease-exit);
+}
+
+/* Pattern fills (the colour-blind / print / forced-colours channel).
+   `ds-hatch` paints 45° lines in currentColor over a transparent ground, so
+   set the line colour with a text-* class: <span class="ds-hatch text-viz-cat-2">.
+   `ds-hatch-reverse` is the 135° mirror for the next adjacent series.
+   SVG charts use the <pattern> defs in components/ds/charts/ChartPatterns.tsx. */
+.ds-hatch,
+.ds-hatch-reverse {
+  background-color: color-mix(in srgb, currentColor 14%, transparent);
+  background-image: repeating-linear-gradient(45deg, currentColor 0 1.5px, transparent 1.5px 6px);
+}
+.ds-hatch-reverse {
+  background-image: repeating-linear-gradient(135deg, currentColor 0 1.5px, transparent 1.5px 6px);
+}
+@media (forced-colors: active) {
+  .ds-hatch, .ds-hatch-reverse { forced-color-adjust: none; color: CanvasText; }
+}
+
 /* ─── 2. Base ─────────────────────────────────────────────────── */
 html, body {
   background: var(--background);
@@ -299,11 +753,6 @@ html { scroll-behavior: smooth; }
   background: var(--brand-subtle);
   color: var(--brand-primary);
 }
-.dark ::selection {
-  background: color-mix(in srgb, var(--brand-accent) 25%, transparent);
-  color: var(--ink-900);
-}
-
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -339,14 +788,6 @@ html { scroll-behavior: smooth; }
   outline: none;
 }
 
-/* Light/dark switch: fade surface colours only while the toggle runs. */
-@media (prefers-reduced-motion: no-preference) {
-  html.theme-anim,
-  html.theme-anim *:not(svg):not(path) {
-    transition: background-color 220ms ease, border-color 220ms ease, color 180ms ease;
-  }
-}
-
 /* Reduced motion (WCAG 2.3.3): settle everything at once, but keep loading
    spinners turning so progress is still conveyed. */
 @media (prefers-reduced-motion: reduce) {
@@ -362,6 +803,12 @@ html { scroll-behavior: smooth; }
 
 /* ─── 3. App utilities ────────────────────────────────────────── */
 
+/* Sidebar nav: scrolls inside the full-height rail with a thin thumb, so a short window never hides the last items. */
+.sidebar-scroll { scrollbar-width: thin; scrollbar-color: var(--ink-300) transparent; }
+.sidebar-scroll::-webkit-scrollbar { width: 6px; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: var(--ink-300); border: 0; border-radius: 3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-400); }
+
 /* Page container: one max-width and gutter for every app page. */
 .app-container {
   width: 100%;
@@ -372,6 +819,16 @@ html { scroll-behavior: smooth; }
 @media (min-width: 640px)  { .app-container { padding-inline: 20px; } }
 @media (min-width: 768px)  { .app-container { padding-inline: 24px; } }
 @media (min-width: 1024px) { .app-container { padding-inline: 32px; } }
+
+/* Page body under the PageHeader: the container plus one vertical rhythm
+   (24px on phones, 32px from md) shared by every main page. */
+.app-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-block: 24px;
+}
+@media (min-width: 768px) { .app-page { gap: 32px; padding-block: 32px; } }
 
 /* Figures */
 .font-mono { font-feature-settings: "calt", "ss01"; }

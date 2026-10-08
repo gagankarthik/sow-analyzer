@@ -29,8 +29,8 @@ export function AuthHeading({
   subtitle: React.ReactNode;
 }) {
   return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-semibold tracking-[-0.04em] text-foreground sm:text-4xl">{title}</h1>
+    <div className="mb-6 [@media(min-height:820px)]:mb-8">
+      <h1 className="text-[1.75rem] font-semibold leading-tight tracking-[-0.03em] text-foreground sm:text-4xl">{title}</h1>
       <p className="mt-3 text-base leading-relaxed text-[var(--ink-600)]">{subtitle}</p>
     </div>
   );
@@ -196,7 +196,7 @@ export function FormNotice({ children, className }: { children: React.ReactNode;
     <div
       role="status"
       className={cn(
-        "flex items-start gap-2 rounded-xl border border-[var(--success)]/25 bg-[var(--success-soft)] px-3.5 py-2.5 text-sm text-[var(--success)]",
+        "flex items-start gap-2 rounded-xl border border-[var(--success)]/25 bg-[var(--success-soft)] px-3.5 py-2.5 text-sm text-[var(--success-fg)]",
         className,
       )}
     >

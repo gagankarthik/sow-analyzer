@@ -143,7 +143,7 @@ export default function ClauseLibraryPage() {
             </div>
           ) : rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--ink-300)] bg-[var(--panel)] px-4 py-10 text-center">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-100)]">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft">
                 <FileText size={20} className="text-[var(--brand-primary-700)]" />
               </div>
               <h3 className="text-xl font-semibold tracking-tight text-foreground">No clauses yet</h3>

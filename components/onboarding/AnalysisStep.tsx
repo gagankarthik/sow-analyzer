@@ -125,7 +125,7 @@ export function AnalysisStep({
               <span
                 className={cn(
                   "mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
-                  done && "bg-[var(--success-soft)] text-[var(--success)]",
+                  done && "bg-[var(--success-soft)] text-[var(--success-fg)]",
                   active && "bg-[var(--brand-primary-600)] text-white",
                   !done && !active && "border border-[var(--ink-300)] text-muted-foreground",
                 )}
