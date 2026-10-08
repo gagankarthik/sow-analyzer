@@ -1,5 +1,7 @@
 "use client";
 
+import { docTypeLabel } from "@/lib/doc-types";
+import { stageLabel } from "@/lib/govern/labels";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -39,7 +41,6 @@ import type { ApiClause, ApiKeyFinding, DocType, Lifecycle, RiskLevel, FindingSe
 type Project = ReturnType<typeof apiDocToProject>;
 
 const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "LICENSE", "DPA", "BAA", "COMPLIANCE", "OTHER"];
-const LIFECYCLE_OPTIONS: Lifecycle[] = ["draft", "review", "negotiation", "approval", "signed", "active", "renewal", "expired"];
 const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
   draft: "Draft", review: "Review", negotiation: "Negotiation", approval: "Approval",
   signed: "Signed", active: "Active", renewal: "Renewal", expired: "Expired",
@@ -375,7 +376,7 @@ function DocumentOverview() {
             <h3 className="text-base font-semibold mb-4 tracking-tight text-foreground">Document details</h3>
             <dl className="divide-y divide-[var(--ink-100)]">
               <DetailItem label="Type"><DocTypeBadge type={doc.docType} /></DetailItem>
-              <DetailItem label="Lifecycle"><Badge variant="neutral" size="sm" className="text-xs capitalize">{doc.lifecycle}</Badge></DetailItem>
+              <DetailItem label="Stage"><Badge variant="neutral" size="sm" className="text-xs">{stageLabel(doc.lifecycle)}</Badge></DetailItem>
               <DetailItem label="Status"><Badge variant={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"} size="sm" className="text-xs">{rawStatus}</Badge></DetailItem>
               {doc.effectiveDate && <DetailItem label="Effective"><span className="text-sm font-medium text-foreground">{formatDate(doc.effectiveDate)}</span></DetailItem>}
               {doc.parentDocId && <DetailItem label="Parent"><Link href={`/projects/${doc.parentDocId}`} className="text-xs font-mono text-[var(--brand-primary-600)] hover:underline truncate max-w-[120px] inline-block">{doc.parentDocId.slice(0, 12)}…</Link></DetailItem>}
@@ -393,10 +394,11 @@ function DocumentOverview() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><label htmlFor="edit-doc-title" className="text-sm font-medium text-foreground">Title</label><Input id="edit-doc-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Document title" className="h-10 text-base md:h-9" /></div>
             <div className="space-y-1.5"><label className="text-sm font-medium text-foreground">Document type</label>
-              <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}><SelectTrigger className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger><SelectContent>{DOC_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+              <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}><SelectTrigger className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger><SelectContent>{DOC_TYPES.map((t) => <SelectItem key={t} value={t}>{docTypeLabel(t)}</SelectItem>)}</SelectContent></Select>
             </div>
-            <div className="space-y-1.5"><label className="text-sm font-medium text-foreground">Lifecycle stage</label>
-              <Select value={editLifecycle} onValueChange={(v) => setEditLifecycle(v as Lifecycle)}><SelectTrigger className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger><SelectContent>{LIFECYCLE_OPTIONS.map((l) => <SelectItem key={l} value={l}>{LIFECYCLE_LABEL[l]}</SelectItem>)}</SelectContent></Select>
+            <div className="space-y-1"><p className="text-sm font-medium text-foreground">Stage</p>
+              <p className="text-sm text-foreground">{LIFECYCLE_LABEL[editLifecycle]}</p>
+              <p className="text-xs text-[var(--ink-600)]">Moves on its own as people review, approve and sign the agreement in Govern.</p>
             </div>
           </div>
           <DialogFooter>

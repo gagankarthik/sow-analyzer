@@ -10,16 +10,17 @@ import { ChevronDown, Download, UserRound } from "lucide-react";
 import { plural } from "@/lib/govern/labels";
 import { contractsTable, downloadExcel } from "@/lib/govern/export";
 import { isUnsigned } from "@/lib/govern/metrics";
-import { useAnyContractAction, useGovernFeature, useWorkflowSettings } from "@/lib/govern/queries";
+import { useAnyContractAction, useCanEditContracts, useGovernFeature, useWorkflowSettings } from "@/lib/govern/queries";
 import type { Contract } from "@/lib/govern/types";
 
 /* What you can do to several contracts at once, shown in the floating bar
    when rows are selected: assign a reviewer, export to Excel. */
 
 export function BulkActions({ contracts, viewLabel, onDone }: { contracts: Contract[]; viewLabel: string; onDone: () => void }) {
+  const canEdit = useCanEditContracts();
   return (
     <>
-      <BulkAssign contracts={contracts} onDone={onDone} />
+      {canEdit && <BulkAssign contracts={contracts} onDone={onDone} />}
       <BulkExport contracts={contracts} viewLabel={viewLabel} />
     </>
   );

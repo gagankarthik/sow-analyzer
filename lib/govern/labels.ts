@@ -9,17 +9,21 @@ import type {
 } from "./types"
 
 export const AGREEMENT_TYPES: AgreementType[] = [
-  "license", "option", "sponsored_research", "grant", "mta", "nda", "collaboration", "other",
+  "license", "option", "sponsored_research", "clinical_trial", "grant", "mta", "data_use", "nda", "collaboration",
+  "software", "other",
 ]
 
 export const AGREEMENT_TYPE_LABEL: Record<AgreementType, string> = {
   sponsored_research: "Sponsored research",
+  clinical_trial: "Clinical trial",
   grant: "Grant or subaward",
   license: "License",
   option: "Option",
   mta: "Material transfer (MTA)",
+  data_use: "Data use (DUA)",
   nda: "Confidentiality (NDA)",
   collaboration: "Collaboration",
+  software: "Software or SaaS (purchase)",
   other: "Other agreement",
 }
 
@@ -35,6 +39,7 @@ export const DIRECTION_HINT: Record<Direction, string> = {
 
 export const OFFICES: Office[] = [
   "legal_affairs", "tech_commercialization", "sponsored_programs", "export_control", "risk_management",
+  "procurement", "it_security", "accessibility",
 ]
 
 export const OFFICE_LABEL: Record<Office, string> = {
@@ -43,6 +48,9 @@ export const OFFICE_LABEL: Record<Office, string> = {
   sponsored_programs: "Sponsored Programs",
   export_control: "Export Control",
   risk_management: "Risk Management",
+  procurement: "Procurement",
+  it_security: "IT Security",
+  accessibility: "Digital Accessibility",
 }
 
 export const STAGES: Stage[] = ["draft", "review", "negotiation", "approval", "signed", "active", "renewal", "expired"]
@@ -166,6 +174,8 @@ export const OBLIGATION_KIND_LABEL: Record<ObligationKind, string> = {
   publication_review: "Publication review window",
   term_end: "Term ends",
   closeout: "Close-out task",
+  renewal_notice: "Last day to stop renewal",
+  data_return: "Get your data back",
   other: "Other obligation",
 }
 
@@ -215,6 +225,21 @@ export const ACTIVITY_LABEL: Record<ActivityAction, string> = {
 }
 
 /** Display name for a person: their name, else the part of the email before @. */
+/** A stage or lifecycle code in plain words ("negotiation" → "With the other side"). */
+export function stageLabel(stage: string | null | undefined): string {
+  if (!stage) return "—"
+  return STAGE_LABEL[stage as Stage] ?? stage.charAt(0).toUpperCase() + stage.slice(1).replace(/_/g, " ")
+}
+
+/** A document's processing status in plain words. */
+export function docStatusLabel(status: string | null | undefined): string {
+  const s = String(status || "").toUpperCase()
+  if (s === "READY") return "Ready"
+  if (s === "FAILED") return "Couldn't be read"
+  if (s === "UPLOADED" || s === "PENDING") return "Waiting to be read"
+  return s ? "Sonar is reading it" : "—"
+}
+
 export function personName(p: { email: string; name: string | null } | null | undefined): string {
   if (!p) return "Unassigned"
   return p.name?.trim() || p.email.split("@")[0]

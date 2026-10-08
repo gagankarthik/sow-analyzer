@@ -1,5 +1,8 @@
 "use client";
 
+import { docTypeLabel } from "@/lib/doc-types";
+import { AGREEMENT_TYPE_LABEL, STAGE_LABEL } from "@/lib/govern/labels";
+import { useContracts, useGovernMe } from "@/lib/govern/queries";
 import { useEditionFeature } from "@/lib/govern/queries";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -64,20 +67,26 @@ type SearchHit = {
   label: string;
   sub: string;
   href: string;
-  group: "Pages" | "Documents" | "Projects";
+  group: "Contracts" | "Pages" | "Documents" | "Projects";
   icon: React.ReactNode;
+  /** Extra words that find this hit (sponsor, PI, department, owner, IDs). */
+  keywords?: string;
+  /** Hidden from leaders (setup pages). */
+  adminOnly?: boolean;
 };
 
 const PAGE_HITS: SearchHit[] = [
   // Each `sub` says what the page actually shows today (kept in step with the page headers).
   { id: "p-dashboard", label: "Risk and documents", sub: "Clause risk, value and compliance", href: "/home?view=risk", group: "Pages", icon: <BarChart3 size={14} /> },
   { id: "p-projects", label: "Projects", sub: "Contracts grouped with their amendments", href: "/projects", group: "Pages", icon: <Briefcase size={14} /> },
-  { id: "p-workflow", label: "Workflow", sub: "Documents by lifecycle stage", href: "/workflow", group: "Pages", icon: <Kanban size={14} /> },
+  { id: "p-contracts", label: "Contracts", sub: "Every agreement, in progress and signed", href: "/contracts", group: "Pages", icon: <FileText size={14} /> },
+  { id: "p-workflow", label: "Workflow", sub: "Who has each agreement and what moves it to signature", href: "/workflow", group: "Pages", icon: <Kanban size={14} /> },
+  { id: "p-obligations", label: "Obligations", sub: "Reports, payments, milestones and renewal deadlines", href: "/obligations", group: "Pages", icon: <FileText size={14} /> },
   { id: "p-library", label: "Library", sub: "Every uploaded document", href: "/library", group: "Pages", icon: <FileText size={14} /> },
   { id: "p-insights", label: "Insights", sub: "Portfolio insights", href: "/insights", group: "Pages", icon: <BarChart3 size={14} /> },
-  { id: "p-playbook", label: "Playbook", sub: "Settings · negotiation standards", href: "/settings/playbook", group: "Pages", icon: <BookMarked size={14} /> },
-  { id: "p-clauses", label: "Clause library", sub: "Settings · clauses extracted from your documents", href: "/settings/clauses", group: "Pages", icon: <FileText size={14} /> },
-  { id: "p-settings", label: "Settings", sub: "Rules and integrations", href: "/settings", group: "Pages", icon: <Settings size={14} /> },
+  { id: "p-playbook", label: "Playbook", sub: "Settings · negotiation standards", href: "/settings/playbook", group: "Pages", icon: <BookMarked size={14} />, adminOnly: true },
+  { id: "p-clauses", label: "Clause library", sub: "Settings · clauses extracted from your documents", href: "/settings/clauses", group: "Pages", icon: <FileText size={14} />, adminOnly: true },
+  { id: "p-settings", label: "Settings", sub: "Review matrix, routing, team and integrations", href: "/settings", group: "Pages", icon: <Settings size={14} />, adminOnly: true },
   { id: "p-profile", label: "Profile", sub: "Your account, password and sessions", href: "/profile", group: "Pages", icon: <User size={14} /> },
 ];
 
@@ -89,8 +98,22 @@ function useSearchIndex(): SearchHit[] {
   const docs = useMemo(() => data ?? [], [data]);
 
   const projects = useProjects();
+  const contracts = useContracts(true).data?.contracts;
+  const isLeader = useGovernMe().data?.role === "leader";
 
   return useMemo<SearchHit[]>(() => {
+    // Contracts first: found by title, sponsor or counterparty, PI, department,
+    // owner and Huron / Workday IDs, in plain words.
+    const contractHits: SearchHit[] = (contracts ?? []).map((c) => ({
+      id: `c-${c.contractId}`,
+      label: c.title || "Untitled agreement",
+      sub: [AGREEMENT_TYPE_LABEL[c.agreementType], c.sponsor || c.counterparty, STAGE_LABEL[c.stage]].filter(Boolean).join(" · "),
+      href: `/contracts/${encodeURIComponent(c.contractId)}`,
+      group: "Contracts",
+      icon: <FileText size={14} />,
+      keywords: [c.piName, c.department, c.college, c.owner?.name, c.owner?.email, c.huronRecordId, c.workdayRef, c.counterparty, c.sponsor]
+        .filter(Boolean).join(" "),
+    }));
     const projectHits: SearchHit[] = projects.map((p) => ({
       id: p.id,
       label: p.name,
@@ -102,15 +125,15 @@ function useSearchIndex(): SearchHit[] {
     const docHits: SearchHit[] = docs.map((d) => ({
       id: d.docId,
       label: d.title || "Untitled document",
-      sub: `${d.docType} · ${d.lifecycle}`,
+      sub: `${docTypeLabel(d.docType)} · ${STAGE_LABEL[d.lifecycle as keyof typeof STAGE_LABEL] ?? d.lifecycle}`,
       href: `/projects/${d.docId}`,
       group: "Documents",
       icon: <FileText size={14} />,
     }));
     // Pages the customer's edition hides are not offered (Requirement 7).
-    const pages = PAGE_HITS.filter((h) => h.href !== "/settings/playbook" || hasPlaybook);
-    return [...projectHits, ...docHits, ...pages];
-  }, [docs, projects, hasPlaybook]);
+    const pages = PAGE_HITS.filter((h) => (h.href !== "/settings/playbook" || hasPlaybook) && !(isLeader && h.adminOnly));
+    return [...contractHits, ...projectHits, ...docHits, ...pages];
+  }, [contracts, docs, projects, hasPlaybook, isLeader]);
 }
 
 function SearchBar() {
@@ -157,7 +180,8 @@ function SearchBar() {
       .filter(
         (h) =>
           h.label.toLowerCase().includes(term) ||
-          h.sub.toLowerCase().includes(term),
+          h.sub.toLowerCase().includes(term) ||
+          (h.keywords?.toLowerCase().includes(term) ?? false),
       )
       .slice(0, 8);
   }, [q, index]);
@@ -259,7 +283,7 @@ function SearchBar() {
                 Quick links
               </div>
               <ul className="space-y-0.5">
-                {index.filter((h) => h.group === "Pages").slice(0, 5).map((h) => (
+                {index.filter((h) => h.group === "Pages").slice(0, 6).map((h) => (
                   <li key={h.id}>
                     <button
                       type="button"

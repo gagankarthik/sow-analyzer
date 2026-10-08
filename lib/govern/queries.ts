@@ -110,6 +110,13 @@ export function useUnmatchedContracts(): UseQueryResult<Contract[]> {
   return useQuery({ queryKey: governKeys.unmatched, queryFn: getUnmatchedContracts, staleTime: 30_000, retry: retryTransient });
 }
 
+/** Can the signed-in person change contracts (details, items, money,
+ *  obligations)? Leaders only view, comment and approve; the server enforces
+ *  this too. True while the role is loading, so editors never see a flash. */
+export function useCanEditContracts(): boolean {
+  return useGovernMe().data?.role !== "leader";
+}
+
 export function useGovernMe(): UseQueryResult<GovernMe> {
   return useQuery({ queryKey: governKeys.me, queryFn: getGovernMe, staleTime: 5 * MINUTE, retry: retryTransient });
 }

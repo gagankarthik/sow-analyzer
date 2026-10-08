@@ -283,7 +283,7 @@ export default function RenewalsPage() {
             <MetricCard
               className="lg:col-span-2"
               label="Value of the documents listed"
-              value={kpis.byCurrency.length > 0 ? kpis.byCurrency.map(([cur, total]) => fmtMoney(total, cur || null)).join(" + ") : "Not extracted"}
+              value={kpis.byCurrency.length > 0 ? kpis.byCurrency.map(([cur, total]) => fmtMoney(total, cur || null)).join(" + ") : "No value yet"}
               icon={<DollarSign size={14} />}
               hint={items.length === 0
                 ? "No documents listed"

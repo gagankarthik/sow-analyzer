@@ -72,7 +72,10 @@ function guessedActions(c: AnyContract): ActionKind[] {
 export function availableActions(c: AnyContract): ActionKind[] {
   const fromServer = Array.isArray(c.allowedActions) ? [...new Set(c.allowedActions.map((a) => SERVER_ACTION_KIND[a]).filter(Boolean))] : null;
   const kinds = fromServer ?? guessedActions(c);
-  if (c.value === null && !isClosed(c)) kinds.push("add_value");
+  // "Add the value" is an edit: offered only to someone the server lets act
+  // (a leader's actions are just comment / office approval).
+  const canAct = fromServer === null || fromServer.some((k) => k !== "comment" && k !== "approve");
+  if (c.value === null && !isClosed(c) && canAct) kinds.push("add_value");
   return ACTION_ORDER.filter((k) => kinds.includes(k));
 }
 

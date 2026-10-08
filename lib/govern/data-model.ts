@@ -9,6 +9,9 @@ import type { AgreementType, Contract, Matrix } from "@/lib/govern/types"
 
 export const AGREEMENT_TYPE_DESCRIPTION: Record<AgreementType, string> = {
   sponsored_research: "A sponsor funds research the organization carries out.",
+  clinical_trial: "A sponsor pays the organization to run a clinical study of a drug, device or treatment.",
+  data_use: "Data, often identifiable or limited data sets, is shared under conditions of use, security and publication.",
+  software: "The organization buys or subscribes to software or a cloud service; graded from the buyer's side.",
   grant: "Funding awarded to the organization, or passed on to another institution as a subaward.",
   license: "The organization licenses its technology or IP to another party.",
   option: "A party reserves the right to license the technology later, for a fee and a fixed period.",

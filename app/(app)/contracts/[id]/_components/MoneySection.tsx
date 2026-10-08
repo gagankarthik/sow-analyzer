@@ -3,6 +3,7 @@
 // Requirement 4: licensing income (upfront, milestones, royalties, equity,
 // sublicense) with expected dates; Requirement 2: obligations after signing.
 
+import { useCanEditContracts } from "@/lib/govern/queries";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ function toNumber(s: string): number | null {
 }
 
 function IncomeTable({ contract: c }: { contract: ContractDetail }) {
+  const canEdit = useCanEditContracts();
   const save = useSaveIncome(c.contractId);
   const onError = useGovernErrorToast();
   const [rows, setRows] = useState<IncomeRow[] | null>(null);
@@ -97,7 +99,7 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
     <Section
       title="Licensing income"
       description="Fees, milestones, royalties and equity in this agreement, with when they are expected."
-      actions={rows ? (
+      actions={!canEdit ? undefined : rows ? (
         <>
           <Button type="button" variant="outline" onClick={() => setRows(null)} disabled={save.isPending}>Cancel</Button>
           <Button type="button" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={14} className="animate-spin" />}Save income</Button>
@@ -211,6 +213,7 @@ function IncomeField({ label, id, className, children }: { label: string; id: st
 // ── Obligations ────────────────────────────────────────────────────────────
 
 function Obligations({ contract: c }: { contract: ContractDetail }) {
+  const canEdit = useCanEditContracts();
   const [adding, setAdding] = useState(false);
   const signed = c.stage === "signed" || c.stage === "active" || c.stage === "renewal" || c.stage === "expired";
   const sorted = [...c.obligations].sort((a, b) =>
@@ -223,7 +226,7 @@ function Obligations({ contract: c }: { contract: ContractDetail }) {
       description={signed
         ? `${plural(open.length, "open obligation")}. Sponsor reports, payments, diligence milestones and review windows, with due dates.`
         : "Sonar lists the obligations when the agreement is signed. You can add any you already know about."}
-      actions={!adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={14} />Add an obligation</Button>}
+      actions={canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={14} />Add an obligation</Button>}
     >
       {adding && <ObligationForm contract={c} onDone={() => setAdding(false)} />}
       {sorted.length === 0 ? (
@@ -240,6 +243,7 @@ function Obligations({ contract: c }: { contract: ContractDetail }) {
 }
 
 function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation; contract: ContractDetail }) {
+  const canEdit = useCanEditContracts();
   const update = useUpdateObligation(c.contractId);
   const onError = useGovernErrorToast();
   const done = o.status === "done";
@@ -279,15 +283,17 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
         late ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "bg-[var(--ink-100)] text-[var(--ink-700)]")}>
         <Clock size={12} />{o.dueDate ? `${late ? "Overdue · " : "Due "}${formatDate(o.dueDate)}` : "No due date"}
       </span>
-      {!o.verified && !done && (
+      {canEdit && !o.verified && !done && (
         <Button type="button" size="sm" variant="outline" onClick={verify} disabled={update.isPending}>
           <CheckCircle2 size={13} />Verify
         </Button>
       )}
-      <Button type="button" size="sm" variant={done ? "ghost" : "outline"} onClick={toggle} disabled={update.isPending}>
-        {update.isPending ? <Loader2 size={13} className="animate-spin" /> : done ? <RefreshCw size={13} /> : <CheckCircle2 size={13} />}
-        {done ? "Undo" : "Mark done"}
-      </Button>
+      {canEdit && (
+        <Button type="button" size="sm" variant={done ? "ghost" : "outline"} onClick={toggle} disabled={update.isPending}>
+          {update.isPending ? <Loader2 size={13} className="animate-spin" /> : done ? <RefreshCw size={13} /> : <CheckCircle2 size={13} />}
+          {done ? "Undo" : "Mark done"}
+        </Button>
+      )}
     </li>
   );
 }

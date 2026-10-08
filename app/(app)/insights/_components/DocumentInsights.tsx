@@ -5,7 +5,7 @@
 // the projects list and the tenant's enabled compliance packs. Nothing on this
 // page is a fixed number or a canned sentence — every figure is a count, a sum
 // or a date difference over those responses, and anything the API did not
-// provide is shown as "Not extracted" / "Not assessed" rather than as zero.
+// provide is shown as "No value yet" / "Not assessed" rather than as zero.
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -59,7 +59,7 @@ const RISK_PILL: Record<RiskLevel, string> = {
 const DOC_TYPE_KEYS = Object.keys(DOC_TYPE_META) as DocType[];
 const PRICING_KEYS: PricingModel[] = ["fixed", "time_and_materials", "milestone", "retainer", "mixed", "unknown"];
 const PRICING_LABEL: Record<PricingModel, string> = {
-  fixed: "Fixed price", time_and_materials: "Time & materials", milestone: "Milestone", retainer: "Retainer", mixed: "Mixed", unknown: "Not extracted",
+  fixed: "Fixed price", time_and_materials: "Time & materials", milestone: "Milestone", retainer: "Retainer", mixed: "Mixed", unknown: "No value yet",
 };
 
 type Counts = { low: number; medium: number; high: number; critical: number };
@@ -582,7 +582,7 @@ export function DocumentInsights() {
                       <div>
                         {valueTotals.length === 0 ? (
                           <>
-                            <p className="text-2xl font-semibold tracking-tight text-foreground">Not extracted</p>
+                            <p className="text-2xl font-semibold tracking-tight text-foreground">No value yet</p>
                             <p className="mt-1 text-sm text-[var(--ink-600)]">None of the {plural(valueRows.length, "contract")} in scope has an extracted value.</p>
                           </>
                         ) : (
@@ -612,7 +612,7 @@ export function DocumentInsights() {
                                   ? <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${RISK_PILL[r.level]}`}>{RISK_LABEL[r.level]}</span>
                                   : <span className="shrink-0 text-xs text-muted-foreground">Risk not assessed</span>}
                                 <span className="shrink-0 text-right">
-                                  <span className={`block text-sm tabular-nums ${r.value === null ? "text-muted-foreground" : "font-semibold text-foreground"}`}>{r.value === null ? "Not extracted" : fmtMoney(r.value, r.currency)}</span>
+                                  <span className={`block text-sm tabular-nums ${r.value === null ? "text-muted-foreground" : "font-semibold text-foreground"}`}>{r.value === null ? "No value yet" : fmtMoney(r.value, r.currency)}</span>
                                   {r.amendmentDelta !== 0 && <span className="block text-xs tabular-nums text-[var(--ink-600)]">amendments {r.amendmentDelta > 0 ? "+" : ""}{fmtMoney(r.amendmentDelta, r.currency)}</span>}
                                 </span>
                               </Link>

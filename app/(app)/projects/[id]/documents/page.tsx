@@ -1,5 +1,6 @@
 "use client";
 
+import { docStatusLabel, stageLabel } from "@/lib/govern/labels";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -229,8 +230,8 @@ export default function DocumentsPage() {
               <h3 className="text-base font-semibold mb-3 text-foreground">Document info</h3>
               <ul className="divide-y divide-[var(--ink-100)] text-sm">
                 <Row label="Type"><DocTypeBadge type={doc.docType} /></Row>
-                <Row label="Lifecycle"><span className="font-semibold text-foreground capitalize">{doc.lifecycle}</span></Row>
-                <Row label="Status"><Badge variant={doc.status === "READY" ? "success" : doc.status === "FAILED" ? "danger" : "warning"} size="sm" className="text-xs">{doc.status}</Badge></Row>
+                <Row label="Stage"><span className="font-semibold text-foreground">{stageLabel(doc.lifecycle)}</span></Row>
+                <Row label="Status"><Badge variant={doc.status === "READY" ? "success" : doc.status === "FAILED" ? "danger" : "warning"} size="sm" className="text-xs">{docStatusLabel(doc.status)}</Badge></Row>
                 <Row label="Versions"><span className="font-semibold text-foreground tabular-nums">{versions.length}</span></Row>
                 {doc.effectiveDate && <Row label="Effective"><span className="font-semibold text-foreground">{formatDate(doc.effectiveDate)}</span></Row>}
               </ul>

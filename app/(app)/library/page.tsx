@@ -1,5 +1,6 @@
 "use client";
 
+import { docTypeLabel } from "@/lib/doc-types";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -69,9 +70,6 @@ import { cn } from "@/lib/utils";
 
 const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "LICENSE", "DPA", "BAA", "COMPLIANCE", "OTHER"];
 
-const LIFECYCLE_OPTIONS: Lifecycle[] = [
-  "draft", "review", "negotiation", "approval", "signed", "active", "renewal", "expired",
-];
 
 const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
   draft: "Draft",
@@ -619,23 +617,15 @@ export default function LibraryPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {DOC_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                    <SelectItem key={t} value={t}>{docTypeLabel(t)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="edit-doc-lifecycle" className="block text-sm font-medium text-foreground">Lifecycle stage</label>
-              <Select value={editLifecycle} onValueChange={(v) => setEditLifecycle(v as Lifecycle)}>
-                <SelectTrigger id="edit-doc-lifecycle" className="w-full border-[var(--ink-300)] text-base data-[size=default]:h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {LIFECYCLE_OPTIONS.map((l) => (
-                    <SelectItem key={l} value={l}>{LIFECYCLE_LABEL[l]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <p className="block text-sm font-medium text-foreground">Stage</p>
+              <p className="text-sm text-foreground">{LIFECYCLE_LABEL[editLifecycle]}</p>
+              <p className="text-xs text-[var(--ink-600)]">Moves on its own as people review, approve and sign the agreement in Govern.</p>
             </div>
           </div>
           <DialogFooter>

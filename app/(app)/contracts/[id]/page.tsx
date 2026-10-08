@@ -17,6 +17,7 @@ import { ActivityFeed, CommentBox } from "@/components/govern/ActivityFeed";
 import { BLOCKING_TIERS, AGREEMENT_TYPE_LABEL, STATE_LABEL } from "@/lib/govern/labels";
 import { useContract, useGovernFeature, useGovernMe } from "@/lib/govern/queries";
 import { StatusBanner } from "@/components/govern/StatusBanner";
+import { ContractFamily } from "@/components/govern/ContractFamily";
 import { ContractDocuments, ContractProperties, shortDate } from "@/components/govern/ContractFacts";
 import { AvatarStack } from "@/components/ds/Avatar";
 import { contractPeople } from "@/lib/govern/people";
@@ -170,6 +171,7 @@ function ContractView({ contract: c, isError, onRefresh }: {
 
           <aside aria-label="About this contract" className="flex min-w-0 flex-col gap-8 lg:col-span-4">
             <StatusPanel contract={c} onShowMissing={() => goTo("details", () => document.getElementById("missing-details"))} />
+            <ContractFamily contract={c} />
             <ContractDocuments contract={c} versions={c.versions} />
             <ContractProperties
               contract={c}

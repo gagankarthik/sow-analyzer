@@ -437,8 +437,8 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
   );
 }
 
-/** One labelled fact. A null value renders as "Not extracted", never as a default. */
-function Fact({ label, value, note, missing = "Not extracted" }: { label: string; value: string | null; note?: string; missing?: string }) {
+/** One labelled fact. A null value renders as "No value yet", never as a default. */
+function Fact({ label, value, note, missing = "No value yet" }: { label: string; value: string | null; note?: string; missing?: string }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
       <dt className="text-muted-foreground">{label}</dt>

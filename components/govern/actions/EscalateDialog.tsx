@@ -14,6 +14,9 @@ const OFFICE_HINT: Record<Office, string> = {
   sponsored_programs: "Budgets, sponsor terms and grant flow-down.",
   export_control: "Foreign parties, restricted technology and export rules.",
   risk_management: "Insurance limits and risk transfer.",
+  procurement: "Software and vendor pricing, renewals, licence metrics and audit rights.",
+  it_security: "Data protection, security reviews (SOC 2, HECVAT), breach notice and service levels.",
+  accessibility: "WCAG 2.1 AA conformance and VPATs for software and digital content.",
 };
 
 export function EscalateDialog({ contract, open, onOpenChange }: { contract: Contract; open: boolean; onOpenChange: (o: boolean) => void }) {

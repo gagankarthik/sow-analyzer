@@ -5,6 +5,9 @@
 // search over the table, a preview panel on row click, and a floating bar
 // for bulk actions. Each view is a URL, so it can be bookmarked and shared.
 
+import { VALUE_BAND_LABEL, inValueBand, type ValueBand } from "@/lib/govern/metrics";
+
+const VALUE_BANDS: ValueBand[] = ["under_100k", "100k_500k", "500k_1m", "over_1m", "unknown"];
 import { SearchField } from "@/components/ds/inputs";
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
@@ -60,9 +63,13 @@ function Contracts() {
   const [people, setPeople] = useState<string[]>([]);
   const [turn, setTurn] = useState<string[]>([]);
   const [risk, setRisk] = useState<string[]>([]);
+  const [party, setParty] = useState<string[]>([]);
+  const [dept, setDept] = useState<string[]>([]);
+  const [band, setBand] = useState<string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewId, setPreviewId] = useState<string | null>(null);
 
+  const partyKey = (c: Contract) => c.sponsor || c.counterparty || "none";
   const ownerKey = (c: Contract) => c.owner?.email?.toLowerCase() ?? "unassigned";
   const rows = useMemo(() => inView.filter((c) =>
     (!query || [c.title, c.counterparty, c.sponsor, c.piName, c.department, c.owner?.name, c.huronRecordId].some((s) => s?.toLowerCase().includes(query)))
@@ -70,10 +77,13 @@ function Contracts() {
     && (type.length === 0 || type.includes(c.agreementType))
     && (people.length === 0 || people.includes(ownerKey(c)))
     && (turn.length === 0 || turn.includes(c.waitingOn.kind))
-    && (risk.length === 0 || risk.includes(c.overallRisk ?? "none")),
-  ), [inView, query, stage, type, people, turn, risk]);
-  const filtering = !!query || stage.length + type.length + people.length + turn.length + risk.length > 0;
-  const clearAll = () => { setQ(""); setStage([]); setType([]); setPeople([]); setTurn([]); setRisk([]); };
+    && (risk.length === 0 || risk.includes(c.overallRisk ?? "none"))
+    && (party.length === 0 || party.includes(partyKey(c)))
+    && (dept.length === 0 || dept.includes(c.department ?? "none"))
+    && (band.length === 0 || band.some((b) => inValueBand(c, b as ValueBand))),
+  ), [inView, query, stage, type, people, turn, risk, party, dept, band]);
+  const filtering = !!query || stage.length + type.length + people.length + turn.length + risk.length + party.length + dept.length + band.length > 0;
+  const clearAll = () => { setQ(""); setStage([]); setType([]); setPeople([]); setTurn([]); setRisk([]); setParty([]); setDept([]); setBand([]); };
 
   const hrefFor = useCallback((id: string) => `${pathname}?view=${id}`, [pathname]);
   const groups: PanelGroup[] = useMemo(() => GROUPS.map((g) => ({
@@ -92,6 +102,9 @@ function Contracts() {
       <FilterPill label="Type" selected={type} onChange={setType} options={optionsFrom(inView, (c) => c.agreementType, (v) => AGREEMENT_TYPE_LABEL[v as Contract["agreementType"]] ?? v)} />
       <FilterPill label="People" selected={people} onChange={setPeople} options={optionsFrom(inView, ownerKey, (v) => v === "unassigned" ? "Unassigned" : inView.find((c) => ownerKey(c) === v)?.owner?.name || v)} />
       <FilterPill label="Turn" selected={turn} onChange={setTurn} options={optionsFrom(inView, (c) => c.waitingOn.kind, (v) => WAITING_ON_SHORT[v as Contract["waitingOn"]["kind"]] ?? v)} />
+      <FilterPill label="Sponsor or party" selected={party} onChange={setParty} options={optionsFrom(inView, partyKey, (v) => v === "none" ? "Not named" : v)} />
+      <FilterPill label="Department" selected={dept} onChange={setDept} options={optionsFrom(inView, (c) => c.department ?? "none", (v) => v === "none" ? "Not set" : v)} />
+      <FilterPill label="Value" selected={band} onChange={setBand} options={VALUE_BANDS.map((b) => ({ value: b, label: VALUE_BAND_LABEL[b], count: inView.filter((c) => inValueBand(c, b)).length })).filter((o) => o.count > 0)} />
       <FilterPill label="Risk" selected={risk} onChange={setRisk} options={optionsFrom(inView, (c) => c.overallRisk ?? "none", (v) => v === "none" ? "Not assessed" : RISK_LABEL[v as RiskLevel])} />
       {filtering && <button type="button" onClick={clearAll} className="h-9 rounded-lg px-2 text-sm font-medium text-[var(--brand-primary-700)] hover:underline">Clear all</button>}
     </div>

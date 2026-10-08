@@ -38,7 +38,7 @@ export default function OrganizationSetupPage() {
 
   // Older API builds don't return the organization yet: start from the defaults.
   const org: OrganizationSettings | undefined = settingsQ.data
-    ? (settingsQ.data.organization ?? { name: null, defaultCurrency: "USD", fiscalYearStartMonth: 1, confirmedSteps: [], setupCompletedAt: null })
+    ? (settingsQ.data.organization ?? { name: null, defaultCurrency: "USD", fiscalYearStartMonth: 7, confirmedSteps: [], setupCompletedAt: null })
     : undefined;
   const matrix = matrixQ.data?.current;
   const confirmed = new Set(org?.confirmedSteps ?? []);

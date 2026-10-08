@@ -1,5 +1,6 @@
 "use client";
 
+import { docTypeLabel } from "@/lib/doc-types";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -107,7 +108,7 @@ export default function TimelinePage() {
     out.push({
       id: "created", date: d.createdAt, state: "done",
       icon: <Upload size={14} />, badge: BADGE.created,
-      title: "Document created", meta: d.docType,
+      title: "Document created", meta: docTypeLabel(d.docType),
     });
 
     const versions = [...detail.versions].sort((a, b) => a.versionNumber - b.versionNumber);

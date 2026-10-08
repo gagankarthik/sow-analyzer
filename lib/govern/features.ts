@@ -8,14 +8,15 @@
 //      it says a feature is on or off, that wins);
 //   2. otherwise `NEXT_PUBLIC_GOVERN_FEATURES` — a comma list such as
 //      "exports,docusign" (camelCase or snake_case both work);
-//   3. otherwise the default below (obligation tracking on, the rest off).
+//   3. otherwise the default below (routing, notifications, obligations and
+//      exports on; DocuSign sending and integrations off until set up).
 
 export const GOVERN_FEATURES = {
-  routingRules: false,
+  routingRules: true,
   docusign: false,
-  notifications: false,
+  notifications: true,
   obligations: true,
-  exports: false,
+  exports: true,
   integrations: false,
 } as const
 

@@ -125,10 +125,13 @@ const TYPE_NOUN: Record<AgreementType, string> = {
   license: "license",
   option: "option",
   sponsored_research: "sponsored research agreement",
+  clinical_trial: "clinical trial agreement",
   grant: "grant or subaward",
   mta: "material transfer agreement",
+  data_use: "data use agreement",
   nda: "NDA",
   collaboration: "collaboration agreement",
+  software: "software or SaaS purchase",
   other: "other agreement",
 }
 

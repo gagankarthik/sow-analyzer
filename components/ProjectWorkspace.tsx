@@ -1,5 +1,6 @@
 "use client";
 
+import { docTypeLabel } from "@/lib/doc-types";
 import { Fragment, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -1137,7 +1138,7 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
                             </div>
                             {s.text && <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--ink-600)]">{s.text}</p>}
                             <div className="mt-1.5 flex items-center gap-1.5">
-                              <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-[var(--ink-600)]">{s.docType}</span>
+                              <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-[var(--ink-600)]">{docTypeLabel(s.docType)}</span>
                               <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-[var(--ink-600)]">{categoryLabel(s.category)}</span>
                             </div>
                           </Link>
@@ -1282,7 +1283,7 @@ function TimelinePanel({ v }: { v: View }) {
                 <span className="absolute -left-[1.6rem] top-1 inline-flex h-3 w-3 items-center justify-center rounded-full border-2 border-card bg-[var(--brand-primary-600)] md:-left-[1.85rem]" aria-hidden />
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                   <Link href={`/projects/${d.docId}`} className="break-words rounded-sm text-base font-semibold text-foreground hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{d.title || "Untitled"}</Link>
-                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-[var(--ink-600)]">{d.docType}</span>
+                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-[var(--ink-600)]">{docTypeLabel(d.docType)}</span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(d)}`}>{statusText(d)}</span>
                 </div>
                 <div className="mt-1 text-sm text-[var(--ink-600)]">Added {formatDate(d.createdAt)}{d.effectiveDate ? ` · effective ${formatDate(d.effectiveDate)}` : ""} · updated {formatRelativeDays(d.updatedAt, new Date(v.now))}</div>
@@ -1504,7 +1505,7 @@ function DocRow({ doc, value, currency, now, depth, canRemove, onRemove, onDelet
         <div className="min-w-0 flex-1">
           <div className="break-words text-base font-semibold text-foreground transition-colors group-hover:text-[var(--brand-primary-700)]">{doc.title || "Untitled document"}</div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--ink-600)]">
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium">{doc.docType}</span>
+            <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium">{docTypeLabel(doc.docType)}</span>
             {processing ? <span className="inline-flex items-center gap-1 font-medium text-[var(--warning)]"><Loader2 size={12} className="animate-spin" />Analyzing…</span>
               : doc.status === "FAILED" ? <span className="font-medium text-[var(--danger)]">Processing failed</span>
               : <>{typeof doc.clauseCount === "number" ? `${doc.clauseCount.toLocaleString()} clause${doc.clauseCount === 1 ? "" : "s"} · ` : ""}updated {formatRelativeDays(doc.updatedAt, new Date(now))}</>}

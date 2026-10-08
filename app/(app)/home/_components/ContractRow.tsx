@@ -29,7 +29,7 @@ export function ContractRow({
   return (
     <li>
       <Link
-        href={contractHref(c.contractId)}
+        href={contractHref(c.contractId) + (c.openBlockers > 0 ? "#blockers" : "")}
         className="group flex items-start gap-3 px-5 py-3.5 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)]"
       >
         <span

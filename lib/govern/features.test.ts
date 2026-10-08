@@ -13,17 +13,15 @@ describe("parseFeatureList", () => {
 })
 
 describe("resolveFeatures", () => {
-  it("has obligation tracking on and every other later feature off by default", () => {
+  it("has routing, notifications, obligations and exports on by default; DocuSign and integrations off", () => {
     const flags = resolveFeatures(undefined)
-    expect(flags.obligations).toBe(true)
-    expect(Object.entries(flags).filter(([k]) => k !== "obligations").every(([, on]) => on === false)).toBe(true)
+    expect(flags).toEqual({ routingRules: true, notifications: true, obligations: true, exports: true, docusign: false, integrations: false })
   })
 
   it("switches on what the build-time list names", () => {
-    const flags = resolveFeatures("exports,docusign")
-    expect(flags.exports).toBe(true)
+    const flags = resolveFeatures("docusign")
     expect(flags.docusign).toBe(true)
-    expect(flags.notifications).toBe(false)
+    expect(flags.integrations).toBe(false)
   })
 
   it("lets the server's answer win, in both directions", () => {

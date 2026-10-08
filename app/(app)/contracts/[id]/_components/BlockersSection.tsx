@@ -3,6 +3,7 @@
 // Requirement 3: the items blocking signature. Sonar writes them from the
 // matrix review; reviewers add, edit, close and reopen them.
 
+import { useCanEditContracts } from "@/lib/govern/queries";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export function BlockersPreview({ contract: c, onSeeAll }: { contract: ContractD
 
 /** The full list, with add / edit / close / reopen. */
 export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
+  const canEdit = useCanEditContracts();
   const [adding, setAdding] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
   const open = c.blockers.filter((b) => b.status === "open");
@@ -69,7 +71,7 @@ export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
     <Section
       title="What blocks signature"
       description="Sonar lists every clause outside your matrix. Close an item when the other side fixes it; add your own for anything else."
-      actions={!adding && <Button type="button" onClick={() => setAdding(true)}><Plus size={14} />Add an item</Button>}
+      actions={canEdit && !adding && <Button type="button" onClick={() => setAdding(true)}><Plus size={14} />Add an item</Button>}
     >
       {adding && <BlockerForm contract={c} onDone={() => setAdding(false)} />}
 
@@ -101,6 +103,7 @@ export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
 }
 
 function BlockerRow({ blocker: b, contract: c }: { blocker: Blocker; contract: ContractDetail }) {
+  const canEdit = useCanEditContracts();
   const [editing, setEditing] = useState(false);
   const update = useUpdateBlocker(c.contractId);
   const onError = useGovernErrorToast();
@@ -133,7 +136,7 @@ function BlockerRow({ blocker: b, contract: c }: { blocker: Blocker; contract: C
             {!isOpen && b.closedAt && <span>Closed {formatDate(b.closedAt)}{b.closedBy ? ` by ${personName(b.closedBy)}` : ""}</span>}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className={cn("flex shrink-0 items-center gap-1.5", !canEdit && "hidden")}>
           {isOpen && (
             <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(true)} aria-label={`Edit: ${b.text}`}>
               <Pencil size={13} />Edit

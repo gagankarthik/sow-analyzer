@@ -1,5 +1,6 @@
 "use client";
 
+import { stageLabel } from "@/lib/govern/labels";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -212,8 +213,8 @@ export default function AmendmentsPage() {
             <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
               <h3 className="text-base font-semibold mb-3 text-foreground">Document info</h3>
               <ul className="divide-y divide-[var(--ink-100)]">
-                <InfoRow label="Doc type"><DocTypeBadge type={doc.docType} /></InfoRow>
-                <InfoRow label="Lifecycle"><Badge variant="neutral" size="sm" className="text-xs capitalize">{doc.lifecycle}</Badge></InfoRow>
+                <InfoRow label="Type"><DocTypeBadge type={doc.docType} /></InfoRow>
+                <InfoRow label="Stage"><Badge variant="neutral" size="sm" className="text-xs">{stageLabel(doc.lifecycle)}</Badge></InfoRow>
                 <InfoRow label="Status"><Badge variant={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"} size="sm" className="text-xs">{rawStatus}</Badge></InfoRow>
                 <InfoRow label="Versions"><span className="text-sm font-semibold tabular-nums text-foreground">{doc.latestVersion}</span></InfoRow>
                 <li className="py-2.5"></li>

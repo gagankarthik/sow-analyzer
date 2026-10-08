@@ -1,5 +1,6 @@
 "use client";
 
+import { docTypeLabel } from "@/lib/doc-types";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -433,7 +434,7 @@ function UploadItem({
               )}
             </span>
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(item.file.size)} · {item.docType}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(item.file.size)} · {docTypeLabel(item.docType)}</p>
 
           {phase === "uploading" && (
             <div className="mt-2.5">

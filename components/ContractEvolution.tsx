@@ -1,5 +1,6 @@
 "use client";
 
+import { stageLabel } from "@/lib/govern/labels";
 import { useState } from "react";
 import { ArrowRight, Plus, Minus, GitBranch, Clock } from "@/components/ui/icons";
 import { categoryLabel } from "@/lib/clause-categories";
@@ -101,7 +102,7 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
           {amendments.map((a) => (
             <span key={a.docId} className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-sm text-foreground">
               {a.title || a.docType || "Amendment"}
-              {a.lifecycle && <span className="text-muted-foreground">· {a.lifecycle}</span>}
+              {a.lifecycle && <span className="text-muted-foreground">· {stageLabel(a.lifecycle)}</span>}
             </span>
           ))}
         </div>

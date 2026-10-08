@@ -4,6 +4,7 @@
 // Huron and Workday ids (Requirement 6), and the "what's missing" checklist so
 // capture never misses anything silently.
 
+import { useCanEditContracts } from "@/lib/govern/queries";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -127,6 +128,7 @@ function diff(c: ContractDetail, d: Draft): ContractPatch | "invalid" {
 }
 
 export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
+  const canEdit = useCanEditContracts();
   const patch = usePatchContract(c.contractId);
   const onError = useGovernErrorToast();
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -215,9 +217,9 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
             <Button type="button" variant="outline" onClick={() => setDraft(null)} disabled={patch.isPending}>Cancel</Button>
             <Button type="button" onClick={save} disabled={patch.isPending}>{patch.isPending && <Loader2 size={14} className="animate-spin" />}Save details</Button>
           </>
-        ) : (
+        ) : canEdit ? (
           <Button type="button" variant="outline" onClick={() => startEditing()}><Pencil size={14} />Edit details</Button>
-        )}
+        ) : null}
       >
         {draft ? (
           <DetailsForm draft={draft} onChange={setDraft} onSubmit={save} showWorkdayMatch={isIntegrationsOn} />

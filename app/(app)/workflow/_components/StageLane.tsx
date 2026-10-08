@@ -64,19 +64,19 @@ export function PipelineStrip({
   const group = (title: string, stages: Stage[]) => (
     <div className="flex min-w-0 flex-col gap-2">
       <p className="text-sm font-semibold text-foreground">{title}</p>
-      <ol className="flex min-w-0 items-stretch">
+      <ol className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:items-stretch sm:gap-0">
         {stages.map((s, i) => {
           const sum = summaries.get(s)!;
           const on = s === selected;
           const count = sum.contracts.length;
           return (
-            <li key={s} className="flex min-w-0 flex-1 items-center">
+            <li key={s} className="flex min-w-0 items-center sm:flex-1">
               <button
                 type="button"
                 onClick={() => onSelect(s)}
                 aria-pressed={on}
                 className={cn(
-                  "flex h-full min-w-[8.5rem] flex-1 flex-col gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
+                  "flex h-full min-w-0 flex-1 flex-col gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
                   on
                     ? "border-[var(--brand-primary-400)] bg-[var(--brand-primary-50)]"
                     : "border-border bg-card hover:border-[var(--ink-300)]",
@@ -102,7 +102,7 @@ export function PipelineStrip({
                 </span>
               </button>
               {i < stages.length - 1 && (
-                <ChevronRight size={16} aria-hidden className="mx-0.5 shrink-0 text-[var(--ink-400)]" />
+                <ChevronRight size={16} aria-hidden className="mx-0.5 hidden shrink-0 text-[var(--ink-400)] sm:block" />
               )}
             </li>
           );
@@ -113,8 +113,8 @@ export function PipelineStrip({
 
   const post = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
   return (
-    <nav aria-label="Workflow stages" className="-mx-1 overflow-x-auto px-1 pb-1">
-      <div className="grid min-w-[72rem] grid-cols-2 gap-6">
+    <nav aria-label="Workflow stages">
+      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2 2xl:gap-6">
         {group("Before signature", PRE_SIGNATURE_STAGES)}
         {group("After signature", post)}
       </div>

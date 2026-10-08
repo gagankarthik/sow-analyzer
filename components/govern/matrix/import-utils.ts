@@ -184,7 +184,9 @@ export function resolveAgreementType(text: string): AgreementType | null {
   for (const t of AGREEMENT_TYPES) if (norm(t) === n || norm(AGREEMENT_TYPE_LABEL[t]) === n) return t;
   const SYN: Record<string, AgreementType> = {
     "sponsored research": "sponsored_research", sra: "sponsored_research", research: "sponsored_research",
-    "clinical trial": "sponsored_research",
+    "clinical trial": "clinical_trial", cta: "clinical_trial", "clinical study": "clinical_trial",
+    "data use": "data_use", dua: "data_use", "data sharing": "data_use",
+    software: "software", saas: "software", subscription: "software", eula: "software", "software purchase": "software",
     grant: "grant", subaward: "grant", "sub award": "grant", "grant or subaward": "grant",
     license: "license", licence: "license", "exclusive license": "license", "non exclusive license": "license",
     "license option": "option", option: "option", "option to license": "option",

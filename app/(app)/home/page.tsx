@@ -68,6 +68,7 @@ function Home() {
   const router = useRouter();
   const params = useSearchParams();
   const tab: View = params.get("view") === "risk" ? "risk" : "overview";
+  const isLeader = useGovernMe().data?.role === "leader";
   const setView = (v: View) => router.replace(v === "overview" ? "/home" : `/home?view=${v}`, { scroll: false });
 
   const { user, status } = useAuth();
@@ -289,10 +290,25 @@ function Home() {
   return (
     <div className="app-container flex flex-col gap-4 py-6 md:py-8 lg:gap-5">
       {header}
-      <ViewTabs id="home" label="Home views" views={VIEWS} value={tab} onChange={setView} />
+      {/* Leaders see the plain overview; clause risk, the risk index and
+          processing detail sit behind a Details link (Requirement 5.1). */}
+      {isLeader ? (
+        tab === "risk" && (
+          <button type="button" onClick={() => setView("overview")} className="w-fit text-sm font-medium text-[var(--brand-primary-700)] hover:underline">
+            Back to the overview
+          </button>
+        )
+      ) : (
+        <ViewTabs id="home" label="Home views" views={VIEWS} value={tab} onChange={setView} />
+      )}
       <div role="tabpanel" id={`home-panel-${tab}`} aria-labelledby={`home-tab-${tab}`} className="flex flex-col gap-4 lg:gap-5">
         {tab === "risk" ? <RiskView /> : body}
       </div>
+      {isLeader && tab === "overview" && (
+        <button type="button" onClick={() => setView("risk")} className="w-fit text-sm font-medium text-[var(--brand-primary-700)] hover:underline">
+          Details: clause risk, risk scores and document processing
+        </button>
+      )}
     </div>
   );
 }

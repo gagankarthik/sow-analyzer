@@ -4,9 +4,10 @@
 // what the API returned: the shared documents list, each analysed document's
 // classification, the projects list and the per-document compliance figures the
 // backend stored. Anything the API did not provide stays unknown ("Not
-// assessed", "Not extracted", "—"): it is never shown as zero, as "low" or as
+// assessed", "No value yet", "—"): it is never shown as zero, as "low" or as
 // "all clear", and it is left out of the sums with the number left out stated.
 
+import { stageLabel } from "@/lib/govern/labels";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { MetricCard } from "@/components/dashboard/MetricCard";
@@ -275,7 +276,7 @@ export function RiskView() {
   const inForce = (lifecycleCounts.m.get("active") ?? 0) + (lifecycleCounts.m.get("signed") ?? 0);
   const otherStages = LIFECYCLE_ORDER
     .filter((l) => l !== "active" && l !== "signed" && (lifecycleCounts.m.get(l) ?? 0) > 0)
-    .map((l) => `${lifecycleCounts.m.get(l)} ${l}`);
+    .map((l) => `${lifecycleCounts.m.get(l)} ${stageLabel(l).toLowerCase()}`);
 
   /* ── Upcoming: nearest renewal or term-end date within 90 days ── */
   const upcoming = aggregates.filter((a) => !a.expired && a.daysToDate !== null && a.daysToDate <= 90);
@@ -538,7 +539,7 @@ export function RiskView() {
                 />
                 <MetricCard
                   label="Total contract value" tone="brand" icon={<DollarSign size={14} />}
-                  value={totals.length > 0 ? moneyList(totals) : "Not extracted"}
+                  value={totals.length > 0 ? moneyList(totals) : "No value yet"}
                   hint={`${valuedContracts.length} of ${plural(aggregates.length, "contract")} valued${currencyUnknown ? " · currency not extracted for some" : ""}`}
                 />
                 <MetricCard
@@ -806,7 +807,7 @@ export function RiskView() {
                     {visibleRows.map((a) => (
                       <tr key={a.project.id} className="border-b border-border transition-colors last:border-0 hover:bg-[var(--panel)]">
                         <td className="max-w-[220px] px-4 py-3 md:max-w-[320px] md:px-5"><Link href={`/projects/${a.project.id}`} className="block rounded-sm font-semibold text-foreground hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">{a.project.name}</Link>{a.project.client && <div className="truncate text-xs text-muted-foreground">{a.project.client}</div>}</td>
-                        <td className="hidden px-4 py-3 capitalize text-[var(--ink-600)] md:table-cell md:px-5">{a.lifecycle ?? <Dash />}</td>
+                        <td className="hidden px-4 py-3 capitalize text-[var(--ink-600)] md:table-cell md:px-5">{a.lifecycle ? stageLabel(a.lifecycle) : <Dash />}</td>
                         <td className="hidden px-4 py-3 text-right tabular-nums text-[var(--ink-600)] md:px-5 lg:table-cell">{a.docCount}</td>
                         <td className="hidden px-4 py-3 text-right tabular-nums text-[var(--ink-600)] md:px-5 lg:table-cell">{a.clauseCount === null ? <Dash /> : a.clauseCount.toLocaleString()}</td>
                         <td className="px-4 py-3 text-right tabular-nums md:px-5">{a.rated === 0 ? <Dash /> : a.highRisk > 0 ? <span className="font-semibold text-[var(--danger)]">{a.highRisk}</span> : <span className="text-[var(--ink-600)]">0</span>}</td>
@@ -906,7 +907,7 @@ function FocalValueAtRisk({ totals, atRiskTotals, riskyCount, riskyUnvalued, una
           )}
         </div>
         <div className="mt-3 text-3xl font-bold leading-none tracking-[-0.025em] tabular-nums [overflow-wrap:anywhere] md:text-4xl">
-          {hasSum ? moneyList(atRiskTotals) : hasRisky ? "Not extracted" : unassessedContracts === 0 ? "None" : "None found so far"}
+          {hasSum ? moneyList(atRiskTotals) : hasRisky ? "No value yet" : unassessedContracts === 0 ? "None" : "None found so far"}
         </div>
         <p className="mt-3 max-w-[56ch] text-base leading-relaxed text-[var(--navy-foreground)]">
           {hasSum ? (

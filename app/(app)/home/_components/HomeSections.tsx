@@ -136,7 +136,7 @@ export function AttentionPanel({ contracts, className }: { contracts: Contract[]
     <Panel
       id="attention"
       className={className}
-      title="Needs your attention"
+      title="What needs my attention"
       flush
       answer={contracts.length === 0
         ? "Nothing is overdue or held up."
@@ -276,7 +276,7 @@ export function MoneyPanel({
     <Panel
       id="money"
       className={className}
-      title="Money"
+      title="What is the money"
       answer={anyValue
         ? <><span className="font-semibold text-foreground">{formatCompact(current, primary)}</span> signed, <span className="font-semibold text-foreground">{formatCompact(potential, primary)}</span> on the way.</>
         : "No contract has a value yet."}
@@ -358,7 +358,7 @@ export function WaitingPanel({ waiting, contracts, className }: { waiting: Waiti
     <Panel
       id="waiting"
       className={className}
-      title="Who work is waiting on"
+      title="What is stuck and why"
       answer={openCount === 0 || !top
         ? "Nothing is waiting for signature."
         : <>Biggest queue: <span className="font-semibold text-foreground">{top.label.toLowerCase()}</span>, {plural(top.count, "contract")}{top.averageDays === null ? "" : `, ${Math.round(top.averageDays)} days on average`}.</>}

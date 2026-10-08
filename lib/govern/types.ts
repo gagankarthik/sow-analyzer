@@ -7,7 +7,8 @@ import type { DocType, Lifecycle, RiskLevel } from "@/lib/types"
 import type { GovernFeature } from "./features"
 
 export type AgreementType =
-  | "sponsored_research" | "grant" | "license" | "option" | "mta" | "nda" | "collaboration" | "other"
+  | "sponsored_research" | "clinical_trial" | "grant" | "license" | "option" | "mta" | "data_use" | "nda"
+  | "collaboration" | "software" | "other"
 export type Direction = "incoming" | "outgoing"
 export type Stage = Lifecycle
 export type State =
@@ -15,6 +16,7 @@ export type State =
   | "out_for_signature" | "signed" | "active" | "rejected" | "closed"
 export type WaitingOnKind = "internal_reviewer" | "internal_office" | "counterparty" | "pi_department" | "signatory" | "nobody"
 export type Office = "legal_affairs" | "tech_commercialization" | "sponsored_programs" | "export_control" | "risk_management"
+  | "procurement" | "it_security" | "accessibility"
 export type Tier = "within" | "fallback" | "deviates" | "unacceptable" | "review" | "missing"
 export type SlaStatus = "on_track" | "amber" | "red" | "none"
 export type RejectReason = "unacceptable_terms" | "sponsor_withdrew" | "pi_withdrew" | "duplicate" | "out_of_scope" | "other"
@@ -22,7 +24,7 @@ export type NextAction =
   | "approve" | "send_back" | "escalate" | "reject" | "send_for_signature" | "wait" | "assign" | "add_value" | "none"
 export type ObligationKind =
   | "sponsor_report" | "milestone_payment" | "royalty_report" | "diligence_milestone"
-  | "publication_review" | "term_end" | "closeout" | "other"
+  | "publication_review" | "term_end" | "closeout" | "renewal_notice" | "data_return" | "other"
 export type IncomeKind =
   | "upfront" | "milestone" | "royalty" | "equity" | "sublicense" | "sponsor_funding" | "subaward" | "other"
 export type GovernRole = "admin" | "reviewer" | "leader"
@@ -184,6 +186,10 @@ export interface Contract {
   allowedActions: ContractAction["action"][]
   effectiveDate: string | null
   termEndDate: string | null
+  /** The agreement this one amends (set on amendments). */
+  parentContractId?: string | null
+  /** Amendments to this agreement, oldest first. */
+  amendmentIds?: string[]
   rev: number
 }
 
