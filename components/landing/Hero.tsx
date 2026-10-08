@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Play } from "lucide-react";
-import { HeroBackdrop } from "@/components/landing/HeroBackdrop";
+import { HeroBackdrop, HeroBackdropLow } from "@/components/landing/HeroBackdrop";
 
 /* Hero: one benefit headline (the second line in the serif accent), a
    two-line promise, two actions, and the product itself as the key visual:
@@ -26,6 +26,7 @@ export function Hero() {
   return (
     <section className="lp-hero3" aria-labelledby="hero-title">
       <HeroBackdrop />
+      <HeroBackdropLow />
       <div className="lp-wrap relative">
         <div className="lp-hero3-copy">
           <h1 id="hero-title" className="lp-hero3-title">

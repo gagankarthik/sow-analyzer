@@ -21,3 +21,24 @@ export function HeroBackdrop() {
     </svg>
   );
 }
+
+/* The hero's lower edge: shapes either side of the product card, so the
+   hero visibly runs down to where the card ends. */
+export function HeroBackdropLow() {
+  return (
+    <svg
+      className="lp-hero3-backdrop-low"
+      viewBox="0 0 1440 420"
+      preserveAspectRatio="xMidYMax slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {/* left: a violet quarter circle on the floor and a blue dot */}
+      <path d="M0 420 V200 A220 220 0 0 1 220 420 Z" fill="#E9E3FD" />
+      <circle cx="250" cy="150" r="16" fill="#B9CFF9" />
+      {/* right: a blue square on the floor, a sand quarter circle above it */}
+      <rect x="1290" y="270" width="150" height="150" fill="#DCE8FE" />
+      <path d="M1440 270 H1260 A180 180 0 0 1 1440 90 Z" fill="#F1E7D6" />
+    </svg>
+  );
+}

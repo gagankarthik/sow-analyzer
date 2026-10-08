@@ -907,9 +907,12 @@
   a.lp-pill { display: inline-flex; align-items: center; }
 }
 @layer components {
-  .lp-hero3 { position: relative; overflow: hidden; }
+  /* The hero runs to the bottom of the product card, which sits on its edge. */
+  .lp-hero3 { position: relative; overflow: hidden; border-bottom: 1px solid var(--lp-line); }
   .lp-hero3-backdrop { position: absolute; inset: 0 0 auto 0; width: 100%; height: 900px; pointer-events: none; }
-  @media (max-width: 767px) { .lp-hero3-backdrop { opacity: 0.6; } }
+  .lp-hero3-backdrop-low { position: absolute; inset: auto 0 0 0; width: 100%; height: 420px; pointer-events: none; }
+  @media (max-width: 767px) { .lp-hero3-backdrop, .lp-hero3-backdrop-low { opacity: 0.6; } }
+  @media (max-width: 1023px) { .lp-hero3-backdrop-low { display: none; } }
 }
 
 /* Header v4: part of the page at the top, a white bar once scrolled. The
