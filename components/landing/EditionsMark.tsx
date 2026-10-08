@@ -1,36 +1,38 @@
-/* One mark for one platform: the left half is a university (Campus), the
-   right half a briefcase (Workforce), meeting on a single seam. Drawn as
-   line art on the site's two soft tints, so it sits with the hero shapes. */
+/* One mark for one platform, drawn as a single line icon: a university
+   (Campus) whose roof runs on into the lid of a briefcase (Workforce), the
+   two standing on one shared base. The stroke fades from Campus blue to
+   Workforce violet, so there is no seam between the halves. */
 
 export function EditionsMark() {
   return (
     <figure className="lp-emark" aria-label="Govern Campus and Govern Workforce: one platform">
       <svg viewBox="0 0 240 240" className="lp-emark-svg" aria-hidden="true" focusable="false">
         <defs>
-          <clipPath id="lp-emark-left"><rect x="0" y="0" width="120" height="240" /></clipPath>
-          <clipPath id="lp-emark-right"><rect x="120" y="0" width="120" height="240" /></clipPath>
+          <linearGradient id="lp-emark-bg" x1="0" y1="0" x2="240" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0.2" stopColor="#DCE8FE" />
+            <stop offset="0.8" stopColor="#E9E3FD" />
+          </linearGradient>
+          <linearGradient id="lp-emark-ink" x1="40" y1="0" x2="204" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0.3" stopColor="#1F4FB8" />
+            <stop offset="0.7" stopColor="#5B3CC4" />
+          </linearGradient>
         </defs>
 
-        <circle cx="120" cy="120" r="112" fill="#DCE8FE" clipPath="url(#lp-emark-left)" />
-        <circle cx="120" cy="120" r="112" fill="#E9E3FD" clipPath="url(#lp-emark-right)" />
+        <circle cx="120" cy="120" r="112" fill="url(#lp-emark-bg)" />
 
-        {/* Campus: half a university building */}
-        <g fill="none" stroke="#1F4FB8" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M120 60 L52 96 H120" />
-          <path d="M60 106 H120" />
-          <path d="M70 116 V158 M88 116 V158 M106 116 V158" />
-          <path d="M56 168 H120 M48 180 H120" />
+        <g fill="none" stroke="url(#lp-emark-ink)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
+          {/* One outline: roof → briefcase lid → right side → shared base */}
+          <path d="M36 98 L80 60 L116 91 C121 95 126 98 134 98 H192 A12 12 0 0 1 204 110 V164 A12 12 0 0 1 192 176 H40" />
+          {/* Campus: entablature, columns and step */}
+          <path d="M46 108 H122" />
+          <path d="M58 118 V158 M82 118 V158 M106 118 V158" />
+          <path d="M48 166 H134" />
+          {/* Workforce: the case's near side, handle, flap and clasp */}
+          <path d="M134 98 V176" />
+          <path d="M156 98 V90 A8 8 0 0 1 164 82 H174 A8 8 0 0 1 182 90 V98" />
+          <path d="M134 130 H204" />
+          <path d="M163 124 H175 V138 H163 Z" />
         </g>
-
-        {/* Workforce: half a briefcase */}
-        <g fill="none" stroke="#5B3CC4" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M120 84 H136 a8 8 0 0 1 8 8 V102" />
-          <path d="M120 102 H178 a10 10 0 0 1 10 10 V170 a10 10 0 0 1 -10 10 H120" />
-          <path d="M120 132 H188" />
-          <path d="M120 124 H130 V140 H120" />
-        </g>
-
-        <path d="M120 30 V210" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" />
       </svg>
       <figcaption className="lp-emark-caption">
         <span><b>Campus</b>Research and licensing</span>
