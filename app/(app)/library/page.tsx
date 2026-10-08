@@ -615,7 +615,7 @@ export default function LibraryPage() {
             <div className="space-y-1.5">
               <label htmlFor="edit-doc-type" className="block text-sm font-medium text-foreground">Document type</label>
               <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}>
-                <SelectTrigger id="edit-doc-type" className="w-full border-[var(--ink-300)] text-base data-[size=default]:h-10">
+                <SelectTrigger id="edit-doc-type" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

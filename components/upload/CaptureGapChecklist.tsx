@@ -81,7 +81,7 @@ export function CaptureGapChecklist({ contract: created }: { contract: ContractD
               <label htmlFor={`${uid}-${g}`} className="text-xs font-medium text-foreground">{CAPTURE_GAP_LABEL[g]}</label>
               {g === "agreementTypeUnsure" ? (
                 <Select value={values[g] ?? ""} onValueChange={(v) => setValues((s) => ({ ...s, [g]: v }))}>
-                  <SelectTrigger id={`${uid}-${g}`} className="w-full bg-card text-base md:data-[size=default]:h-9"><SelectValue placeholder="Choose the type" /></SelectTrigger>
+                  <SelectTrigger id={`${uid}-${g}`} className="w-full"><SelectValue placeholder="Choose the type" /></SelectTrigger>
                   <SelectContent>{agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}</SelectContent>
                 </Select>
               ) : (

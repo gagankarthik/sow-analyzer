@@ -186,7 +186,7 @@ export function UploadDropzone({
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
           <label htmlFor={typeId} className="mb-1.5 block text-sm font-medium text-foreground">Document type</label>
           <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
-            <SelectTrigger id={typeId} className="w-full border-[var(--ink-300)] text-base data-[size=default]:h-10 sm:max-w-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger id={typeId} className="w-full sm:max-w-sm"><SelectValue /></SelectTrigger>
             <SelectContent>{typeOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
           </Select>
           <p className="mt-1.5 text-xs text-muted-foreground">Applied to files you add next. You can change a document&apos;s type later.</p>

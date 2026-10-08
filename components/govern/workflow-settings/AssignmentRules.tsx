@@ -85,7 +85,7 @@ export function AssignmentRules({
                     <div className="grid gap-1.5">
                       <label htmlFor={`${uid}-${i}-type`} className="text-sm font-medium text-[var(--ink-600)]">Agreement type</label>
                       <Select value={r.agreementType} onValueChange={(v) => set(r.id, { agreementType: v as AgreementType | "*" })}>
-                        <SelectTrigger id={`${uid}-${i}-type`} className="w-full text-base data-[size=default]:h-10 md:text-sm"><SelectValue /></SelectTrigger>
+                        <SelectTrigger id={`${uid}-${i}-type`} className="w-full"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value={ANY}>Any type</SelectItem>
                           {agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
@@ -106,7 +106,7 @@ export function AssignmentRules({
                           if (rev) set(r.id, { reviewer: { email: rev.email, name: rev.name } });
                         }}
                       >
-                        <SelectTrigger id={`${uid}-${i}-who`} className="w-full text-base data-[size=default]:h-10 md:text-sm" aria-invalid={!!err}>
+                        <SelectTrigger id={`${uid}-${i}-who`} className="w-full" aria-invalid={!!err}>
                           <SelectValue placeholder="Choose a reviewer" />
                         </SelectTrigger>
                         <SelectContent>

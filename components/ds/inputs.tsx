@@ -166,7 +166,7 @@ export function FilterSelect<V extends string>({
     <div className={cn("min-w-0", className)}>
       <label id={id} className="mb-1.5 block text-body font-medium text-fg-secondary">{label}</label>
       <Select value={value} onValueChange={(v) => onChange(v as V)}>
-        <SelectTrigger aria-labelledby={id} className="w-full min-w-[11rem] border-border-control bg-surface-raised sm:w-auto">
+        <SelectTrigger aria-labelledby={id} className="w-full min-w-[11rem] sm:w-auto">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

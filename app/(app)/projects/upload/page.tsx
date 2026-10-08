@@ -67,7 +67,7 @@ export default function UploadPage() {
           <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
             <label htmlFor={pickerId} className="mb-1.5 block text-sm font-medium text-foreground">Project</label>
             <Select value={choice} onValueChange={setPicked} disabled={loading}>
-              <SelectTrigger id={pickerId} className="w-full border-[var(--ink-300)] text-base data-[size=default]:h-10 sm:max-w-sm">
+              <SelectTrigger id={pickerId} className="w-full sm:max-w-sm">
                 <SelectValue placeholder={loading ? "Loading your projects" : undefined} />
               </SelectTrigger>
               <SelectContent>

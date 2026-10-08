@@ -255,14 +255,14 @@ function DetailsForm({ org, canEdit, saving, onSave }: {
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-foreground">Reporting currency</span>
         <Select value={currency} onValueChange={setCurrency} disabled={!canEdit}>
-          <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
         </Select>
       </label>
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-foreground">Financial year starts</span>
         <Select value={month} onValueChange={setMonth} disabled={!canEdit}>
-          <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>{MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent>
         </Select>
       </label>

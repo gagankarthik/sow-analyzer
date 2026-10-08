@@ -123,7 +123,7 @@ function FilterSelect({ label, value, onChange, options }: {
     <div className="flex min-w-0 flex-col gap-1.5">
       <label htmlFor={id} className="text-xs font-semibold text-[var(--ink-600)]">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={id} className="w-full min-w-0 bg-card"><SelectValue /></SelectTrigger>
+        <SelectTrigger id={id} className="w-full min-w-0"><SelectValue /></SelectTrigger>
         <SelectContent>
           {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>

@@ -158,7 +158,7 @@ function ClauseForm({
           {!existing && (
             <Field label="Clause type" htmlFor={id("type")} error={errors.clauseType} required>
               <Select value={clauseType} onValueChange={pickType}>
-                <SelectTrigger id={id("type")} className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
+                <SelectTrigger id={id("type")} className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {freeResearch.length > 0 && (
                     <SelectGroup>
@@ -204,7 +204,7 @@ function ClauseForm({
 
           <Field label="Escalation office" htmlFor={id("office")} hint="Who must review the clause when an agreement deviates.">
             <Select value={office} onValueChange={setOffice}>
-              <SelectTrigger id={id("office")} className="w-full text-base sm:w-72 md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
+              <SelectTrigger id={id("office")} className="w-full sm:w-72"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={NO_OFFICE}>No office (the reviewer decides)</SelectItem>
                 {OFFICES.map((o) => <SelectItem key={o} value={o}>{OFFICE_LABEL[o]}</SelectItem>)}

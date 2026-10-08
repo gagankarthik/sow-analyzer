@@ -46,7 +46,7 @@ export function RoleSelect({
       </SelectTrigger>
       <SelectContent>
         {ASSIGNABLE_ROLES.map((r) => (
-          <SelectItem key={r} value={r} className="min-h-10 text-base">{ROLE_META[r].label}</SelectItem>
+          <SelectItem key={r} value={r} className="min-h-10">{ROLE_META[r].label}</SelectItem>
         ))}
       </SelectContent>
     </Select>

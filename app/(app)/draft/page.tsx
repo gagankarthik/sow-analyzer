@@ -261,7 +261,7 @@ function IntakeForm({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Pricing model">
                 <Select value={answers.pricingModel} onValueChange={(v) => set("pricingModel", v as SowPricingModel)}>
-                  <SelectTrigger className="w-full border-[var(--ink-300)] bg-card data-[size=default]:h-11"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(Object.keys(PRICING_LABELS) as SowPricingModel[]).map((k) => (
                       <SelectItem key={k} value={k}>{PRICING_LABELS[k]}</SelectItem>

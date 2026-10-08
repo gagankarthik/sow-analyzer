@@ -266,12 +266,12 @@ export default function TeamSettingsPage() {
                       Sort by
                     </span>
                     <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-                      <SelectTrigger aria-labelledby="team-sort-label" className="w-full border-[var(--ink-300)] bg-card text-base">
+                      <SelectTrigger aria-labelledby="team-sort-label" className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {SORTS.map((s) => (
-                          <SelectItem key={s.value} value={s.value} className="min-h-10 text-base">{s.label}</SelectItem>
+                          <SelectItem key={s.value} value={s.value} className="min-h-10">{s.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

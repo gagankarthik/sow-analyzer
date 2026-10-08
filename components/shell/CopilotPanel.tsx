@@ -136,7 +136,7 @@ export function CopilotPanel({ open, onClose }: Props) {
             <div className="flex items-center gap-2">
               <label htmlFor="sonar-contract" className="sr-only">Contract</label>
               <Select value={docId ?? undefined} onValueChange={setPicked}>
-                <SelectTrigger id="sonar-contract" className="h-9 min-w-0 flex-1 justify-start bg-card text-sm [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:justify-start [&_[data-slot=select-value]]:text-left">
+                <SelectTrigger id="sonar-contract" className="min-w-0 flex-1 justify-start [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:justify-start [&_[data-slot=select-value]]:text-left">
                   <FileText size={14} className="shrink-0 text-[var(--ink-500)]" aria-hidden />
                   <SelectValue placeholder="Choose a contract" />
                 </SelectTrigger>

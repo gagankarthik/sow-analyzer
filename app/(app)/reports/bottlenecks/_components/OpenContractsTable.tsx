@@ -3,9 +3,10 @@
 // Every open contract in one table. Columns carry a priority: the essentials
 // always show, the rest appear as the screen widens (and all of it is one
 // click away on the contract page). Under md the rows become stacked cards.
-// Sortable headers, a sticky header, comfortable/compact density, optional
+// Sortable headers, a sticky header, optional
 // grouping by step or by who it waits on, and pages of 50 for large sets.
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight } from "@/components/ui/icons";
@@ -14,7 +15,6 @@ import { SLA_LABEL, STAGE_LABEL, STAGES, WAITING_ON_SHORT, daysLabel, personName
 import { contractValueText } from "@/lib/govern/metrics";
 import type { Contract, SlaStatus } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
-import { useDensity } from "../../_components/use-density";
 
 export type SortKey = "title" | "stage" | "waitingOn" | "owner" | "daysInStage" | "totalDays" | "sla" | "value";
 type SortDir = "asc" | "desc";
@@ -80,7 +80,6 @@ export function OpenContractsTable({
   sort: { key: SortKey; dir: SortDir };
   onSort: (key: SortKey) => void;
 }) {
-  const [density, setDensity] = useDensity();
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [page, setPage] = useState(0);
 
@@ -113,7 +112,7 @@ export function OpenContractsTable({
   const rows = sorted.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
   const from = sorted.length ? current * PAGE_SIZE + 1 : 0;
   const to = current * PAGE_SIZE + rows.length;
-  const pad = density === "compact" ? "py-1.5" : "py-3";
+  const pad = "py-3";
   const href = (c: Contract) => `/contracts/${encodeURIComponent(c.contractId)}`;
 
   const groupHeader = (c: Contract) => {
@@ -126,43 +125,25 @@ export function OpenContractsTable({
     <div className="min-w-0">
       {/* Controls */}
       <div className="mb-4 flex flex-wrap items-end gap-x-4 gap-y-3">
-        <label className="flex flex-col gap-1 text-xs font-medium text-[var(--ink-600)]">
-          Group by
-          <select
-            value={groupBy}
-            onChange={(e) => { setGroupBy(e.target.value as GroupBy); setPage(0); }}
-            className="h-10 rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:h-9"
-          >
-            <option value="none">Nothing</option>
-            <option value="stage">Step</option>
-            <option value="waitingOn">Who it waits on</option>
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-[var(--ink-600)] md:hidden">
-          Sort by
-          <select
-            value={sort.key}
-            onChange={(e) => onSort(e.target.value as SortKey)}
-            className="h-10 rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
-          >
-            {COLUMNS.filter((c) => c.key).map((c) => <option key={c.key} value={c.key!}>{c.label}</option>)}
-          </select>
-        </label>
-        <div role="group" aria-label="Row density" className="hidden items-center rounded-lg border border-[var(--ink-300)] p-0.5 md:inline-flex">
-          {(["comfortable", "compact"] as const).map((d) => (
-            <button
-              key={d}
-              type="button"
-              aria-pressed={density === d}
-              onClick={() => setDensity(d)}
-              className={cn(
-                "h-8 rounded-md px-3 text-sm font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]",
-                density === d ? "bg-[var(--ink-100)] text-foreground" : "text-[var(--ink-600)] hover:text-foreground",
-              )}
-            >
-              {d}
-            </button>
-          ))}
+        <div className="flex flex-col gap-1">
+          <span id="group-by-label" className="text-xs font-medium text-[var(--ink-600)]">Group by</span>
+          <Select value={groupBy} onValueChange={(v) => { setGroupBy(v as GroupBy); setPage(0); }}>
+            <SelectTrigger aria-labelledby="group-by-label" className="w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nothing</SelectItem>
+              <SelectItem value="stage">Step</SelectItem>
+              <SelectItem value="waitingOn">Who it waits on</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1 md:hidden">
+          <span id="sort-by-label" className="text-xs font-medium text-[var(--ink-600)]">Sort by</span>
+          <Select value={sort.key} onValueChange={(v) => onSort(v as SortKey)}>
+            <SelectTrigger aria-labelledby="sort-by-label" className="w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {COLUMNS.filter((c) => c.key).map((c) => <SelectItem key={c.key} value={c.key!}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <p className="ml-auto text-sm text-[var(--ink-600)] tabular-nums" aria-live="polite">
           Showing {from.toLocaleString()}–{to.toLocaleString()} of {sorted.length.toLocaleString()}
@@ -269,7 +250,7 @@ export function OpenContractsTable({
                       >
                         {c.title}
                       </Link>
-                      {(c.sponsor || c.counterparty) && density === "comfortable" && (
+                      {(c.sponsor || c.counterparty) && (
                         <span className="block truncate text-xs text-[var(--ink-600)]" title={c.sponsor || c.counterparty || undefined}>{c.sponsor || c.counterparty}</span>
                       )}
                     </td>
@@ -278,7 +259,7 @@ export function OpenContractsTable({
                     <td className={cn("truncate px-3 text-[var(--ink-700)]", pad, HIDE[2])} title={c.owner?.email}>{personName(c.owner)}</td>
                     <td className={cn("px-3 text-right", pad)}>
                       <DaysInStage compact days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} />
-                      {density === "comfortable" && c.slaStatus !== "on_track" && (
+                      {c.slaStatus !== "on_track" && (
                         <span className="mt-0.5 block text-xs text-[var(--ink-600)]">{SLA_LABEL[c.slaStatus]}</span>
                       )}
                     </td>

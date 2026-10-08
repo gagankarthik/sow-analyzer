@@ -4,12 +4,16 @@
 // agreement's stated law with it; with none set, a stated law goes to
 // "Check by hand". Changing it saves a new matrix version, like any edit.
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "@/components/ui/icons";
 import { US_STATES } from "@/lib/govern/labels";
 import { useSaveMatrix } from "@/lib/govern/queries";
 import type { Matrix } from "@/lib/govern/types";
+
+/** Stands in for "no home state" (a select item cannot use an empty value). */
+const NOT_SET = "__not_set";
 
 export function HomeStateSetting({ matrix, canEdit, blocked }: {
   matrix: Matrix;
@@ -51,17 +55,19 @@ export function HomeStateSetting({ matrix, canEdit, blocked }: {
       </div>
       <div className="flex items-center gap-2">
         {save.isPending && <Loader2 size={16} className="animate-spin text-[var(--ink-500)]" aria-hidden />}
-        <select
-          id={id}
-          value={value}
-          onChange={(e) => change(e.target.value)}
+        <Select
+          value={value || NOT_SET}
+          onValueChange={(v) => change(v === NOT_SET ? "" : v)}
           disabled={!canEdit || blocked || save.isPending}
-          title={blocked ? "Save or discard your clause changes first" : undefined}
-          className="h-11 min-w-56 rounded-lg border border-[var(--border-control)] bg-card px-3 text-base text-foreground outline-none transition-colors focus-visible:border-[var(--ink-500)] focus-visible:ring-4 focus-visible:ring-[var(--ink-100)] disabled:cursor-not-allowed disabled:bg-[var(--ink-50)]"
         >
-          <option value="">Not set</option>
-          {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+          <SelectTrigger id={id} className="w-56" title={blocked ? "Save or discard your clause changes first" : undefined}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NOT_SET}>Not set</SelectItem>
+            {US_STATES.map((st) => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

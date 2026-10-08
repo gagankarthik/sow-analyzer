@@ -423,7 +423,7 @@ export function DocumentInsights() {
           <div className="flex flex-wrap items-center gap-2">
             {availableTypes.length > 1 && (
               <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as DocType | "all")}>
-                <SelectTrigger aria-label="Filter by document type" className="h-10! min-w-[140px] flex-1 bg-card text-sm sm:h-9! sm:w-[176px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Filter by document type" className="min-w-[140px] flex-1 sm:w-[176px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All document types</SelectItem>
                   {availableTypes.map((t) => <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>)}
@@ -431,7 +431,7 @@ export function DocumentInsights() {
               </Select>
             )}
             <Select value={riskFilter} onValueChange={(v) => setRiskFilter(v as RiskLevel | "all")}>
-              <SelectTrigger aria-label="Filter by overall risk level" className="h-10! min-w-[140px] flex-1 bg-card text-sm sm:h-9! sm:w-[164px] sm:flex-none"><Filter size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label="Filter by overall risk level" className="min-w-[140px] flex-1 sm:w-[164px] sm:flex-none"><Filter size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All risk levels</SelectItem>
                 {RISK_ORDER_DESC.map((r) => <SelectItem key={r} value={r}>{RISK_LABEL[r]} risk</SelectItem>)}

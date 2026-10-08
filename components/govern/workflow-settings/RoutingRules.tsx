@@ -221,7 +221,7 @@ function RoutingRuleForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Money direction" htmlFor={`${uid}-dir`}>
           <Select value={when.direction ?? ANY} onValueChange={(v) => setWhen({ direction: v === ANY ? undefined : (v as Direction) })}>
-            <SelectTrigger id={`${uid}-dir`} className="w-full text-base data-[size=default]:h-10 md:text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger id={`${uid}-dir`} className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value={ANY}>Either direction</SelectItem>
               <SelectItem value="incoming">{DIRECTION_LABEL.incoming}</SelectItem>
@@ -259,7 +259,7 @@ function RoutingRuleForm({
         </label>
         <Field label="Risk at least" htmlFor={`${uid}-risk`}>
           <Select value={when.minRisk ?? ANY} onValueChange={(v) => setWhen({ minRisk: v === ANY ? undefined : (v as "high" | "critical") })}>
-            <SelectTrigger id={`${uid}-risk`} className="w-full text-base data-[size=default]:h-10 md:text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger id={`${uid}-risk`} className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value={ANY}>Ignore risk</SelectItem>
               <SelectItem value="high">High or critical</SelectItem>

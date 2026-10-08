@@ -397,7 +397,7 @@ function DocumentOverview() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><label htmlFor="edit-doc-title" className="text-sm font-medium text-foreground">Title</label><Input id="edit-doc-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Document title" className="h-10 text-base md:h-9" /></div>
             <div className="space-y-1.5"><label className="text-sm font-medium text-foreground">Document type</label>
-              <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}><SelectTrigger className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger><SelectContent>{docTypesFor(DOC_TYPES, showSow).map((t) => <SelectItem key={t} value={t}>{docTypeLabel(t)}</SelectItem>)}</SelectContent></Select>
+              <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent>{docTypesFor(DOC_TYPES, showSow).map((t) => <SelectItem key={t} value={t}>{docTypeLabel(t)}</SelectItem>)}</SelectContent></Select>
             </div>
             <div className="space-y-1"><p className="text-sm font-medium text-foreground">Stage</p>
               <p className="text-sm text-foreground">{LIFECYCLE_LABEL[editLifecycle]}</p>

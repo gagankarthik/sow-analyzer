@@ -741,7 +741,7 @@ export function RiskView() {
                 <div className="flex flex-wrap items-center gap-2">
                   {availableDocTypes.length > 1 && (
                     <Select value={docTypeFilter} onValueChange={(v) => setDocTypeFilter(v as DocType | "all")}>
-                      <SelectTrigger aria-label="Filter by document type" className="h-10! min-w-[132px] flex-1 text-sm sm:h-9! sm:w-[148px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Filter by document type" className="min-w-[132px] flex-1 sm:w-[148px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All types</SelectItem>
                         {availableDocTypes.map((t) => (
@@ -751,7 +751,7 @@ export function RiskView() {
                     </Select>
                   )}
                   <Select value={riskFilter} onValueChange={(v) => setRiskFilter(v as RiskFilter)}>
-                    <SelectTrigger aria-label="Filter by risk level" className="h-10! min-w-[132px] flex-1 text-sm sm:h-9! sm:w-[156px] sm:flex-none"><Filter size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Filter by risk level" className="min-w-[132px] flex-1 sm:w-[156px] sm:flex-none"><Filter size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All risk</SelectItem>
                       <SelectItem value="critical">Critical</SelectItem>
@@ -762,7 +762,7 @@ export function RiskView() {
                     </SelectContent>
                   </Select>
                   <Select value={sort.key} onValueChange={(v) => setSortKey(v as SortKey)}>
-                    <SelectTrigger aria-label="Sort contracts" className="h-10! min-w-[168px] flex-1 text-sm sm:h-9! sm:w-[196px] sm:flex-none"><span className="text-muted-foreground">Sort</span><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Sort contracts" className="min-w-[168px] flex-1 sm:w-[196px] sm:flex-none"><span className="text-muted-foreground">Sort</span><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="risk">Risk level</SelectItem>
                       <SelectItem value="value">Contract value</SelectItem>

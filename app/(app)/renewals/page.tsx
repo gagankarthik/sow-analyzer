@@ -322,7 +322,7 @@ export default function RenewalsPage() {
                 <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
                   {availableTypes.length > 1 && (
                     <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as DocType | "all")}>
-                      <SelectTrigger aria-label="Filter by document type" className="h-10! min-w-[140px] flex-1 bg-card text-sm sm:h-9! sm:w-[176px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+                      <SelectTrigger aria-label="Filter by document type" className="min-w-[140px] flex-1 sm:w-[176px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All document types</SelectItem>
                         {availableTypes.map((t) => <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>)}
@@ -330,7 +330,7 @@ export default function RenewalsPage() {
                     </Select>
                   )}
                   <Select value={windowFilter} onValueChange={(v) => setWindowFilter(v as WindowKey)}>
-                    <SelectTrigger aria-label="Filter by time window" className="h-10! min-w-[140px] flex-1 bg-card text-sm sm:h-9! sm:w-[176px] sm:flex-none"><CalendarClock size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Filter by time window" className="min-w-[140px] flex-1 sm:w-[176px] sm:flex-none"><CalendarClock size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Any date</SelectItem>
                       <SelectItem value="30">Within 30 days</SelectItem>

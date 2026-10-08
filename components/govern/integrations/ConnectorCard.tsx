@@ -407,7 +407,7 @@ function MappingRow({
                 else { setOther(false); onChange({ ...row, key: v }); }
               }}
             >
-              <SelectTrigger aria-label="Govern field" className="w-full text-base md:text-sm data-[size=default]:h-10 md:data-[size=default]:h-9">
+              <SelectTrigger aria-label="Govern field" className="w-full">
                 <SelectValue placeholder="Choose a field" />
               </SelectTrigger>
               <SelectContent>

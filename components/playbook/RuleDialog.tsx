@@ -147,7 +147,7 @@ function RuleForm({ target, onClose }: { target: RuleDialogTarget; onClose: () =
         <Field label="Clause type" htmlFor={id("type")} error={errors.typeKey} errorId={id("typeKey-error")}>
           {available.length > 0 && (
             <Select value={typeChoice} onValueChange={pickType}>
-              <SelectTrigger id={id("type")} className="w-full text-base md:data-[size=default]:h-9" aria-describedby={describedBy("typeKey")}>
+              <SelectTrigger id={id("type")} className="w-full" aria-describedby={describedBy("typeKey")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -242,7 +242,7 @@ function RuleForm({ target, onClose }: { target: RuleDialogTarget; onClose: () =
 
       <Field label="Severity when the wording check fails" htmlFor={id("severity")}>
         <Select value={severity} onValueChange={(v) => setSeverity(v as PlaybookSeverity)}>
-          <SelectTrigger id={id("severity")} className="w-full text-base sm:w-56 md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
+          <SelectTrigger id={id("severity")} className="w-full sm:w-56"><SelectValue /></SelectTrigger>
           <SelectContent>
             {PLAYBOOK_SEVERITIES.map((s) => <SelectItem key={s} value={s}>{SEVERITY_LABEL[s]}</SelectItem>)}
           </SelectContent>

@@ -88,7 +88,7 @@ export function ContractIntakePanel({
               <div className="grid gap-1.5">
                 <label htmlFor={id("type")} className="text-sm font-medium text-foreground">Agreement type</label>
                 <Select value={values.agreementType} onValueChange={(v) => set("agreementType", v as AgreementType)}>
-                  <SelectTrigger id={id("type")} className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id={id("type")} className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={LET_SONAR_DECIDE}>Let Sonar decide</SelectItem>
                     {agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
@@ -98,7 +98,7 @@ export function ContractIntakePanel({
               <div className="grid gap-1.5">
                 <label htmlFor={id("dir")} className="text-sm font-medium text-foreground">Money</label>
                 <Select value={values.direction} onValueChange={(v) => set("direction", v as Direction)}>
-                  <SelectTrigger id={id("dir")} className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id={id("dir")} className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={LET_SONAR_DECIDE}>Let Sonar decide</SelectItem>
                     {(["incoming", "outgoing"] as const).map((d) => <SelectItem key={d} value={d}>{DIRECTION_LABEL[d]}</SelectItem>)}
@@ -121,7 +121,7 @@ export function ContractIntakePanel({
                     className="min-w-0 flex-1 tabular-nums sm:max-w-xs"
                   />
                   <Select value={values.currency} onValueChange={(v) => set("currency", v)}>
-                    <SelectTrigger aria-label="Currency" className="w-24 text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Currency" className="w-24"><SelectValue /></SelectTrigger>
                     <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>

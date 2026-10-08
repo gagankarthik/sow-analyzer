@@ -231,7 +231,7 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Import into" htmlFor={`${uid}-target`}>
               <Select value={target} onValueChange={setTarget}>
-                <SelectTrigger id={`${uid}-target`} className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
+                <SelectTrigger id={`${uid}-target`} className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {mapping.agreementType !== null && <SelectItem value={SPLIT}>Each row&apos;s Agreement type column</SelectItem>}
                   {agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}

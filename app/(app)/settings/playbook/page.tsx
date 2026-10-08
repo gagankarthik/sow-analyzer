@@ -184,7 +184,7 @@ function PlaybookPageContent() {
                 <div className="min-w-0 lg:col-span-3">
                   <label htmlFor="playbook-type" className="mb-1.5 block text-sm font-medium text-[var(--ink-600)]">Clause type</label>
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger id="playbook-type" className="h-10! w-full bg-card text-sm sm:h-8!"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="playbook-type" className="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value={ALL_TYPES}>All clause types</SelectItem>
                       {[...rules].sort((a, b) => typeName(a).localeCompare(typeName(b))).map((r) => (

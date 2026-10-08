@@ -251,16 +251,22 @@ function Home() {
             data never leaves an empty box, and a busy list never stretches
             its neighbour. */}
         {setupPending && (
-          <Link
-            href="/settings/organization"
-            className="group flex items-center justify-between gap-3 rounded-xl border border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] px-4 py-3 text-sm transition-colors hover:border-[var(--brand-primary-400)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
-          >
-            <span>
-              <span className="font-semibold text-foreground">Finish setting up your organization.</span>{" "}
-              <span className="text-[var(--ink-700)]">Name, currency, governing law, targets and team, in six short steps.</span>
-            </span>
-            <ArrowRight size={16} className="shrink-0 text-[var(--brand-primary-700)] transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
-          </Link>
+          <div role="status" className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[var(--warning)]" aria-hidden />
+              <p className="text-sm">
+                <span className="font-semibold text-foreground">Your organization isn&apos;t fully set up.</span>{" "}
+                <span className="text-[var(--ink-600)]">Name, currency, governing law, targets and team, in six short steps.</span>
+              </p>
+            </div>
+            <Link
+              href="/settings/organization"
+              className="ml-7 inline-flex shrink-0 items-center gap-1.5 self-start rounded-md text-sm font-semibold text-[var(--brand-primary-700)] hover:underline sm:ml-0 sm:self-auto"
+            >
+              Continue setup
+              <ArrowRight size={14} aria-hidden />
+            </Link>
+          </div>
         )}
         {view.attention.length === 0 && <AllClear />}
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12 lg:gap-5">
