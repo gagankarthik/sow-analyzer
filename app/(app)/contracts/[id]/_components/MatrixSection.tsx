@@ -184,7 +184,8 @@ function ClauseRow({ clause: cl }: { clause: MatrixClauseResult }) {
             <Compare label="Your standard" text={cl.standard} />
             <Compare label="Acceptable fallback" text={cl.fallback} />
           </dl>
-          {cl.escalationOffice && (
+          {/* The office only matters when the clause is outside the standard. */}
+          {cl.escalationOffice && cl.tier !== "within" && cl.tier !== "fallback" && (
             <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-700)]">
               <Building2 size={14} />Review by {OFFICE_LABEL[cl.escalationOffice]} if it is not changed
             </p>

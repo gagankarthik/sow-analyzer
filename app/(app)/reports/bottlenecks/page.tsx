@@ -33,7 +33,7 @@ function stageTakeaway(stages: StageQueue[], targets: Partial<Record<Stage, numb
   const ratio = (s: StageQueue) => (targets[s.stage] ? (s.averageDays ?? 0) / (targets[s.stage] as number) : 0);
   const over = withWait.filter((s) => ratio(s) > 1).sort((a, b) => ratio(b) - ratio(a))[0];
   if (over) {
-    return `"${STAGE_LABEL[over.stage]}" is furthest behind: ${daysLabel(Math.round(over.averageDays ?? 0))} on average against a ${targets[over.stage]}-day target.`;
+    return `"${STAGE_LABEL[over.stage]}" is furthest behind: the contracts there now have waited ${daysLabel(Math.round(over.averageDays ?? 0))} on average, against a ${targets[over.stage]}-day target.`;
   }
   const slowest = [...withWait].sort((a, b) => (b.averageDays ?? 0) - (a.averageDays ?? 0))[0];
   return `Every step is within its target on average. The longest is "${STAGE_LABEL[slowest.stage]}" at ${daysLabel(Math.round(slowest.averageDays ?? 0))}.`;

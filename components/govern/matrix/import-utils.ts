@@ -158,7 +158,39 @@ export function resolveClauseType(text: string): string | null {
   if (SYN[n]) return SYN[n];
   // "Publication rights and review period (60 days)" — a label at the start.
   const prefix = MATRIX_CLAUSE_TYPES.find((t) => n.startsWith(norm(t.label)));
-  return prefix?.id ?? null;
+  if (prefix) return prefix.id;
+  // Last resort: the subject words of the position, in order of specificity, so
+  // the matrix's own long names ("Diligence and termination for failure to
+  // commercialize", "Background and foreground IP ownership") and everyday
+  // wording both map to the right position.
+  const KEYWORDS: [RegExp, string][] = [
+    [/diligen/, "Diligence"],
+    [/publicat/, "PublicationRights"],
+    [/background|foreground|ownership of (?:ip|inventions)/, "BackgroundIP"],
+    [/royalt|milestone|equity/, "Royalties"],
+    [/sublicens/, "Sublicensing"],
+    [/licen[cs]e grant|field of use|exclusiv|licen[cs]e scope|licen[cs]e metric|seats?|named users/, "LicenseScope"],
+    [/indemn/, "Indemnity"],
+    [/governing law|sovereign immunity|choice of law/, "GoverningLaw"],
+    [/export|foreign part/, "ExportControl"],
+    [/data rights|use of (?:the )?(?:organi[sz]ation|university)?s? ?name|publicity/, "DataRights"],
+    [/sponsor report|flow down|progress report/, "SponsorReporting"],
+    [/service levels?|sla|uptime|availability/, "type.service-levels"],
+    [/audit/, "AuditRights"],
+    [/accessib|wcag|section 508/, "Accessibility"],
+    [/security|soc 2|hecvat/, "SecurityControls"],
+    [/data protection|privacy|ferpa|hipaa|breach notif/, "DataProcessing"],
+    [/renewal|auto renew/, "Term"],
+    [/price increase|escalat|fees?/, "Fees"],
+    [/liabilit/, "Liability"],
+    [/warrant/, "Warranty"],
+    [/confidential/, "Confidentiality"],
+    [/payment/, "Payment"],
+    [/terminat/, "Termination"],
+    [/insurance/, "Insurance"],
+    [/assign/, "Assignment"],
+  ];
+  return KEYWORDS.find(([re]) => re.test(n))?.[1] ?? null;
 }
 
 export function resolveOffice(text: string): Office | null | "unknown" {

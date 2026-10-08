@@ -106,6 +106,11 @@ function Contracts() {
       <FilterPill label="Department" selected={dept} onChange={setDept} options={optionsFrom(inView, (c) => c.department ?? "none", (v) => v === "none" ? "Not set" : v)} />
       <FilterPill label="Value" selected={band} onChange={setBand} options={VALUE_BANDS.map((b) => ({ value: b, label: VALUE_BAND_LABEL[b], count: inView.filter((c) => inValueBand(c, b)).length })).filter((o) => o.count > 0)} />
       <FilterPill label="Risk" selected={risk} onChange={setRisk} options={optionsFrom(inView, (c) => c.overallRisk ?? "none", (v) => v === "none" ? "Not assessed" : RISK_LABEL[v as RiskLevel])} />
+      {query && view.id !== "all" && (
+        <button type="button" onClick={() => goToView("all")} className="h-9 rounded-lg px-2 text-sm font-medium text-[var(--brand-primary-700)] hover:underline">
+          Search all contracts
+        </button>
+      )}
       {filtering && <button type="button" onClick={clearAll} className="h-9 rounded-lg px-2 text-sm font-medium text-[var(--brand-primary-700)] hover:underline">Clear all</button>}
     </div>
   );

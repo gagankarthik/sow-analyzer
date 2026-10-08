@@ -190,6 +190,8 @@ export interface Contract {
   parentContractId?: string | null
   /** Amendments to this agreement, oldest first. */
   amendmentIds?: string[]
+  /** Licensing income items; null when not copied onto the list yet (read the detail). */
+  licensingIncome?: IncomeItem[] | null
   rev: number
 }
 

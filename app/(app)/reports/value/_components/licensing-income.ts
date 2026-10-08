@@ -2,8 +2,8 @@
 
 // Licensing income (Requirement 4): upfront fees, milestones, royalties,
 // equity and sublicense income extracted from license and option agreements.
-// The contract list does not carry these, so the detail of each license or
-// option contract is read (capped, in parallel, cached with the contract page).
+// The contract list carries each contract's income; only contracts reviewed
+// before that copy existed have their detail read (capped, in parallel).
 
 import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
@@ -29,7 +29,8 @@ export function isLicensing(c: Contract): boolean {
 
 export function useLicensingIncome(contracts: Contract[]) {
   const licensing = useMemo(() => contracts.filter(isLicensing), [contracts]);
-  const read = licensing.slice(0, INCOME_DETAIL_CAP);
+  const listed = useMemo(() => licensing.filter((c) => Array.isArray(c.licensingIncome)), [licensing]);
+  const read = licensing.filter((c) => !Array.isArray(c.licensingIncome)).slice(0, INCOME_DETAIL_CAP);
   const results = useQueries({
     queries: read.map((c) => ({
       queryKey: governKeys.contract(c.contractId),
@@ -45,6 +46,12 @@ export function useLicensingIncome(contracts: Contract[]) {
   const stamp = results.map((r) => r.dataUpdatedAt).join(",");
   const rows = useMemo<IncomeRow[]>(() => {
     const out: IncomeRow[] = [];
+    for (const c of listed) {
+      for (const item of c.licensingIncome ?? []) {
+        if (!LICENSING_KINDS.includes(item.kind)) continue;
+        out.push({ ...item, contractId: c.contractId, contractTitle: c.title, currency: c.currency ? c.currency.toUpperCase() : null });
+      }
+    }
     for (const r of results) {
       const d = r.data;
       if (!d) continue;
@@ -56,9 +63,10 @@ export function useLicensingIncome(contracts: Contract[]) {
     return out;
     // `results` is a new array each render; `stamp` changes only when data does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stamp]);
+  }, [stamp, listed]);
 
-  return { rows, loading, failed, total: licensing.length, read: read.length, capped: licensing.length > INCOME_DETAIL_CAP };
+  const unlisted = licensing.length - listed.length;
+  return { rows, loading, failed, total: licensing.length, read: listed.length + read.length, capped: unlisted > INCOME_DETAIL_CAP };
 }
 
 /** "Q3 2026" from an ISO date; null when there is no date. */
