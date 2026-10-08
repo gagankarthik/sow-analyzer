@@ -42,7 +42,7 @@ const instrumentSerif = Instrument_Serif({
   display: "swap",
 });
 
-const DEFAULT_TITLE = "Blue-IQ | Contract review for SOWs, MSAs and amendments";
+const DEFAULT_TITLE = "Blue-IQ Govern | Contract review against your matrix";
 
 // Site-wide defaults. Each public page sets its own title, description and
 // canonical through `pageMetadata` (lib/seo.ts); the share image comes from

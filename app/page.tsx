@@ -9,7 +9,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationSchema, pageMetadata, SITE_DESCRIPTION, websiteSchema } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Blue-IQ Govern | AI contract review against your playbook",
+  title: "Blue-IQ Govern | Contract review against your matrix",
   description: SITE_DESCRIPTION,
   path: "/",
 });

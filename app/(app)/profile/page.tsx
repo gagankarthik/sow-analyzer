@@ -2,7 +2,7 @@
 
 // Profile: the signed-in person's own account (who they are, their password,
 // their sessions). Workspace configuration lives in Settings; the two are
-// kept apart so personal and organisation-wide changes never mix.
+// kept apart so personal and organization-wide changes never mix.
 
 import { useState } from "react";
 import Link from "next/link";

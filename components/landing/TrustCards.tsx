@@ -24,7 +24,7 @@ export function TrustCards() {
               </div>
             </div>
             <div className="lp-trust-body">
-              <h3 className="lp-trust-title">Your playbook, not ours</h3>
+              <h3 className="lp-trust-title">Your matrix, not ours</h3>
               <p>Clauses are checked against the positions and fallbacks your office already uses, agreement type by agreement type.</p>
               <Link href="/product#matrix" className="lp-trust-link">Learn more <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
@@ -39,7 +39,7 @@ export function TrustCards() {
             </div>
             <div className="lp-trust-body">
               <h3 className="lp-trust-title">Every finding shows its work</h3>
-              <p>Each rating cites the clause and the rule behind it. The same clause gets the same answer, every time.</p>
+              <p>Sonar&apos;s AI reads the agreement; your matrix&apos;s rules rate each clause. Every rating names the clause and the rule, and the same clause gets the same answer every time.</p>
               <Link href="/product#capture" className="lp-trust-link">Learn more <ArrowRight size={14} aria-hidden="true" /></Link>
             </div>
           </li>

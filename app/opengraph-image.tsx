@@ -4,7 +4,7 @@ import { brandMarkDataUri } from "@/lib/brand-mark";
 /* Share image for every public page. Inline styles are required by `next/og`;
    it does not read CSS classes. */
 
-export const alt = "Blue-IQ: contract review for SOWs, MSAs and amendments";
+export const alt = "Blue-IQ Govern: contract review against your matrix";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -49,7 +49,7 @@ export default async function OpengraphImage() {
             Catch the risky clause before it is signed.
           </div>
           <div style={{ marginTop: 28, fontSize: 32, lineHeight: 1.3, color: "#D3DFFF", maxWidth: 1040 }}>
-            Clause-by-clause contract review for SOWs, MSAs and amendments.
+            Every agreement checked against your matrix, from first read to signature.
           </div>
         </div>
       </div>

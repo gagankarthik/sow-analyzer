@@ -93,7 +93,7 @@ export const WAITING_ON_SHORT: Record<WaitingOnKind, string> = {
   nobody: "Nobody",
 }
 
-/** Who has the ball: your organisation, or someone outside your organisation. */
+/** Who has the ball: your organization, or someone outside your organization. */
 export const WAITING_ON_SIDE: Record<WaitingOnKind, "internal" | "external" | "none"> = {
   internal_reviewer: "internal",
   internal_office: "internal",

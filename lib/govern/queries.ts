@@ -10,6 +10,7 @@
  * list refreshes every minute while a page is open (and on focus).
  */
 
+import { editionHas, resolveEdition, type Edition, type EditionFeature } from "@/lib/edition";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { isPermanentError } from "@/lib/api";
@@ -117,6 +118,17 @@ export function useGovernMe(): UseQueryResult<GovernMe> {
 export function useGovernFeatures(): GovernFeatureFlags {
   const server = useGovernMe().data?.features;
   return useMemo(() => resolveFeatures(process.env.NEXT_PUBLIC_GOVERN_FEATURES, server), [server]);
+}
+
+/** The edition this customer sees (Requirement 7): the organization's
+ *  setting, else the deployment default. Campus until settings load. */
+export function useEdition(): Edition {
+  const settings = useWorkflowSettings();
+  return resolveEdition(settings.data?.organization?.edition);
+}
+
+export function useEditionFeature(feature: EditionFeature): boolean {
+  return editionHas(useEdition(), feature);
 }
 
 export function useGovernFeature(feature: GovernFeature): boolean {

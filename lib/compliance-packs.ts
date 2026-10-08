@@ -47,7 +47,7 @@ export const COMPLIANCE_PACKS: CompliancePack[] = [
     name: "SOC 2",
     region: "AICPA Trust Services",
     iconKey: "soc2",
-    blurb: "Security, availability, and confidentiality controls for service organisations.",
+    blurb: "Security, availability, and confidentiality controls for service organizations.",
     docTypes: ["COMPLIANCE"],
     checks: ["SecurityControls", "AuditRights", "DataRetention", "BreachNotification", "DataProcessing"],
   },

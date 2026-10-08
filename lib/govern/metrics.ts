@@ -48,14 +48,17 @@ export const isUnsigned = (c: Contract) => isOpen(c) && PRE_SIGNATURE_STAGES.inc
 export const isCurrent = (c: Contract) => c.valueBucket === "current"
 export const isPotential = (c: Contract) => c.valueBucket === "potential"
 
-/** "Needs attention": overdue, or blocked by a term you do not accept, or
- *  running late with open items. The leader home's first question. */
+/** "Needs attention": overdue, blocked by a term you do not accept, running
+ *  late with open items, waiting with nobody assigned, or rated high or
+ *  critical risk. The leader home's first question: anything a leader would
+ *  want to know about today counts here. */
 export function needsAttention(c: Contract): boolean {
   if (!isUnsigned(c)) return false
   if (c.slaStatus === "red") return true
   if ((c.matrix?.counts.unacceptable ?? 0) > 0) return true
   if (c.slaStatus === "amber" && c.openBlockers > 0) return true
-  return c.overallRisk === "critical"
+  if (!c.owner) return true
+  return c.overallRisk === "high" || c.overallRisk === "critical"
 }
 
 /** Sort for attention lists: overdue first, then longest waiting. */

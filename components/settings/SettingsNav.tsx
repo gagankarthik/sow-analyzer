@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { FeatureComingSoonBadge } from "@/components/govern/ComingSoon";
 import type { GovernFeature } from "@/lib/govern/features";
+import { editionHas, type EditionFeature } from "@/lib/edition";
+import { useEdition } from "@/lib/govern/queries";
 import {
   BookMarked,
   Briefcase,
@@ -21,13 +23,13 @@ import {
 
 /** Every settings section, in order. Shared with the app sidebar, which shows
  *  this list (with a Back row) while you are anywhere in Settings. */
-export const SETTINGS_ITEMS: { label: string; href: string; icon: typeof Settings; feature?: GovernFeature }[] = [
+export const SETTINGS_ITEMS: { label: string; href: string; icon: typeof Settings; feature?: GovernFeature; edition?: EditionFeature }[] = [
   { label: "Overview", href: "/settings", icon: Settings },
-  { label: "Organisation", href: "/settings/organization", icon: Building2 },
+  { label: "Organization", href: "/settings/organization", icon: Building2 },
   { label: "Review matrix", href: "/settings/matrix", icon: Grid3x3 },
   { label: "Workflow & routing", href: "/settings/workflow", icon: Route },
   { label: "Integrations", href: "/settings/integrations", icon: Plug, feature: "integrations" },
-  { label: "Playbook", href: "/settings/playbook", icon: BookMarked },
+  { label: "Playbook", href: "/settings/playbook", icon: BookMarked, edition: "commercialPlaybook" },
   { label: "Clause library", href: "/settings/clauses", icon: Briefcase },
   { label: "Compliance packs", href: "/settings/compliance", icon: ShieldCheck },
   { label: "Team & roles", href: "/settings/team", icon: Users },
@@ -38,11 +40,12 @@ export const SETTINGS_ITEMS: { label: string; href: string; icon: typeof Setting
  *  sections itself, so this row is hidden there. */
 export function SettingsNav() {
   const pathname = usePathname() ?? "";
+  const edition = useEdition();
 
   return (
     <nav aria-label="Settings" className="min-w-0 lg:hidden">
       <ul className="scrollbar-none flex gap-1 overflow-x-auto border-b border-border">
-        {SETTINGS_ITEMS.map((item) => {
+        {SETTINGS_ITEMS.filter((item) => !item.edition || editionHas(edition, item.edition)).map((item) => {
           const active =
             item.href === "/settings"
               ? pathname === "/settings"

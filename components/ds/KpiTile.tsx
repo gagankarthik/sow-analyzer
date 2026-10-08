@@ -53,7 +53,7 @@ export function Delta({ value, format = { kind: "percent" }, goodWhen = "up", pe
 /* ─── KpiTile ────────────────────────────────────────────────────── */
 
 export type KpiTileProps = {
-  /** What the number counts, in plain words: "Contracts waiting on your organisation". */
+  /** What the number counts, in plain words: "Contracts waiting on your organization". */
   label: string;
   /** A number (formatted with `format`), null/undefined for unknown, or a node. */
   value: number | null | undefined | React.ReactNode;

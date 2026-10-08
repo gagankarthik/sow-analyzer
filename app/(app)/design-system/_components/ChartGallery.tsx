@@ -70,7 +70,7 @@ export function ChartGallery() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <ChartCard
           title="Are we keeping up with what arrives?"
-          takeaway="In October your organisation signed 47 agreements against 44 received: the first month this year the queue shrank."
+          takeaway="In October your organization signed 47 agreements against 44 received: the first month this year the queue shrank."
           legend={<Legend items={[{ key: "r", label: "Received", color: "var(--viz-cat-1)", shape: "line" }, { key: "s", label: "Signed", color: "var(--viz-cat-2)", shape: "line" }]} />}
           table={{ columns: ["Month", "Received", "Signed"], rows: TREND.map((t) => [t.month, t.received, t.signed]) }}
         >
@@ -96,7 +96,7 @@ export function ChartGallery() {
 
         <ChartCard
           title="Who is holding contracts in each stage?"
-          takeaway="In review is mostly waiting on your organisation (14 of 19); with the other side is mostly the sponsor (11 of 13)."
+          takeaway="In review is mostly waiting on your organization (14 of 19); with the other side is mostly the sponsor (11 of 13)."
           legend={
             <Legend
               items={[
@@ -122,7 +122,7 @@ export function ChartGallery() {
         </ChartCard>
 
         <ChartCard
-          title="What share of each stage is waiting on your organisation?"
+          title="What share of each stage is waiting on your organization?"
           takeaway="Approval and signature has the largest share held by internal offices (40%)."
           table={{ columns: ["Stage", "Reviewer", "Other side", "Internal office"], rows: STAGE_WAITING.map((s) => [s.stage, s.internal, s.other, s.office]) }}
         >

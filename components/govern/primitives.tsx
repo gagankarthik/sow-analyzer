@@ -45,7 +45,7 @@ export function TierBadge({ tier, className }: { tier: Tier; className?: string 
 export function BeneficialBadge({ className }: { className?: string }) {
   return (
     <span
-      title="This term favours your organisation."
+      title="This term favours your organization."
       className={cn(
         "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-[color-mix(in_srgb,var(--success)_30%,transparent)] px-2 text-xs font-semibold text-[var(--success)]",
         className,

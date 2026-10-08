@@ -1,10 +1,10 @@
 "use client";
 
-// Organisation setup: the checklist an admin works through once so Govern
-// fits the organisation. Steps that are facts about the data (a name, a home
+// Organization setup: the checklist an admin works through once so Govern
+// fits the organization. Steps that are facts about the data (a name, a home
 // state, a reviewer, a contract) complete themselves; the two judgement calls
 // (the matrix positions, the stage targets) the admin confirms. Progress is
-// stored with the organisation's settings, not in this browser.
+// stored with the organization's settings, not in this browser.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -36,7 +36,7 @@ export default function OrganizationSetupPage() {
   const contractsQ = useContracts();
   const save = useSaveWorkflowSettings();
 
-  // Older API builds don't return the organisation yet: start from the defaults.
+  // Older API builds don't return the organization yet: start from the defaults.
   const org: OrganizationSettings | undefined = settingsQ.data
     ? (settingsQ.data.organization ?? { name: null, defaultCurrency: "USD", fiscalYearStartMonth: 1, confirmedSteps: [], setupCompletedAt: null })
     : undefined;
@@ -67,8 +67,8 @@ export default function OrganizationSetupPage() {
   return (
     <>
       <PageHeader
-        title="Organisation setup"
-        subtitle="Six steps so reviews, targets and reports fit your organisation. Most take a minute."
+        title="Organization setup"
+        subtitle="Six steps so reviews, targets and reports fit your organization. Most take a minute."
         back={{ href: "/settings", label: "Settings" }}
       />
       <SettingsLayout>
@@ -79,7 +79,7 @@ export default function OrganizationSetupPage() {
           </div>
         ) : settingsQ.isError || !org ? (
           <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-5 py-12 text-center">
-            <p className="font-semibold text-foreground">Couldn&apos;t load your organisation settings</p>
+            <p className="font-semibold text-foreground">Couldn&apos;t load your organization settings</p>
             <Button variant="outline" onClick={() => void settingsQ.refetch()}>Try again</Button>
           </div>
         ) : (
@@ -98,9 +98,9 @@ export default function OrganizationSetupPage() {
             </section>
 
             <ol className="flex flex-col gap-3">
-              <Step n={1} title="Organisation details" done={done.details}
-                body="Your organisation's name, the currency values are reported in, and when your financial year starts.">
-                <DetailsForm org={org} canEdit={canEdit} saving={save.isPending} onSave={(o) => saveOrg(o, "Organisation details saved")} />
+              <Step n={1} title="Organization details" done={done.details}
+                body="Your organization's name, the currency values are reported in, and when your financial year starts.">
+                <DetailsForm org={org} canEdit={canEdit} saving={save.isPending} onSave={(o) => saveOrg(o, "Organization details saved")} />
               </Step>
 
               <Step n={2} title="Governing law" done={done.law}
@@ -167,7 +167,7 @@ export default function OrganizationSetupPage() {
                 <p className="text-sm text-[var(--ink-700)]">
                   {complete === total ? "Everything is in place." : `${plural(total - complete, "step")} still to do. You can finish later; this page keeps your progress.`}
                 </p>
-                <Button disabled={complete < total || save.isPending} onClick={() => saveOrg({ setupCompletedAt: new Date().toISOString() }, "Organisation setup complete")}>
+                <Button disabled={complete < total || save.isPending} onClick={() => saveOrg({ setupCompletedAt: new Date().toISOString() }, "Organization setup complete")}>
                   Finish setup
                 </Button>
               </div>
@@ -231,7 +231,7 @@ function DetailsForm({ org, canEdit, saving, onSave }: {
       }}
     >
       <label className="flex flex-col gap-1.5 sm:col-span-3">
-        <span className="text-sm font-medium text-foreground">Organisation name</span>
+        <span className="text-sm font-medium text-foreground">Organization name</span>
         <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canEdit} placeholder="e.g. Northwind Research" maxLength={140} aria-invalid={nameError ? true : undefined} className="max-w-md" />
         {nameError && <span className="text-xs text-[var(--danger)]">{nameError}</span>}
       </label>

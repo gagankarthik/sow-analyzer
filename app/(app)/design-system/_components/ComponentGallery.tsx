@@ -261,7 +261,7 @@ function DataDisplayChapter() {
         <div className="mb-1"><ExampleDataLabel /></div>
         <ActivityFeed
           events={[
-            { id: "1", at: "2026-10-07T15:12:00Z", title: "Sent back for changes", icon: <Undo2 />, tone: "caution", body: "Indemnity clause exceeds your organisation limits; proposed fallback language attached.", actor: <><Avatar name="Avery Chen" size="xs" decorative />Avery Chen</> },
+            { id: "1", at: "2026-10-07T15:12:00Z", title: "Sent back for changes", icon: <Undo2 />, tone: "caution", body: "Indemnity clause exceeds your organization limits; proposed fallback language attached.", actor: <><Avatar name="Avery Chen" size="xs" decorative />Avery Chen</> },
             { id: "2", at: "2026-10-07T10:03:00Z", title: "Comment", icon: <MessageSquare />, isComment: true, body: "PI confirmed the publication delay can be 60 days.", actor: <><Avatar name="Priya Raman" size="xs" decorative />Priya Raman</> },
             { id: "3", at: "2026-10-06T09:30:00Z", title: "Assigned", icon: <UserRound />, tone: "brand", actor: <><Avatar name="Daniel Okafor" size="xs" decorative />Daniel Okafor</> },
             { id: "4", at: "2026-10-06T09:01:00Z", title: "Arrived", icon: <FileText />, body: "Received from sponsor portal.", actor: "Sonar" },
@@ -413,7 +413,7 @@ function FeedbackChapter() {
             trigger={<Button variant="destructive">Reject agreement</Button>}
             tone="danger"
             title="Reject AGR-2026-1042?"
-            description="The sponsor will be told your organisation cannot sign. You can reopen it later from the contract page."
+            description="The sponsor will be told your organization cannot sign. You can reopen it later from the contract page."
             confirmLabel="Reject agreement"
             onConfirm={() => new Promise<void>((resolve) => window.setTimeout(() => { toast.success("Agreement rejected (example)"); resolve(); }, 800))}
           />

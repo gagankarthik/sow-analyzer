@@ -87,6 +87,13 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       {
+        // Public marketing pages: the CDN may serve a copy for 5 minutes and
+        // refresh it in the background, so search engines and link previews
+        // never hold an old version for long after a deploy.
+        source: "/(|product|solutions|security|calculator|legal/:slug*)",
+        headers: [{ key: "Cache-Control", value: "public, max-age=0, s-maxage=300, stale-while-revalidate=86400" }],
+      },
+      {
         // AI responses are per-user and must never be stored by a shared cache.
         source: "/api/:path*",
         headers: [{ key: "Cache-Control", value: "no-store" }],

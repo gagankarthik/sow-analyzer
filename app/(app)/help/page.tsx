@@ -1,5 +1,7 @@
 "use client";
 
+import { editionHas } from "@/lib/edition";
+import { useEdition } from "@/lib/govern/queries";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { AnalysisDisclaimer } from "@/components/ui/AnalysisDisclaimer";
@@ -23,14 +25,15 @@ const AREAS = [
   { icon: Library, title: "Library", body: "Every uploaded document, searchable and filterable by type, lifecycle, and status." },
   { icon: Kanban, title: "Workflow", body: "A board of your documents by lifecycle stage, from draft through to active and renewal." },
   { icon: BarChart3, title: "Insights", body: "What needs attention first, where risk and extracted value sit, which dates are coming up, and what is missing from your documents." },
-  { icon: BookMarked, title: "Playbook", body: "Your standard position for each clause type. Every clause is graded against it, and you can edit the rules; changes apply the next time a document is analysed." },
-  { icon: DraftSow, title: "Draft SOW", body: "Answer a short questionnaire and Sonar drafts an editable statement of work you can export to Word." },
+  { edition: "commercialPlaybook" as const, icon: BookMarked, title: "Playbook", body: "Your standard position for each clause type. Every clause is graded against it, and you can edit the rules; changes apply the next time a document is analysed." },
+  { edition: "sowDrafting" as const, icon: DraftSow, title: "Draft SOW", body: "Answer a short questionnaire and Sonar drafts an editable statement of work you can export to Word." },
   { icon: ShieldCheck, title: "Security & legal", body: "How your documents are protected, and the policies that apply." },
 ];
 
 const SECTION_HEADING = "text-lg font-semibold tracking-tight text-foreground";
 
 export default function HelpPage() {
+  const edition = useEdition();
   return (
     <>
       <PageHeader title="Help & getting started" />
@@ -74,7 +77,7 @@ export default function HelpPage() {
           <section aria-labelledby="workspace-areas">
             <h2 id="workspace-areas" className={`mb-3 ${SECTION_HEADING}`}>Around the workspace</h2>
             <ul className="grid grid-cols-1 gap-x-8 rounded-xl border border-border bg-card px-4 shadow-xs sm:grid-cols-2 md:px-5">
-              {AREAS.map((a) => {
+              {AREAS.filter((a) => !("edition" in a) || !a.edition || editionHas(edition, a.edition)).map((a) => {
                 const Icon = a.icon;
                 return (
                   <li key={a.title} className="flex items-start gap-3 border-b border-border py-4 last:border-b-0 sm:[&:nth-last-child(2)]:border-b-0">

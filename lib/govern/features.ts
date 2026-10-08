@@ -39,7 +39,7 @@ export const GOVERN_FEATURE_LABEL: Record<GovernFeature, { title: string; descri
   },
   obligations: {
     title: "Obligation tracking",
-    description: "Track reports, payments and other deliverables each contract commits your organisation to, with reminders before they fall due.",
+    description: "Track reports, payments and other deliverables each contract commits your organization to, with reminders before they fall due.",
   },
   exports: {
     title: "Excel and PDF exports",

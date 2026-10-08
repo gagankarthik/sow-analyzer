@@ -99,7 +99,7 @@ function Home() {
   // Obligations feed the money opportunities; if they fail to load, the
   // time opportunities still show.
   const obligationsQuery = useObligations();
-  // Admins see a reminder until organisation setup is finished.
+  // Admins see a reminder until organization setup is finished.
   const workflowSettings = useWorkflowSettings();
   const setupPending = me.data?.role === "admin" && !!workflowSettings.data && !workflowSettings.data.organization?.setupCompletedAt;
   const opportunities = useMemo(
@@ -254,7 +254,7 @@ function Home() {
             className="group flex items-center justify-between gap-3 rounded-xl border border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] px-4 py-3 text-sm transition-colors hover:border-[var(--brand-primary-400)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
           >
             <span>
-              <span className="font-semibold text-foreground">Finish setting up your organisation.</span>{" "}
+              <span className="font-semibold text-foreground">Finish setting up your organization.</span>{" "}
               <span className="text-[var(--ink-700)]">Name, currency, governing law, targets and team, in six short steps.</span>
             </span>
             <ArrowRight size={16} className="shrink-0 text-[var(--brand-primary-700)] transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />

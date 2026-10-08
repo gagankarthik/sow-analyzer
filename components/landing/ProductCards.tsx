@@ -189,13 +189,15 @@ export function ValueCard({ className }: { className?: string }) {
       <div className="lp-pcard-head">
         <div>
           <p className="lp-pcard-label">Value</p>
-          <p className="lp-pcard-title">$2.2M signed, $3.3M on the way, $2.0M held up by delays</p>
+          <p className="lp-pcard-title">$2.2M signed and $3.3M on the way, $2.0M of it held up by delays</p>
         </div>
       </div>
       <div className="lp-stack" aria-hidden="true">
         <span className="lp-stack-current" />
-        <span className="lp-stack-potential" />
-        <span className="lp-stack-held" />
+        <span className="lp-stack-pot">
+          <span className="lp-stack-potential" />
+          <span className="lp-stack-held" />
+        </span>
       </div>
       <dl className="lp-figures">
         <div>
@@ -211,7 +213,7 @@ export function ValueCard({ className }: { className?: string }) {
         <div>
           <dt><span className="lp-key lp-key-held" />Held up</dt>
           <dd>$2,005,000</dd>
-          <dd className="lp-figure-note">Past its target · 6 contracts</dd>
+          <dd className="lp-figure-note">Of the potential, past its target · 6 contracts</dd>
         </div>
       </dl>
       <p className="lp-pcard-note">3 contracts have no value yet, so totals say so. Add it.</p>
@@ -288,7 +290,7 @@ export function BottleneckCard({ className }: { className?: string }) {
 /* ─── What Sonar captured ─────────────────────────────────────── */
 
 const CAPTURED: { field: string; value: string; where: string }[] = [
-  { field: "Parties", value: "Your organisation · the licensee", where: "Preamble" },
+  { field: "Parties", value: "Your organization · the licensee", where: "Preamble" },
   { field: "Effective date", value: "1 November 2026", where: "§1.4" },
   { field: "Term", value: "Life of the last licensed patent", where: "§11.1" },
   { field: "Upfront fee", value: "$75,000 within 30 days", where: "§4.1" },

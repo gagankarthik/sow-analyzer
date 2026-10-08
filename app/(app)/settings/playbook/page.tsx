@@ -1,5 +1,6 @@
 "use client";
 
+import { EditionGate } from "@/components/govern/EditionGate";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -44,6 +45,14 @@ const CHECK_OPTIONS: { value: CheckFilter; label: string }[] = [
 const typeName = (r: PlaybookRule) => (r.isCustomType ? r.clauseType : categoryLabel(r.clauseType));
 
 export default function PlaybookPage() {
+  return (
+    <EditionGate feature="commercialPlaybook">
+      <PlaybookPageContent />
+    </EditionGate>
+  );
+}
+
+function PlaybookPageContent() {
   const { data: playbook, isLoading, isError, error, isFetching, refetch } = usePlaybook();
   // Custom clause types found in the user's documents, offered when adding a rule.
   const { data: docs } = useDocuments();

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEditionFeature } from "@/lib/govern/queries";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -83,6 +84,7 @@ const PAGE_HITS: SearchHit[] = [
 // Search is built from the shared, live documents query and the projects list
 // (so it reflects uploads and deletes), plus the static set of workspace pages.
 function useSearchIndex(): SearchHit[] {
+  const hasPlaybook = useEditionFeature("commercialPlaybook");
   const { data } = useDocuments();
   const docs = useMemo(() => data ?? [], [data]);
 
@@ -105,8 +107,10 @@ function useSearchIndex(): SearchHit[] {
       group: "Documents",
       icon: <FileText size={14} />,
     }));
-    return [...projectHits, ...docHits, ...PAGE_HITS];
-  }, [docs, projects]);
+    // Pages the customer's edition hides are not offered (Requirement 7).
+    const pages = PAGE_HITS.filter((h) => h.href !== "/settings/playbook" || hasPlaybook);
+    return [...projectHits, ...docHits, ...pages];
+  }, [docs, projects, hasPlaybook]);
 }
 
 function SearchBar() {

@@ -12,7 +12,7 @@ import type { Tier } from "@/lib/govern/types";
 export type Outcome = Tier | "beneficial";
 
 export const OUTCOME_LABEL: Record<Outcome, string> = { ...TIER_LABEL, beneficial: "Favours you" };
-export const OUTCOME_HINT: Record<Outcome, string> = { ...TIER_HINT, beneficial: "This term favours your organisation." };
+export const OUTCOME_HINT: Record<Outcome, string> = { ...TIER_HINT, beneficial: "This term favours your organization." };
 
 /** Chart/mark colour per outcome (CSS variable references). */
 export const OUTCOME_COLOR: Record<Outcome, string> = {

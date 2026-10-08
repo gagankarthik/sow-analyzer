@@ -81,7 +81,7 @@ export type DataTableGroupBy<T> = {
 };
 
 export type DataTableProps<T> = {
-  /** Accessible name of the table, e.g. "Contracts waiting on your organisation". Rendered as caption (sr-only unless `showCaption`). */
+  /** Accessible name of the table, e.g. "Contracts waiting on your organization". Rendered as caption (sr-only unless `showCaption`). */
   caption: string;
   showCaption?: boolean;
   columns: DataTableColumn<T>[];

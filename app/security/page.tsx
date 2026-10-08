@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AI_STATEMENT } from "@/lib/ai-statement";
 import Link from "next/link";
 import { MarketingShell, PageIntro } from "@/components/landing/MarketingShell";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -16,9 +17,10 @@ const CONTROLS = [
   { term: "Authentication", detail: "Sign-in runs on a managed identity service with enforced password rules. Every API request must carry a valid, verified token, and identity is taken only from verified claims." },
   { term: "Encryption", detail: "Traffic is encrypted in transit over HTTPS, with TLS 1.2 as the minimum. Files, database records and search indices are encrypted at rest with AES-256 and managed keys." },
   { term: "Sessions", detail: "You are signed out after 30 minutes without activity, with a warning two minutes before and the option to stay signed in. Signing out ends the session on every device and clears drafts and history kept in the browser." },
-  { term: "Access control", detail: "Each organisation's data is kept in its own workspace. Within it, people see a document only if they uploaded it or belong to a project that includes it, as owner, editor or viewer." },
+  { term: "Access control", detail: "Each organization's data is kept in its own workspace. Within it, people see a document only if they uploaded it or belong to a project that includes it, as owner, editor or viewer." },
   { term: "Audit log", detail: "Every assignment, decision, comment and stage change on a contract is written to an append-only activity log with the person and time." },
-  { term: "AI processing", detail: "Extracted text is sent to OpenAI's API to pull out facts and label clauses; original files are not sent. Under OpenAI's API terms, inputs are not used to train its models, and they may be kept for up to 30 days for abuse monitoring. Matrix review uses no AI model: it runs deterministic rules, and each finding records the rule and matrix version applied." },
+  { term: "How Sonar uses AI", detail: AI_STATEMENT },
+  { term: "AI processing", detail: "To read an agreement, Sonar sends its extracted text to OpenAI's API; original files are not sent. Under OpenAI's API terms, inputs are not used to train its models, and they may be kept for up to 30 days for abuse monitoring." },
   { term: "Retention and deletion", detail: "Documents are kept while your account is active. Deleting one removes the original file, its processed copies, its search records and its database rows." },
   { term: "Certifications", detail: "Blue-IQ does not hold SOC 2, ISO 27001 or other certifications today. The cloud infrastructure it runs on carries its provider's own SOC 2 and ISO 27001 certifications." },
 ];

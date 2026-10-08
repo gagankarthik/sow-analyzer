@@ -331,14 +331,17 @@ export function MoneySplitBar({ current, potential, heldUp, labels }: {
   const total = current + potential;
   if (total <= 0) return null;
   const cur = (current / total) * 100;
-  const moving = (Math.max(0, potential - heldUp) / total) * 100;
+  const pot = (potential / total) * 100;
   const held = (Math.min(potential, heldUp) / total) * 100;
+  // Held-up value is PART of potential: one potential segment, with the
+  // held-up share hatched inside its right end, so nothing reads as counted twice.
   return (
-    <svg className="block w-full overflow-visible" height="28" role="img" aria-label={`${labels.current} signed, ${labels.potential} in the pipeline, of which ${labels.heldUp} is held up`}>
+    <svg className="block w-full overflow-hidden rounded-md" height="28" role="img" aria-label={`${labels.current} signed and ${labels.potential} in the pipeline, of which ${labels.heldUp} is held up by delays`}>
       <Hatch id={id} color={VALUE_FILL.heldUp} />
-      {cur > 0 && <rect x="0" y="0" width={`${cur}%`} height="28" rx="6" fill={VALUE_FILL.current} stroke="var(--card)" strokeWidth="2" />}
-      {moving > 0 && <rect x={`${cur}%`} y="0" width={`${moving}%`} height="28" rx="6" fill={VALUE_FILL.potential} stroke="var(--card)" strokeWidth="2" />}
-      {held > 0 && <rect x={`${cur + moving}%`} y="0" width={`${held}%`} height="28" rx="6" fill={`url(#${id})`} stroke="var(--card)" strokeWidth="2" />}
+      {cur > 0 && <rect x="0" y="0" width={`${cur}%`} height="28" fill={VALUE_FILL.current} />}
+      {pot > 0 && <rect x={`${cur}%`} y="0" width={`${pot}%`} height="28" fill={VALUE_FILL.potential} />}
+      {held > 0 && <rect x={`${cur + pot - held}%`} y="0" width={`${held}%`} height="28" fill={`url(#${id})`} />}
+      {cur > 0 && pot > 0 && <rect x={`${cur}%`} y="0" width="2" height="28" fill="var(--card)" />}
     </svg>
   );
 }

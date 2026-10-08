@@ -680,8 +680,10 @@
   .lp-stack { display: flex; gap: 2px; height: 0.875rem; margin: 1.25rem 1.25rem 0; }
   .lp-stack > span { border-radius: 3px; }
   .lp-stack-current { flex: 2225; background: var(--area-value); }
+  /* Held up is part of potential: one potential bar, the held share hatched inside it. */
+  .lp-stack-pot { display: flex; flex: 3305; overflow: hidden; border-radius: 3px; }
   .lp-stack-potential { flex: 1300; background: var(--area-matrix); }
-  .lp-stack-held { flex: 2005; background: var(--area-trends); }
+  .lp-stack-held { flex: 2005; background: repeating-linear-gradient(135deg, var(--area-trends) 0 4px, color-mix(in srgb, var(--area-trends) 55%, #FFFFFF) 4px 7px); }
   .lp-figures { display: grid; gap: 1rem; padding: 1.25rem; }
   @media (min-width: 640px) { .lp-figures { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .lp-figures dt { display: flex; align-items: center; gap: 0.375rem; font-size: var(--text-xs); color: var(--lp-ink-2); }
@@ -894,4 +896,16 @@
   .lp .lp-cta { border-radius: 40px; background: #5B3CC4; }
   .lp .lp-cta .lp-serif { color: #FFFFFF; }
   .lp .lp-cta .lp-lede, .lp .lp-cta .lp-cta-steps li, .lp .lp-cta .lp-cta-label { color: rgba(255, 255, 255, 0.92); }
+}
+
+/* Product page: alternating feature rows in the showcase style. */
+@layer components {
+  @media (min-width: 900px) {
+    .lp-feature-flip { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+    .lp-feature-flip .lp-show-copy { order: 2; }
+  }
+  .lp-feature .lp-show-copy { justify-content: center; }
+}
+@layer components {
+  a.lp-pill { display: inline-flex; align-items: center; }
 }

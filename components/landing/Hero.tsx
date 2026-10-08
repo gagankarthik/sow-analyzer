@@ -28,11 +28,11 @@ export function Hero() {
         <div className="lp-hero3-copy">
           <h1 id="hero-title" className="lp-hero3-title">
             Keep every contract moving,
-            <span className="lp-hero3-accent">on your own terms.</span>
+            <span className="lp-hero3-accent">checked against your matrix.</span>
           </h1>
           <p className="lp-hero3-sub">
-            The contract desk that reviews every clause against your playbook
-            and takes each agreement to signature with one owner and one next step.
+            Sonar reads each agreement, your review matrix rates every clause,
+            and each contract moves to signature with one owner and one next step.
           </p>
           <div className="lp-hero3-actions">
             <Link href="/signup" className="lp-btn lp-btn-primary lp-btn-lg">

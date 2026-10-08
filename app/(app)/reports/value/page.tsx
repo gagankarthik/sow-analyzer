@@ -181,7 +181,7 @@ export default function ValueReportPage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatTile label="Current" tone="success" value={formatMoney(summary.current)} hint={`Signed and active · ${plural(summary.current.valued, "contract")}`} />
               <StatTile label="Potential" tone="neutral" value={formatMoney(summary.potential)} hint={`Still in the pipeline · ${plural(summary.potential.valued, "contract")}`} />
-              <StatTile label="Held up" tone={summary.heldUp.valued > 0 ? "warning" : "success"} value={formatMoney(summary.heldUp)} hint="Potential value past its step's target" href="/reports/bottlenecks" />
+              <StatTile label="Held up" tone={summary.heldUp.valued > 0 ? "warning" : "success"} value={formatMoney(summary.heldUp)} hint="Part of the potential: value past its step's target" href="/reports/bottlenecks" />
               <StatTile
                 label="No value yet"
                 tone={view.noValue.length > 0 ? "warning" : "success"}

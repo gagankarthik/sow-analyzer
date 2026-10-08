@@ -9,7 +9,7 @@ const DEFAULT_SITE_URL =
   process.env.NODE_ENV === "production" ? "https://govern.blue-iq.ai" : "http://localhost:3000";
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL).replace(/\/+$/, "");
 export const SITE_DESCRIPTION =
-  "Blue-IQ reads SOWs, MSAs and amendments, extracts every clause, scores each one against your playbook and tracks contract value across amendments.";
+  "Blue-IQ Govern checks every agreement against your review matrix, gives each one an owner and a next step, and tracks the obligations and money after signature.";
 
 // A page that sets its own `openGraph` replaces the root one wholesale, share
 // image included, so every page names the image from app/opengraph-image.tsx.
@@ -17,7 +17,7 @@ const SHARE_IMAGE = {
   url: "/opengraph-image",
   width: 1200,
   height: 630,
-  alt: "Blue-IQ: contract review for SOWs, MSAs and amendments",
+  alt: "Blue-IQ Govern: contract review against your matrix",
 };
 
 export function absoluteUrl(path = "/"): string {

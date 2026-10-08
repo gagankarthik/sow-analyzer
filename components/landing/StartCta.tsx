@@ -20,7 +20,7 @@ export function StartCta() {
               See your own agreement, <span className="lp-serif">reviewed before the call.</span>
             </h2>
             <p className="lp-lede lp-on-dark mt-5">
-              Send one contract and your playbook. We bring back every clause rated against it.
+              Send one contract and your matrix. We bring back every clause rated against it.
             </p>
             <div className="lp-hero-actions">
               <Link href="/signup" className="lp-btn lp-btn-dark lp-btn-lg">

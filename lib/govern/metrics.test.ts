@@ -85,7 +85,11 @@ describe("needs attention (leader home)", () => {
     expect(needsAttention(makeContract({ slaStatus: "red" }))).toBe(true)
     expect(needsAttention(makeContract({ matrix: unacceptable }))).toBe(true)
     expect(needsAttention(makeContract({ slaStatus: "amber", openBlockers: 2 }))).toBe(true)
-    expect(needsAttention(makeContract({ slaStatus: "amber", openBlockers: 0 }))).toBe(false)
+    const owner = { email: "a@example.com", name: "A" }
+    expect(needsAttention(makeContract({ slaStatus: "amber", openBlockers: 0, owner }))).toBe(false)
+    expect(needsAttention(makeContract({ slaStatus: "on_track", owner: null }))).toBe(true)
+    expect(needsAttention(makeContract({ slaStatus: "on_track", overallRisk: "high", owner }))).toBe(true)
+    expect(needsAttention(makeContract({ slaStatus: "on_track", overallRisk: "medium", owner }))).toBe(false)
     expect(needsAttention(makeContract({ slaStatus: "red", stage: "signed", state: "signed" }))).toBe(false)
     expect(needsAttention(makeContract({ slaStatus: "red", state: "rejected" }))).toBe(false)
   })

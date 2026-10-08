@@ -415,7 +415,7 @@ export interface RoutingRule {
 
 export type NotificationEvent = "assigned" | "sent_back" | "approved" | "overdue" | "escalated"
 
-/** The organisation, set during organisation setup. */
+/** The organization, set during organization setup. */
 export interface OrganizationSettings {
   name: string | null
   /** ISO 4217 code, e.g. "USD". */
@@ -425,6 +425,8 @@ export interface OrganizationSettings {
   /** Setup steps an admin confirmed by hand. */
   confirmedSteps: ("matrix" | "workflow")[]
   setupCompletedAt: string | null
+  /** Requirement 7: the edition this customer sees; null = deployment default. */
+  edition?: "campus" | "workforce" | null
 }
 
 export interface WorkflowSettings {

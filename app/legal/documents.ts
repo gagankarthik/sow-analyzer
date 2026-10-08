@@ -14,9 +14,9 @@ export const LEGAL: Record<string, LegalDoc> = {
     intro:
       "This policy explains what data Blue-IQ processes, why, and the choices you have. It applies to the Blue-IQ contract-intelligence platform and website.",
     sections: [
-      { h: "What we process", p: "Account data (name, email, organisation) you provide, and the contract documents you upload for analysis. We also process limited usage and diagnostic logs to operate and secure the service." },
+      { h: "What we process", p: "Account data (name, email, organization) you provide, and the contract documents you upload for analysis. We also process limited usage and diagnostic logs to operate and secure the service." },
       { h: "Why we process it", p: "To provide the service — extracting clauses, scoring risk against your playbook, and tracking value across amendments — and to secure, support, and improve it. We do not sell your data." },
-      { h: "AI processing", p: "Extracted contract text is sent to OpenAI's API to pull out facts and label clauses. Original files are not sent. Under OpenAI's API terms, inputs are not used to train its models, and they may be kept for up to 30 days for abuse monitoring. Checking clauses against your matrix does not use an AI model. Blue-IQ does not train any model on your documents." },
+      { h: "AI processing", p: "Extracted contract text is sent to OpenAI's API to pull out facts and label clauses. Original files are not sent. Under OpenAI's API terms, inputs are not used to train its models, and they may be kept for up to 30 days for abuse monitoring. Rating each clause against your matrix is done by the matrix's own rules, not by the AI, and every rating names the rule behind it. Blue-IQ does not train any model on your documents." },
       { h: "Where your data is stored", p: "Documents and records are stored and processed in the United States, on cloud infrastructure run by our hosting provider. The providers who process data for us are listed on our Sub-processors page." },
       { h: "Cookies and browser storage", p: "We use one session cookie to keep you signed in, and no advertising or tracking cookies. The app keeps a few preferences and unsent drafts in your browser; drafts and history are cleared when you sign out." },
       { h: "Retention & deletion", p: "Your documents and extracted data are kept while your account is active. Deleting a document removes the original file, all processed artefacts, the search index, and the database records. You can request full deletion at any time." },
@@ -60,7 +60,7 @@ export const LEGAL: Record<string, LegalDoc> = {
       "This summary describes how Blue-IQ acts as a data processor on your behalf. A signable DPA is available for customers with data-protection requirements.",
     sections: [
       { h: "Roles", p: "For personal data within the documents you upload, you are the controller and Blue-IQ is the processor, acting only on your documented instructions to provide the service." },
-      { h: "Security measures", p: "Blue-IQ maintains the technical and organisational measures described on our Security page, including encryption in transit and at rest, access control, and tenant isolation." },
+      { h: "Security measures", p: "Blue-IQ maintains the technical and organizational measures described on our Security page, including encryption in transit and at rest, access control, and tenant isolation." },
       { h: "Data location", p: "Personal data is stored and processed in the United States." },
       { h: "Sub-processors", p: "We use a limited set of vetted sub-processors: a cloud hosting provider and an AI model provider. Each is named in the signed DPA, and the list is kept on our Sub-processors page with 30 days' notice of changes." },
       { h: "Breach notification", p: "In the event of a personal-data breach, we will notify affected customers without undue delay and within 72 hours of becoming aware, with the information needed to meet your obligations." },

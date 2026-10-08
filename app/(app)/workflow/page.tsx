@@ -9,6 +9,7 @@
 // shows the four lanes of that stage's phase (before or after signature);
 // below that it shows the selected stage's agreements as a grid.
 
+import { EditionOnly } from "@/components/govern/EditionOnly";
 import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
@@ -71,9 +72,9 @@ export default function WorkflowPage() {
       subtitle="Every agreement, who has it, how long it has waited and what happens next."
       actions={
         <>
-          <Button asChild variant="outline" size="lg" className="md:h-9">
+          <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9">
             <Link href="/draft"><FileSignature size={15} />Draft an SOW</Link>
-          </Button>
+          </Button></EditionOnly>
           <Button asChild size="lg" className="md:h-9">
             <Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />New agreement</Link>
           </Button>

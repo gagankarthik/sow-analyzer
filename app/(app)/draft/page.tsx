@@ -1,5 +1,6 @@
 "use client";
 
+import { EditionGate } from "@/components/govern/EditionGate";
 import { useEffect, useRef, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,14 @@ const LS_ANSWERS = "blueiq:sow:answers";
 const LS_DRAFT = "blueiq:sow:draft";
 
 export default function DraftSowPage() {
+  return (
+    <EditionGate feature="sowDrafting">
+      <DraftSowPageContent />
+    </EditionGate>
+  );
+}
+
+function DraftSowPageContent() {
   const [answers, setAnswers] = useState<SowAnswers>(EMPTY_ANSWERS);
   const [draft, setDraft] = useState("");
   const [step, setStep] = useState<"intake" | "editor">("intake");

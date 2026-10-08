@@ -25,7 +25,7 @@ type Result = {
 };
 
 // The reasons `POST /projects/{id}/invite` can refuse (see the API handler).
-// Any address may be invited, whatever organisation it belongs to.
+// Any address may be invited, whatever organization it belongs to.
 function failureMessage(err: unknown, projectName: string): string {
   const status = errorStatus(err);
   const message = err instanceof Error ? err.message : "";

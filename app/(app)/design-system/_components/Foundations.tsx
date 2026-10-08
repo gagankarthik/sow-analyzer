@@ -404,7 +404,7 @@ export function Foundations() {
                   <code className="font-mono text-caption font-semibold text-fg-primary">{name}</code>
                   <span className="text-caption text-fg-tertiary">{size} · {use}</span>
                 </div>
-                <p className={cn(cls, "min-w-0 truncate font-semibold tracking-tight text-fg-primary")}>38 contracts waiting on your organisation</p>
+                <p className={cn(cls, "min-w-0 truncate font-semibold tracking-tight text-fg-primary")}>38 contracts waiting on your organization</p>
               </li>
             ))}
           </ul>

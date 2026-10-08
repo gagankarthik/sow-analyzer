@@ -21,7 +21,10 @@ export function attentionReasons(c: Contract): string[] {
   if (c.slaStatus === "amber" && c.openBlockers > 0) {
     reasons.push(`Running late with ${plural(c.openBlockers, "open item")}`);
   }
-  if (c.overallRisk === "critical" && reasons.length === 0) reasons.push("Sonar found serious risk in this agreement");
+  if (!c.owner) reasons.push("No reviewer assigned yet");
+  if ((c.overallRisk === "critical" || c.overallRisk === "high") && unacceptable === 0) {
+    reasons.push(c.overallRisk === "critical" ? "Sonar rated this agreement critical risk" : "Sonar rated this agreement high risk");
+  }
   return reasons;
 }
 

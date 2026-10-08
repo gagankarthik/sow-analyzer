@@ -293,7 +293,7 @@ export function MoneyPanel({
           <dl className="mt-4 divide-y divide-border">
             <MoneyFigure color={VALUE_FILL.current} label="Current" sub="Signed and active" money={summary.current} />
             <MoneyFigure color={VALUE_FILL.potential} label="Potential" sub="In the pipeline" money={summary.potential} />
-            <MoneyFigure color={VALUE_FILL.heldUp} hatched label="Held up" sub="Past its target" money={summary.heldUp} />
+            <MoneyFigure color={VALUE_FILL.heldUp} hatched label="Held up" sub="Of the potential, past its target" money={summary.heldUp} />
           </dl>
           {multi && (
             <p className="mt-3 flex items-start gap-2 text-xs text-[var(--ink-600)]">

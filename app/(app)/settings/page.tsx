@@ -3,6 +3,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { FeatureComingSoonBadge } from "@/components/govern/ComingSoon";
 import type { GovernFeature } from "@/lib/govern/features";
+import type { EditionFeature } from "@/lib/edition";
+import { EditionOnly } from "@/components/govern/EditionOnly";
 import { SettingsLayout, SettingsSection } from "@/components/settings/SettingsNav";
 import {
   BookMarked,
@@ -26,6 +28,8 @@ type NavItem = {
   soon?: boolean;
   /** A "Later" feature: the row still links (its page explains), with a Coming soon badge while it is off. */
   feature?: GovernFeature;
+  /** Only in editions with this feature (Requirement 7). */
+  edition?: EditionFeature;
 };
 
 type NavGroup = {
@@ -36,10 +40,10 @@ type NavGroup = {
 
 const groups: NavGroup[] = [
   {
-    label: "Organisation",
-    desc: "Who you are and how Govern should fit your organisation.",
+    label: "Organization",
+    desc: "Who you are and how Govern should fit your organization.",
     items: [
-      { icon: Building2, title: "Organisation setup", desc: "Name, reporting currency, financial year, governing law, targets and team, as a six-step checklist.", href: "/settings/organization" },
+      { icon: Building2, title: "Organization setup", desc: "Name, reporting currency, financial year, governing law, targets and team, as a six-step checklist.", href: "/settings/organization" },
     ],
   },
   {
@@ -55,7 +59,7 @@ const groups: NavGroup[] = [
     label: "Contract intelligence",
     desc: "Standards, libraries, and rules Sonar uses to evaluate every clause.",
     items: [
-      { icon: BookMarked, title: "Playbook", desc: "Your firm's clause standards, section by section. Not editable yet.", href: "/settings/playbook" },
+      { icon: BookMarked, title: "Playbook", desc: "Your firm's clause standards, section by section. Not editable yet.", href: "/settings/playbook", edition: "commercialPlaybook" },
       { icon: Briefcase, title: "Clause library", desc: "Every clause extracted from your documents, by category.", href: "/settings/clauses" },
       { icon: ShieldCheck, title: "Compliance packs", desc: "Clause coverage rules for the regulations you choose.", href: "/settings/compliance" },
     ],
@@ -82,9 +86,15 @@ export default function SettingsPage() {
           <SettingsSection key={g.label} title={g.label} description={g.desc} flush>
             <ul className="divide-y divide-border">
               {g.items.map((it) => (
-                <li key={it.title}>
-                  <SettingsRow item={it} />
-                </li>
+                it.edition ? (
+                  <EditionOnly key={it.title} feature={it.edition}>
+                    <li><SettingsRow item={it} /></li>
+                  </EditionOnly>
+                ) : (
+                  <li key={it.title}>
+                    <SettingsRow item={it} />
+                  </li>
+                )
               ))}
             </ul>
           </SettingsSection>

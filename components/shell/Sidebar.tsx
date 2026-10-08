@@ -12,6 +12,8 @@ import {
   Settings, Library, DraftSow, CalendarClock, House, Gauge, ChevronLeft, ChevronRight, ListChecks, FileText, Building2,
 } from "@/components/ui/icons";
 import { SETTINGS_ITEMS } from "@/components/settings/SettingsNav";
+import { editionHas, type EditionFeature } from "@/lib/edition";
+import { useEdition, useGovernMe } from "@/lib/govern/queries";
 
 type NavItem = {
   label: string;
@@ -21,6 +23,8 @@ type NavItem = {
   action?: "copilot";
   /** Opens a sub-menu in the sidebar: shows a › at the end of the row. */
   drill?: boolean;
+  /** Shown only in editions that include this feature (Requirement 7). */
+  edition?: EditionFeature;
 };
 
 // One list, ordered by how often people need each place. Icons stay
@@ -36,10 +40,14 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Obligations", href: "/obligations", icon: ListChecks },
   { label: "Reports", href: "/reports", icon: Gauge },
   { label: "Insights", href: "/insights", icon: BarChart3 },
-  { label: "Draft SOW", href: "/draft", icon: DraftSow },
+  { label: "Draft SOW", href: "/draft", icon: DraftSow, edition: "sowDrafting" },
   { label: "Sonar", action: "copilot", icon: Sonar },
   { label: "Settings", href: "/settings", icon: Settings, drill: true },
 ];
+
+// A leader's view is five places: what needs them, the board, the records,
+// and the two reporting views. Everything else stays one link away.
+const LEADER_HREFS = new Set(["/home", "/workflow", "/contracts", "/reports", "/insights"]);
 
 // Every routable destination in the rail, so the longest-prefix match below
 // decides the one active item. (Help lives in the top bar.)
@@ -81,6 +89,12 @@ export function Sidebar({
   onOpenCopilot?: () => void;
 } = {}) {
   const pathname = usePathname() ?? "";
+  const me = useGovernMe();
+  const edition = useEdition();
+  const isLeader = me.data?.role === "leader";
+  const navItems = NAV_ITEMS.filter((i) =>
+    (!i.edition || editionHas(edition, i.edition)) && (!isLeader || (i.href ? LEADER_HREFS.has(i.href) : false)));
+  const settingsItems = SETTINGS_ITEMS.filter((i) => !i.edition || editionHas(edition, i.edition));
   // Collapse state is shared with the top bar, which holds the toggle button.
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const setCollapsed = useUIStore((s) => s.setSidebarCollapsed);
@@ -192,7 +206,7 @@ export function Sidebar({
               className="sidebar-scroll h-full w-1/2 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-3"
             >
               <ul className="flex flex-col gap-0.5">
-                {NAV_ITEMS.map((item) => (
+                {navItems.map((item) => (
                   <NavRow
                     key={item.label}
                     item={item}
@@ -222,7 +236,7 @@ export function Sidebar({
                 {!collapsed && <span>Settings</span>}
               </button>
               <ul className="flex flex-col gap-0.5 border-t border-sidebar-border pt-2">
-                {SETTINGS_ITEMS.map((item) => (
+                {settingsItems.map((item) => (
                   <NavRow
                     key={item.href}
                     item={{ label: item.label, href: item.href, icon: item.icon }}

@@ -5,6 +5,7 @@
 // and act on in bulk (assign a reviewer). The board (Workflow) is the same
 // data by stage; this is the same data as records.
 
+import { EditionOnly } from "@/components/govern/EditionOnly";
 import { Suspense, useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -148,7 +149,7 @@ function Contracts() {
         subtitle="Every agreement in one place. Search, filter, sort and act on many at once."
         actions={
           <>
-            <Button asChild variant="outline" size="lg" className="md:h-9"><Link href="/draft"><FileSignature size={15} />Draft an SOW</Link></Button>
+            <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9"><Link href="/draft"><FileSignature size={15} />Draft an SOW</Link></Button></EditionOnly>
             <Button asChild size="lg" className="md:h-9"><Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />New agreement</Link></Button>
           </>
         }

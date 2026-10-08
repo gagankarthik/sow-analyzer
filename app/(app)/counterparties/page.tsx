@@ -1,6 +1,6 @@
 "use client";
 
-// Counterparties: one row per organisation you contract with, built from
+// Counterparties: one row per organization you contract with, built from
 // every contract that names it. Relationship comes from the money direction
 // (money in: customer or sponsor; money out: vendor). Selecting one opens
 // All contracts filtered to it.

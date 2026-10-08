@@ -136,7 +136,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
 
       {shown.length === 0 ? (
         <p className="rounded-xl border border-dashed border-[var(--ink-300)] px-4 py-6 text-sm text-[var(--ink-700)]">
-          {view === "action" ? "No clause needs a look. Everything is within the matrix or an accepted fallback." : view === "beneficial" ? "No terms were tagged as favouring your organisation." : "No clauses were checked."}
+          {view === "action" ? "No clause needs a look. Everything is within the matrix or an accepted fallback." : view === "beneficial" ? "No terms were tagged as favouring your organization." : "No clauses were checked."}
         </p>
       ) : (
         <ul className="flex flex-col gap-2.5">

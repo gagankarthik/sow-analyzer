@@ -1,7 +1,7 @@
 "use client";
 
 // Obligations: every report, payment, milestone and term end the signed
-// agreements commit the organisation to, across all contracts. Sonar finds
+// agreements commit the organization to, across all contracts. Sonar finds
 // them when an agreement is signed and they stay "Needs verification" until a
 // person confirms them; people add more on the contract page. Select rows to
 // verify or complete them in bulk.
