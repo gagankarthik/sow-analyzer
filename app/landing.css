@@ -712,6 +712,8 @@
   .lp-footer { background: var(--lp-structure); color: var(--lp-on-structure-2); }
   .lp-footer .lp-navlink { color: var(--lp-on-structure-2); }
   .lp-footer .lp-navlink:hover { color: var(--lp-on-structure); }
+  .lp-navlink.lp-privacy-choices { display: inline-flex; flex-direction: row; align-items: center; gap: 0.5rem; white-space: nowrap; }
+  .lp-privacy-choices svg { flex-shrink: 0; }
   .lp-footer .lp-link { color: #7AA7FF; }
   .lp-footer :focus-visible { outline-color: #7AA7FF; }
   .lp-footer-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.5rem 2rem; padding-block: 4.5rem 3.5rem; }
