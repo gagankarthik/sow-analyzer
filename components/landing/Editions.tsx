@@ -64,38 +64,46 @@ export function Editions() {
               hidden={active !== id}
               className="lp-epanel"
             >
-              <div className="lp-epanel-intro">
-                <h3 className="lp-edition-name">Govern {e.name}</h3>
-                <p className="lp-edition-audience">{e.audience}</p>
-                <p className="lp-edition-label">Agreements</p>
-                <ul className="lp-edition-chips">
-                  {e.agreements.slice(0, 6).map((a) => <li key={a}>{a}</li>)}
-                </ul>
-                <Link href={`/editions/${id}`} className="lp-trust-link mt-8">
+              <div className="lp-epanel-head">
+                <div>
+                  <h3 className="lp-edition-name">Govern {e.name}</h3>
+                  <p className="lp-edition-audience">{e.audience}</p>
+                </div>
+                <Link href={`/editions/${id}`} className="lp-trust-link lp-epanel-link">
                   Explore Govern {e.name} <ArrowRight size={14} aria-hidden="true" />
                 </Link>
               </div>
-              <div className="lp-epanel-detail">
-                <p className="lp-edition-label mt-0">Checked against your matrix</p>
-                <dl className="lp-edition-list">
-                  {e.checks.map((c) => (
-                    <div key={c.title}>
-                      <dt><Check size={16} aria-hidden="true" />{c.title}</dt>
-                      <dd>{c.body}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="lp-edition-label">Built in</p>
-                <ul className="lp-epanel-features">
-                  {e.features.map((f) => (
-                    <li key={f.title}><b>{f.title}.</b> {f.body}</li>
-                  ))}
-                </ul>
+
+              <ul className="lp-edition-chips lp-epanel-chips" aria-label="Agreements">
+                {e.agreements.slice(0, 5).map((a) => <li key={a}>{a}</li>)}
+              </ul>
+
+              <div className="lp-epanel-cols">
+                <EditionList label="Checked against your matrix" items={e.checks} />
+                <EditionList label="Built in" items={e.features} />
               </div>
             </div>
           );
         })}
       </div>
     </section>
+  );
+}
+
+/** One column of the panel: a label, then title-and-line items, styled the
+ *  same for checks and features so the two read as a pair. */
+function EditionList({ label, items }: { label: string; items: { title: string; body: string }[] }) {
+  return (
+    <div>
+      <p className="lp-edition-label mt-0">{label}</p>
+      <dl className="lp-epanel-list">
+        {items.map((it) => (
+          <div key={it.title}>
+            <dt><Check size={16} aria-hidden="true" />{it.title}</dt>
+            <dd>{it.body}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

@@ -1183,12 +1183,19 @@
   .lp-eswitch-tab:hover { color: var(--lp-ink); background: var(--lp-subtle); }
   .lp-eswitch-tab[aria-selected="true"] { background: var(--lp-ink); color: #FFFFFF; }
   .lp-eswitch-caption { margin-top: 0.75rem; text-align: center; font-size: var(--text-sm); color: var(--lp-ink-3); }
-  .lp-epanel { display: grid; gap: 2.5rem; margin-top: 1.75rem; padding: 2rem; border: 1px solid var(--lp-line); border-radius: 24px; background: var(--lp-surface); }
+  .lp-epanel { margin-top: 1.75rem; padding: 1.75rem; border: 1px solid var(--lp-line); border-radius: 24px; background: var(--lp-surface); }
   .lp-epanel[hidden] { display: none; }
-  @media (min-width: 900px) { .lp-epanel { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 4rem; padding: 2.75rem; } }
-  .lp-epanel-intro { display: flex; flex-direction: column; align-items: flex-start; }
-  .lp-epanel-intro .lp-edition-name { margin-top: 0; }
-  .lp-epanel-features { display: grid; gap: 0.6rem; margin-top: 0.6rem; color: var(--lp-ink-2); }
-  .lp-epanel-features b { font-weight: 600; color: var(--lp-ink); }
+  @media (min-width: 900px) { .lp-epanel { padding: 2.5rem; } }
+  .lp-epanel-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem 2rem; }
+  .lp-epanel-head .lp-edition-name { margin-top: 0; }
+  .lp-epanel-head .lp-edition-audience { margin-top: 0.5rem; }
+  .lp-epanel-link { margin-top: 0.35rem; flex-shrink: 0; }
+  .lp-epanel-chips { margin-top: 1.5rem; }
+  .lp-epanel-cols { display: grid; gap: 2rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--lp-line); }
+  @media (min-width: 768px) { .lp-epanel-cols { grid-template-columns: 1fr 1fr; gap: 3rem; } }
+  .lp-epanel-list { display: grid; gap: 1.25rem; margin-top: 1rem; }
+  .lp-epanel-list dt { display: flex; align-items: flex-start; gap: 0.5rem; font-weight: 600; color: var(--lp-ink); }
+  .lp-epanel-list dt svg { flex-shrink: 0; margin-top: 0.3em; color: var(--lp-accent); }
+  .lp-epanel-list dd { margin-top: 0.25rem; padding-left: 1.5rem; color: var(--lp-ink-2); }
   .lp-edition-label.mt-0 { margin-top: 0; }
 }

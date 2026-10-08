@@ -42,6 +42,7 @@ export const EDITIONS: Record<EditionId, EditionPage> = {
       { title: "Your matrix, imported from Excel", body: "Upload the matrix your office already keeps. Edit a position and every open agreement is re-checked." },
       { title: "Licensing income after signature", body: "Royalties, milestones and annual fees become tracked obligations, with recurring reports scheduled for you." },
       { title: "Routed to the right office", body: "Each exception names the office that decides it, so nothing waits on the wrong desk." },
+      { title: "One record per agreement", body: "The agreement, its amendments, comments and decisions in one place, with an owner and a next step." },
     ],
     faq: [
       { q: "Which research agreements does Govern Campus review?", a: "Sponsored research, licenses and options, material transfer, grants and subawards, clinical trial, data use and confidentiality agreements, plus software purchases." },
@@ -68,6 +69,7 @@ export const EDITIONS: Record<EditionId, EditionPage> = {
       { title: "Draft a SOW in minutes", body: "Answer a short questionnaire and Sonar drafts an editable statement of work you can export." },
       { title: "Every amendment reconciled", body: "Amendments are compared with the original SOW, and the contract value follows each signed change." },
       { title: "One record per engagement", body: "The MSA, its SOWs and every change order in one project, with an owner and a next step." },
+      { title: "Routed to the right team", body: "Each exception names who decides it, from procurement to legal and IT security." },
     ],
     faq: [
       { q: "What does Govern Workforce check in a SOW?", a: "Rates and increases, caps on billable hours, overtime approval, ownership of deliverables, payment terms, indemnity, liability and termination, against your positions." },
