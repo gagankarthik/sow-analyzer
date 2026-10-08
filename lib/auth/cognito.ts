@@ -267,12 +267,50 @@ export function getCurrentUser(): CognitoUser | null {
 }
 
 /** Resolve the active session, transparently refreshing via the refresh token. */
+/** A token refresh that failed because Cognito could not be reached, not
+ *  because the session is gone. Callers keep the user signed in and retry. */
+export class SessionUnavailableError extends AuthError {
+  constructor() {
+    super("SessionUnavailable", "Could not reach the sign-in service. Retrying.");
+  }
+}
+
+function isNetworkFailure(err: unknown): boolean {
+  const e = err as CognitoLikeError | null;
+  const text = `${e?.code ?? ""} ${e?.name ?? ""} ${e?.message ?? ""}`;
+  return /network|failed to fetch|timeout|timed out|load failed/i.test(text)
+    || (typeof navigator !== "undefined" && navigator.onLine === false);
+}
+
+/**
+ * The current session, refreshed by Cognito when the ID token has expired.
+ * null = there is no session (signed out, or the refresh token is revoked or
+ * expired). Throws SessionUnavailableError when the refresh could not reach
+ * Cognito, so a network blip never reads as a sign-out.
+ */
 export async function getSession(): Promise<CognitoUserSession | null> {
   const user = getCurrentUser();
   if (!user) return null;
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     user.getSession((err: Error | null, session: CognitoUserSession | null) => {
-      if (err || !session || !session.isValid()) return resolve(null);
+      if (err) return isNetworkFailure(err) ? reject(new SessionUnavailableError()) : resolve(null);
+      if (!session || !session.isValid()) return resolve(null);
+      persist(session);
+      resolve(session);
+    });
+  });
+}
+
+/** Renew the tokens now with the refresh token, even if the ID token is still valid. */
+export async function forceRefreshSession(): Promise<CognitoUserSession | null> {
+  const user = getCurrentUser();
+  if (!user) return null;
+  const current = await getSession();
+  if (!current) return null;
+  return new Promise((resolve, reject) => {
+    user.refreshSession(current.getRefreshToken(), (err: Error | null, session: CognitoUserSession | null) => {
+      if (err) return isNetworkFailure(err) ? reject(new SessionUnavailableError()) : resolve(null);
+      if (!session) return resolve(null);
       persist(session);
       resolve(session);
     });

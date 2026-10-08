@@ -4,8 +4,20 @@
 // enforcement lives at the API Gateway JWT authorizer, so a tampered cookie
 // gains nothing: the backend rejects any request without a valid Cognito JWT.
 
-/** Name of the cookie that mirrors the Cognito ID token for proxy gating. */
+/** Name of the cookie that mirrors the Cognito ID token (server routes read it). */
 export const SESSION_COOKIE = "bq.idtoken";
+
+/**
+ * A marker that a Cognito session (refresh token) exists in this browser. The
+ * ID token lives 60 minutes and is only renewed when the app asks Cognito, so
+ * gating pages on it signed people out after an hour even though their
+ * session was fine. The proxy gates on this marker instead; it holds no
+ * secret, lasts as long as the refresh token, and the app re-checks the real
+ * Cognito session on load (AppShell), so a stale marker opens nothing.
+ */
+export const SESSION_MARKER_COOKIE = "bq.session";
+/** Cognito's default refresh-token lifetime (the pool does not override it). */
+const SESSION_MARKER_MAX_AGE = 30 * 24 * 60 * 60;
 
 /** Decode a JWT payload without verifying its signature (optimistic only). */
 export function decodeJwt(token: string): Record<string, unknown> | null {
@@ -36,12 +48,14 @@ export function setSessionCookie(idToken: string, expSeconds: number): void {
       ? "; Secure"
       : "";
   document.cookie = `${SESSION_COOKIE}=${idToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict${secure}`;
+  document.cookie = `${SESSION_MARKER_COOKIE}=1; Path=/; Max-Age=${SESSION_MARKER_MAX_AGE}; SameSite=Strict${secure}`;
 }
 
 /** Remove the session cookie (client only). */
 export function clearSessionCookie(): void {
   if (typeof document === "undefined") return;
   document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Strict`;
+  document.cookie = `${SESSION_MARKER_COOKIE}=; Path=/; Max-Age=0; SameSite=Strict`;
 }
 
 // Runtime-agnostic base64url decode (works in the browser via atob and in the

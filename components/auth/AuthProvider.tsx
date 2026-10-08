@@ -10,11 +10,17 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  SessionUnavailableError,
   getAuthUser,
   signIn as cognitoSignIn,
   signOut as cognitoSignOut,
   type AuthUser,
 } from "@/lib/auth/cognito";
+
+/** Renew this long before the ID token expires. */
+const RENEW_BEFORE_MS = 5 * 60_000;
+/** Retry delay when Cognito could not be reached. */
+const RETRY_MS = 15_000;
 
 type Status = "loading" | "authenticated" | "unauthenticated";
 
@@ -33,12 +39,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
+  const [retryTick, setRetryTick] = useState(0);
+
   const refresh = useCallback(async () => {
     try {
       const u = await getAuthUser();
       setUser(u);
       setStatus(u ? "authenticated" : "unauthenticated");
-    } catch {
+    } catch (err) {
+      // Cognito unreachable: not a sign-out. Keep what we have and try again.
+      if (err instanceof SessionUnavailableError) {
+        window.setTimeout(() => setRetryTick((n) => n + 1), RETRY_MS);
+        return;
+      }
       setUser(null);
       setStatus("unauthenticated");
     }
@@ -47,9 +60,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Read the session once on mount. The state updates happen after the awaited
   // lookup, not synchronously in the effect body.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- async session read on mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async session read on mount (and on retry)
     void refresh();
-  }, [refresh]);
+  }, [refresh, retryTick]);
+
+  // Renew the tokens a few minutes before the ID token expires, so the session
+  // cookie and API calls never carry an expired token.
+  const exp = user?.exp ?? 0;
+  useEffect(() => {
+    if (status !== "authenticated" || !exp) return;
+    const wait = Math.max(5_000, exp * 1000 - Date.now() - RENEW_BEFORE_MS);
+    const timer = window.setTimeout(() => void refresh(), wait);
+    return () => window.clearTimeout(timer);
+  }, [status, exp, refresh]);
+
+  // A laptop waking from sleep or a tab coming back can be past expiry
+  // (timers do not run while asleep): re-check the session right away.
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && exp * 1000 - Date.now() < RENEW_BEFORE_MS) void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onVisible);
+    };
+  }, [status, exp, refresh]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {

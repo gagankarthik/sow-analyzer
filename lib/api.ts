@@ -23,7 +23,7 @@ import {
   type PlaybookRule,
   type PlaybookRuleInput,
 } from "./playbook"
-import { getIdToken } from "./auth/cognito"
+import { forceRefreshSession, getIdToken } from "./auth/cognito"
 import { clearSessionCookie } from "./auth/session"
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
@@ -89,10 +89,20 @@ function endSession(): void {
 // one auth, session and error path.
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   assertApiConfigured()
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const send = async () => fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: { ...(await authHeaders()), ...(init?.headers ?? {}) },
   })
+  let res = await send()
+  // A 401 can mean the token expired between reading and sending it (or the
+  // clocks disagree). Renew once and retry before ending the session.
+  if (res.status === 401) {
+    const renewed = await forceRefreshSession().catch(() => "unreachable" as const)
+    if (renewed === "unreachable") {
+      throw new ApiError("Could not reach the sign-in service. Check your connection and try again.", 503, "auth_unreachable")
+    }
+    if (renewed) res = await send()
+  }
   if (res.ok) return res.json() as Promise<T>
 
   const body = (await res.json().catch(() => ({}))) as { error?: string; message?: string; code?: string }

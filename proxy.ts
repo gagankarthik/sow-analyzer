@@ -7,7 +7,7 @@
 // The route handlers under /api verify the token themselves (lib/auth/verify).
 
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, isTokenValid } from "@/lib/auth/session";
+import { SESSION_COOKIE, SESSION_MARKER_COOKIE, isTokenValid } from "@/lib/auth/session";
 
 // The signed-in workspace: one entry per top-level folder in app/(app). A new
 // folder there must be added here (and to app/robots.ts). AppShell also sends
@@ -43,7 +43,9 @@ function isProtected(pathname: string): boolean {
 export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get(SESSION_COOKIE)?.value;
-  const authed = isTokenValid(token);
+  // An expired ID token is normal (it lives an hour); the marker says a
+  // refreshable session exists, and the app renews the token on load.
+  const authed = isTokenValid(token) || req.cookies.get(SESSION_MARKER_COOKIE)?.value === "1";
 
   if (authed && SIGNED_OUT_ONLY.has(pathname)) {
     return NextResponse.redirect(new URL("/home", req.nextUrl));
