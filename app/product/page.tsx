@@ -86,19 +86,33 @@ export default function ProductPage() {
       {/* Sonar, the AI inside every step. */}
       <section id="sonar" className="lp-wrap scroll-mt-32 pt-12" aria-labelledby="sonar-title">
         <div className="lp-sonar sonar-rainbow">
-          <SonarMark size="lg" tile />
-          <div className="min-w-0">
-            <h2 id="sonar-title" className="lp-sonar-title">Sonar, the AI inside every step</h2>
+          <div className="lp-sonar-copy">
+            <p className="lp-sonar-kicker"><SonarMark size="sm" /> Sonar</p>
+            <h2 id="sonar-title" className="lp-sonar-title">The AI inside every step</h2>
             <p className="lp-sonar-body">
               Sonar reads each agreement, scanned pages included, files every clause against your matrix, suggests the
               language to send back, and answers questions about any contract. Your matrix decides the rating; Sonar shows its work.
             </p>
+            <dl className="lp-sonar-facts">
+              <div><dt>Reads</dt><dd>PDF, Word and scanned pages</dd></div>
+              <div><dt>Rates</dt><dd>Every clause against your positions</dd></div>
+              <div><dt>Drafts</dt><dd>The language to send back</dd></div>
+            </dl>
           </div>
-          <ul className="lp-sonar-facts">
-            <li><b>Reads</b> PDF, Word and scans</li>
-            <li><b>Rates</b> against your positions</li>
-            <li><b>Drafts</b> suggested language</li>
-          </ul>
+          {/* A short example conversation (illustrative). */}
+          <div className="lp-sonar-chat" aria-hidden="true">
+            <p className="lp-sonar-chat-head"><SonarMark size="xs" /> Ask Sonar · Exclusive license</p>
+            <p className="lp-sonar-q">What needs to change before signing?</p>
+            <div className="lp-sonar-a">
+              <p>Two clauses are outside your matrix.</p>
+              <ul>
+                <li><b>Indemnification</b> <span className="lp-sonar-cite">§9.2</span> is uncapped; your matrix caps it at fees paid.</li>
+                <li><b>Governing law</b> <span className="lp-sonar-cite">§14.2</span> names Delaware; your matrix requires your home state.</li>
+              </ul>
+              <p className="lp-sonar-next"><b>Next step:</b> send back with the suggested language.</p>
+            </div>
+            <p className="lp-sonar-input">Ask a follow-up…</p>
+          </div>
         </div>
       </section>
 

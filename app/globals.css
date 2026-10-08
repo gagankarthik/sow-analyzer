@@ -918,9 +918,10 @@ html { scroll-behavior: smooth; }
 /* Sonar's button: a rainbow edge that slowly turns, inside a white pill. */
 @property --sonar-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
 @keyframes sonar-ring { to { --sonar-angle: 360deg; } }
-.sonar-button { position: relative; isolation: isolate; }
+/* The rainbow edge keeps each element's own corner radius. */
+.sonar-button { position: relative; isolation: isolate; border-radius: 10px; }
 .sonar-button, .sonar-rainbow {
-  border: 1.5px solid transparent; border-radius: 9999px;
+  border: 1.5px solid transparent;
   background:
     linear-gradient(var(--sonar-fill, var(--card)), var(--sonar-fill, var(--card))) padding-box,
     conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;

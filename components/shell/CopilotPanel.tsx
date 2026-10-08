@@ -28,16 +28,21 @@ type Msg = {
   error?: boolean;
 };
 
+// The questions reviewers and leaders ask most, worded the way Sonar answers best.
 const SUGGESTIONS = [
-  "Summarise this contract",
-  "What are the riskiest clauses?",
-  "What are the payment terms?",
-  "Can either side terminate early?",
+  "What needs to change before signing?",
+  "Summarize this contract",
+  "Which terms favor us?",
+  "What are the key dates and payments?",
 ];
+
+/** Quick follow-ups offered under Sonar's latest answer. */
+const FOLLOW_UPS = ["Show the suggested language", "What is the next step?", "Explain it more simply"];
 
 /** The id in /projects/<id>/…; null on the list, new and upload pages. */
 function routeIdFromPath(p: string): string | null {
-  const m = /^\/projects\/([^/]+)/.exec(p);
+  // A contract page is named by its first document's id.
+  const m = /^\/(?:projects|contracts)\/([^/?#]+)/.exec(p);
   if (!m || m[1] === "new" || m[1] === "upload") return null;
   return m[1];
 }
@@ -91,7 +96,8 @@ export function CopilotPanel({ open, onClose }: Props) {
     setMessages((m) => [...m, { role: "user", content: q }]);
     setBusy(true);
     try {
-      const res = await askSonar(docId, q);
+      const history = messages.filter((m) => !m.error).slice(-6).map((m) => ({ role: m.role, content: m.content }));
+      const res = await askSonar(docId, q, { history });
       setMessages((m) => [...m, { role: "assistant", content: res.answer, citations: res.citations }]);
     } catch (e) {
       setMessages((m) => [...m, { role: "assistant", content: e instanceof Error ? e.message : "Sonar couldn't answer. Try again.", error: true }]);
@@ -101,20 +107,20 @@ export function CopilotPanel({ open, onClose }: Props) {
   }
 
   // The picker names the contract; the subtitle says what Sonar does.
-  const status = docsLoading ? "Loading your contracts…" : "Answers from a contract's clauses, with sources";
+  const status = docsLoading ? "Loading your contracts…" : "Answers from the agreement and your matrix, with sources";
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="flex flex-col gap-0 border-l border-border p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[440px]"
+        className="flex flex-col gap-0 border-l border-border p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[480px]"
       >
         {/* Header: who, what it's answering from, new chat, close. */}
         <SheetHeader className="shrink-0 gap-3 border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
-            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--navy-900)] text-white" aria-hidden>
-              <Sonar size={18} />
+            <span className="sonar-rainbow inline-flex size-10 shrink-0 items-center justify-center !rounded-xl" aria-hidden>
+              <Sonar size={20} className="text-[var(--brand-primary-600)]" />
             </span>
             <div className="min-w-0 flex-1">
               <SheetTitle className="text-base font-semibold text-foreground">Sonar</SheetTitle>
@@ -164,7 +170,7 @@ export function CopilotPanel({ open, onClose }: Props) {
           ) : !docId ? (
             <Intro title="Ask about a contract" body="Choose a contract above. Every answer comes from its clauses, with the clauses cited." />
           ) : messages.length === 0 ? (
-            <Intro title="What would you like to know?" body={`Answers come only from ${doc?.title ? `“${doc.title}”` : "this contract"}, and cite the clauses they use.`}>
+            <Intro title="What would you like to know?" body={`Sonar answers from ${doc?.title ? `“${doc.title}”` : "this contract"} and your matrix review, and cites the clauses it uses.`}>
               <div className="mt-5 grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
                   <button
@@ -181,6 +187,16 @@ export function CopilotPanel({ open, onClose }: Props) {
           ) : (
             <div className="flex flex-col gap-5">
               {messages.map((m, i) => <Message key={i} msg={m} />)}
+              {!busy && messages.length > 0 && messages[messages.length - 1].role === "assistant" && !messages[messages.length - 1].error && (
+                <div className="flex flex-wrap gap-1.5 pl-10" aria-label="Follow-up questions">
+                  {FOLLOW_UPS.map((f) => (
+                    <button key={f} type="button" onClick={() => send(f)}
+                      className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-[var(--ink-700)] transition-colors hover:border-[var(--brand-primary-300)] hover:bg-[var(--brand-primary-50)] hover:text-foreground">
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              )}
               {busy && (
                 <div className="flex items-start gap-3" role="status" aria-label="Sonar is answering">
                   <SonarMark />
@@ -221,10 +237,72 @@ export function CopilotPanel({ open, onClose }: Props) {
 
 function SonarMark() {
   return (
-    <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--navy-900)] text-white" aria-hidden>
-      <Sonar size={14} />
+    <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)] text-[var(--brand-primary-600)]" aria-hidden>
+      <Sonar size={15} />
     </span>
   );
+}
+
+/* Sonar's answer, lightly formatted: paragraphs, bullet and numbered lists,
+   **bold**, clause references as chips, and the closing "Next step:" as a
+   callout. Plain text in, React out (no HTML is injected). */
+function Answer({ text }: { text: string }) {
+  const lines = text.replace(/\r/g, "").split("\n");
+  const blocks: React.ReactNode[] = [];
+  let list: { ordered: boolean; items: string[] } | null = null;
+  const flush = () => {
+    if (!list) return;
+    const Tag = list.ordered ? "ol" : "ul";
+    blocks.push(
+      <Tag key={blocks.length} className={list.ordered ? "ml-5 list-decimal space-y-1.5" : "ml-4 list-disc space-y-1.5 marker:text-[var(--ink-400)]"}>
+        {list.items.map((it, i) => <li key={i} className="pl-1">{inline(it)}</li>)}
+      </Tag>,
+    );
+    list = null;
+  };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    const bullet = /^\s*[-*•]\s+(.*)$/.exec(line);
+    const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+    if (bullet || numbered) {
+      const ordered = !!numbered;
+      if (!list || list.ordered !== ordered) { flush(); list = { ordered, items: [] }; }
+      list.items.push((bullet ?? numbered)![1]);
+      continue;
+    }
+    flush();
+    if (!line.trim()) continue;
+    const next = /^\**next step:?\**\s*(.*)$/i.exec(line.trim());
+    if (next) {
+      blocks.push(
+        <p key={blocks.length} className="rounded-lg border border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] px-3 py-2 text-[var(--ink-800)]">
+          <span className="font-semibold text-[var(--brand-primary-700)]">Next step: </span>{inline(next[1])}
+        </p>,
+      );
+      continue;
+    }
+    blocks.push(<p key={blocks.length}>{inline(line)}</p>);
+  }
+  flush();
+  return <div className="space-y-2.5 break-words text-sm leading-relaxed text-foreground">{blocks}</div>;
+}
+
+/** **bold** and [§7.2] clause chips inside a line. */
+function inline(s: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  const re = /(\*\*[^*]+\*\*|\[§\s*[^\]]{1,60}\])/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(s))) {
+    if (m.index > last) out.push(s.slice(last, m.index));
+    const t = m[0];
+    out.push(t.startsWith("**")
+      ? <strong key={out.length} className="font-semibold">{t.slice(2, -2)}</strong>
+      : <span key={out.length} className="mx-0.5 inline-flex items-center rounded border border-border bg-card px-1 font-mono text-[11px] font-semibold text-[var(--brand-primary-700)]">{t.slice(1, -1).replace(/\s+/g, "")}</span>);
+    last = m.index + t.length;
+  }
+  if (last < s.length) out.push(s.slice(last));
+  return out;
 }
 
 function TypingDots() {
@@ -271,7 +349,7 @@ function Message({ msg }: { msg: Msg }) {
         {msg.error ? (
           <p role="alert" className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">{msg.content}</p>
         ) : (
-          <p className="whitespace-pre-line break-words text-sm leading-relaxed text-foreground">{msg.content}</p>
+          <Answer text={msg.content} />
         )}
         {citations.length > 0 && (
           <div className="mt-3">
@@ -309,8 +387,8 @@ function dedupeCitations(cs: ChatCitation[]): ChatCitation[] {
 function Intro({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center px-2 pt-6 text-center">
-      <span className="mb-4 inline-flex size-12 items-center justify-center rounded-xl bg-[var(--navy-900)] text-white" aria-hidden>
-        <Sonar size={22} />
+      <span className="sonar-rainbow mb-4 inline-flex size-14 items-center justify-center !rounded-2xl" aria-hidden>
+        <Sonar size={26} className="text-[var(--brand-primary-600)]" />
       </span>
       <p className="text-lg font-semibold text-foreground">{title}</p>
       <p className="mt-1 max-w-[42ch] text-sm leading-relaxed text-[var(--ink-600)]">{body}</p>

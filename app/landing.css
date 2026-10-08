@@ -482,7 +482,7 @@
     .lp-loop-core {
       position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%);
       display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.125rem;
-      --sonar-fill: var(--lp-canvas);
+      --sonar-fill: var(--lp-canvas); border-radius: 9999px;
       font-size: var(--text-base); font-weight: 500; color: var(--lp-ink); white-space: nowrap;
     }
   }
@@ -1220,13 +1220,27 @@
 
   .lp-sonar {
     --sonar-fill: var(--lp-surface);
-    display: grid; gap: 1.25rem; align-items: center; border-radius: 24px; padding: 1.5rem;
+    display: grid; gap: 2rem; border-radius: 24px; padding: 1.75rem;
   }
-  @media (min-width: 900px) { .lp-sonar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 1.75rem; padding: 1.75rem 2rem; } }
-  .lp-sonar-title { font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; color: var(--lp-ink); }
-  .lp-sonar-body { margin-top: 0.35rem; max-width: 46rem; color: var(--lp-ink-2); }
-  .lp-sonar-facts { display: grid; gap: 0.4rem; font-size: var(--text-sm); color: var(--lp-ink-2); }
-  .lp-sonar-facts b { font-weight: 600; color: var(--lp-ink); }
+  @media (min-width: 900px) { .lp-sonar { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 3rem; padding: 2.5rem; align-items: center; } }
+  .lp-sonar-kicker { display: inline-flex; align-items: center; gap: 0.5rem; font-size: var(--text-sm); font-weight: 600; color: var(--lp-soft-ink); }
+  .lp-sonar-title { margin-top: 0.75rem; font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; color: var(--lp-ink); }
+  .lp-sonar-body { margin-top: 0.75rem; max-width: 36rem; color: var(--lp-ink-2); }
+  .lp-sonar-facts { display: grid; gap: 0.75rem; margin-top: 1.5rem; }
+  @media (min-width: 640px) { .lp-sonar-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .lp-sonar-facts div { border-top: 1px solid var(--lp-line); padding-top: 0.75rem; }
+  .lp-sonar-facts dt { font-weight: 600; color: var(--lp-ink); }
+  .lp-sonar-facts dd { margin-top: 0.2rem; font-size: var(--text-sm); color: var(--lp-ink-2); }
+
+  .lp-sonar-chat { display: flex; flex-direction: column; gap: 0.75rem; border: 1px solid var(--lp-line); border-radius: 16px; background: var(--lp-canvas); padding: 1rem; font-size: var(--text-sm); }
+  .lp-sonar-chat-head { display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--lp-line); font-size: 0.8125rem; font-weight: 600; color: var(--lp-ink-2); }
+  .lp-sonar-q { align-self: flex-end; max-width: 85%; border-radius: 14px 14px 4px 14px; background: var(--lp-accent); padding: 0.55rem 0.85rem; color: #FFFFFF; }
+  .lp-sonar-a { display: grid; gap: 0.5rem; border-radius: 14px 14px 14px 4px; border: 1px solid var(--lp-line); background: var(--lp-surface); padding: 0.75rem 0.9rem; color: var(--lp-ink); }
+  .lp-sonar-a ul { display: grid; gap: 0.35rem; padding-left: 1rem; list-style: disc; color: var(--lp-ink-2); }
+  .lp-sonar-a b { color: var(--lp-ink); font-weight: 600; }
+  .lp-sonar-cite { display: inline-flex; border: 1px solid var(--lp-line); border-radius: 4px; padding: 0 0.25rem; font-family: var(--lp-mono); font-size: 0.6875rem; font-weight: 600; color: var(--lp-soft-ink); }
+  .lp-sonar-next { border-radius: 8px; background: var(--lp-soft); padding: 0.45rem 0.6rem; color: var(--lp-ink); }
+  .lp-sonar-input { border: 1px solid var(--lp-line-strong); border-radius: 10px; background: var(--lp-surface); padding: 0.55rem 0.8rem; color: var(--lp-ink-3); }
 
   .lp-features { padding-block: 2rem 5rem; }
   .lp-features .lp-feature {
@@ -1257,3 +1271,37 @@
   .lp-sheet-sonar:hover { transform: translateY(-1px); }
 }
 
+/* Solutions page: team rows beside a calm product view, then an industry grid. */
+@layer components {
+  .lp-sol-kicker { font-family: var(--lp-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--lp-soft-ink); }
+  .lp-sol-points { display: grid; gap: 0.55rem; margin-top: 0.35rem; }
+  .lp-sol-points li { display: flex; align-items: flex-start; gap: 0.55rem; font-size: var(--text-sm); color: var(--lp-ink); }
+  .lp-sol-points svg { flex-shrink: 0; margin-top: 0.15rem; color: var(--lp-accent); }
+  .lp-sol-grid { display: grid; gap: 1rem; margin-top: 2.5rem; }
+  @media (min-width: 700px) { .lp-sol-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1100px) { .lp-sol-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .lp-sol-card {
+    display: flex; flex-direction: column; gap: 0.6rem; padding: 1.5rem; border-radius: 20px;
+    border: 1px solid var(--lp-line); background: var(--lp-surface);
+    transition: transform var(--lp-dur) var(--lp-ease), box-shadow var(--lp-dur) var(--lp-ease), border-color var(--lp-dur) var(--lp-ease);
+  }
+  .lp-sol-card:hover { transform: translateY(-3px); border-color: var(--lp-line-strong); box-shadow: 0 18px 36px -24px rgba(11, 18, 32, 0.35); }
+  .lp-sol-card-title { margin-top: 0.4rem; font-size: var(--text-lg); font-weight: 600; letter-spacing: -0.01em; color: var(--lp-ink); }
+  .lp-sol-card-sub { font-size: var(--text-sm); font-weight: 500; color: var(--lp-soft-ink); }
+  .lp-sol-card-body { font-size: var(--text-sm); line-height: 1.55; color: var(--lp-ink-2); }
+  .lp-sol-workforce {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 2rem;
+    margin-top: 2rem; padding: 1.25rem 1.5rem; border-radius: 18px; border: 1px dashed var(--lp-line-strong);
+    font-size: var(--text-sm); color: var(--lp-ink-2);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    /* A short rise on load (not tied to scrolling, so nothing stays hidden). */
+    @supports (opacity: 0) {
+      .lp-sol-row, .lp-sol-card { animation: lp-sol-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+    }
+  }
+}
+@keyframes lp-sol-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@layer components {
+  @media (max-width: 639px) { .lp-features .lp-show-panel { padding: 0.875rem; border-radius: 18px; } }
+}

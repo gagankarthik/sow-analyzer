@@ -500,10 +500,15 @@ export async function getSimilarClauses(docId: string, clauseNumber: string, k =
 
 // Ask Sonar (RAG) about a document — embed → hybrid vector+BM25 search over
 // the document's clauses → grounded GPT answer with clause citations.
-export async function askSonar(docId: string, question: string, topK?: number): Promise<ChatResponse> {
+export async function askSonar(
+  docId: string,
+  question: string,
+  opts: { topK?: number; history?: { role: "user" | "assistant"; content: string }[] } = {},
+): Promise<ChatResponse> {
+  // `history`: the last few turns, so a follow-up keeps its meaning.
   return request<ChatResponse>(`/documents/${docId}/chat`, {
     method: "POST",
-    body: JSON.stringify(topK ? { question, topK } : { question }),
+    body: JSON.stringify({ question, ...(opts.topK ? { topK: opts.topK } : {}), ...(opts.history?.length ? { history: opts.history } : {}) }),
   })
 }
 
