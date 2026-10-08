@@ -85,6 +85,12 @@ export function Footer() {
                     </Link>
                   </li>
                 ))}
+                {/* Opens the cookie settings panel rather than a page. */}
+                {column.id === "company" && (
+                  <li>
+                    <CookieSettingsLink />
+                  </li>
+                )}
               </ul>
             </nav>
           ))}
@@ -103,7 +109,6 @@ export function Footer() {
           <div className="lp-footer-end">
             <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <span>© 2026 Blue-IQ. All rights reserved.</span>
-              <CookieSettingsLink />
               <PrivacyChoicesLink />
             </p>
             <a href="#main-content" className="lp-footer-top" aria-label="Back to top">
