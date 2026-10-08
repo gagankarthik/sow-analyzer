@@ -1,5 +1,7 @@
 "use client";
 
+import { docTypesFor } from "@/lib/doc-types";
+import { useEditionFeature } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
 import { stageLabel } from "@/lib/govern/labels";
 import { useMemo, useState } from "react";
@@ -76,6 +78,7 @@ export default function ProjectRoutePage() {
 }
 
 function DocumentOverview() {
+  const showSow = useEditionFeature("sowDocuments");
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
@@ -225,7 +228,7 @@ function DocumentOverview() {
                 ) : !classification ? (
                   <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
                 ) : (
-                  <p className="text-base text-[var(--ink-600)]">No summary was extracted. Open the SOW analyzer for the full clause breakdown.</p>
+                  <p className="text-base text-[var(--ink-600)]">No summary was extracted. Open the clause analysis for the full breakdown.</p>
                 )}
                 <div className="mt-4">
                   <Button variant="outline" size="lg" className="md:h-9" asChild>
@@ -394,7 +397,7 @@ function DocumentOverview() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><label htmlFor="edit-doc-title" className="text-sm font-medium text-foreground">Title</label><Input id="edit-doc-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Document title" className="h-10 text-base md:h-9" /></div>
             <div className="space-y-1.5"><label className="text-sm font-medium text-foreground">Document type</label>
-              <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}><SelectTrigger className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger><SelectContent>{DOC_TYPES.map((t) => <SelectItem key={t} value={t}>{docTypeLabel(t)}</SelectItem>)}</SelectContent></Select>
+              <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}><SelectTrigger className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger><SelectContent>{docTypesFor(DOC_TYPES, showSow).map((t) => <SelectItem key={t} value={t}>{docTypeLabel(t)}</SelectItem>)}</SelectContent></Select>
             </div>
             <div className="space-y-1"><p className="text-sm font-medium text-foreground">Stage</p>
               <p className="text-sm text-foreground">{LIFECYCLE_LABEL[editLifecycle]}</p>

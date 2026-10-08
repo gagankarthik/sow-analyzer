@@ -19,7 +19,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, Check, CheckCircle2, Loader2 } from "@/components/ui/icons";
 import { STAGE_LABEL, plural } from "@/lib/govern/labels";
-import { useContracts, useMatrix, useSaveWorkflowSettings, useWorkflowSettings } from "@/lib/govern/queries";
+import { useContracts, useEdition, useMatrix, useSaveWorkflowSettings, useWorkflowSettings } from "@/lib/govern/queries";
+import { EDITION_LABEL } from "@/lib/edition";
+import { EditionChoice } from "@/components/govern/EditionChoice";
 import type { OrganizationSettings, Stage } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +55,7 @@ export default function OrganizationSetupPage() {
   const total = Object.keys(done).length;
   const complete = Object.values(done).filter(Boolean).length;
   const canEdit = isAdmin && !roleLoading;
+  const edition = useEdition();
 
   const saveOrg = (organization: Partial<OrganizationSettings>, success: string) =>
     save.mutate({ organization }, {
@@ -99,8 +102,22 @@ export default function OrganizationSetupPage() {
 
             <ol className="flex flex-col gap-3">
               <Step n={1} title="Organization details" done={done.details}
-                body="Your organization's name, the currency values are reported in, and when your financial year starts.">
+                body="Your organization's name, the currency values are reported in, when your financial year starts, and the kind of agreements you review.">
                 <DetailsForm org={org} canEdit={canEdit} saving={save.isPending} onSave={(o) => saveOrg(o, "Organization details saved")} />
+                <EditionChoice
+                  current={edition}
+                  chosen={org.edition ?? null}
+                  canEdit={canEdit}
+                  saving={save.isPending}
+                  contractTypes={(contractsQ.data?.contracts ?? []).map((c) => c.agreementType)}
+                  onChoose={(e) => save.mutateAsync({ organization: { edition: e } }).then(
+                    () => { toast.success(`${EDITION_LABEL[e]} edition is on for everyone in ${org.name || "your organization"}`); },
+                    (err: unknown) => {
+                      toast.error("Couldn't switch the edition", { description: err instanceof Error ? err.message : "Please try again." });
+                      throw err;
+                    },
+                  )}
+                />
               </Step>
 
               <Step n={2} title="Governing law" done={done.law}

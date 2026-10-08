@@ -3,6 +3,7 @@
 // The review matrix (Requirement 1): one playbook per agreement type,
 // edited here, saved as dated versions, or loaded in bulk from Excel / CSV.
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -25,7 +26,7 @@ import { TypeSwitcher } from "@/components/govern/matrix/TypeSwitcher";
 import { VersionHistory, countsOf } from "@/components/govern/matrix/VersionHistory";
 import { diffSummary, useMatrixDraft } from "@/components/govern/matrix/use-matrix-draft";
 import { useMatrix, useSaveMatrix } from "@/lib/govern/queries";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, personName, plural } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, personName, plural } from "@/lib/govern/labels";
 import type { AgreementType, MatrixClause } from "@/lib/govern/types";
 
 export default function MatrixPage() {
@@ -34,7 +35,8 @@ export default function MatrixPage() {
   const save = useSaveMatrix();
   const draft = useMatrixDraft(data?.current.playbooks);
 
-  const [type, setType] = useState<AgreementType>(AGREEMENT_TYPES[0]);
+  const agreementTypes = useAgreementTypes();
+  const [type, setType] = useState<AgreementType>(agreementTypes[0]);
   const [clauseTarget, setClauseTarget] = useState<ClauseDialogTarget | null>(null);
   const [removing, setRemoving] = useState<MatrixClause | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -226,12 +228,13 @@ export default function MatrixPage() {
 
 /** Clause positions per agreement type: where the matrix is thin at a glance. */
 function CoverageBars({ counts, active }: { counts: Record<AgreementType, number>; active: AgreementType }) {
+  const agreementTypes = useAgreementTypes();
   const max = Math.max(1, ...Object.values(counts));
   return (
     <figure className="min-w-0 md:col-span-8">
       <figcaption className="mb-3 text-sm font-medium text-[var(--ink-600)]">Clause positions by agreement type</figcaption>
       <ul className="flex flex-col gap-2">
-        {AGREEMENT_TYPES.map((t) => {
+        {agreementTypes.map((t) => {
           const on = t === active;
           return (
             <li key={t} className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_2.5rem] items-center gap-3 text-sm">

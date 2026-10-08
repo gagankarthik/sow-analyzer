@@ -4,6 +4,8 @@
 // types. Assignment rules pick reviewers from this list. Edits are staged with
 // the rest of the page and saved together.
 
+import type { AgreementType } from "@/lib/govern/types";
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,13 +18,13 @@ import { SettingsSection } from "@/components/settings/SettingsNav";
 import { Chip, ErrorText, Field } from "@/components/govern/admin/shared";
 import { PersonDot } from "@/components/govern/primitives";
 import { Pencil, Plus, Trash2 } from "@/components/ui/icons";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, OFFICES, OFFICE_LABEL, plural } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, OFFICES, OFFICE_LABEL, plural } from "@/lib/govern/labels";
 import type { Reviewer } from "@/lib/govern/types";
 import { reviewerErrors, type SettingsDraft } from "./draft";
 import { ToggleChips } from "./ToggleChips";
 
 const OFFICE_OPTIONS = OFFICES.map((o) => ({ value: o, label: OFFICE_LABEL[o] }));
-const TYPE_OPTIONS = AGREEMENT_TYPES.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }));
+const typeOptions = (types: AgreementType[]) => types.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }));
 const EMPTY: Reviewer = { name: "", email: "", offices: [], agreementTypes: [] };
 
 export function ReviewersSection({
@@ -167,6 +169,7 @@ function ReviewerForm({
   onCancel: () => void;
   onSave: (r: Reviewer) => void;
 }) {
+  const TYPE_OPTIONS = typeOptions(useAgreementTypes());
   const uid = useId();
   const [r, setR] = useState<Reviewer>(initial);
   const [tried, setTried] = useState(false);

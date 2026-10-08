@@ -16,11 +16,13 @@ import { cn } from "@/lib/utils";
    has confirmed it, the contract it comes from, and the two things you do
    with it (verify, mark done). */
 
-export function ObligationPreview({ obligation: o, today, busy, onVerify, onDone, onClose }: {
+export function ObligationPreview({ obligation: o, today, busy, readOnly = false, onVerify, onDone, onClose }: {
   obligation: PortfolioObligation;
   /** Local midnight, from the page, so every date reads from the same "today". */
   today: number;
   busy: boolean;
+  /** Hide Verify and Mark done (leaders read only). */
+  readOnly?: boolean;
   onVerify: () => void;
   onDone: () => void;
   onClose: () => void;
@@ -49,8 +51,8 @@ export function ObligationPreview({ obligation: o, today, busy, onVerify, onDone
           <ChevronsRight size={17} aria-hidden />
         </button>
         <div className="flex gap-2">
-          {!o.verified && <Button size="sm" variant="outline" disabled={busy} onClick={onVerify}><BadgeCheck size={14} />Verify</Button>}
-          <Button size="sm" disabled={busy} onClick={onDone}><Check size={14} />Mark done</Button>
+          {!readOnly && !o.verified && <Button size="sm" variant="outline" disabled={busy} onClick={onVerify}><BadgeCheck size={14} />Verify</Button>}
+          {!readOnly && <Button size="sm" disabled={busy} onClick={onDone}><Check size={14} />Mark done</Button>}
         </div>
       </div>
 

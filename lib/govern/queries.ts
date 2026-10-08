@@ -10,7 +10,7 @@
  * list refreshes every minute while a page is open (and on focus).
  */
 
-import { editionHas, resolveEdition, type Edition, type EditionFeature } from "@/lib/edition";
+import { EDITION_AGREEMENT_TYPES, editionHas, resolveEdition, type Edition, type EditionFeature } from "@/lib/edition";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { isPermanentError } from "@/lib/api";
@@ -131,7 +131,21 @@ export function useGovernFeatures(): GovernFeatureFlags {
  *  setting, else the deployment default. Campus until settings load. */
 export function useEdition(): Edition {
   const settings = useWorkflowSettings();
-  return resolveEdition(settings.data?.organization?.edition);
+  const me = useGovernMe();
+  const org = settings.data ? settings.data.organization?.edition : undefined;
+  // Settings answer first (it changes the moment an admin saves); the profile
+  // carries the same choice, resolved by the API, for the first paint.
+  return resolveEdition(org ?? (settings.data ? null : me.data?.edition), me.data?.defaultEdition);
+}
+
+/** The agreement types this organization's edition offers. ``include`` keeps
+ *  a value that is already set (a contract of another edition's type). */
+export function useAgreementTypes(include?: AgreementType | null): AgreementType[] {
+  const edition = useEdition();
+  return useMemo(() => {
+    const list = EDITION_AGREEMENT_TYPES[edition];
+    return include && !list.includes(include) ? [...list, include] : list;
+  }, [edition, include]);
 }
 
 /** The organization's default currency (Settings → Organization), used

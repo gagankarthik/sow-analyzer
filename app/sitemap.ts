@@ -6,6 +6,8 @@ import { LEGAL, LEGAL_UPDATED_ISO } from "@/app/legal/documents";
 const PAGES: { path: string; priority: number }[] = [
   { path: "/", priority: 1 },
   { path: "/product", priority: 0.9 },
+  { path: "/editions/campus", priority: 0.85 },
+  { path: "/editions/workforce", priority: 0.85 },
   { path: "/solutions", priority: 0.8 },
   { path: "/security", priority: 0.7 },
   { path: "/calculator", priority: 0.6 },

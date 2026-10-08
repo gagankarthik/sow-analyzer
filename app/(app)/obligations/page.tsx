@@ -7,6 +7,7 @@
 // verify or complete many at once. Sonar-found obligations stay "Needs
 // verification" until a person confirms them.
 
+import { PageSkeleton } from "@/components/govern/admin/shared";
 import { SearchField } from "@/components/ds/inputs";
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
@@ -25,7 +26,7 @@ import { formatCompact } from "@/lib/govern/metrics";
 import {
   OBLIGATION_GROUP_LABEL, OBLIGATION_VIEWS, daysUntil, obligationViewById, startOfDay, type ObligationViewGroup,
 } from "@/lib/govern/obligation-views";
-import { governKeys, useObligations } from "@/lib/govern/queries";
+import { governKeys, useObligations, useCanEditContracts } from "@/lib/govern/queries";
 import type { ObligationInput, PortfolioObligation } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 import { KpiStrip, type Kpi } from "../home/_components/HomeSections";
@@ -43,13 +44,15 @@ function sumAmounts(list: PortfolioObligation[]): string {
 
 export default function ObligationsPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="app-container py-8"><PageSkeleton label="Loading obligations" /></div>}>
       <Obligations />
     </Suspense>
   );
 }
 
 function Obligations() {
+  // Leaders read obligations; reviewers and admins change them.
+  const canEdit = useCanEditContracts();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -103,7 +106,10 @@ function Obligations() {
     void qc.invalidateQueries({ queryKey: governKeys.allContracts });
     const failed = results.filter((r) => r.status === "rejected").length;
     if (failed) toast.error(`${plural(list.length - failed, "obligation")} ${done}, ${failed} failed`, { description: "Try the failed ones again." });
-    else toast.success(`${plural(list.length, "obligation")} ${done}`);
+    else toast.success(`${plural(list.length, "obligation")} ${done}`, input.status === "done" ? {
+      duration: 10_000,
+      action: { label: "Undo", onClick: () => void bulk(list, { status: "open" }, "reopened") },
+    } : undefined);
   }
 
   const columns: DataTableColumn<PortfolioObligation>[] = [
@@ -169,6 +175,7 @@ function Obligations() {
           obligation={preview}
           today={today}
           busy={busy}
+          readOnly={!canEdit}
           onVerify={() => void bulk([preview], { verified: true }, "verified")}
           onDone={() => { void bulk([preview], { status: "done" }, "marked done"); closePreview(); }}
           onClose={closePreview}
@@ -193,8 +200,8 @@ function Obligations() {
         errorDetail={error instanceof Error ? error.message : undefined}
         isFiltered={filtering || (view.id !== "all" && all.length > 0)}
         onClearFilters={filtering ? clearAll : () => goToView("all")}
-        selection={{ selected, onChange: setSelected }}
-        bulkActions={(chosen) => (
+        selection={canEdit ? { selected, onChange: setSelected } : undefined}
+        bulkActions={canEdit ? (chosen) => (
           <>
             <button type="button" disabled={busy || chosen.every((o) => o.verified)} onClick={() => void bulk(chosen.filter((o) => !o.verified), { verified: true }, "verified")} className="inline-flex items-center gap-1.5 text-sm">
               <BadgeCheck size={14} aria-hidden />Verify
@@ -203,7 +210,7 @@ function Obligations() {
               <Check size={14} aria-hidden />Mark done
             </button>
           </>
-        )}
+        ) : undefined}
         toolbar={
           <div className="flex flex-wrap items-center gap-2">
             <SearchField label={`Search ${view.label.toLowerCase()}`} hideLabel placeholder="Search this view" value={q} onChange={setQ} className="sm:w-60" />

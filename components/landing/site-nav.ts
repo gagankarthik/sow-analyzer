@@ -73,6 +73,11 @@ export const INDUSTRY_SECTIONS = [
 
 export type IndustrySectionId = (typeof INDUSTRY_SECTIONS)[number]["id"];
 
+const EDITION_ITEMS: NavItem[] = [
+  { label: "Govern Campus", href: "/editions/campus", description: "Research, licensing, MTAs and grants", icon: IconLicense },
+  { label: "Govern Workforce", href: "/editions/workforce", description: "SOWs, MSAs and staffing agreements", icon: IconAgreement },
+];
+
 const RESOURCE_ITEMS: NavItem[] = [
   { label: "Security overview", href: "/security", description: "How contract data is protected", icon: IconShield },
   { label: "Privacy policy", href: "/legal/privacy", description: "What we process and why", icon: IconPrivacy },
@@ -90,7 +95,10 @@ export const NAV_MENUS: NavMenu[] = [
   {
     label: "Product",
     intro: "One platform reads each agreement, checks it against your matrix, moves it to signature and reports its value.",
-    groups: [{ label: "Platform", items: toItems(PRODUCT_SECTIONS) }],
+    groups: [
+      { label: "Platform", items: toItems(PRODUCT_SECTIONS) },
+      { label: "Editions", items: EDITION_ITEMS },
+    ],
     foot: { label: "Platform overview", href: "/product" },
   },
   {

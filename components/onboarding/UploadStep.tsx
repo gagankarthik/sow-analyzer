@@ -62,7 +62,6 @@ export function UploadStep({
       {/* The server files the upload in the project and checks the permission. */}
       <UploadDropzone
         projectId={project.id}
-        defaultDocType="SOW"
         compact
         linkOnReady={false}
         onDocCreated={(docId) => { setStartedHere(true); onDocCreated(docId); }}

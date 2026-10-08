@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { StepCard } from "./StepCard";
 
 const NEW = "new";
-const FIELD = "h-11 border-[var(--ink-300)] bg-card text-base placeholder:text-[var(--ink-400)]";
+const FIELD = "h-11 border-[var(--ink-300)] bg-card text-base placeholder:text-[var(--ink-500)]";
 const OPTION =
   "flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-3.5 py-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--brand-primary-300)]";
 

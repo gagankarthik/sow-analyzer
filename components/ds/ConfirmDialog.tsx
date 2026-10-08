@@ -33,6 +33,8 @@ export type ConfirmDialogProps = {
   onOpenChange?: (open: boolean) => void;
   /** Extra content (a reason picker) between description and buttons. */
   children?: React.ReactNode;
+  /** `lg` for a confirmation that compares before and after. */
+  size?: "default" | "lg";
 };
 
 /**
@@ -51,6 +53,7 @@ export function ConfirmDialog({
   open,
   onOpenChange,
   children,
+  size = "default",
 }: ConfirmDialogProps) {
   const [innerOpen, setInnerOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
@@ -84,6 +87,7 @@ export function ConfirmDialog({
     <AlertDialog open={isOpen} onOpenChange={setOpen}>
       {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
       <AlertDialogContent
+        size={size}
         onOpenAutoFocus={(e) => {
           if (tone === "danger") {
             // Default focus on Cancel for destructive confirmations.

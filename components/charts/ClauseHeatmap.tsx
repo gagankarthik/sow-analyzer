@@ -105,7 +105,7 @@ export function ClauseHeatmap({ clauses, maxRows = 10 }: { clauses: ClauseLike[]
                   return (
                     <td key={c.key} className="p-0">
                       <div
-                        className={`flex h-9 items-center justify-center rounded-md text-xs tabular-nums ${n === 0 ? "bg-[var(--panel)] text-[var(--ink-400)]" : "font-semibold text-[var(--ink-900)]"}`}
+                        className={`flex h-9 items-center justify-center rounded-md text-xs tabular-nums ${n === 0 ? "bg-[var(--panel)] text-[var(--ink-500)]" : "font-semibold text-[var(--ink-900)]"}`}
                         style={n === 0 ? undefined : { background: `color-mix(in srgb, ${c.color} ${Math.round(intensity * 100)}%, transparent)` }}
                         title={`${categoryLabel(r.category)} · ${c.label}: ${n}`}
                       >

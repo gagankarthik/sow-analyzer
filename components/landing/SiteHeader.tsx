@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -246,11 +247,15 @@ function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void
             <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
           </Link>
         </div>
-        <div className={isGrouped ? "grid grid-cols-2 gap-8" : undefined}>
-          {menu.groups.map((group) => (
-            <div key={group.label}>
+        {/* A group of more than four links takes two columns, so the sheet
+            stays short enough to fit under the bar on a laptop screen. */}
+        <div className={isGrouped ? "grid grid-cols-3 gap-x-8" : undefined}>
+          {menu.groups.map((group) => {
+            const wide = !isGrouped || group.items.length > 4;
+            return (
+            <div key={group.label} className={isGrouped && wide ? "col-span-2" : undefined}>
               {isGrouped ? <p className="lp-sheet-label px-3">{group.label}</p> : null}
-              <ul className={isGrouped ? "mt-2 grid gap-1" : "grid grid-cols-2 gap-1"}>
+              <ul className={cn("grid gap-1", isGrouped && "mt-2", wide && "grid-cols-2")}>
                 {group.items.map((item) => (
                   <li key={item.href}>
                     <MenuLink item={item} onNavigate={onNavigate} />
@@ -258,7 +263,8 @@ function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void
                 ))}
               </ul>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

@@ -1,7 +1,9 @@
 "use client";
 
+import { docTypesFor } from "@/lib/doc-types";
+import { useEditionFeature } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PipelineStepper } from "@/components/ui/PipelineStepper";
@@ -128,7 +130,7 @@ export type UploadDropzoneProps = {
 
 export function UploadDropzone({
   projectId,
-  defaultDocType = "SOW",
+  defaultDocType,
   showTypeSelector = true,
   compact = false,
   onDocCreated,
@@ -136,7 +138,9 @@ export function UploadDropzone({
   linkOnReady = true,
   governIntake,
 }: UploadDropzoneProps) {
-  const [docType, setDocType] = useState<DocType>(defaultDocType);
+  const showSow = useEditionFeature("sowDocuments");
+  const typeOptions = useMemo(() => docTypesFor(DOC_TYPE_OPTIONS, showSow), [showSow]);
+  const [docType, setDocType] = useState<DocType>(defaultDocType ?? (showSow ? "SOW" : "OTHER"));
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [statuses, setStatuses] = useState<Record<string, ItemStatus>>({});
   const [retryToken, setRetryToken] = useState(0);
@@ -183,7 +187,7 @@ export function UploadDropzone({
           <label htmlFor={typeId} className="mb-1.5 block text-sm font-medium text-foreground">Document type</label>
           <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
             <SelectTrigger id={typeId} className="w-full border-[var(--ink-300)] text-base data-[size=default]:h-10 sm:max-w-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>{DOC_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            <SelectContent>{typeOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
           </Select>
           <p className="mt-1.5 text-xs text-muted-foreground">Applied to files you add next. You can change a document&apos;s type later.</p>
         </div>
@@ -203,7 +207,7 @@ export function UploadDropzone({
           <Upload size={22} strokeWidth={1.75} />
         </span>
         <div className="text-center">
-          <p className="text-lg font-semibold text-foreground">Drop {showTypeSelector ? "contracts" : "your SOW"} here, or <span className="text-[var(--brand-primary-600)] underline underline-offset-2">browse</span></p>
+          <p className="text-lg font-semibold text-foreground">Drop {showTypeSelector ? "contracts" : showSow ? "your SOW" : "your agreement"} here, or <span className="text-[var(--brand-primary-600)] underline underline-offset-2">browse</span></p>
           <p className="mx-auto mt-1 max-w-[42ch] text-sm leading-snug text-muted-foreground">PDF, DOCX, TXT · up to 50 MB · processed privately in your tenant</p>
         </div>
       </label>

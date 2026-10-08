@@ -42,7 +42,7 @@ export function WelcomeStep({ firstName, onStart }: { firstName?: string; onStar
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-foreground">What you need</h3>
           <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">
-            One contract file, such as a SOW, an MSA or an amendment. {UPLOAD_REQUIREMENTS}.
+            One agreement file, such as a licence, a research agreement or an amendment. {UPLOAD_REQUIREMENTS}.
           </p>
         </div>
       </div>

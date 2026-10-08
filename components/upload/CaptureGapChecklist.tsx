@@ -4,6 +4,7 @@
 // as a short "Add these now?" checklist the uploader can fill inline. Gaps
 // that need the agreement itself (dates) link to the contract page.
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { useId, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, CheckCircle2, Loader2 } from "@/components/ui/icons";
 import { usePatchContract } from "@/lib/govern/queries";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, CAPTURE_GAP_LABEL } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, CAPTURE_GAP_LABEL } from "@/lib/govern/labels";
 import type { AgreementType, CaptureGap, ContractDetail, ContractPatch } from "@/lib/govern/types";
 
 type TextGap = "counterparty" | "sponsor" | "piName" | "department" | "huronRecordId" | "workdayRef";
@@ -36,6 +37,7 @@ function patchFor(values: Partial<Record<CaptureGap, string>>, currency: string 
 }
 
 export function CaptureGapChecklist({ contract: created }: { contract: ContractDetail }) {
+  const agreementTypes = useAgreementTypes();
   const uid = useId();
   const patch = usePatchContract(created.contractId);
   // The answer to each save, so the list shrinks as gaps are filled.
@@ -80,7 +82,7 @@ export function CaptureGapChecklist({ contract: created }: { contract: ContractD
               {g === "agreementTypeUnsure" ? (
                 <Select value={values[g] ?? ""} onValueChange={(v) => setValues((s) => ({ ...s, [g]: v }))}>
                   <SelectTrigger id={`${uid}-${g}`} className="w-full bg-card text-base md:data-[size=default]:h-9"><SelectValue placeholder="Choose the type" /></SelectTrigger>
-                  <SelectContent>{AGREEMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}</SelectContent>
+                  <SelectContent>{agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}</SelectContent>
                 </Select>
               ) : (
                 <Input

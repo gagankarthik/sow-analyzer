@@ -12,12 +12,15 @@ export function RuleCard({
   reverting,
   onEdit,
   onRevert,
+  readOnly = false,
 }: {
   rule: PlaybookRule;
   /** A revert of this rule is on its way to the API. */
   reverting: boolean;
   onEdit: () => void;
   onRevert: () => void;
+  /** Hide edit and revert (people who are not admins read the rules only). */
+  readOnly?: boolean;
 }) {
   const thresholds = Object.entries(rule.thresholds);
   const typeName = rule.isCustomType ? rule.clauseType : categoryLabel(rule.clauseType);
@@ -36,7 +39,7 @@ export function RuleCard({
             Clause type: <span className={rule.isCustomType ? "font-mono" : undefined}>{typeName}</span>
           </p>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className={readOnly ? "hidden" : "flex shrink-0 flex-wrap items-center gap-2"}>
           <Button variant="outline" size="lg" className="md:h-9" onClick={onEdit} disabled={reverting} aria-label={`Edit rule: ${rule.label}`}>
             <Pencil size={14} />Edit
           </Button>

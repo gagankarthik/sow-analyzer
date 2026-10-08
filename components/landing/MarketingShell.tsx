@@ -24,10 +24,11 @@ export function MarketingShell({ children }: { children: ReactNode }) {
 
 /* Opening block for inner pages: the same navy band as the home hero,
    with one headline and one paragraph. */
-export function PageIntro({ title, children }: { title: string; children: ReactNode }) {
+export function PageIntro({ title, kicker, children }: { title: string; kicker?: string; children: ReactNode }) {
   return (
     <section className="lp-intro">
       <div className="lp-wrap">
+        {kicker && <p className="lp-edition-kicker mb-5">{kicker}</p>}
         <h1 className="lp-h1 max-w-3xl">{title}</h1>
         <p className="lp-lede mt-6">{children}</p>
       </div>

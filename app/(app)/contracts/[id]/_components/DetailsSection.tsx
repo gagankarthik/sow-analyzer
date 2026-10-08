@@ -4,6 +4,7 @@
 // Huron and Workday ids (Requirement 6), and the "what's missing" checklist so
 // capture never misses anything silently.
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { useCanEditContracts } from "@/lib/govern/queries";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, Building2, Check, CheckCircle2, CircleDashed, Coins, ExternalLink, Loader2, Pencil, PenLine } from "@/components/ui/icons";
 import { ActionDialogHost, pendingOffices, useGovernErrorToast } from "@/components/govern/actions";
 import {
-  AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, CAPTURE_GAP_LABEL, DIRECTION_HINT, DIRECTION_LABEL, OFFICE_LABEL,
+  AGREEMENT_TYPE_LABEL, CAPTURE_GAP_LABEL, DIRECTION_HINT, DIRECTION_LABEL, OFFICE_LABEL,
   REJECT_REASON_LABEL, personName,
 } from "@/lib/govern/labels";
 import { contractValueText } from "@/lib/govern/metrics";
@@ -305,6 +306,7 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
   /** The match status only means something once the Workday integration is live. */
   showWorkdayMatch: boolean;
 }) {
+  const agreementTypes = useAgreementTypes(draft.agreementType);
   const setText = (key: TextKey, v: string) => onChange({ ...draft, text: { ...draft.text, [key]: v } });
   const setNumber = (key: NumberKey, v: string) => onChange({ ...draft, numbers: { ...draft.numbers, [key]: v } });
   return (
@@ -315,7 +317,7 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
       <FormField label="Agreement type" id={fieldId("agreementType")}>
         <Select value={draft.agreementType} onValueChange={(v) => onChange({ ...draft, agreementType: v as AgreementType })}>
           <SelectTrigger id={fieldId("agreementType")} className="w-full"><SelectValue /></SelectTrigger>
-          <SelectContent>{AGREEMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}</SelectContent>
+          <SelectContent>{agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}</SelectContent>
         </Select>
       </FormField>
       <FormField label="Money" id={fieldId("direction")} hint={DIRECTION_HINT[draft.direction]}>

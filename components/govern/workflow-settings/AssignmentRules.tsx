@@ -4,6 +4,7 @@
 // sentence ("License from Chemistry goes to Dana Ruiz"); the most specific
 // matching rule wins on the server.
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import {
 import { SettingsSection } from "@/components/settings/SettingsNav";
 import { ErrorText } from "@/components/govern/admin/shared";
 import { ArrowRight, Plus, Trash2 } from "@/components/ui/icons";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, personName } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, personName } from "@/lib/govern/labels";
 import type { AgreementType, AssignmentRule } from "@/lib/govern/types";
 import { assignmentError, newId, type SettingsDraft } from "./draft";
 
@@ -34,6 +35,7 @@ export function AssignmentRules({
   onChange: (next: SettingsDraft) => void;
   readOnly: boolean;
 }) {
+  const agreementTypes = useAgreementTypes();
   const uid = useId();
   const [removing, setRemoving] = useState<AssignmentRule | null>(null);
   const rules = draft.assignmentRules;
@@ -86,7 +88,7 @@ export function AssignmentRules({
                         <SelectTrigger id={`${uid}-${i}-type`} className="w-full text-base data-[size=default]:h-10 md:text-sm"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value={ANY}>Any type</SelectItem>
-                          {AGREEMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
+                          {agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>

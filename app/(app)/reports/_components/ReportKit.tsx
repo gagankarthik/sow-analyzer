@@ -4,6 +4,7 @@
 // error and empty treatments, a report panel, a stat tile, the plain-word
 // search field and the filter bar. Kept here so every report reads the same.
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Lock, RefreshCw, Search, X, XCircle } from "@/components/ui/icons";
 import { isForbidden } from "@/lib/api";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
 import {
   NO_FILTERS, VALUE_BAND_LABEL, isFiltering, type ContractFilters, type ValueBand, filterOptions,
 } from "@/lib/govern/metrics";
@@ -292,6 +293,7 @@ export function FilterBar({
   total: number;
   noun: string;
 }) {
+  const agreementTypes = useAgreementTypes();
   const set = <K extends keyof ContractFilters>(k: K, v: ContractFilters[K]) => onChange({ ...filters, [k]: v });
   const active = isFiltering(filters);
   const [open, setOpen] = React.useState(false);
@@ -342,7 +344,7 @@ export function FilterBar({
             label="Contract type"
             value={filters.agreementType}
             onChange={(v) => set("agreementType", v)}
-            options={[{ value: "all", label: "All types" }, ...AGREEMENT_TYPES.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }))]}
+            options={[{ value: "all", label: "All types" }, ...agreementTypes.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }))]}
           />
           <FilterSelect
             label="Sponsor or licensee"

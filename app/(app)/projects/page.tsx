@@ -1,5 +1,6 @@
 "use client";
 
+import { useEditionFeature } from "@/lib/govern/queries";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
@@ -253,7 +254,7 @@ export default function ProjectsPage() {
               <div className="relative w-full md:w-[260px] md:shrink-0">
                 <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search projects…" aria-label="Search projects"
-                  className="h-9 w-full rounded-lg border border-[var(--ink-300)] bg-card pl-9 pr-3 text-sm text-foreground outline-none transition-shadow placeholder:text-[var(--ink-400)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)]" />
+                  className="h-9 w-full rounded-lg border border-[var(--ink-300)] bg-card pl-9 pr-3 text-sm text-foreground outline-none transition-shadow placeholder:text-[var(--ink-500)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)]" />
               </div>
               <div className={FILTER_ROW}>
                 <Select value={risk} onValueChange={(v) => setRisk(v as RiskFilter)}>
@@ -586,12 +587,13 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 }
 
 function EmptyState({ pristine, reset }: { pristine: boolean; reset?: () => void }) {
+  const showSow = useEditionFeature("sowDocuments");
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center md:py-20">
       <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft text-structure-soft-fg"><Layers size={24} strokeWidth={1.75} /></span>
       <h3 className="text-base font-semibold text-foreground">{pristine ? "No projects yet" : "No projects match"}</h3>
       <p className="mt-2 max-w-sm text-base text-[var(--ink-600)]">
-        {pristine ? "Create a project, then upload its SOW. Sonar extracts clauses, scores risk, and rolls it up here. Projects other people share with you appear here too." : "Try a different filter or clear your search."}
+        {pristine ? (showSow ? "Create a project, then upload its SOW." : "Create a project, then upload its agreements.") + " Sonar extracts clauses, scores risk, and rolls it up here. Projects other people share with you appear here too." : "Try a different filter or clear your search."}
       </p>
       {pristine ? (
         <Button variant="outline" size="lg" className="mt-6" asChild><Link href="/projects/new"><Plus size={15} />Create your first project</Link></Button>

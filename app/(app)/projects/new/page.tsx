@@ -9,7 +9,7 @@ import { ArrowRight, AlertCircle, Loader2 } from "@/components/ui/icons";
 import { createProject } from "@/lib/projects-store";
 
 const FIELD =
-  "h-11 border-[var(--ink-300)] bg-card text-base placeholder:text-[var(--ink-400)]";
+  "h-11 border-[var(--ink-300)] bg-card text-base placeholder:text-[var(--ink-500)]";
 
 export default function NewProjectPage() {
   const router = useRouter();

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEditionFeature } from "@/lib/govern/queries";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,6 +31,7 @@ import { WorkflowLinkChip } from "@/components/govern/WorkflowLinkChip";
 /** Header for one document. Every value shown is read from the API row
  *  (`project._raw`); there are no fallbacks that could pass for real data. */
 export function ProjectHeader({ project }: { project: DocHeaderModel }) {
+  const showSow = useEditionFeature("sowDocuments");
   const router = useRouter();
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -136,7 +138,7 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
                   <Copy size={14} className="text-muted-foreground" />Copy link
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="gap-2 cursor-pointer">
-                  <Link href={`/projects/${docId}/sow`}><ExternalLink size={14} className="text-muted-foreground" />Open SOW analyzer</Link>
+                  <Link href={`/projects/${docId}/sow`}><ExternalLink size={14} className="text-muted-foreground" />{showSow ? "Open SOW analyzer" : "Open clause analysis"}</Link>
                 </DropdownMenuItem>
                 {canDelete && (
                   <>

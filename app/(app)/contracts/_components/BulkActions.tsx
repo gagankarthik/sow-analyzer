@@ -35,11 +35,28 @@ function BulkAssign({ contracts, onDone }: { contracts: Contract[]; onDone: () =
 
   const assign = async (email: string, name: string) => {
     setBusy(true);
+    // Who owned each one before, so the change can be undone.
+    const previous = open.filter((c) => c.owner && c.owner.email !== email).map((c) => ({ id: c.contractId, owner: c.owner! }));
+    const unowned = open.filter((c) => !c.owner).length;
     const results = await Promise.allSettled(open.map((c) => act.mutateAsync({ id: c.contractId, action: { action: "assign", owner: { email, name } } })));
     setBusy(false);
     const failed = results.filter((r) => r.status === "rejected").length;
     if (failed) toast.error(`${plural(open.length - failed, "contract")} assigned, ${failed} failed`, { description: "Try the failed ones again from their contract page." });
-    else toast.success(`${plural(open.length, "contract")} assigned to ${name}`);
+    else toast.success(`${plural(open.length, "contract")} assigned to ${name}`, {
+      description: previous.length ? `${plural(previous.length, "contract")} had another owner.` : undefined,
+      duration: 10_000,
+      action: previous.length ? {
+        label: "Undo",
+        onClick: () => {
+          void Promise.allSettled(previous.map((p) => act.mutateAsync({ id: p.id, action: { action: "assign", owner: { email: p.owner.email, name: p.owner.name ?? p.owner.email } } })))
+            .then((r) => {
+              const bad = r.filter((x) => x.status === "rejected").length;
+              if (bad) toast.error(`${bad} could not be given back to their previous owner`);
+              else toast.success(`Previous owners restored${unowned ? `; ${plural(unowned, "contract")} that had no owner keep ${name}` : ""}`);
+            });
+        },
+      } : undefined,
+    });
     onDone();
   };
 

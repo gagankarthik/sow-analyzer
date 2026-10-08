@@ -1,5 +1,6 @@
 "use client";
 
+import { useEditionFeature } from "@/lib/govern/queries";
 import { useCallback, useId, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
@@ -20,6 +21,7 @@ function projectFromUrl(): string {
 }
 
 export default function UploadPage() {
+  const showSow = useEditionFeature("sowDocuments");
   const pickerId = useId();
   const projects = useProjects();
   const sync = useProjectsSync();
@@ -56,7 +58,7 @@ export default function UploadPage() {
       <PageHeader
         back={{ href: "/projects", label: "Back to projects" }}
         title="Add a document"
-        subtitle="Upload a SOW, MSA or amendment for analysis."
+        subtitle={showSow ? "Upload a SOW, MSA or amendment for analysis." : "Upload an agreement: Sonar reads it and checks it against your review matrix."}
       />
 
       <div className="app-container py-6 md:py-8">
@@ -99,7 +101,7 @@ export default function UploadPage() {
 
           <ContractIntakePanel values={intake} onChange={setIntake} lastApplied={lastApplied} />
 
-          <UploadDropzone defaultDocType="SOW" projectId={project?.id} governIntake={governIntake} />
+          <UploadDropzone projectId={project?.id} governIntake={governIntake} />
         </div>
       </div>
     </>

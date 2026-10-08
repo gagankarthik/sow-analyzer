@@ -183,8 +183,8 @@ function DraftSowPageContent() {
 
 /* ── Intake questionnaire ───────────────────────────────────────── */
 
-const FIELD = "h-11 border-[var(--ink-300)] bg-card placeholder:text-[var(--ink-400)]";
-const AREA = "border-[var(--ink-300)] bg-card placeholder:text-[var(--ink-400)]";
+const FIELD = "h-11 border-[var(--ink-300)] bg-card placeholder:text-[var(--ink-500)]";
+const AREA = "border-[var(--ink-300)] bg-card placeholder:text-[var(--ink-500)]";
 
 function IntakeForm({
   answers, set, toggleClause, canDraft, busy, error, noKey, onGenerate,
@@ -472,7 +472,7 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
                   aria-label="Revision instruction"
                   rows={3}
                   disabled={revising}
-                  className="border-[var(--ai-border)] bg-card pb-12 placeholder:text-[var(--ink-400)]"
+                  className="border-[var(--ai-border)] bg-card pb-12 placeholder:text-[var(--ink-500)]"
                 />
                 <div className="absolute bottom-1.5 right-1.5">
                   <Button size="icon" variant="ai" className="shadow-none" aria-label="Send" disabled={revising || !instruction.trim()} onClick={() => revise(instruction)}>

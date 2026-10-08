@@ -5,6 +5,7 @@
 // Documents (what the analysis found across the uploaded documents). The view
 // lives in the URL so links and reloads keep it.
 
+import { PageSkeleton } from "@/components/govern/admin/shared";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
@@ -20,7 +21,7 @@ const VIEWS: { id: View; label: string }[] = [
 
 export default function InsightsPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="app-container py-8"><PageSkeleton label="Loading insights" /></div>}>
       <Insights />
     </Suspense>
   );

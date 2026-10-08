@@ -1,5 +1,7 @@
 "use client";
 
+import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
+import { useEditionFeature } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
 import { Fragment, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
@@ -144,6 +146,7 @@ type View = {
 const docCan = (doc: ApiDocument, capability: Parameters<typeof can>[1]) => can(doc.role, capability);
 
 export function ProjectWorkspace({ projectId }: { projectId: string }) {
+  const showSow = useEditionFeature("sowDocuments");
   const project = useProject(projectId);
   // The projects list has its own load state: "not loaded yet" and "couldn't
   // load" must not read as "this project does not exist".
@@ -247,6 +250,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<TabId>("overview");
   const [toDelete, setToDelete] = useState<ApiDocument | null>(null);
   const [reanalyzing, setReanalyzing] = useState(false);
+  const [confirmReanalyze, setConfirmReanalyze] = useState(false);
 
   const docs = useMemo<ApiDocument[]>(() => {
     if (!project) return [];
@@ -374,6 +378,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   // independent, so we fire them all and report how many were re-queued even if
   // one fails.
   const reanalyzable = docs.filter((d) => docCan(d, "reprocess"));
+
   async function reanalyzeAll() {
     const targets = reanalyzable.filter((d) => !isProcessing(d.status));
     if (reanalyzing || targets.length === 0) return;
@@ -406,7 +411,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
 
   const TABS: { id: TabId; label: string; count?: number }[] = [
     { id: "overview", label: "Overview" },
-    { id: "sow", label: "SOW", count: hasAnalysis && totalClauses !== null ? totalClauses : undefined },
+    { id: "sow", label: showSow ? "SOW" : "Clauses", count: hasAnalysis && totalClauses !== null ? totalClauses : undefined },
     { id: "amendments", label: "Amendments", count: amendments.length || undefined },
     { id: "timeline", label: "Timeline" },
     { id: "team", label: "Team" },
@@ -422,6 +427,14 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
         actions={
           <div className="flex w-full items-center gap-2 sm:w-auto">
             <Button variant="ai" size="lg" className="flex-1 sm:flex-none md:h-9" onClick={toggleCopilot}><Sparkles size={14} />Ask Sonar</Button>
+            <ConfirmDialog
+              open={confirmReanalyze}
+              onOpenChange={setConfirmReanalyze}
+              title="Re-analyze every document?"
+              description={`Sonar reads all ${reanalyzable.filter((d) => !isProcessing(d.status)).length} documents in this project again and replaces their current analysis. It can take a few minutes; reviews already done on Govern contracts are re-checked against the matrix.`}
+              confirmLabel="Re-analyze all"
+              onConfirm={() => reanalyzeAll()}
+            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="lg" className="md:h-9" aria-label="More actions">
@@ -430,7 +443,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 {reanalyzable.length > 0 && (
-                  <DropdownMenuItem onClick={reanalyzeAll} disabled={reanalyzing || reanalyzable.every((d) => isProcessing(d.status))}>
+                  <DropdownMenuItem onClick={() => setConfirmReanalyze(true)} disabled={reanalyzing || reanalyzable.every((d) => isProcessing(d.status))}>
                     <RefreshCw size={14} className={reanalyzing ? "animate-spin" : undefined} />
                     {reanalyzing ? "Re-analyzing…" : "Re-analyze all"}
                   </DropdownMenuItem>
@@ -943,7 +956,7 @@ function SowPanel({ v }: { v: View }) {
         : (isRated(a) ? RISK_SORT[a.riskLevel] : 4) - (isRated(b) ? RISK_SORT[b.riskLevel] : 4));
   }, [v.allClauses, q, risk, category, sort]);
 
-  if (!v.hasAnalysis) return <AnalyzingOrEmpty v={v} label="Clause analysis appears here once a SOW finishes processing." />;
+  if (!v.hasAnalysis) return <AnalyzingOrEmpty v={v} label="Clause analysis appears here once a document finishes processing." />;
 
   const riskLevels: RiskLevel[] = ["critical", "high", "medium", "low"];
   const filterGroups: FilterGroup[] = [

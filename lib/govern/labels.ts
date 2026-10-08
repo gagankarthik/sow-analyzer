@@ -10,7 +10,7 @@ import type {
 
 export const AGREEMENT_TYPES: AgreementType[] = [
   "license", "option", "sponsored_research", "clinical_trial", "grant", "mta", "data_use", "nda", "collaboration",
-  "software", "other",
+  "software", "sow", "msa", "staffing", "other",
 ]
 
 export const AGREEMENT_TYPE_LABEL: Record<AgreementType, string> = {
@@ -24,6 +24,9 @@ export const AGREEMENT_TYPE_LABEL: Record<AgreementType, string> = {
   nda: "Confidentiality (NDA)",
   collaboration: "Collaboration",
   software: "Software or SaaS (purchase)",
+  sow: "Statement of work (SOW)",
+  msa: "Master services agreement (MSA)",
+  staffing: "Staffing vendor agreement",
   other: "Other agreement",
 }
 

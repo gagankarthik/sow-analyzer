@@ -5,6 +5,8 @@
 // reads "Any license worth $500,000 or more goes to Legal Affairs before
 // signature" rather than a table of conditions.
 
+import type { AgreementType } from "@/lib/govern/types";
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,14 +21,14 @@ import { SettingsSection } from "@/components/settings/SettingsNav";
 import { ErrorText, Field } from "@/components/govern/admin/shared";
 import { Pencil, Plus, Route, Trash2 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, DIRECTION_LABEL, OFFICES, OFFICE_LABEL } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, DIRECTION_LABEL, OFFICES, OFFICE_LABEL } from "@/lib/govern/labels";
 import type { Direction, RoutingRule } from "@/lib/govern/types";
 import { useOrgCurrency } from "@/lib/govern/queries";
 import { newId, routingErrors, routingSentence, type SettingsDraft } from "./draft";
 import { ToggleChips } from "./ToggleChips";
 
 const OFFICE_OPTIONS = OFFICES.map((o) => ({ value: o, label: OFFICE_LABEL[o] }));
-const TYPE_OPTIONS = AGREEMENT_TYPES.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }));
+const typeOptions = (types: AgreementType[]) => types.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }));
 const ANY = "any";
 
 export function RoutingRules({
@@ -165,6 +167,7 @@ function RoutingRuleForm({
   onCancel: () => void;
   onSave: (r: RoutingRule) => void;
 }) {
+  const TYPE_OPTIONS = typeOptions(useAgreementTypes());
   const uid = useId();
   const currency = useOrgCurrency();
   const [rule, setRule] = useState<RoutingRule>(initial);

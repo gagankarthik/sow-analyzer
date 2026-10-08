@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadOnlyNote, useAdminAccess } from "@/components/govern/admin/shared";
 import { EditionGate } from "@/components/govern/EditionGate";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -53,6 +54,7 @@ export default function PlaybookPage() {
 }
 
 function PlaybookPageContent() {
+  const { isAdmin, loading: roleLoading } = useAdminAccess();
   const { data: playbook, isLoading, isError, error, isFetching, refetch } = usePlaybook();
   // Custom clause types found in the user's documents, offered when adding a rule.
   const { data: docs } = useDocuments();
@@ -117,6 +119,7 @@ function PlaybookPageContent() {
       />
 
       <SettingsLayout>
+        {!roleLoading && !isAdmin && <ReadOnlyNote what="You can read every rule; an admin makes the changes." />}
         {/* Focal block: how many rules, and exactly when a change takes effect. */}
         <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs md:grid-cols-12 md:gap-8">
           <div className="min-w-0 md:col-span-4">
@@ -173,7 +176,7 @@ function PlaybookPageContent() {
             <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-xs sm:p-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <SettingsSearch id="playbook-search" label="Search rules" placeholder="Rule, clause type or wording" value={q} onChange={setQ} />
-                <Button size="lg" className="w-full md:w-auto" onClick={openAdd}><Plus size={15} />Add a rule</Button>
+                {isAdmin && <Button size="lg" className="w-full md:w-auto" onClick={openAdd}><Plus size={15} />Add a rule</Button>}
               </div>
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
                 <div className="min-w-0 lg:col-span-5"><FilterChips label="Source" options={SOURCE_OPTIONS} value={sourceFilter} onChange={setSourceFilter} /></div>
@@ -220,6 +223,7 @@ function PlaybookPageContent() {
                           reverting={revert.isPending && revert.variables === r.ruleId}
                           onEdit={() => setDialog({ mode: "edit", rule: r })}
                           onRevert={() => setConfirm(r)}
+                          readOnly={!isAdmin}
                         />
                       </li>
                     ))}

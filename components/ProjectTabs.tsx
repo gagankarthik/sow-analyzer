@@ -1,5 +1,6 @@
 "use client";
 
+import { useEditionFeature } from "@/lib/govern/queries";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -8,11 +9,12 @@ import { Badge } from "@/components/ui/badge";
 type Tab = { label: string; href: string; count?: number; badge?: React.ReactNode };
 
 export function ProjectTabs({ projectId }: { projectId: string }) {
+  const showSow = useEditionFeature("sowDocuments");
   const pathname = usePathname() ?? "";
   const base = `/projects/${projectId}`;
   const tabs: Tab[] = [
     { label: "Overview", href: base },
-    { label: "SOW", href: `${base}/sow` },
+    { label: showSow ? "SOW" : "Clauses", href: `${base}/sow` },
     { label: "Amendments", href: `${base}/amendments` },
     { label: "Insights", href: `${base}/insights`, badge: <Badge variant="ai" size="sm" className="text-xs">AI</Badge> },
     { label: "Timeline", href: `${base}/timeline` },

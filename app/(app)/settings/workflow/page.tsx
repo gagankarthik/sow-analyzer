@@ -27,9 +27,9 @@ import type { WorkflowSettingsInput } from "@/lib/govern/types";
 
 export default function WorkflowSettingsPage() {
   const q = useWorkflowSettings();
-  const { isAdmin } = useAdminAccess();
+  const { isAdmin, loading: roleLoading } = useAdminAccess();
   const save = useSaveWorkflowSettings();
-  const readOnly = !isAdmin;
+  const readOnly = !isAdmin && !roleLoading;
 
   const base = useMemo(() => (q.data ? toDraft(q.data) : null), [q.data]);
   const [draft, setDraft] = useState<SettingsDraft | null>(null);

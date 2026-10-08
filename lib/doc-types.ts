@@ -30,3 +30,13 @@ export function docTypeShort(t: string | null | undefined): string {
 export function docTypeTone(t: string | null | undefined): DocTypeTone {
   return (t && DOC_TYPE_META[t as DocType]?.tone) || "neutral";
 }
+
+/** Commercial services types (SOW, MSA) belong to the Workforce edition; Campus
+ *  hides them from pickers and filters (documents of those types still show). */
+export const WORKFORCE_ONLY_DOC_TYPES: DocType[] = ["SOW", "MSA"];
+
+export function docTypesFor<T extends DocType | { value: DocType }>(all: T[], showSow: boolean): T[] {
+  if (showSow) return all;
+  return all.filter((t) => !WORKFORCE_ONLY_DOC_TYPES.includes(typeof t === "string" ? t : t.value));
+}
+

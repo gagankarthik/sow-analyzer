@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadOnlyNote, useAdminAccess } from "@/components/govern/admin/shared";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -40,6 +41,7 @@ const PACK_ICON: Record<PackIconKey, typeof ShieldCheck> = {
 };
 
 export default function CompliancePacksPage() {
+  const { isAdmin, loading: roleLoading } = useAdminAccess();
   // The enabled packs are tenant data from the API. Until it answers, nothing is
   // shown as on or off; if it fails, the page says so instead of showing defaults.
   const { data, isLoading, isError, error, refetch } = useCompliancePacks();
@@ -113,6 +115,7 @@ export default function CompliancePacksPage() {
       />
 
       <SettingsLayout>
+        {!roleLoading && !isAdmin && <ReadOnlyNote what="You can see which packs are on; an admin turns them on or off." />}
         {/* Summary — the page's focal block */}
         <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs sm:flex-row sm:items-center sm:justify-between sm:gap-8">
           <div className="grid grid-cols-2 gap-6 sm:flex sm:gap-10">
@@ -208,7 +211,7 @@ export default function CompliancePacksPage() {
                   <label className="flex min-h-10 cursor-pointer items-center gap-3 text-sm font-medium text-[var(--ink-600)]">
                     <Switch
                       checked={live}
-                      disabled={!loaded}
+                      disabled={!loaded || !isAdmin || save.isPending}
                       onCheckedChange={() => toggle(p.id)}
                       aria-label={`Enable ${p.name} compliance pack`}
                     />
@@ -239,7 +242,7 @@ export default function CompliancePacksPage() {
                         size={14}
                         className={cn(
                           "mt-0.5 shrink-0",
-                          live ? "text-[var(--brand-primary-600)]" : "text-[var(--ink-300)]",
+                          live ? "text-[var(--brand-primary-600)]" : "text-[var(--ink-500)]",
                         )}
                       />
                       <span className="min-w-0 break-words">{categoryLabel(c)}</span>
@@ -261,7 +264,7 @@ export default function CompliancePacksPage() {
                   <li key={id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                     <span className="min-w-0 break-words text-base font-medium text-foreground">{categoryLabel(id)}</span>
                     <label className="flex min-h-10 shrink-0 cursor-pointer items-center gap-3 text-sm font-medium text-[var(--ink-600)]">
-                      <Switch checked={on} onCheckedChange={() => toggle(id)} aria-label={`Enable ${categoryLabel(id)} compliance pack`} />
+                      <Switch checked={on} disabled={!isAdmin || save.isPending} onCheckedChange={() => toggle(id)} aria-label={`Enable ${categoryLabel(id)} compliance pack`} />
                       {on ? "Enabled" : "Disabled"}
                     </label>
                   </li>

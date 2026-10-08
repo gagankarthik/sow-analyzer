@@ -5,6 +5,7 @@
 // search over the table, a preview panel on row click, and a floating bar
 // for bulk actions. Each view is a URL, so it can be bookmarked and shared.
 
+import { PageSkeleton } from "@/components/govern/admin/shared";
 import { VALUE_BAND_LABEL, inValueBand, type ValueBand } from "@/lib/govern/metrics";
 
 const VALUE_BANDS: ValueBand[] = ["under_100k", "100k_500k", "500k_1m", "over_1m", "unknown"];
@@ -33,7 +34,7 @@ const GROUPS: ViewGroup[] = ["all", "workflows", "signed"];
 
 export default function ContractsPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="app-container py-8"><PageSkeleton label="Loading contracts" /></div>}>
       <Contracts />
     </Suspense>
   );

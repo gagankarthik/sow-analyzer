@@ -11,6 +11,7 @@
 // shows the four lanes of that stage's phase (before or after signature);
 // below that it shows the selected stage's agreements as a grid.
 
+import { PageSkeleton } from "@/components/govern/admin/shared";
 import { EditionOnly } from "@/components/govern/EditionOnly";
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -41,7 +42,7 @@ const QUICK_VIEWS = ["in-progress", "mine", "unassigned", "overdue", "other-side
 
 export default function WorkflowPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="app-container py-8"><PageSkeleton label="Loading workflow" /></div>}>
       <Workflow />
     </Suspense>
   );

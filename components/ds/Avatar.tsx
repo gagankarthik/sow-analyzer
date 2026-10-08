@@ -113,7 +113,7 @@ export function AvatarStack({
         {shown.map((p, i) => (
           <Tooltip key={`${p.email ?? p.name ?? ""}-${i}`}>
             <TooltipTrigger asChild>
-              <Avatar name={p.name} email={p.email} size={size} decorative tabIndex={0} className="cursor-default outline-none" />
+              <Avatar name={p.name} email={p.email} size={size} decorative tabIndex={0} className="cursor-default outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2" />
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-64">
               <span className="block font-semibold">{personLabel(p)}</span>
@@ -127,7 +127,7 @@ export function AvatarStack({
               <span
                 tabIndex={0}
                 className={cn(
-                  "inline-flex shrink-0 cursor-default items-center justify-center rounded-pill bg-surface-sunken font-semibold text-fg-secondary outline-none",
+                  "inline-flex shrink-0 cursor-default items-center justify-center rounded-pill bg-surface-sunken font-semibold text-fg-secondary outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2",
                   SIZE[size],
                 )}
               >

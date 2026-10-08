@@ -1,5 +1,6 @@
 "use client";
 
+import { useEditionFeature } from "@/lib/govern/queries";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -39,6 +40,7 @@ const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: R
 const SEVERITY_ORDER: FindingSeverity[] = ["critical", "high", "medium", "low", "info"];
 
 export default function ProjectInsightsPage() {
+  const showSow = useEditionFeature("sowDocuments");
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
@@ -182,7 +184,7 @@ export default function ProjectInsightsPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}>Open SOW<ArrowRight size={14} /></Link></Button>
+              <Button size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}>{showSow ? "Open SOW" : "Open clause analysis"}<ArrowRight size={14} /></Link></Button>
             </div>
           </div>
 

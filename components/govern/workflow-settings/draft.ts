@@ -132,6 +132,9 @@ const TYPE_NOUN: Record<AgreementType, string> = {
   nda: "NDA",
   collaboration: "collaboration agreement",
   software: "software or SaaS purchase",
+  sow: "statement of work",
+  msa: "master services agreement",
+  staffing: "staffing vendor agreement",
   other: "other agreement",
 }
 

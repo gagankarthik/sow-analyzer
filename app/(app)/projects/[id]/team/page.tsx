@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
 import { Button } from "@/components/ui/button";
@@ -34,9 +34,8 @@ function roleOf(party: string, clientName: string | null | undefined, vendorName
 export default function TeamPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
-  const router = useRouter();
 
-  const { data: detail, isLoading, isError, error } = useDocument(id);
+  const { data: detail, isLoading, isError, error, refetch, isFetching } = useDocument(id);
   // Client / vendor names come from the document's classification, when it has them.
   const classification = useClassification(id, detail?.document.status === "READY");
   const [query, setQuery] = useState("");
@@ -51,7 +50,7 @@ export default function TeamPage() {
         <p role="alert" className="max-w-md break-words text-base text-[var(--danger)]">
           {error instanceof Error ? error.message : "Failed to load document"}
         </p>
-        <Button variant="outline" size="lg" className="mt-4" onClick={() => router.refresh()}>
+        <Button variant="outline" size="lg" className="mt-4" onClick={() => void refetch()} disabled={isFetching}>
           Try again
         </Button>
       </div>

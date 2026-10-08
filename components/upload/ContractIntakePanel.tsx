@@ -5,11 +5,12 @@
 // is usually not in the document at all (PI, department, Huron and Workday
 // references), so nothing the board needs is silently missed.
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { useId, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, Sonar, UserRound } from "@/components/ui/icons";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, DIRECTION_LABEL } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, DIRECTION_LABEL } from "@/lib/govern/labels";
 import { cn } from "@/lib/utils";
 import type { AgreementType, Direction } from "@/lib/govern/types";
 import {
@@ -24,6 +25,7 @@ export function ContractIntakePanel({
   /** File the previous details went to, shown once they are cleared. */
   lastApplied: string | null;
 }) {
+  const agreementTypes = useAgreementTypes();
   const uid = useId();
   const id = (n: string) => `${uid}-${n}`;
   const [isOpen, setIsOpen] = useState(false);
@@ -88,7 +90,7 @@ export function ContractIntakePanel({
                   <SelectTrigger id={id("type")} className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value={LET_SONAR_DECIDE}>Let Sonar decide</SelectItem>
-                    {AGREEMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
+                    {agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

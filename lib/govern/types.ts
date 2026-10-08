@@ -8,7 +8,7 @@ import type { GovernFeature } from "./features"
 
 export type AgreementType =
   | "sponsored_research" | "clinical_trial" | "grant" | "license" | "option" | "mta" | "data_use" | "nda"
-  | "collaboration" | "software" | "other"
+  | "collaboration" | "software" | "sow" | "msa" | "staffing" | "other"
 export type Direction = "incoming" | "outgoing"
 export type Stage = Lifecycle
 export type State =
@@ -501,6 +501,12 @@ export interface GovernMe {
   tenantId: string
   /** Which "Later" features this deploy has switched on (see lib/govern/features.ts). Absent on older APIs. */
   features?: Partial<Record<GovernFeature, boolean>>
+  /** Requirement 7: the organization's edition (its own choice, else the deployment default). */
+  edition?: "campus" | "workforce"
+  /** The edition the deployment falls back to when the organization has not chosen. */
+  defaultEdition?: "campus" | "workforce"
+  /** The agreement types this edition offers, in order, with their labels. */
+  agreementTypes?: { id: AgreementType; label: string }[]
 }
 
 // ── Trends and capture (write-time aggregates) ─────────────────────────────

@@ -169,7 +169,7 @@ export function CommentBox({ contractId, className }: { contractId: string; clas
 
   return (
     <form
-      className={cn("flex flex-col gap-2 rounded-xl border border-border bg-card p-3 focus-within:border-[var(--brand-primary-300)]", className)}
+      className={cn("flex flex-col gap-2 rounded-xl border border-border bg-card p-3 focus-within:border-[var(--brand-primary-600)] focus-within:ring-2 focus-within:ring-[var(--brand-primary-200)]", className)}
       onSubmit={(e) => { e.preventDefault(); void post(); }}
     >
       <label htmlFor={`comment-${contractId}`} className="sr-only">Add a comment</label>

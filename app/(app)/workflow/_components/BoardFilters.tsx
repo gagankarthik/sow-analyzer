@@ -3,11 +3,12 @@
 // Search is always there and needs nothing else (Requirement 5); the filters
 // (Requirement 3) sit folded away until someone asks for them.
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { SearchField } from "@/components/ds/inputs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, Filter, X } from "@/components/ui/icons";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
 import { NO_FILTERS, VALUE_BAND_LABEL, type ContractFilters, type ValueBand } from "@/lib/govern/metrics";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,7 @@ export function BoardFilters({
   showClosed: boolean;
   onShowClosedChange: (v: boolean) => void;
 }) {
+  const agreementTypes = useAgreementTypes();
   const set = <K extends keyof ContractFilters>(key: K, value: ContractFilters[K]) => onChange({ ...filters, [key]: value });
   const activeCount = (Object.keys(NO_FILTERS) as (keyof ContractFilters)[])
     .filter((k) => k !== "q" && filters[k] !== NO_FILTERS[k]).length;
@@ -90,7 +92,7 @@ export function BoardFilters({
       {open && (
         <div id="board-filters" className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <FilterSelect label="Agreement type" value={filters.agreementType} onChange={(v) => set("agreementType", v as ContractFilters["agreementType"])}
-            options={[{ value: ALL, label: "Any type" }, ...AGREEMENT_TYPES.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }))]} />
+            options={[{ value: ALL, label: "Any type" }, ...agreementTypes.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }))]} />
           <FilterSelect label="Sponsor or licensee" value={filters.sponsor} onChange={(v) => set("sponsor", v)}
             options={[{ value: ALL, label: "Any sponsor" }, ...options.sponsors.map((s) => ({ value: s, label: s }))]} />
           <FilterSelect label="Department" value={filters.department} onChange={(v) => set("department", v)}

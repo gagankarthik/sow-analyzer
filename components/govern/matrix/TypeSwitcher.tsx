@@ -3,8 +3,9 @@
 // Agreement-type tabs with each playbook's clause count. A scrolling row on
 // small screens; wraps on wide ones.
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { cn } from "@/lib/utils";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
 import type { AgreementType } from "@/lib/govern/types";
 
 export function TypeSwitcher({
@@ -17,9 +18,10 @@ export function TypeSwitcher({
   /** Types with unsaved edits get a dot. */
   dirtyTypes?: ReadonlySet<AgreementType>;
 }) {
+  const agreementTypes = useAgreementTypes();
   return (
     <div role="group" aria-label={label} className="scrollbar-none -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5 lg:flex-wrap">
-      {AGREEMENT_TYPES.map((t) => {
+      {agreementTypes.map((t) => {
         const isActive = t === value;
         const isDirty = dirtyTypes?.has(t) ?? false;
         return (

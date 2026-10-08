@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "@/components/ui/icons";
-import { MatrixCard } from "@/components/landing/ProductCards";
+import { EditionsMark } from "@/components/landing/EditionsMark";
 
 /* Closing call to action, shared by the public pages: a light card with the
-   offer and one action on the left, and on the right what the visitor gets
-   back: their own agreement rated against their matrix (example data). The
+   offer and one action on the left, and on the right the mark of the two
+   editions, Campus and Workforce, as one platform. The
    same flat shapes as the hero sit in the far corner. */
 
 export function StartCta() {
@@ -38,9 +38,9 @@ export function StartCta() {
             </div>
           </div>
 
-          <figure className="lp-cta2-visual" aria-label="Example: an agreement's clauses rated against a review matrix">
-            <MatrixCard rows={4} />
-          </figure>
+          <div className="lp-cta2-visual">
+            <EditionsMark />
+          </div>
         </div>
       </div>
     </section>

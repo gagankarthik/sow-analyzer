@@ -5,6 +5,7 @@
 // choose how to import, 4 the result. Each agreement type is one import call
 // (the API saves each as a new matrix version).
 
+import { useAgreementTypes } from "@/lib/govern/queries";
 import { useId, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/icons";
 import { ErrorText, Field } from "@/components/govern/admin/shared";
 import { useImportMatrix } from "@/lib/govern/queries";
-import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, plural } from "@/lib/govern/labels";
+import { AGREEMENT_TYPE_LABEL, plural } from "@/lib/govern/labels";
 import { cn } from "@/lib/utils";
 import type { AgreementType, MatrixImportRow } from "@/lib/govern/types";
 import {
@@ -49,6 +50,7 @@ export function ImportDialog({
 }
 
 function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; onClose: () => void }) {
+  const agreementTypes = useAgreementTypes();
   const uid = useId();
   const fileInput = useRef<HTMLInputElement | null>(null);
   const importMatrix = useImportMatrix();
@@ -232,7 +234,7 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
                 <SelectTrigger id={`${uid}-target`} className="w-full text-base md:data-[size=default]:h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {mapping.agreementType !== null && <SelectItem value={SPLIT}>Each row&apos;s Agreement type column</SelectItem>}
-                  {AGREEMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
+                  {agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
                 </SelectContent>
               </Select>
             </Field>

@@ -1,5 +1,7 @@
 "use client";
 
+import { docTypesFor } from "@/lib/doc-types";
+import { useEditionFeature } from "@/lib/govern/queries";
 import { docTypeLabel } from "@/lib/doc-types";
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -85,6 +87,7 @@ const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
 type SortKey = "title" | "docType" | "lifecycle" | "createdAt" | "latestVersion";
 
 export default function LibraryPage() {
+  const showSow = useEditionFeature("sowDocuments");
   // The shared documents query: polls while anything is processing, refetches
   // on focus, and is invalidated by every upload / edit / delete in the app — so
   // this list and its counts match the dashboard, workflow and notifications.
@@ -229,7 +232,7 @@ export default function LibraryPage() {
     <>
       <PageHeader
         title="Contract library"
-        subtitle="Every SOW, MSA and amendment in one place."
+        subtitle={showSow ? "Every SOW, MSA and amendment in one place." : "Every agreement and document you have uploaded, in one place."}
         actions={
           <>
             <Button asChild className="h-10 md:h-9">
@@ -257,7 +260,7 @@ export default function LibraryPage() {
                 placeholder="Search by title or project…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="h-9 rounded-lg border-[var(--ink-300)] bg-card pl-9 pr-3 placeholder:text-[var(--ink-400)]"
+                className="h-9 rounded-lg border-[var(--ink-300)] bg-card pl-9 pr-3 placeholder:text-[var(--ink-500)]"
               />
             </div>
 
@@ -616,7 +619,7 @@ export default function LibraryPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {DOC_TYPES.map((t) => (
+                  {docTypesFor(DOC_TYPES, showSow).map((t) => (
                     <SelectItem key={t} value={t}>{docTypeLabel(t)}</SelectItem>
                   ))}
                 </SelectContent>

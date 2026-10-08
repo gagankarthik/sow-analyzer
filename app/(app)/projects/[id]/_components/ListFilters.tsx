@@ -63,7 +63,7 @@ export function ListFilters({ search, onSearch, placeholder, groups = [], sort, 
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder={placeholder}
-            className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-[var(--ink-400)]"
+            className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-[var(--ink-500)]"
           />
         </label>
         {sort && (
