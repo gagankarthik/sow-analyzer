@@ -20,6 +20,8 @@ export function WorkflowList({ contracts, loading, previewId, onPreview }: {
   return (
     <DataTable
       caption="Agreements by stage"
+      // No stage column or checkboxes here, so names get more of the width.
+      className="[--name-cap:50cqw]"
       noun="agreements"
       columns={COLUMNS}
       rows={contracts}

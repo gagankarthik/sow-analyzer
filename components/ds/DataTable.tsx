@@ -137,11 +137,14 @@ export type DataTableProps<T> = {
   className?: string;
 };
 
+// Columns give way by the width the table actually has (a container query),
+// not the window: with the sidebar open a 1024px laptop leaves the table
+// about 730px, and lower-priority columns move into the row's expand panel.
 const PRIORITY_CELL: Record<ColumnPriority, string> = {
   1: "",
-  2: "hidden lg:table-cell",
-  3: "hidden xl:table-cell",
-  4: "hidden 2xl:table-cell",
+  2: "hidden @4xl/table:table-cell",
+  3: "hidden @5xl/table:table-cell",
+  4: "hidden @7xl/table:table-cell",
 };
 
 /* ─── Component ──────────────────────────────────────────────────── */
@@ -260,7 +263,8 @@ export function DataTable<T>(props: DataTableProps<T>) {
   const cellPad = density === "compact" ? "px-3 py-1.5" : "px-4 py-2.5";
   const hasExpand = hiddenColumns.length > 0;
   // The expand toggle stays until the widest hidden column is on screen.
-  const expandHide = hiddenColumns.some((c) => c.priority === 4) ? "2xl:hidden" : "xl:hidden";
+  const expandHide = hiddenColumns.some((c) => c.priority === 4) ? "@7xl/table:hidden"
+    : hiddenColumns.some((c) => c.priority === 3) ? "@5xl/table:hidden" : "@4xl/table:hidden";
 
   // Selection is scoped to what exists: ids that are no longer in `rows` are ignored.
   const rowIds = React.useMemo(() => new Set(rows.map(getRowId)), [rows, getRowId]);
@@ -286,7 +290,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
   }
 
   return (
-    <div className={cn("flex min-w-0 flex-col gap-3", className)}>
+    <div className={cn("@container/table flex min-w-0 flex-col gap-3", className)}>
       {(toolbar || densityKey || columnsKey) && (
         // Filters take the row and wrap; table controls sit at the end, or on
         // their own line when space runs out. Phones show cards, so the
@@ -350,10 +354,10 @@ export function DataTable<T>(props: DataTableProps<T>) {
 
       {body ?? (
         <>
-          {/* ── Table (md and up) ── */}
+          {/* ── Table (when the table has at least 42rem) ── */}
           <div
             className={cn(
-              "relative hidden min-w-0 overflow-auto rounded-container border border-border-default bg-surface-raised shadow-raised md:block",
+              "relative hidden min-w-0 overflow-auto rounded-container border border-border-default bg-surface-raised shadow-raised @2xl/table:block",
               maxHeightClass,
             )}
             // Scroll containers must be focusable so keyboard users can scroll (WCAG 2.1.1).
@@ -435,8 +439,8 @@ export function DataTable<T>(props: DataTableProps<T>) {
             </table>
           </div>
 
-          {/* ── Cards (below md) ── */}
-          <ul className="flex flex-col gap-2 md:hidden" aria-label={caption}>
+          {/* ── Cards (narrower) ── */}
+          <ul className="flex flex-col gap-2 @2xl/table:hidden" aria-label={caption}>
             {renderCards()}
           </ul>
 
@@ -578,7 +582,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
               <td colSpan={colCount} className="border-b border-border-subtle bg-surface-sunken px-4 py-3">
                 <dl className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
                   {hiddenColumns.map((col) => (
-                    <div key={col.id} className={cn("flex min-w-0 flex-col gap-0.5", col.priority === 2 && "lg:hidden", col.priority === 3 && "xl:hidden")}>
+                    <div key={col.id} className={cn("flex min-w-0 flex-col gap-0.5", col.priority === 2 && "@4xl/table:hidden", col.priority === 3 && "@5xl/table:hidden")}>
                       <dt className="text-caption text-fg-tertiary">{col.header}</dt>
                       <dd className={cn("min-w-0 text-body text-fg-primary", col.numeric && "tabular-nums")}>{renderCell(col, row)}</dd>
                     </div>

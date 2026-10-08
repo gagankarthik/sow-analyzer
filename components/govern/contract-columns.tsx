@@ -19,10 +19,13 @@ const RISK_ORDER: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2,
 
 export const CONTRACT_COLUMNS: DataTableColumn<Contract>[] = [
   {
-    id: "title", header: "Name", card: "title", className: "min-w-[13rem] max-w-[26rem]",
+    id: "title", header: "Name", card: "title", className: "min-w-[12rem]",
     sortValue: (c) => c.title.toLowerCase(),
+    // The width cap sits on the text, not the cell: table cells ignore max-width,
+    // so a long name would otherwise run into the next column. It is a share of
+    // the table's own width (cqw); a table with fewer columns raises --name-cap.
     cell: (c) => (
-      <span className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 max-w-[min(30rem,var(--name-cap,33cqw))] flex-col">
         <span className="truncate" title={c.title}>{c.title || "Untitled agreement"}</span>
         {(c.counterparty || c.sponsor) && <span className="truncate text-xs font-normal text-[var(--ink-600)]">{c.counterparty || c.sponsor}</span>}
       </span>
@@ -34,9 +37,9 @@ export const CONTRACT_COLUMNS: DataTableColumn<Contract>[] = [
     id: "days", header: "Turn", card: "status", sortFirst: "desc", sortValue: (c) => c.daysInStage,
     cell: (c) => <TurnPill waitingOn={c.waitingOn} days={c.daysInStage} sla={c.slaStatus} />,
   },
-  { id: "value", header: "Value", numeric: true, sortFirst: "desc", sortValue: (c) => c.value, cell: (c) => contractValueText(c) },
+  { id: "value", header: "Value", priority: 2, numeric: true, sortFirst: "desc", sortValue: (c) => c.value, cell: (c) => contractValueText(c) },
   {
-    id: "owner", header: "People",
+    id: "owner", header: "People", priority: 2,
     sortValue: (c) => c.owner?.name?.toLowerCase() ?? c.owner?.email ?? null,
     cell: (c) => <AvatarStack people={contractPeople(c)} emptyLabel="Unassigned" />,
   },

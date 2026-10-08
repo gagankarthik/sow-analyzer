@@ -117,9 +117,9 @@ function Obligations() {
 
   const columns: DataTableColumn<PortfolioObligation>[] = [
     {
-      id: "title", header: "Obligation", card: "title", className: "min-w-[14rem] max-w-[24rem]", sortValue: (o) => o.title.toLowerCase(),
+      id: "title", header: "Obligation", card: "title", className: "min-w-[12rem]", sortValue: (o) => o.title.toLowerCase(),
       cell: (o) => (
-        <span className="flex min-w-0 flex-col">
+        <span className="flex min-w-0 max-w-[min(26rem,40cqw)] flex-col">
           <span className="truncate">{o.title}</span>
           <span className="text-xs font-normal text-[var(--ink-600)]">{OBLIGATION_KIND_LABEL[o.kind]}</span>
         </span>
@@ -149,15 +149,15 @@ function Obligations() {
       ),
     },
     {
-      id: "contract", header: "Contract", className: "max-w-[16rem]", sortValue: (o) => o.contractTitle?.toLowerCase() ?? null,
+      id: "contract", header: "Contract", priority: 2, sortValue: (o) => o.contractTitle?.toLowerCase() ?? null,
       cell: (o) => (
-        <span className="flex min-w-0 flex-col">
+        <span className="flex min-w-0 max-w-[min(16rem,22cqw)] flex-col">
           <span className="truncate">{o.contractTitle || "Untitled contract"}</span>
           {o.counterparty && <span className="truncate text-xs text-[var(--ink-600)]">{o.counterparty}</span>}
         </span>
       ),
     },
-    { id: "amount", header: "Amount", numeric: true, sortFirst: "desc", sortValue: (o) => o.amount, cell: (o) => (o.amount ? formatCompact(o.amount, o.currency) : "—") },
+    { id: "amount", header: "Amount", priority: 2, numeric: true, sortFirst: "desc", sortValue: (o) => o.amount, cell: (o) => (o.amount ? formatCompact(o.amount, o.currency) : "—") },
     { id: "owner", header: "Owner", priority: 2, sortValue: (o) => o.owner?.name ?? o.owner?.email ?? null, cell: (o) => o.owner?.name || o.owner?.email || <span className="text-[var(--ink-500)]">Unassigned</span> },
   ];
 
