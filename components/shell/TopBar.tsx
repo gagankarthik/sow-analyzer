@@ -664,16 +664,16 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
         <div className="flex min-w-0 justify-end w-[min(440px,55vw)]">
           <SearchBar />
         </div>
-        {/* Sonar, the assistant: a chat-style box next to search, with a turning rainbow edge. */}
+        {/* Sonar, the assistant: a small pill next to search, with a turning rainbow edge. */}
         {onCopilotToggle && (
           <button
             type="button"
             onClick={onCopilotToggle}
             aria-label="Ask Sonar"
-            className="sonar-button mx-1 inline-flex h-9 shrink-0 items-center gap-2 px-2.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98] md:w-56"
+            className="sonar-button mx-1 inline-flex h-8 shrink-0 items-center gap-1.5 !rounded-full px-3 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
           >
-            <SonarIcon size={16} strokeWidth={1.75} className="shrink-0 text-[var(--brand-primary-600)]" />
-            <span className="hidden min-w-0 flex-1 truncate text-[var(--ink-500)] md:inline">Ask Sonar about a contract…</span>
+            <SonarIcon size={15} strokeWidth={1.75} className="shrink-0 text-[var(--brand-primary-600)]" />
+            <span className="hidden sm:inline">Sonar</span>
           </button>
         )}
         <Tooltip>
