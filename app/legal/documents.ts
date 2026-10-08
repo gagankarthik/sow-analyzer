@@ -72,12 +72,12 @@ export const LEGAL: Record<string, LegalDoc> = {
     title: "Cookie Policy",
     updated: UPDATED,
     intro:
-      "Blue-IQ uses one strictly necessary cookie and no advertising, analytics or tracking cookies. Because nothing optional is set, there is nothing to opt in to; this page lists exactly what is stored and why.",
+      "Blue-IQ sorts cookies into three groups: strictly necessary, analytics and marketing. Strictly necessary cookies are always on. Analytics and marketing cookies are optional and are only set if you accept them. This page lists exactly what is stored and why.",
     sections: [
       { h: "The one cookie we set", p: "bq.idtoken keeps you signed in to Govern. It is first-party, sent only to Blue-IQ over HTTPS (Secure, SameSite=Strict), and expires with your sign-in session or when you sign out. It is strictly necessary, so the law does not require consent for it." },
-      { h: "What we do not use", p: "No advertising cookies, no analytics or session-recording tools, no social media pixels and no third-party cookies of any kind, on the website or in the app." },
+      { h: "Optional cookies", p: "Analytics cookies would help us understand which pages are used; marketing cookies would help us measure our campaigns. Neither is set unless you choose \u201cAccept all cookies\u201d or switch the category on in Cookie settings. Today Blue-IQ runs no analytics or marketing tools, so no optional cookie is set even if you accept; if that changes, this page will name each tool before it is used." },
       { h: "Browser storage in the app", p: "The app keeps a few things in your browser's local storage so it behaves the way you left it: whether the sidebar is collapsed, table and report layout, your notification read marks, onboarding progress and unsent drafts. This stays on your device, is never sent to advertisers, and drafts and history are cleared when you sign out." },
-      { h: "Your cookie notice choice", p: "When you close the cookie notice, the website remembers that in your browser's local storage so it does not show again. Clearing your browser data shows it again." },
+      { h: "Your choice", p: "Your choice is saved in your browser's local storage so the banner does not show again. Change it at any time with Cookie settings at the bottom of every page. Clearing your browser data shows the banner again." },
       { h: "Your controls", p: "You can block or delete cookies in your browser settings. Blocking bq.idtoken signs you out and you will not be able to use Govern until it is allowed again." },
       { h: "Contact", p: "Questions about cookies or browser storage can be sent to privacy@blue-iq.ai." },
     ],

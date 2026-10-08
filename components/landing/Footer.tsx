@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUp } from "lucide-react";
 import { FooterBackdrop } from "@/components/landing/FooterBackdrop";
+import { CookieSettingsLink } from "@/components/landing/CookieSettingsLink";
 import { Logo } from "@/components/landing/primitives";
 import { INDUSTRY_SECTIONS, PRODUCT_SECTIONS, SOLUTION_SECTIONS, landingHref } from "@/components/landing/site-nav";
 import { COMING_SOON_LABEL, isComingSoon } from "@/components/landing/ComingSoon";
@@ -100,7 +101,10 @@ export function Footer() {
             <Link href="/legal/privacy" className="lp-link">Privacy Policy</Link>.
           </p>
           <div className="lp-footer-end">
-            <p>© 2026 Blue-IQ. All rights reserved.</p>
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>© 2026 Blue-IQ. All rights reserved.</span>
+              <CookieSettingsLink />
+            </p>
             <a href="#main-content" className="lp-footer-top" aria-label="Back to top">
               <ArrowUp size={18} strokeWidth={2} aria-hidden="true" />
             </a>
