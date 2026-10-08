@@ -5,17 +5,21 @@ import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { CopilotPanel } from "./CopilotPanel";
 import { useUIStore } from "@/lib/stores/ui";
-import { useEdition } from "@/lib/govern/queries";
-import { setActiveEdition } from "@/lib/edition-runtime";
+import { EditionScope } from "./EditionScope";
 import { hydrateProjects, startProjectsSync } from "@/lib/projects-store";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { clearSessionCookie } from "@/lib/auth/session";
 import { useIdleSignOut } from "@/lib/auth/use-idle-sign-out";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const edition = useEdition();
-  // Labels outside components (label maps, exports) read this; set before the page renders.
-  setActiveEdition(edition);
+  return (
+    <EditionScope>
+      <Shell>{children}</Shell>
+    </EditionScope>
+  );
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
   const copilotOpen = useUIStore((s) => s.copilotOpen);
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const setCopilotOpen = useUIStore((s) => s.setCopilotOpen);
@@ -75,8 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onCopilotToggle={toggleCopilot}
           onMenuClick={() => setMobileNav(true)}
         />
-        {/* Keyed by edition: switching it remounts the page, so every label reads the new words. */}
-        <main key={edition} id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">{children}</main>
       </div>
       <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />
     </div>

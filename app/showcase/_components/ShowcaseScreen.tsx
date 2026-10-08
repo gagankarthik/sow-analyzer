@@ -17,6 +17,7 @@ import {
   NavigationPromisesContext, PathParamsContext, PathnameContext,
 } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
 import { StaticAuthProvider } from "@/components/auth/AuthProvider";
+import { EditionScope } from "@/components/shell/EditionScope";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import type { AuthUser } from "@/lib/auth/cognito";
@@ -100,8 +101,15 @@ function seededClient(): QueryClient {
   client.setQueryData(governKeys.contracts(false), list);
   client.setQueryData(governKeys.contracts(true), list);
   for (const detail of SHOWCASE_DETAILS) client.setQueryData(governKeys.contract(detail.contractId), detail);
-  client.setQueryData(governKeys.me, SHOWCASE_ME);
-  client.setQueryData(governKeys.settings, SHOWCASE_SETTINGS);
+  // ?edition=workforce and ?role=admin preview the other edition or role.
+  const params = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);
+  const edition = params.get("edition");
+  const role = params.get("role");
+  client.setQueryData(governKeys.me, role ? { ...SHOWCASE_ME, role } : SHOWCASE_ME);
+  client.setQueryData(governKeys.settings, edition
+    ? { ...SHOWCASE_SETTINGS, organization: { ...(SHOWCASE_SETTINGS.organization ?? {}), edition } }
+    : SHOWCASE_SETTINGS);
+
   client.setQueryData(governKeys.matrix, SHOWCASE_MATRIX);
   client.setQueryData(governKeys.trends("month", 6), showcaseTrends(6));
   client.setQueryData(governKeys.trends("month", 12), showcaseTrends(12));
@@ -118,6 +126,11 @@ export function ShowcaseScreen({ screen }: { screen: ShowcaseScreenId }) {
   const route = SHOWCASE_SCREENS[screen];
   const Page = PAGES[screen];
   const tab = "tab" in route ? route.tab : null;
+
+  // Lets a browser test switch the edition live, as an admin's save does.
+  useEffect(() => {
+    (window as unknown as { __showcaseClient?: QueryClient }).__showcaseClient = client;
+  }, [client]);
 
   // Pause every query's polling: offline queries wait instead of fetching.
   useEffect(() => {
@@ -149,15 +162,17 @@ export function ShowcaseScreen({ screen }: { screen: ShowcaseScreenId }) {
         <NavigationPromisesContext.Provider value={null}>
           <PathnameContext.Provider value={route.pathname}>
             <PathParamsContext.Provider value={route.params}>
-              <div className="flex w-full min-h-screen bg-background">
-                <Sidebar onOpenCopilot={noop} />
-                <div className="flex-1 min-w-0 flex flex-col">
-                  <TopBar onCopilotToggle={noop} onMenuClick={noop} />
-                  <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">
-                    <Page />
-                  </main>
+              <EditionScope>
+                <div className="flex w-full min-h-screen bg-background">
+                  <Sidebar onOpenCopilot={noop} />
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    <TopBar onCopilotToggle={noop} onMenuClick={noop} />
+                    <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">
+                      <Page />
+                    </main>
+                  </div>
                 </div>
-              </div>
+              </EditionScope>
             </PathParamsContext.Provider>
           </PathnameContext.Provider>
         </NavigationPromisesContext.Provider>

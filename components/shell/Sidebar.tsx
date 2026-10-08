@@ -12,7 +12,7 @@ import {
   Settings, Library, DraftSow, CalendarClock, House, Gauge, ChevronLeft, ChevronRight, ListChecks, FileText,
 } from "@/components/ui/icons";
 import { SETTINGS_ITEMS } from "@/components/settings/SettingsNav";
-import { EDITION_TERMS, editionHas, type Edition, type EditionFeature } from "@/lib/edition";
+import { EDITION_LABEL, EDITION_TERMS, editionHas, type Edition, type EditionFeature } from "@/lib/edition";
 import { useEdition, useGovernMe } from "@/lib/govern/queries";
 
 type NavItem = {
@@ -203,6 +203,13 @@ export function Sidebar({
             priority
             className={cn("select-none", collapsed && "lg:hidden")}
           />
+          {/* The organization's edition, so a switch is visible on every page. */}
+          <span
+            title={`${EDITION_LABEL[edition]} edition`}
+            className={cn("ml-2.5 rounded-md border border-sidebar-border px-1.5 py-0.5 text-xs font-medium text-[var(--ink-700)]", collapsed && "lg:hidden")}
+          >
+            {EDITION_LABEL[edition]}
+          </span>
         </Link>
 
         {/* Nav: one list. Logo (px-5) and icons (px-3 +

@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { SettingsLayout } from "@/components/settings/SettingsNav";
@@ -19,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, Check, CheckCircle2, Loader2 } from "@/components/ui/icons";
 import { STAGE_LABEL, plural } from "@/lib/govern/labels";
-import { useContracts, useEdition, useMatrix, useSaveWorkflowSettings, useWorkflowSettings } from "@/lib/govern/queries";
+import { useContracts, useEdition, useGovernMe, useMatrix, useSaveWorkflowSettings, useWorkflowSettings } from "@/lib/govern/queries";
 import { EDITION_LABEL } from "@/lib/edition";
 import { EditionChoice } from "@/components/govern/EditionChoice";
 import { ModulesChoice } from "@/components/govern/ModulesChoice";
@@ -33,6 +34,8 @@ const TARGET_STAGES: Stage[] = ["draft", "review", "negotiation", "approval"];
 type StepId = "details" | "law" | "matrix" | "workflow" | "team" | "contract";
 
 export default function OrganizationSetupPage() {
+  const router = useRouter();
+  const me = useGovernMe();
   const { isAdmin, loading: roleLoading } = useAdminAccess();
   const settingsQ = useWorkflowSettings();
   const matrixQ = useMatrix();
@@ -112,7 +115,15 @@ export default function OrganizationSetupPage() {
                   saving={save.isPending}
                   contractTypes={(contractsQ.data?.contracts ?? []).map((c) => c.agreementType)}
                   onChoose={(e) => save.mutateAsync({ organization: { edition: e } }).then(
-                    () => { toast.success(`${EDITION_LABEL[e]} edition is on for everyone in ${org.name || "your organization"}`); },
+                    () => {
+                      void me.refetch();
+                      // The Settings menu hides the main menu, so offer the way to see the change.
+                      toast.success(`${EDITION_LABEL[e]} edition is on for everyone in ${org.name || "your organization"}`, {
+                        description: "The menu, agreement types and wording now follow it.",
+                        duration: 10_000,
+                        action: { label: "Go to Home", onClick: () => router.push("/home") },
+                      });
+                    },
                     (err: unknown) => {
                       toast.error("Couldn't switch the edition", { description: err instanceof Error ? err.message : "Please try again." });
                       throw err;
