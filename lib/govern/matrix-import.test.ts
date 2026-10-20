@@ -1,7 +1,7 @@
 // The demo's sample matrix (an Excel workbook) goes through the same parser
 // and mapping an admin's upload does: every row maps to a known clause type,
 // agreement type and office, with nothing flagged.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildPreview, detectMapping, parseMatrixFile, resolveAgreementType } from "../../components/govern/matrix/import-utils";
@@ -9,7 +9,9 @@ import { buildPreview, detectMapping, parseMatrixFile, resolveAgreementType } fr
 const SAMPLE = resolve(__dirname, "../../../sow-analyser-backend/samples/research/review-matrix.xlsx");
 
 describe("matrix import", () => {
-  it("reads the sample Excel matrix with every row ready to import", async () => {
+  // The sample lives in the backend repo; a frontend-only checkout (the Amplify
+  // build) doesn't have it, so the test runs only where both repos sit side by side.
+  it.skipIf(!existsSync(SAMPLE))("reads the sample Excel matrix with every row ready to import", async () => {
     const bytes = readFileSync(SAMPLE);
     const file = new File([bytes], "review-matrix.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const sheet = await parseMatrixFile(file);
