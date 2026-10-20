@@ -36,7 +36,7 @@ export function ToggleChips<T extends string>({
                   : "border-[var(--ink-300)] bg-card text-[var(--ink-600)] hover:border-[var(--ink-400)] hover:text-foreground",
               )}
             >
-              {on && <Check size={13} aria-hidden />}
+              {on && <Check size={12} aria-hidden />}
               {o.label}
             </button>
           );

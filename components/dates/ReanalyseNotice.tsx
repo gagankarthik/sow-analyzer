@@ -42,7 +42,7 @@ export function ReanalyseNotice({
 
   return (
     <div className={cn("flex flex-col gap-3 rounded-xl border border-[var(--info)]/30 bg-[var(--info-soft)] p-4 sm:flex-row sm:items-start md:px-5", className)}>
-      <Info size={18} className="mt-0.5 hidden shrink-0 text-[var(--info)] sm:block" />
+      <Info size={16} aria-hidden className="mt-0.5 hidden shrink-0 text-[var(--info)] sm:block" />
       <div className="min-w-0 flex-1">
         <p className="text-base font-semibold text-foreground">{title}</p>
         <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-700)]">{children}</p>
@@ -52,7 +52,7 @@ export function ReanalyseNotice({
       </div>
       {allowed && (
         <Button variant="outline" size="lg" className="w-full shrink-0 sm:w-auto md:h-9" onClick={run} disabled={reprocess.isPending || busy}>
-          <RefreshCw size={14} className={reprocess.isPending ? "animate-spin motion-reduce:animate-none" : undefined} />
+          <RefreshCw size={16} aria-hidden className={reprocess.isPending ? "animate-spin motion-reduce:animate-none" : undefined} />
           {reprocess.isPending ? "Starting…" : busy ? "Analyzing…" : "Re-analyze"}
         </Button>
       )}

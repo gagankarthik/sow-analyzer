@@ -118,15 +118,14 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
   return (
     <Section
       title={byEdition("Licensing income", "Payment schedule")}
-      description={byEdition("Fees, milestones, royalties and equity in this agreement, with when they are expected.", "Fees, milestone payments and rates in this agreement, with when they fall due.")}
       actions={!canEdit ? undefined : rows ? (
         <>
           {/* On phones the sticky bar under the rows carries these. */}
           <Button type="button" variant="outline" className="max-md:hidden" onClick={cancel} disabled={save.isPending}>Cancel</Button>
-          <Button type="button" className="max-md:hidden" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={14} className="animate-spin" />}{byEdition("Save income", "Save payments")}</Button>
+          <Button type="button" className="max-md:hidden" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={16} className="animate-spin" />}{byEdition("Save income", "Save payments")}</Button>
         </>
       ) : (
-        <Button type="button" variant="outline" onClick={() => setRows(items.map(toRow))}><Pencil size={14} />{items.length ? byEdition("Edit income", "Edit payments") : byEdition("Add income", "Add payments")}</Button>
+        <Button type="button" variant="outline" onClick={() => setRows(items.map(toRow))}><Pencil size={16} />{items.length ? byEdition("Edit income", "Edit payments") : byEdition("Add income", "Add payments")}</Button>
       )}
     >
       {rows ? (
@@ -158,15 +157,15 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
               </IncomeField>
               <Button type="button" variant="ghost" size="icon" aria-label="Remove this item" className="justify-self-end"
                 onClick={() => setRows((rs) => rs && rs.filter((x) => x.key !== r.key))}>
-                <Trash2 size={15} />
+                <Trash2 size={16} />
               </Button>
             </div>
             );
           })}
-          <Button type="button" variant="outline" className="self-start" onClick={addRow}><Plus size={14} />Add an item</Button>
+          <Button type="button" variant="outline" className="self-start" onClick={addRow}><Plus size={16} />Add an item</Button>
           <div className="sticky bottom-3 z-20 flex gap-2 rounded-xl border border-border bg-card p-3 shadow-sm md:hidden">
             <Button type="button" variant="outline" className="flex-1" onClick={cancel} disabled={save.isPending}>Cancel</Button>
-            <Button type="button" className="flex-1" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={14} className="animate-spin" />}{byEdition("Save income", "Save payments")}</Button>
+            <Button type="button" className="flex-1" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={16} className="animate-spin" />}{byEdition("Save income", "Save payments")}</Button>
           </div>
         </div>
       ) : items.length === 0 ? (
@@ -259,10 +258,8 @@ function Obligations({ contract: c }: { contract: ContractDetail }) {
   return (
     <Section
       title="Obligations"
-      description={signed
-        ? `${plural(open.length, "open obligation")}. ${byEdition("Sponsor reports, payments, diligence milestones and review windows", "Deliverables, invoices, milestone payments and notice dates")}, with due dates.`
-        : "Sonar lists the obligations when the agreement is signed. You can add any you already know about."}
-      actions={canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={14} />Add an obligation</Button>}
+      description={signed ? plural(open.length, "open obligation") : undefined}
+      actions={canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={16} />Add an obligation</Button>}
     >
       {adding && <ObligationForm contract={c} onDone={() => setAdding(false)} />}
       {sorted.length === 0 ? (
@@ -318,7 +315,7 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
         <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--ink-600)]">
           <span>{OBLIGATION_KIND_LABEL[o.kind]}</span>
           {o.amount !== null && <span className="tabular-nums">{fmtMoney(o.amount, c.currency)}</span>}
-          {o.source === "sonar" && <span className="inline-flex items-center gap-1 text-[var(--ai-ink)]"><Sonar size={11} />Found by Sonar</span>}
+          {o.source === "sonar" && <span className="inline-flex items-center gap-1 text-[var(--ai-ink)]"><Sonar size={12} />Found by Sonar</span>}
           {!o.verified && <span className="inline-flex h-5 items-center rounded bg-[var(--warning-soft)] px-1.5 font-medium text-[var(--warning-fg)]">Needs verification</span>}
           {done && o.completedAt && <span>Done {formatDate(o.completedAt)}</span>}
         </p>
@@ -329,12 +326,12 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
       </span>
       {canEdit && !o.verified && !done && (
         <Button type="button" size="sm" variant="outline" onClick={verify} disabled={update.isPending} pending={busy === "verify"}>
-          <CheckCircle2 size={13} />Verify
+          <CheckCircle2 size={12} />Verify
         </Button>
       )}
       {canEdit && (
         <Button type="button" size="sm" variant={done ? "ghost" : "outline"} onClick={toggle} disabled={update.isPending} pending={busy === "toggle"}>
-          {done ? <RefreshCw size={13} /> : <CheckCircle2 size={13} />}
+          {done ? <RefreshCw size={12} /> : <CheckCircle2 size={12} />}
           {done ? "Undo" : "Mark done"}
         </Button>
       )}
@@ -391,7 +388,7 @@ function ObligationForm({ contract: c, onDone }: { contract: ContractDetail; onD
       </IncomeField>
       <div className="flex justify-end gap-2 sm:col-span-2 lg:col-span-4">
         <Button type="button" variant="outline" onClick={onDone} disabled={add.isPending}>Cancel</Button>
-        <Button type="submit" disabled={!title.trim() || add.isPending}>{add.isPending && <Loader2 size={13} className="animate-spin" />}Add obligation</Button>
+        <Button type="submit" disabled={!title.trim() || add.isPending}>{add.isPending && <Loader2 size={12} className="animate-spin" />}Add obligation</Button>
       </div>
     </form>
   );

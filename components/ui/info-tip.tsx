@@ -51,13 +51,13 @@ export function InfoTip({
         onPointerEnter={(e) => e.pointerType === "mouse" && show()}
         onPointerLeave={(e) => e.pointerType === "mouse" && hideSoon()}
         className={cn(
-          "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-[var(--ink-500)]",
+          "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-[var(--ink-500)] max-md:size-11",
           "transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-muted data-[state=open]:text-foreground",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]",
           className,
         )}
       >
-        <Info size={iconSize} strokeWidth={1.75} />
+        <Info size={iconSize} aria-hidden />
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
@@ -69,7 +69,7 @@ export function InfoTip({
           onPointerLeave={hideSoon}
           onOpenAutoFocus={(e) => e.preventDefault()}
           className={cn(
-            "z-50 w-[min(22rem,calc(100vw-1.5rem))] rounded-xl border border-border bg-card p-4 text-sm leading-relaxed text-[var(--ink-700)] shadow-lg",
+            "z-50 w-[min(22rem,calc(100vw-1.5rem))] rounded-xl border border-border bg-card p-4 text-sm leading-relaxed text-[var(--ink-700)] shadow-md",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
           )}

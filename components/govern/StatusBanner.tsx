@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
-import { CheckCircle2, ChevronsDown, ChevronsUp, Hourglass, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronsDown, ChevronsUp, Hourglass, XCircle } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarStack } from "@/components/ds/Avatar";
 import { WAITING_ON_LABEL, personName } from "@/lib/govern/labels";
@@ -57,7 +57,7 @@ export function StatusBanner({
     >
       <div className={cn("flex flex-col gap-4", !compact && "md:flex-row md:items-start md:justify-between")}>
         <div className="min-w-0">
-          <Icon size={compact ? 16 : 18} aria-hidden className={cn(tone === "done" ? "text-[var(--success)]" : tone === "stopped" ? "text-[var(--danger)]" : "text-foreground")} />
+          <Icon size={compact ? 16 : 20} aria-hidden className={cn(tone === "done" ? "text-[var(--success)]" : tone === "stopped" ? "text-[var(--danger)]" : "text-foreground")} />
           <h2 className={cn("mt-2 font-semibold tracking-tight text-foreground", compact ? "text-base" : "text-xl")}>{title}</h2>
           {c.nextStep?.headline && tone !== "done" && (
             <p className={cn("mt-1 max-w-[62ch] leading-relaxed text-[var(--ink-700)]", compact ? "text-sm" : "text-base")}>{c.nextStep.headline}</p>
@@ -75,7 +75,7 @@ export function StatusBanner({
 
       {children && <div className="mt-5">{children}</div>}
 
-      {open && <StepList id={detailsId} steps={steps} />}
+      {open && <ContractStepList id={detailsId} steps={steps} className="mt-5 border-t border-border pt-4" />}
 
       <button
         type="button"
@@ -85,7 +85,7 @@ export function StatusBanner({
         className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-[var(--brand-primary-700)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary-600)] md:min-h-8"
       >
         {open ? <ChevronsUp size={16} aria-hidden /> : <ChevronsDown size={16} aria-hidden />}
-        {open ? "Hide the steps" : "Show every step and who holds it"}
+        {open ? "Hide steps" : "Show every step"}
       </button>
     </section>
   );
@@ -127,9 +127,11 @@ function StatusMark({ status }: { status: StepStatus }) {
   return <span aria-hidden className="size-4 rounded-full border-[1.5px] border-dashed border-[var(--ink-400)]" />;
 }
 
-function StepList({ id, steps }: { id: string; steps: ContractStep[] }) {
+/** Every step with its side, where it stands and the people on it (the
+ *  banner's "Show every step", and the record page's path guidance). */
+export function ContractStepList({ id, steps, className }: { id?: string; steps: ContractStep[]; className?: string }) {
   return (
-    <ol id={id} className="mt-5 flex flex-col gap-1 border-t border-border pt-4">
+    <ol id={id} className={cn("flex flex-col gap-1", className)}>
       {steps.map((s) => (
         <li key={s.id} className="py-2">
           <div className="flex items-baseline justify-between gap-4">

@@ -73,8 +73,8 @@ export function ReviewersSection({
       title={<>Reviewers <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{reviewers.length}</span></>}
       description="The people who review agreements, the offices they sit in and the agreement types they handle."
       action={!readOnly && (
-        <Button size="lg" className="w-full sm:w-auto md:h-9" onClick={() => setEditing({ index: null, reviewer: EMPTY })}>
-          <Plus size={15} />Add a reviewer
+        <Button className="w-full sm:w-auto" onClick={() => setEditing({ index: null, reviewer: EMPTY })}>
+          <Plus size={16} />Add a reviewer
         </Button>
       )}
       flush
@@ -111,11 +111,11 @@ export function ReviewersSection({
                 </dl>
                 {!readOnly && (
                   <div className="flex gap-2 md:justify-end">
-                    <Button variant="outline" className="h-10 md:h-9" onClick={() => setEditing({ index: i, reviewer: r })} aria-label={`Edit ${r.name || r.email}`}>
-                      <Pencil size={14} />Edit
+                    <Button variant="outline" className="h-10" onClick={() => setEditing({ index: i, reviewer: r })} aria-label={`Edit ${r.name || r.email}`}>
+                      <Pencil size={16} />Edit
                     </Button>
-                    <Button variant="ghost" className="h-10 text-[var(--danger)] md:h-9" onClick={() => setRemoving(i)} aria-label={`Remove ${r.name || r.email}`}>
-                      <Trash2 size={14} /><span className="md:sr-only">Remove</span>
+                    <Button variant="ghost" className="h-10 text-[var(--danger)]" onClick={() => setRemoving(i)} aria-label={`Remove ${r.name || r.email}`}>
+                      <Trash2 size={16} /><span className="md:sr-only">Remove</span>
                     </Button>
                   </div>
                 )}
@@ -199,8 +199,8 @@ function ReviewerForm({
       <ToggleChips label="Offices" options={OFFICE_OPTIONS} values={r.offices} onChange={(offices) => setR({ ...r, offices })} hint="Escalations to these offices can land on this person." />
       <ToggleChips label="Agreement types they handle" options={TYPE_OPTIONS} values={r.agreementTypes} onChange={(agreementTypes) => setR({ ...r, agreementTypes })} hint="Leave all off for any type." />
       <DialogFooter>
-        <Button type="button" variant="outline" size="lg" className="md:h-9" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" size="lg" className="md:h-9">{isNew ? "Add reviewer" : "Done"}</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button type="submit">{isNew ? "Add reviewer" : "Done"}</Button>
       </DialogFooter>
     </form>
   );

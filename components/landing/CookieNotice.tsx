@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/ui/icons";
 import { CONSENT_STORAGE_KEY, OPEN_SETTINGS_EVENT, parseConsent, readConsent, saveConsent } from "@/lib/cookie-consent";
 import { useStoredValue } from "@/lib/use-stored-value";
 
@@ -105,7 +105,7 @@ export function CookieNotice() {
             <div className="lp-cookie-dialog-head">
               <h2 id={titleId} className="lp-cookie-dialog-title">Cookie settings</h2>
               <button type="button" className="lp-cookie-close" aria-label="Close cookie settings" onClick={() => setIsSettingsOpen(false)} autoFocus>
-                <X size={18} strokeWidth={2} aria-hidden="true" />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <p className="lp-cookie-dialog-intro">

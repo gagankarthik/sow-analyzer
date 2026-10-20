@@ -1,5 +1,6 @@
 "use client";
 
+import { displayTitle } from "@/lib/format";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
@@ -45,15 +46,15 @@ export function UploadStep({
       lead={`Add one contract file: ${UPLOAD_REQUIREMENTS}. Pick its document type first, then drop the file. Analysis starts when the upload finishes.`}
       footer={
         <>
-          <Button variant="outline" size="lg" className="w-full sm:w-auto" onClick={onBack}>
-            <ChevronLeft size={15} />Back
+          <Button variant="outline" className="w-full sm:w-auto" onClick={onBack}>
+            <ChevronLeft size={16} />Back
           </Button>
           <span className="text-sm text-muted-foreground">This page moves on when the analysis starts.</span>
         </>
       }
     >
       <p className="mb-4 flex items-center gap-2 text-sm text-[var(--ink-600)]">
-        <Briefcase size={15} className="shrink-0 text-muted-foreground" />
+        <Briefcase size={16} className="shrink-0 text-muted-foreground" />
         <span className="min-w-0 truncate">
           Uploading to <span className="font-semibold text-foreground">{project.name}</span>
         </span>
@@ -70,11 +71,11 @@ export function UploadStep({
 
       {stale && (
         <div role="status" className="mt-4 flex items-start gap-2.5 rounded-lg border border-border bg-[var(--panel)] px-4 py-3">
-          <Info size={15} className="mt-0.5 shrink-0 text-[var(--ink-600)]" />
+          <Info size={16} className="mt-0.5 shrink-0 text-[var(--ink-600)]" />
           <p className="text-sm leading-relaxed text-[var(--ink-600)]">
             {docMissing
               ? "The document setup was following no longer exists, or is no longer shared with you. Add a file to continue."
-              : `An earlier upload${doc?.title ? ` of "${doc.title}"` : ""} has not started processing. If the page was closed before the upload finished, add the file again.`}
+              : `An earlier upload${doc?.title ? ` of "${displayTitle(doc.title)}"` : ""} has not started processing. If the page was closed before the upload finished, add the file again.`}
           </p>
         </div>
       )}

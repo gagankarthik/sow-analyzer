@@ -1,5 +1,5 @@
 import * as React from "react";
-import { UserPlus } from "lucide-react";
+import { UserPlus } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -21,7 +21,7 @@ const SIZE = {
   lg: "size-10 text-body",
 } as const;
 
-const ICON_SIZE = { xs: 10, sm: 12, base: 13, md: 14, lg: 18 } as const;
+const ICON_SIZE = { xs: 12, sm: 12, base: 12, md: 16, lg: 20 } as const;
 const TONES = 8;
 
 /** Two-letter initials from a name or email ("Jane Doe" → "JD", "j.doe@x" → "JD"). */
@@ -61,7 +61,7 @@ export function Avatar({ name, email, size = "sm", decorative = false, className
       )}
       {...props}
     >
-      {unassigned ? <UserPlus size={ICON_SIZE[size]} strokeWidth={2} aria-hidden /> : initials(name, email)}
+      {unassigned ? <UserPlus size={ICON_SIZE[size]} aria-hidden /> : initials(name, email)}
     </span>
   );
 }

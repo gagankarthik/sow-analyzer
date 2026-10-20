@@ -4,6 +4,9 @@ frontend:
     preBuild:
       commands:
         - npm ci --cache .npm --prefer-offline
+        # Gate the deploy: a type error or failing test stops the build here.
+        - npx tsc --noEmit -p .
+        - npm test
     build:
       commands:
         # Amplify gives environment variables to the build only. Server routes

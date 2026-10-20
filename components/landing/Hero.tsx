@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Play } from "@/components/ui/icons";
 
 /* Hero: the promise on the left, and on the right the moment it is about —
    one agreement checked against the matrix: how much of it is fine, the
@@ -45,10 +45,10 @@ export function Hero() {
           <div className="lp-hero3-actions">
             <Link href="/signup" className="lp-btn lp-btn-primary lp-btn-lg">
               Request a demo
-              <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+              <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link href="/#journey" className="lp-btn lp-btn-outline lp-btn-lg">
-              <Play size={14} strokeWidth={2.25} aria-hidden="true" />
+              <Play size={16} aria-hidden="true" />
               See how it works
             </Link>
           </div>

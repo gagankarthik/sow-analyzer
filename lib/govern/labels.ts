@@ -258,6 +258,7 @@ export const ACTIVITY_LABEL: Record<ActivityAction, string> = editionMap({
   obligation_verified: "Obligation verified",
   pi_requested: "Asked the PI or department",
   pi_answered: "PI or department answered",
+  automation_notify: "Automation alert",
 }, {
   pi_requested: "Asked the requesting department",
   pi_answered: "Department answered",

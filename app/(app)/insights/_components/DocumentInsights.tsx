@@ -13,8 +13,11 @@ import Link from "next/link";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChartSkeleton, PanelRowsSkeleton, SkeletonRegion } from "@/components/ds/skeletons";
+import { DocumentInsightsSkeleton } from "./InsightsSkeletons";
+import { ListPanel } from "@/components/ds/Panel";
+import { RadioFilterButton } from "@/components/ds/FilterButton";
+import { Toolbar } from "@/components/ds/Toolbar";
 import { MotionReveal } from "@/components/MotionReveal";
 import { ChartCard } from "@/components/charts/primitives";
 import { ValueRiskScatter, type ScatterPoint } from "@/components/charts/ValueRiskScatter";
@@ -28,7 +31,7 @@ import {
 } from "@/lib/chart-theme";
 import {
   ShieldAlert, AlertTriangle, Info, ScatterChart as ScatterChartIcon, BarChart3, DollarSign,
-  CalendarClock, X, RefreshCw, XCircle, Layers, Filter, ArrowRight, CheckCircle2, Files,
+  CalendarClock, RefreshCw, XCircle, ArrowRight, CheckCircle2, Files,
 } from "@/components/ui/icons";
 import { useDocuments, useClassifications, isProcessing } from "@/lib/queries/documents";
 import { useCompliancePacks } from "@/lib/queries/compliance";
@@ -38,17 +41,17 @@ import { documentKeyDates, formatKeyDate, isoDayToMs, portfolioDates, ruleText, 
 import { computeContractValue, docValueOrNull, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
 import { clauseTypeLabel } from "@/lib/clause-categories";
 import { DOC_TYPE_META, docTypeShort } from "@/lib/doc-types";
-import { DUE_SOON_DAYS } from "@/lib/format";
+import { DUE_SOON_DAYS, displayTitle } from "@/lib/format";
 import type { ApiDocument, DocType, RiskLevel, FindingSeverity, PricingModel } from "@/lib/types";
 
 const DAY = 86_400_000;
 const SEV_RANK: Record<FindingSeverity, number> = { info: 0, low: 1, medium: 2, high: 3, critical: 4 };
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode }> = {
-  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger-fg)]", icon: <ShieldAlert size={13} /> },
-  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning-fg)]", icon: <AlertTriangle size={13} /> },
-  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
-  low: { bg: "bg-[var(--ink-50)]", text: "text-[var(--ink-600)]", icon: <Info size={13} /> },
-  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger-fg)]", icon: <ShieldAlert size={12} /> },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning-fg)]", icon: <AlertTriangle size={12} /> },
+  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={12} /> },
+  low: { bg: "bg-[var(--ink-50)]", text: "text-[var(--ink-600)]", icon: <Info size={12} /> },
+  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={12} /> },
 };
 // Fixed orders, so a group keeps its colour whatever the filters leave on screen.
 const DOC_TYPE_KEYS = Object.keys(DOC_TYPE_META) as DocType[];
@@ -128,7 +131,7 @@ export function DocumentInsights() {
       (classByDoc.get(d.docId)?.clauses ?? []).forEach((c, i) => {
         if (c.riskRated === false || (c.riskLevel !== "critical" && c.riskLevel !== "high")) return;
         out.push({
-          key: `${d.docId}:${c.number}:${i}`, docId: d.docId, docTitle: d.title || "Untitled document",
+          key: `${d.docId}:${c.number}:${i}`, docId: d.docId, docTitle: displayTitle(d.title) || "Untitled document",
           number: c.number, title: c.title, type: clauseTypeLabel(c), summary: c.summary, level: c.riskLevel,
         });
       });
@@ -204,7 +207,7 @@ export function DocumentInsights() {
       const ready = pdocs.filter((d) => d.status === "READY");
       if (ready.length === 0) continue;
       const valued: ValuedDoc[] = ready.map((d) => ({
-        docId: d.docId, title: d.title || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt,
+        docId: d.docId, title: displayTitle(d.title) || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt,
         classification: classByDoc.get(d.docId), persisted: persistedOf(d),
       }));
       const cv = computeContractValue(valued);
@@ -244,7 +247,7 @@ export function DocumentInsights() {
       const delta = c?.amendment?.valueDelta ?? (d.docType === "AMENDMENT" ? d.valueDelta ?? null : null);
       if (delta == null || delta === 0) continue;
       rows.push({
-        id: d.docId, label: d.title || "Untitled amendment", value: delta,
+        id: d.docId, label: displayTitle(d.title) || "Untitled amendment", value: delta,
         color: delta > 0 ? ACCENT : NEUTRAL_MARK,
         currency: (d.currency ?? c?.commercials?.currency ?? "").toUpperCase(),
       });
@@ -272,7 +275,7 @@ export function DocumentInsights() {
       const value = docValueOrNull(classByDoc.get(d.docId), persistedOf(d));
       const level = docRisk(d);
       if (value === null || value <= 0 || !d.riskCounts || !level) continue;
-      out.push({ id: d.docId, name: d.title || "Untitled", value, risk: riskIndex(d.riskCounts), clauses: d.clauseCount ?? sum(d.riskCounts), level, currency: d.currency });
+      out.push({ id: d.docId, name: displayTitle(d.title) || "Untitled", value, risk: riskIndex(d.riskCounts), clauses: d.clauseCount ?? sum(d.riskCounts), level, currency: d.currency });
     }
     return out;
   }, [readyDocs, classByDoc]);
@@ -291,7 +294,7 @@ export function DocumentInsights() {
       const base = iso ? new Date(iso).getTime() : NaN;
       if (!Number.isFinite(base)) return;
       const t = base - shiftDays * DAY;
-      out.push({ key: `${d.docId}:${kind}`, docId: d.docId, docTitle: d.title || "Untitled document", kind, t, days: Math.round((t - now) / DAY), note });
+      out.push({ key: `${d.docId}:${kind}`, docId: d.docId, docTitle: displayTitle(d.title) || "Untitled document", kind, t, days: Math.round((t - now) / DAY), note });
     };
     for (const d of scoped) {
       if (documentKeyDates(d).extracted) {
@@ -310,7 +313,7 @@ export function DocumentInsights() {
             k.precision && k.precision !== "day" ? `by the end of ${formatKeyDate(k)}` : null,
             k.isEstimated && k.precision === "day" ? "estimated" : null,
           ].filter(Boolean).join(" · ");
-          out.push({ key: `${d.docId}:${k.id}`, docId: d.docId, docTitle: d.title || "Untitled document", kind, t: isoDayToMs(k.date as string), days, note: note || undefined });
+          out.push({ key: `${d.docId}:${k.id}`, docId: d.docId, docTitle: displayTitle(d.title) || "Untitled document", kind, t: isoDayToMs(k.date as string), days, note: note || undefined });
         }
         continue;
       }
@@ -333,7 +336,7 @@ export function DocumentInsights() {
 
   /* ── 5. What is missing? ───────────────────────────────────────────────── */
   const missing = useMemo(() => {
-    const ref = (d: ApiDocument, note?: string): DocRef => ({ docId: d.docId, title: d.title || "Untitled document", note });
+    const ref = (d: ApiDocument, note?: string): DocRef => ({ docId: d.docId, title: displayTitle(d.title) || "Untitled document", note });
     const failed = scoped.filter((d) => d.status === "FAILED").map((d) => ref(d, d.errorMessage));
     const processing = scoped.filter((d) => isProcessing(d.status)).map((d) => ref(d, d.status.toLowerCase()));
     const noValue = readyDocs.filter((d) => { const v = docValueOrNull(classByDoc.get(d.docId), persistedOf(d)); return v === null || v <= 0; }).map((d) => ref(d));
@@ -351,7 +354,7 @@ export function DocumentInsights() {
   /* ── Key findings returned by the analysis ─────────────────────────────── */
   const allFindings: Finding[] = useMemo(() => {
     const out: Finding[] = [];
-    readyDocs.forEach((d) => (classByDoc.get(d.docId)?.keyFindings ?? []).forEach((f) => out.push({ ...f, docId: d.docId, docTitle: d.title || "Untitled" })));
+    readyDocs.forEach((d) => (classByDoc.get(d.docId)?.keyFindings ?? []).forEach((f) => out.push({ ...f, docId: d.docId, docTitle: displayTitle(d.title) || "Untitled" })));
     return out.sort((a, b) => (SEV_RANK[b.severity] ?? 0) - (SEV_RANK[a.severity] ?? 0));
   }, [readyDocs, classByDoc]);
   const [sevFilter, setSevFilter] = useState<FindingSeverity | "all">("all");
@@ -410,69 +413,74 @@ export function DocumentInsights() {
   const shownAttention = showAllAttention ? attention : attention.slice(0, 8);
   const shownValues = showAllValues ? valueRows : valueRows.slice(0, 6);
 
+  const quickFilters = (
+    <>
+      {availableTypes.length > 1 && (
+        <RadioFilterButton<DocType | "all">
+          label="Type"
+          anyValue="all"
+          value={typeFilter}
+          onChange={setTypeFilter}
+          options={[{ value: "all", label: "All document types" }, ...availableTypes.map((t) => ({ value: t, label: docTypeShort(t) }))]}
+        />
+      )}
+      <RadioFilterButton<RiskLevel | "all">
+        label="Risk"
+        anyValue="all"
+        value={riskFilter}
+        onChange={setRiskFilter}
+        options={[{ value: "all", label: "All risk levels" }, ...RISK_ORDER_DESC.map((r) => ({ value: r, label: RISK_LABEL[r] }))]}
+      />
+    </>
+  );
+  const inView = (
+    <p className="text-xs text-[var(--ink-600)]" aria-live="polite">
+      <span className="font-semibold tabular-nums text-foreground">{scoped.length}</span> of <span className="tabular-nums">{docs.length}</span> in view · <span className="tabular-nums">{readyDocs.length}</span> analyzed
+    </p>
+  );
+
   return (
     <>
-      <div className="flex flex-col gap-6 md:gap-8">
-        {/* Filter bar — applies to every block on the page */}
+      <div className="flex flex-col gap-6">
+        {/* Filter toolbar (UI_SPEC section 9): applies to every block on the page */}
         {!loading && !failedLoad && docs.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            {availableTypes.length > 1 && (
-              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as DocType | "all")}>
-                <SelectTrigger aria-label="Filter by document type" className="min-w-[140px] flex-1 sm:w-[176px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All document types</SelectItem>
-                  {availableTypes.map((t) => <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-            <Select value={riskFilter} onValueChange={(v) => setRiskFilter(v as RiskLevel | "all")}>
-              <SelectTrigger aria-label="Filter by overall risk level" className="min-w-[140px] flex-1 sm:w-[164px] sm:flex-none"><Filter size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All risk levels</SelectItem>
-                {RISK_ORDER_DESC.map((r) => <SelectItem key={r} value={r}>{RISK_LABEL[r]} risk</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {activeFilters > 0 && (
-              <Button variant="ghost" className="h-10 text-[var(--brand-primary-700)] sm:h-9" onClick={clearFilters}>
-                <X size={14} />Clear filters ({activeFilters})
-              </Button>
-            )}
-            <p className="w-full text-sm text-[var(--ink-600)] sm:ml-auto sm:w-auto" aria-live="polite">
-              Showing <span className="font-semibold tabular-nums text-foreground">{scoped.length}</span> of <span className="tabular-nums">{docs.length}</span> document{docs.length === 1 ? "" : "s"} · <span className="tabular-nums">{readyDocs.length}</span> analyzed
-            </p>
-          </div>
+          <Toolbar
+            label="Filter documents"
+            activeCount={activeFilters}
+            mobileSheet={<div className="flex flex-col items-start gap-3">{quickFilters}</div>}
+          >
+            <Toolbar.Filters always>{quickFilters}</Toolbar.Filters>
+            <Toolbar.Clear count={activeFilters} onClear={clearFilters} />
+            <Toolbar.Actions>{inView}</Toolbar.Actions>
+          </Toolbar>
         )}
 
         {loading ? (
-          <>
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-[360px] rounded-xl" />
-            <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2"><Skeleton className="h-72 rounded-xl" /><Skeleton className="h-72 rounded-xl" /></div>
-          </>
+          <DocumentInsightsSkeleton />
         ) : failedLoad ? (
           <ErrorState onRetry={() => refetch()} />
         ) : docs.length === 0 ? (
           <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
-            <p className="mb-1 text-lg font-semibold text-foreground">No documents yet</p>
+            <p className="mb-1 text-base font-semibold text-foreground">No documents yet</p>
             <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">Insights are computed from your analyzed documents. Upload one to start.</p>
-            <Button variant="outline" className="mt-5 h-10 sm:h-9" asChild><Link href="/projects/new">Add a document</Link></Button>
+            <Button variant="outline" className="mt-5" asChild><Link href="/projects/new">Add a document</Link></Button>
           </div>
         ) : noMatches ? (
           <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
-            <p className="mb-1 text-lg font-semibold text-foreground">No documents match these filters</p>
+            <p className="mb-1 text-base font-semibold text-foreground">No documents match these filters</p>
             <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">Try a different document type or risk level.</p>
-            <Button variant="outline" className="mt-5 h-10 sm:h-9" onClick={clearFilters}>Clear filters</Button>
+            <Button variant="outline" className="mt-5" onClick={clearFilters}>Clear filters</Button>
           </div>
         ) : (
           <>
             {/* 6. Summary — computed sentences only */}
             <MotionReveal>
-              <Card ai inset="none" className="rounded-xl p-4 shadow-none md:p-6">
-                <div className="flex items-start gap-3.5">
-                  <SonarMark size="lg" tile />
+              <Card ai inset="none" className="rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <SonarMark size="md" tile />
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-lg font-semibold mb-1.5">Summary of {plural(scoped.length, "document")}{activeFilters > 0 ? " matching the filters" : ""}</h2>
-                    <p className="max-w-[60ch] text-lg leading-relaxed text-foreground">{summary.join(" ")}</p>
+                    <h2 className="mb-1 text-base font-semibold">Summary · {plural(scoped.length, "document")}</h2>
+                    <p className="max-w-[72ch] text-sm leading-relaxed text-foreground">{summary.join(" ")}</p>
                     {(clausesPending || classFailed > 0 || docsWithoutRisk > 0) && (
                       <p className="mt-2 text-sm text-[var(--ink-600)]">
                         {[
@@ -489,21 +497,15 @@ export function DocumentInsights() {
 
             {/* 1. Focal block: what needs attention first */}
             <MotionReveal>
-              <section aria-labelledby="attention-heading" className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 bg-[var(--navy)] px-4 py-4 text-white md:px-6">
-                  <div className="min-w-0">
-                    <h2 id="attention-heading" className="text-lg font-semibold tracking-tight">What needs my attention first?</h2>
-                    <p className="mt-0.5 text-sm text-[var(--navy-foreground)]">Clauses rated critical or high, critical first.</p>
-                  </div>
-                  <p className="flex items-baseline gap-2 text-sm text-[var(--navy-foreground)]">
-                    <span className="text-3xl font-semibold leading-none tabular-nums text-white">{clausesPending && attention.length === 0 ? "—" : attention.length}</span>
-                    clause{attention.length === 1 ? "" : "s"}
-                  </p>
-                </div>
+              <ListPanel
+                as="h2"
+                title="Needs attention"
+                meta={clausesPending && attention.length === 0 ? undefined : plural(attention.length, "clause")}
+              >
                 {clausesPending && attention.length === 0 ? (
-                  <div className="space-y-3 p-4 md:p-6">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+                  <SkeletonRegion label="clauses that need attention"><PanelRowsSkeleton rows={3} /></SkeletonRegion>
                 ) : attention.length === 0 ? (
-                  <EmptyNote icon={<CheckCircle2 size={20} />} title="Nothing needs attention" text={readyDocs.length === 0 ? "No analyzed documents in scope yet." : `No clause in the ${plural(readyDocs.length, "analyzed document")} in scope is rated critical or high.`} />
+                  <EmptyNote icon={<CheckCircle2 size={20} aria-hidden />} title="Nothing needs attention" text={readyDocs.length === 0 ? "No analyzed documents in scope yet." : `No clause in the ${plural(readyDocs.length, "analyzed document")} in scope is rated critical or high.`} />
                 ) : (
                   <>
                     <ol className="divide-y divide-border">
@@ -511,65 +513,65 @@ export function DocumentInsights() {
                         <li key={a.key}>
                           <Link
                             href={`/projects/${a.docId}/sow#clause-${encodeURIComponent(a.number)}`}
-                            className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--panel)] focus-visible:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)] md:px-6"
+                            className="group flex min-w-0 items-start gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)]"
                           >
                             <span className={`mt-0.5 shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${RISK_PILL[a.level]}`}>{RISK_LABEL[a.level]}</span>
                             <span className="min-w-0 flex-1">
                               <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                <span className="break-words text-base font-semibold text-foreground">{a.title || `Clause ${a.number}`}</span>
+                                <span className="break-words text-sm font-medium text-foreground">{a.title || `Clause ${a.number}`}</span>
                                 {a.number && <span className="font-mono text-xs text-muted-foreground">§{a.number}</span>}
                                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-[var(--ink-600)]">{a.type}</span>
                               </span>
-                              <span className="mt-1 block text-sm leading-relaxed text-[var(--ink-600)]">{a.summary || "No summary was returned for this clause."}</span>
-                              <span className="mt-1 block truncate text-xs text-muted-foreground">{a.docTitle}</span>
+                              <span className="mt-0.5 line-clamp-2 block text-sm text-[var(--ink-600)]">{a.summary || "No summary was returned for this clause."}</span>
+                              <span className="mt-0.5 block truncate text-xs text-muted-foreground">{displayTitle(a.docTitle)}</span>
                             </span>
-                            <ArrowRight size={16} className="mt-1 hidden shrink-0 text-[var(--ink-300)] transition-colors group-hover:text-[var(--brand-primary-600)] sm:block" />
+                            <ArrowRight size={16} aria-hidden className="mt-0.5 hidden shrink-0 text-[var(--ink-400)] transition-colors duration-150 group-hover:text-[var(--brand-primary-600)] rtl:rotate-180 sm:block" />
                           </Link>
                         </li>
                       ))}
                     </ol>
                     {attention.length > 8 && (
-                      <div className="border-t border-border px-4 py-2 md:px-6">
-                        <Button variant="ghost" className="h-10 text-[var(--brand-primary-700)] sm:h-9" onClick={() => setShowAllAttention((v) => !v)}>
+                      <div className="border-t border-border px-4 py-1">
+                        <Button variant="ghost" size="sm" className="text-[var(--brand-primary-700)]" onClick={() => setShowAllAttention((v) => !v)}>
                           {showAllAttention ? "Show the first 8" : `Show all ${attention.length}`}
                         </Button>
                       </div>
                     )}
                   </>
                 )}
-              </section>
+              </ListPanel>
             </MotionReveal>
 
             <MotionReveal delay={0.05}>
-              <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-                {/* 2. Where does risk concentrate? */}
-                <ChartCard title="Where does risk concentrate?" icon={<BarChart3 size={15} />} sub={`${plural(totalRated, "rated clause")} · ${plural(categoryCount, "category", "categories")}`}>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                {/* Risk by category */}
+                <ChartCard title="Risk by category" icon={<BarChart3 size={16} />} sub={`${plural(totalRated, "rated clause")} · ${plural(categoryCount, "category", "categories")}`}>
                   {totalRated === 0 && ratedClauses.length === 0 ? (
-                    clausesPending ? <Skeleton className="h-48 rounded-lg" /> : <EmptyNote title="No rated clauses" text="Risk by category appears once a document in scope has been analyzed." bare />
+                    clausesPending ? <ChartSkeleton height="h-48" label="risk by category" /> : <EmptyNote title="No rated clauses" text="Risk by category appears once a document in scope has been analyzed." bare />
                   ) : (
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-base font-semibold mb-2 text-foreground">Clauses by risk level</h3>
+                        <h3 className="mb-2 text-sm font-semibold text-foreground">Clauses by risk level</h3>
                         <CompositionBar segments={riskLevelMix} emptyText="No clause risk counts on the documents in scope." />
                       </div>
                       <div>
-                        <h3 className="text-base font-semibold mb-2 text-foreground">By clause category</h3>
+                        <h3 className="mb-2 text-sm font-semibold text-foreground">By clause category</h3>
                         {ratedClauses.length === 0
-                          ? (clausesPending ? <Skeleton className="h-40 rounded-lg" /> : <p className="text-sm text-muted-foreground">Clause detail is not available for the documents in scope.</p>)
+                          ? (clausesPending ? <ChartSkeleton height="h-40" label="clause categories" /> : <p className="text-sm text-muted-foreground">Clause detail is not available for the documents in scope.</p>)
                           // Every category is listed (no row cap), so none is dropped.
                           : <ClauseHeatmap clauses={ratedClauses} maxRows={Math.max(1, categoryCount)} />}
                         {unratedClauses > 0 && <p className="mt-2 text-xs text-muted-foreground">{plural(unratedClauses, "clause")} came back without a risk level and {unratedClauses === 1 ? "is" : "are"} not in this table.</p>}
                       </div>
                       <div>
-                        <h3 className="text-base font-semibold mb-2 text-foreground">By document type · clauses rated high or critical</h3>
+                        <h3 className="mb-2 text-sm font-semibold text-foreground">High or critical clauses by document type</h3>
                         <HBarChart data={riskByType} valueFormatter={(n) => n.toLocaleString()} yAxisWidth={104} emptyText="No clause risk counts by document type yet." />
                       </div>
                     </div>
                   )}
                 </ChartCard>
 
-                {/* 3. How much money is exposed? */}
-                <ChartCard title="How much money is exposed?" icon={<DollarSign size={15} />} sub={`${valuedContracts} of ${plural(valueRows.length, "contract")} valued`}>
+                {/* Value exposed */}
+                <ChartCard title="Value exposed" icon={<DollarSign size={16} />} sub={`${valuedContracts} of ${plural(valueRows.length, "contract")} valued`}>
                   {valueRows.length === 0 ? (
                     <EmptyNote title="No analyzed contracts" text="Contract value appears once a document in scope has been analyzed." bare />
                   ) : (
@@ -577,7 +579,7 @@ export function DocumentInsights() {
                       <div>
                         {valueTotals.length === 0 ? (
                           <>
-                            <p className="text-2xl font-semibold tracking-tight text-foreground">No value yet</p>
+                            <p className="text-3xl font-semibold tracking-tight text-foreground">No value yet</p>
                             <p className="mt-1 text-sm text-[var(--ink-600)]">None of the {plural(valueRows.length, "contract")} in scope has an extracted value.</p>
                           </>
                         ) : (
@@ -585,9 +587,9 @@ export function DocumentInsights() {
                             {valueTotals.map(([cur, v]) => (
                               <div key={cur || "none"}>
                                 <dt className="text-sm text-[var(--ink-600)]">Total contract value{cur ? "" : " · currency not extracted"}</dt>
-                                <dd className="mt-0.5 text-3xl font-semibold leading-tight tracking-tight tabular-nums text-foreground">{fmtMoney(v.total, cur || null)}</dd>
+                                <dd className="mt-0.5 text-3xl font-semibold tracking-tight tabular-nums text-foreground">{fmtMoney(v.total, cur || null)}</dd>
                                 <dd className="mt-1 text-sm text-[var(--ink-600)]">
-                                  <span className={`font-semibold tabular-nums ${v.exposed > 0 ? "text-[var(--danger)]" : "text-foreground"}`}>{fmtMoney(v.exposed, cur || null)}</span>
+                                  <span className={`font-semibold tabular-nums ${v.exposed > 0 ? "text-[var(--danger-fg)]" : "text-foreground"}`}>{fmtMoney(v.exposed, cur || null)}</span>
                                   {" "}({Math.round((v.exposed / v.total) * 100)}%) sits in contracts with a clause rated high or critical.
                                 </dd>
                               </div>
@@ -597,12 +599,12 @@ export function DocumentInsights() {
                       </div>
 
                       <div>
-                        <h3 className="text-base font-semibold mb-2 text-foreground">By contract</h3>
-                        <ul className="divide-y divide-border rounded-lg border border-border">
+                        <h3 className="mb-2 text-sm font-semibold text-foreground">By contract</h3>
+                        <ul className="divide-y divide-border border-y border-border">
                           {shownValues.map((r) => (
                             <li key={r.id}>
                               <Link href={`/projects/${r.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 transition-colors hover:bg-[var(--panel)] focus-visible:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)]">
-                                <span className="min-w-0 flex-1 basis-40 truncate text-sm font-medium text-foreground" title={r.name}>{r.name}</span>
+                                <span className="min-w-0 flex-1 basis-40 truncate text-sm font-medium text-foreground" title={displayTitle(r.name)}>{displayTitle(r.name)}</span>
                                 {r.level
                                   ? <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${RISK_PILL[r.level]}`}>{RISK_LABEL[r.level]}</span>
                                   : <span className="shrink-0 text-xs text-muted-foreground">Risk not assessed</span>}
@@ -615,14 +617,14 @@ export function DocumentInsights() {
                           ))}
                         </ul>
                         {valueRows.length > 6 && (
-                          <Button variant="ghost" className="mt-1 h-10 text-[var(--brand-primary-700)] sm:h-9" onClick={() => setShowAllValues((v) => !v)}>
+                          <Button variant="ghost" size="sm" className="mt-1 text-[var(--brand-primary-700)]" onClick={() => setShowAllValues((v) => !v)}>
                             {showAllValues ? "Show the first 6" : `Show all ${valueRows.length}`}
                           </Button>
                         )}
                       </div>
 
                       <div>
-                        <h3 className="text-base font-semibold mb-2 text-foreground">Value changes from amendments</h3>
+                        <h3 className="mb-2 text-sm font-semibold text-foreground">Value changes from amendments</h3>
                         {amendmentDeltas.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No amendment in scope states a value change.</p>
                         ) : (
@@ -635,7 +637,7 @@ export function DocumentInsights() {
 
                       {pricingMix.length > 0 && (
                         <div>
-                          <h3 className="text-base font-semibold mb-2 text-foreground">Pricing model · {plural(readyDocs.length, "analyzed document")}</h3>
+                          <h3 className="mb-2 text-sm font-semibold text-foreground">Pricing model · {plural(readyDocs.length, "analyzed document")}</h3>
                           <CompositionBar segments={pricingMix} />
                         </div>
                       )}
@@ -643,8 +645,8 @@ export function DocumentInsights() {
                   )}
                 </ChartCard>
 
-                {/* 4. What is coming up? */}
-                <ChartCard title="What is coming up?" icon={<CalendarClock size={15} />} sub={plural(dateRows.length, "date")}>
+                {/* Upcoming dates */}
+                <ChartCard title="Upcoming dates" icon={<CalendarClock size={16} />} sub={plural(dateRows.length, "date")}>
                   {dateRows.length === 0 ? (
                     <EmptyNote
                       title="No dates extracted yet"
@@ -657,18 +659,18 @@ export function DocumentInsights() {
                     <div className="space-y-5">
                       {dateGroups.map((g) => (
                         <div key={g.key}>
-                          <h3 className={`mb-1.5 flex items-baseline gap-2 text-sm font-semibold ${g.key === "overdue" && g.rows.length > 0 ? "text-[var(--danger)]" : "text-foreground"}`}>
+                          <h3 className={`mb-1.5 flex items-baseline gap-2 text-sm font-semibold ${g.key === "overdue" && g.rows.length > 0 ? "text-[var(--danger-fg)]" : "text-foreground"}`}>
                             {g.label}<span className="font-normal tabular-nums text-muted-foreground">{g.rows.length}</span>
                           </h3>
                           {g.rows.length === 0 ? (
                             <p className="text-sm text-muted-foreground">None.</p>
                           ) : (
-                            <ul className="divide-y divide-border rounded-lg border border-border">
+                            <ul className="divide-y divide-border border-y border-border">
                               {g.rows.slice(0, 5).map((r) => (
                                 <li key={r.key}>
                                   <Link href={`/projects/${r.docId}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-3 py-2.5 transition-colors hover:bg-[var(--panel)] focus-visible:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)]">
                                     <span className="min-w-0 flex-1 basis-40">
-                                      <span className="block truncate text-sm font-medium text-foreground" title={r.docTitle}>{r.docTitle}</span>
+                                      <span className="block truncate text-sm font-medium text-foreground" title={displayTitle(r.docTitle)}>{displayTitle(r.docTitle)}</span>
                                       <span className="block text-xs text-muted-foreground">{r.kind}{r.note ? ` · ${r.note}` : ""}</span>
                                     </span>
                                     <span className="shrink-0 text-right">
@@ -692,10 +694,10 @@ export function DocumentInsights() {
                   )}
                 </ChartCard>
 
-                {/* 5. What is missing? */}
-                <ChartCard title="What is missing?" icon={<Files size={15} />} sub={plural(missingTotal, "item")}>
+                {/* Missing data */}
+                <ChartCard title="Missing data" icon={<Files size={16} />} sub={plural(missingTotal, "item")}>
                   {missingTotal === 0 && !(packsEnabled && missing.scoredCount === 0 && readyDocs.length > 0) ? (
-                    <EmptyNote icon={<CheckCircle2 size={20} />} title="Nothing is missing" text="Every document in scope is analyzed, with a contract value and at least one date extracted." bare />
+                    <EmptyNote icon={<CheckCircle2 size={20} aria-hidden />} title="Nothing is missing" text="Every document in scope is analyzed, with a contract value and at least one date extracted." bare />
                   ) : (
                     <div className="space-y-5">
                       <MissingList title="Analysis failed" tone="danger" rows={missing.failed} empty="No failed documents." />
@@ -718,16 +720,16 @@ export function DocumentInsights() {
             {/* Value × risk — kept: are the expensive contracts the risky ones? */}
             <MotionReveal>
               <ChartCard
-                title="Value vs. risk" icon={<ScatterChartIcon size={15} />}
-                sub="Bubble size is clause count · select a contract to open it"
+                title="Value vs. risk" icon={<ScatterChartIcon size={16} />}
+                sub="Bubble size: clause count"
                 state={scatterPoints.length < 2 ? "empty" : "ready"}
                 emptyText="A value-versus-risk map appears once at least two documents have both an extracted value and clause risk counts."
               >
                 <ValueRiskScatter points={scatterPoints} onSelect={(id) => router.push(`/projects/${id}`)} />
                 <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-                  <p className="max-w-[58ch] text-sm leading-relaxed text-[var(--ink-600)]">
-                    Risk index = the average clause weight in a document (low 12, medium 42, high 74, critical 100), so 0 to 100. Dashed line: High-risk threshold ({HIGH_RISK_THRESHOLD}).
-                    {" "}{plural(scatterPoints.length, "document")} of {readyDocs.length} plotted; the rest lack a value or risk counts.
+                  <p className="max-w-[72ch] text-xs text-[var(--ink-600)]">
+                    Risk index 0–100 (average clause weight). Dashed line: high-risk threshold ({HIGH_RISK_THRESHOLD}).
+                    {" "}{plural(scatterPoints.length, "document")} of {readyDocs.length} plotted.
                   </p>
                   <ul className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--ink-600)]" aria-label="Risk level colours">
                     {RISK_ORDER_DESC.map((level) => (
@@ -742,55 +744,51 @@ export function DocumentInsights() {
 
             {/* Key findings returned by the analysis */}
             <MotionReveal>
-              <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-                <div className="flex flex-col gap-3 border-b border-border px-4 py-3.5 md:px-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold tracking-tight text-foreground">What did the analysis flag?</h2>
-                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-[var(--ink-600)]">{filteredFindings.length} of {allFindings.length}</span>
-                  </div>
-                  {presentSeverities.length > 1 && (
-                    <div className="-mx-4 overflow-x-auto px-4 scrollbar-none md:mx-0 md:px-0">
-                      <div role="group" aria-label="Filter by severity" className="flex w-max items-center gap-1.5">
-                        <FilterChip active={sevFilter === "all"} onClick={() => setSevFilter("all")}>All</FilterChip>
-                        {presentSeverities.map((s) => (
-                          <FilterChip key={s} active={sevFilter === s} onClick={() => setSevFilter(s)} dot={SEVERITY_COLOR[s]}>
-                            {RISK_LABEL[s as RiskLevel] ?? "Info"}
-                          </FilterChip>
-                        ))}
-                      </div>
+              <ListPanel as="h2" title="Findings" meta={`${filteredFindings.length} of ${allFindings.length}`}>
+                {presentSeverities.length > 1 && (
+                  <div className="overflow-x-auto border-b border-border px-4 py-2 scrollbar-none">
+                    <div role="group" aria-label="Filter by severity" className="flex w-max items-center gap-1.5">
+                      <FilterChip active={sevFilter === "all"} onClick={() => setSevFilter("all")}>All</FilterChip>
+                      {presentSeverities.map((s) => (
+                        <FilterChip key={s} active={sevFilter === s} onClick={() => setSevFilter(s)} dot={SEVERITY_COLOR[s]}>
+                          {RISK_LABEL[s as RiskLevel] ?? "Info"}
+                        </FilterChip>
+                      ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 {allFindings.length === 0 ? (
                   clausesPending
-                    ? <div className="space-y-3 p-4 md:p-5">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+                    ? <SkeletonRegion label="key findings"><PanelRowsSkeleton rows={2} /></SkeletonRegion>
                     : <EmptyNote title="No key findings" text="The analysis of the documents in scope returned no key findings." />
                 ) : (
                   <>
-                    <div className="px-4 pt-4 md:px-5"><CompositionBar segments={findingsBySeverity} /></div>
+                    <div className="border-b border-border p-4"><CompositionBar segments={findingsBySeverity} /></div>
                     {filteredFindings.length === 0 ? (
                       <EmptyNote title="No findings at this severity" text="Choose another severity or show all." />
                     ) : (
-                      <ul className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 md:gap-4 md:p-5 xl:grid-cols-3">
+                      <ul className="divide-y divide-border">
                         {filteredFindings.slice(0, 12).map((f, i) => {
                           const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
                           return (
                             <li key={`${f.docId}-${i}`} className="min-w-0">
-                              <Link href={`/projects/${f.docId}`} className="flex h-full flex-col rounded-lg border border-border bg-card p-4 transition-[border-color,box-shadow] duration-150 hover:border-[var(--brand-primary-300)] hover:shadow-md focus-visible:border-[var(--brand-primary-300)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
-                                <span className={`mb-2.5 inline-flex w-fit items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold capitalize ${s.bg} ${s.text}`}>{s.icon}{f.severity}</span>
-                                <span className="text-base font-semibold leading-snug text-foreground">{f.label}</span>
-                                <p className="mt-1 text-sm leading-relaxed text-[var(--ink-600)]">{f.detail}</p>
-                                <p className="mt-auto truncate pt-3 text-xs text-muted-foreground">{f.docTitle}</p>
+                              <Link href={`/projects/${f.docId}`} className="group flex min-w-0 items-start gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)]">
+                                <span className={`mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium capitalize ${s.bg} ${s.text}`}>{s.icon}{f.severity}</span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-sm font-medium text-foreground group-hover:text-[var(--brand-primary-700)]">{f.label}</span>
+                                  <span className="mt-0.5 line-clamp-2 block text-sm text-[var(--ink-600)]">{f.detail}</span>
+                                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">{displayTitle(f.docTitle)}</span>
+                                </span>
                               </Link>
                             </li>
                           );
                         })}
                       </ul>
                     )}
-                    {filteredFindings.length > 12 && <p className="px-4 pb-4 text-xs text-muted-foreground md:px-5">Showing the 12 most severe of {filteredFindings.length}. Open a document for its full list.</p>}
+                    {filteredFindings.length > 12 && <p className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">Showing the 12 most severe of {filteredFindings.length}. Open a document for its full list.</p>}
                   </>
                 )}
-              </section>
+              </ListPanel>
             </MotionReveal>
           </>
         )}
@@ -803,18 +801,18 @@ export function DocumentInsights() {
 function MissingList({ title, rows, empty, tone }: { title: string; rows: DocRef[]; empty: string; tone?: "danger" }) {
   return (
     <div>
-      <h3 className={`mb-1.5 flex items-baseline gap-2 text-sm font-semibold ${tone === "danger" && rows.length > 0 ? "text-[var(--danger)]" : "text-foreground"}`}>
+      <h3 className={`mb-1.5 flex items-baseline gap-2 text-sm font-semibold ${tone === "danger" && rows.length > 0 ? "text-[var(--danger-fg)]" : "text-foreground"}`}>
         {title}<span className="font-normal tabular-nums text-muted-foreground">{rows.length}</span>
       </h3>
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{empty}</p>
       ) : (
         <>
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul className="divide-y divide-border border-y border-border">
             {rows.slice(0, 4).map((r) => (
               <li key={r.docId}>
                 <Link href={`/projects/${r.docId}`} className="block px-3 py-2 transition-colors hover:bg-[var(--panel)] focus-visible:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)]">
-                  <span className="block truncate text-sm font-medium text-foreground" title={r.title}>{r.title}</span>
+                  <span className="block truncate text-sm font-medium text-foreground" title={displayTitle(r.title)}>{displayTitle(r.title)}</span>
                   {r.note && <span className="block truncate text-xs text-muted-foreground" title={r.note}>{r.note}</span>}
                 </Link>
               </li>
@@ -829,8 +827,8 @@ function MissingList({ title, rows, empty, tone }: { title: string; rows: DocRef
 
 function EmptyNote({ title, text, icon, bare = false }: { title: string; text: string; icon?: React.ReactNode; bare?: boolean }) {
   return (
-    <div className={`flex flex-col items-center text-center ${bare ? "py-8" : "px-5 py-10"}`}>
-      {icon && <span className="mb-2 text-[var(--success)]">{icon}</span>}
+    <div className={`flex flex-col items-center text-center ${bare ? "py-6" : "px-4 py-8"}`}>
+      {icon && <span className="mb-2 text-[var(--ink-400)]">{icon}</span>}
       <p className="text-base font-semibold text-foreground">{title}</p>
       <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">{text}</p>
     </div>
@@ -841,7 +839,7 @@ function FilterChip({ active, onClick, dot, children }: { active: boolean; onCli
   return (
     <button
       type="button" onClick={onClick} aria-pressed={active}
-      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-structure-border aria-[pressed=true]:bg-structure-soft aria-[pressed=true]:text-structure-soft-fg sm:h-8"
+      className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-md border border-[var(--ink-300)] bg-card px-2.5 text-xs font-medium text-[var(--ink-600)] transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-[var(--brand-primary-600)] aria-[pressed=true]:text-[var(--brand-primary-700)] md:h-8"
     >
       {dot && <span className="h-2 w-2 rounded-full" style={{ background: dot }} />}
       {children}
@@ -852,10 +850,10 @@ function FilterChip({ active, onClick, dot, children }: { active: boolean; onCli
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-14 text-center">
-      <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={24} strokeWidth={1.5} /></span>
+      <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={24} /></span>
       <h2 className="text-lg font-semibold text-foreground">Couldn&apos;t load insights</h2>
       <p className="mt-2 max-w-md text-base leading-relaxed text-[var(--ink-600)]">The request for your documents failed, so there is nothing to compute from. Try again in a moment.</p>
-      <Button variant="outline" size="lg" className="mt-6" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
+      <Button variant="outline" className="mt-6" onClick={onRetry}><RefreshCw size={16} aria-hidden />Try again</Button>
     </div>
   );
 }

@@ -5,11 +5,12 @@ import { SiteHeader } from "@/components/landing/SiteHeader";
 import { AnnouncementBar } from "@/components/landing/AnnouncementBar";
 import { Footer } from "@/components/landing/Footer";
 import { CookieNotice } from "@/components/landing/CookieNotice";
+import { marketingFontVars } from "@/components/landing/fonts";
 
 /* Shared frame for every public page: tokens, skip link, header, footer. */
 export function MarketingShell({ children }: { children: ReactNode }) {
   return (
-    <div className="lp min-h-screen antialiased">
+    <div className={`lp ${marketingFontVars} min-h-screen antialiased`}>
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>

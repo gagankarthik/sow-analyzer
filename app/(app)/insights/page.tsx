@@ -6,13 +6,13 @@
 // lives in the URL so links and reloads keep it.
 
 import dynamic from "next/dynamic";
-import { PageSkeleton } from "@/components/govern/admin/shared";
+import { DocumentInsightsSkeleton, InsightsSkeleton } from "./_components/InsightsSkeletons";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { ViewTabs } from "@/components/ui/view-tabs";
 // Loaded when its tab opens: it carries the charting library.
-const DocumentInsights = dynamic(() => import("./_components/DocumentInsights").then((m) => m.DocumentInsights), { loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
+const DocumentInsights = dynamic(() => import("./_components/DocumentInsights").then((m) => m.DocumentInsights), { loading: () => <DocumentInsightsSkeleton /> });
 import { LeadershipView } from "./_components/LeadershipView";
 
 type View = "leadership" | "documents";
@@ -23,7 +23,7 @@ const VIEWS: { id: View; label: string }[] = [
 
 export default function InsightsPage() {
   return (
-    <Suspense fallback={<div className="app-container py-8"><PageSkeleton label="Loading insights" /></div>}>
+    <Suspense fallback={<InsightsSkeleton />}>
       <Insights />
     </Suspense>
   );
@@ -36,7 +36,7 @@ function Insights() {
   const setView = (v: View) => router.replace(v === "leadership" ? "/insights" : `/insights?view=${v}`, { scroll: false });
   return (
     <>
-      <PageHeader title="Insights" subtitle="How the contract portfolio is performing, and what the analysis found." />
+      <PageHeader title="Insights" />
       <div className="app-container app-page">
         <ViewTabs id="insights" label="Insights views" views={VIEWS} value={view} onChange={setView} />
         <div role="tabpanel" id={`insights-panel-${view}`} aria-labelledby={`insights-tab-${view}`}>

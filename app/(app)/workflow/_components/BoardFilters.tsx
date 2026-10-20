@@ -1,25 +1,32 @@
 "use client";
 
-// Search is always there and needs nothing else (Requirement 5); the filters
-// (Requirement 3) sit folded away until someone asks for them.
+// The Workflow toolbar (UI_SPEC section 9), the same component as the
+// Contracts list: search (240px), four quick filters as [Label │ Value ▾],
+// "More filters" with every dimension, then "n filters · Clear". Below md:
+// search, then one "Filters (n)" button that opens a sheet with them all.
 
 import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
-import { SearchField } from "@/components/ds/inputs";
-import { Button } from "@/components/ui/button";
+import { Toolbar } from "@/components/ds/Toolbar";
+import { FilterButton, FilterButtonTrigger, MoreFiltersButton } from "@/components/ds/FilterButton";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
+  DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, Filter, X } from "@/components/ui/icons";
 import { AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
 import { NO_FILTERS, VALUE_BAND_LABEL, type ContractFilters, type ValueBand } from "@/lib/govern/metrics";
-import { cn } from "@/lib/utils";
 
 const RISK_LABEL: Record<ContractFilters["risk"], string> = {
-  all: "Any risk",
+  all: "Any",
   needs_attention: "Needs attention",
   high: "High risk",
   critical: "Highest risk only",
 };
 
 const ALL = "all";
+type Key = Exclude<keyof ContractFilters, "q">;
+type Option = { value: string; label: string };
+type Dimension = { key: Key; label: string; options: Option[] };
 
 export interface FilterOptions {
   departments: string[];
@@ -27,103 +34,155 @@ export interface FilterOptions {
   reviewers: { email: string; name: string }[];
 }
 
+/** Filters set, besides the search text. */
+export function activeFilterCount(filters: ContractFilters): number {
+  return (Object.keys(NO_FILTERS) as (keyof ContractFilters)[]).filter((k) => k !== "q" && filters[k] !== NO_FILTERS[k]).length;
+}
+
 export function BoardFilters({
-  filters, onChange, options, open, onOpenChange, showClosed, onShowClosedChange,
+  filters, onChange, options, showClosed, onShowClosedChange,
 }: {
   filters: ContractFilters;
   onChange: (f: ContractFilters) => void;
   options: FilterOptions;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   showClosed: boolean;
   onShowClosedChange: (v: boolean) => void;
 }) {
   const terms = useEditionTerms();
   const agreementTypes = useAgreementTypes();
-  const set = <K extends keyof ContractFilters>(key: K, value: ContractFilters[K]) => onChange({ ...filters, [key]: value });
-  const activeCount = (Object.keys(NO_FILTERS) as (keyof ContractFilters)[])
-    .filter((k) => k !== "q" && filters[k] !== NO_FILTERS[k]).length;
+  const set = (key: Key, value: string) => onChange({ ...filters, [key]: value } as ContractFilters);
+
+  const dims: Record<Key, Dimension> = {
+    agreementType: { key: "agreementType", label: "Type", options: agreementTypes.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] })) },
+    sponsor: { key: "sponsor", label: terms.party, options: options.sponsors.map((s) => ({ value: s, label: s })) },
+    risk: {
+      key: "risk", label: "Risk",
+      options: (Object.keys(RISK_LABEL) as ContractFilters["risk"][]).filter((r) => r !== ALL).map((r) => ({ value: r, label: RISK_LABEL[r] })),
+    },
+    department: { key: "department", label: "Department", options: options.departments.map((d) => ({ value: d, label: d })) },
+    reviewer: { key: "reviewer", label: "Reviewer", options: options.reviewers.map((r) => ({ value: r.email, label: r.name })) },
+    valueBand: {
+      key: "valueBand", label: "Value",
+      options: (Object.keys(VALUE_BAND_LABEL) as ValueBand[]).filter((b) => b !== ALL).map((b) => ({ value: b, label: VALUE_BAND_LABEL[b] })),
+    },
+  };
+  const quick: Key[] = ["agreementType", "sponsor", "risk"];
+  const order: Key[] = ["agreementType", "sponsor", "risk", "department", "reviewer", "valueBand"];
+  const count = activeFilterCount(filters) + (showClosed ? 1 : 0);
+  const clear = () => {
+    onChange({ ...NO_FILTERS, q: filters.q });
+    onShowClosedChange(false);
+  };
+  const valueLabel = (d: Dimension) => d.options.find((o) => o.value === filters[d.key])?.label;
+  const statusLabel = showClosed ? "All" : "Open";
 
   return (
-    <section aria-label="Search and filters" className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <SearchField label="Search agreements" hideLabel placeholder={terms.searchPlaceholder} value={filters.q} onChange={(v) => set("q", v)} className="flex-1 sm:max-w-md md:max-w-md" />
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-expanded={open}
-            aria-controls="board-filters"
-            onClick={() => onOpenChange(!open)}
-            className="h-9"
-          >
-            <Filter size={14} />Filters
-            {activeCount > 0 && (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--brand-primary-600)] px-1.5 text-xs font-semibold text-white">{activeCount}</span>
-            )}
-            <ChevronDown size={14} className={cn("transition-transform duration-150 motion-reduce:transition-none", open && "rotate-180")} />
-          </Button>
-          {/* List scope, the standard Open | All convention: "All" adds
-              closed and rejected agreements. */}
-          <div role="radiogroup" aria-label="Agreements to show" className="inline-flex h-9 items-center rounded-lg border border-border bg-[var(--ink-50)] p-0.5">
-            {([
-              [false, "Open", "Agreements still in progress or in force"],
-              [true, "All", "Include closed and rejected agreements"],
-            ] as const).map(([value, label, hint]) => (
-              <button
-                key={label}
-                type="button"
-                role="radio"
-                aria-checked={showClosed === value}
-                title={hint}
-                onClick={() => onShowClosedChange(value)}
-                className={cn(
-                  "h-full rounded-md px-3.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
-                  showClosed === value ? "bg-card text-foreground shadow-xs ring-1 ring-border" : "text-[var(--ink-600)] hover:text-foreground",
-                )}
-              >
-                {label}
-              </button>
+    <Toolbar
+      label="Workflow filters"
+      activeCount={count}
+      mobileSheet={
+        <div className="flex flex-col gap-3">
+          <SheetSelect
+            label="Status"
+            value={showClosed ? "all" : "open"}
+            onChange={(v) => onShowClosedChange(v === "all")}
+            options={[{ value: "open", label: "Open" }, { value: "all", label: "All, including closed" }]}
+          />
+          {order.map((k) => (
+            <SheetSelect
+              key={k}
+              label={dims[k].label}
+              value={filters[k]}
+              onChange={(v) => set(k, v)}
+              options={[{ value: ALL, label: "Any" }, ...dims[k].options]}
+            />
+          ))}
+        </div>
+      }
+    >
+      <Toolbar.Search label="Search agreements" placeholder="Search contracts" value={filters.q} onChange={(v) => onChange({ ...filters, q: v })} />
+      <Toolbar.Filters>
+        {/* Status always names its value ("Open" by default, never "Any"). */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <FilterButtonTrigger label="Status" value={statusLabel} active={showClosed} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-60">
+            <DropdownMenuLabel>Status</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={showClosed ? "all" : "open"} onValueChange={(v) => onShowClosedChange(v === "all")}>
+              <DropdownMenuRadioItem value="open">Open</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="all">All, including closed</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {quick.map((k) => (
+          <FilterButton key={k} label={dims[k].label} value={valueLabel(dims[k])} active={filters[k] !== ALL} onClear={() => set(k, ALL)}>
+            <RadioOptions dim={dims[k]} value={filters[k]} onChange={(v) => set(k, v)} />
+          </FilterButton>
+        ))}
+      </Toolbar.Filters>
+      <Toolbar.More>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <MoreFiltersButton count={count} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuLabel>Filters</DropdownMenuLabel>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <span className="min-w-0 flex-1 truncate">Status</span>
+                <span className="text-xs text-[var(--ink-600)]">{statusLabel}</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-56">
+                <DropdownMenuRadioGroup value={showClosed ? "all" : "open"} onValueChange={(v) => onShowClosedChange(v === "all")}>
+                  <DropdownMenuRadioItem value="open">Open</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="all">All, including closed</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            {order.map((k) => (
+              <DropdownMenuSub key={k}>
+                <DropdownMenuSubTrigger>
+                  <span className="min-w-0 flex-1 truncate">{dims[k].label}</span>
+                  <span className="max-w-24 truncate text-xs text-[var(--ink-600)]">{valueLabel(dims[k]) ?? "Any"}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="max-h-80 w-60 overflow-y-auto">
+                  <RadioOptions dim={dims[k]} value={filters[k]} onChange={(v) => set(k, v)} />
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             ))}
-          </div>
-        </div>
-      </div>
-
-      {open && (
-        <div id="board-filters" className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <FilterSelect label="Agreement type" value={filters.agreementType} onChange={(v) => set("agreementType", v as ContractFilters["agreementType"])}
-            options={[{ value: ALL, label: "Any type" }, ...agreementTypes.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] }))]} />
-          <FilterSelect label={terms.party} value={filters.sponsor} onChange={(v) => set("sponsor", v)}
-            options={[{ value: ALL, label: terms.anyParty }, ...options.sponsors.map((s) => ({ value: s, label: s }))]} />
-          <FilterSelect label="Department" value={filters.department} onChange={(v) => set("department", v)}
-            options={[{ value: ALL, label: "Any department" }, ...options.departments.map((d) => ({ value: d, label: d }))]} />
-          <FilterSelect label="Reviewer" value={filters.reviewer} onChange={(v) => set("reviewer", v)}
-            options={[{ value: ALL, label: "Any reviewer" }, ...options.reviewers.map((r) => ({ value: r.email, label: r.name }))]} />
-          <FilterSelect label="Value" value={filters.valueBand} onChange={(v) => set("valueBand", v as ValueBand)}
-            options={(Object.keys(VALUE_BAND_LABEL) as ValueBand[]).map((b) => ({ value: b, label: VALUE_BAND_LABEL[b] }))} />
-          <FilterSelect label="Risk" value={filters.risk} onChange={(v) => set("risk", v as ContractFilters["risk"])}
-            options={(Object.keys(RISK_LABEL) as ContractFilters["risk"][]).map((r) => ({ value: r, label: RISK_LABEL[r] }))} />
-          {activeCount > 0 && (
-            <Button type="button" variant="ghost" className="justify-self-start sm:col-span-2 lg:col-span-3 xl:col-span-6" onClick={() => onChange({ ...NO_FILTERS, q: filters.q })}>
-              <X size={14} />Clear filters
-            </Button>
-          )}
-        </div>
-      )}
-    </section>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </Toolbar.More>
+      <Toolbar.Clear count={count} onClear={clear} />
+    </Toolbar>
   );
 }
 
-function FilterSelect({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[];
+function RadioOptions({ dim, value, onChange }: { dim: Dimension; value: string; onChange: (v: string) => void }) {
+  return (
+    <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
+      <DropdownMenuRadioItem value={ALL}>Any</DropdownMenuRadioItem>
+      {dim.options.length === 0 && <p className="px-2 py-1.5 text-xs text-[var(--ink-600)]">No options yet</p>}
+      {dim.options.map((o) => (
+        <DropdownMenuRadioItem key={o.value} value={o.value}>
+          <span className="min-w-0 truncate">{o.label}</span>
+        </DropdownMenuRadioItem>
+      ))}
+    </DropdownMenuRadioGroup>
+  );
+}
+
+/** One filter in the mobile sheet: a labelled 44px select. */
+function SheetSelect({ label, value, onChange, options }: {
+  label: string; value: string; onChange: (v: string) => void; options: Option[];
 }) {
-  const id = `filter-${label.toLowerCase().replace(/\W+/g, "-")}`;
+  const id = `wf-filter-${label.toLowerCase().replace(/\W+/g, "-")}`;
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-semibold text-[var(--ink-600)]">{label}</label>
+      <label htmlFor={id} className="text-xs font-medium text-[var(--ink-600)]">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={id} className="w-full min-w-0"><SelectValue /></SelectTrigger>
+        <SelectTrigger id={id} className="h-11 w-full min-w-0"><SelectValue /></SelectTrigger>
         <SelectContent>
           {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>

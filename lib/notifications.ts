@@ -5,12 +5,13 @@
 // read-state (persisted in localStorage and shared across the bell + the page)
 // survives reloads.
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useDocuments } from "@/lib/queries/documents";
 import { useProjects } from "@/lib/projects-store";
 import { useNow } from "@/lib/use-now";
 import { formatIsoDay, portfolioDates, relativeDays, type DerivedKeyDate, type KeyDateKind } from "@/lib/key-dates";
 import type { ApiDocument } from "@/lib/types";
+import { displayTitle } from "@/lib/format";
 
 export type NotificationType = "risk" | "renewal" | "analysis" | "failed" | "team";
 export type NotificationSeverity = "critical" | "high" | "info";
@@ -177,7 +178,7 @@ function fromDocs(docs: ApiDocument[], now: number): AppNotification[] {
   for (const d of docs) {
     const href = `/projects/${d.docId}`;
     const when = ts(d.updatedAt) || ts(d.createdAt);
-    const title = d.title || "Untitled document";
+    const title = displayTitle(d.title) || "Untitled document";
 
     if (d.status === "FAILED") {
       out.push({
@@ -242,8 +243,30 @@ function fromProjects(projects: ReturnType<typeof useProjects>): AppNotification
   return out;
 }
 
-export function useNotifications() {
-  const query = useDocuments();
+/** False until the browser is first idle (or `active` is false), then true for good. */
+function useIdleReady(active: boolean): boolean {
+  const [ready, setReady] = useState(!active);
+  useEffect(() => {
+    if (ready) return;
+    const done = () => setReady(true);
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(done, { timeout: 3000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(done, 1500);
+    return () => window.clearTimeout(t);
+  }, [ready]);
+  return ready || !active;
+}
+
+/**
+ * `deferUntilIdle` (the top-bar bell) waits for the browser's first idle
+ * moment before asking for the documents, so the bell never competes with the
+ * page's own first requests. Cached documents are used straight away.
+ */
+export function useNotifications({ deferUntilIdle = false }: { deferUntilIdle?: boolean } = {}) {
+  const idle = useIdleReady(deferUntilIdle);
+  const query = useDocuments({ enabled: idle });
   const { data: docs } = query;
   const projects = useProjects();
   const v = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -273,7 +296,7 @@ export function useNotifications() {
     markAllRead,
     /** State of the documents query the notifications are derived from, so a
      *  caller never shows "all caught up" while loading or after a failed load. */
-    isLoading: query.isLoading,
+    isLoading: query.isLoading || (!idle && !query.data),
     isError: query.isError && !query.data,
     isFetching: query.isFetching,
     updatedAt: query.dataUpdatedAt,

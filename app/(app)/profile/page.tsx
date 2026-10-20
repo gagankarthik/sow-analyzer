@@ -12,6 +12,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { PasswordField, PasswordRules, passwordIsStrong } from "@/components/auth/fields";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
+import { Panel } from "@/components/ds/Panel";
+import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import { ArrowRight, CheckCircle2, Loader2, LogOut } from "@/components/ui/icons";
 import { AuthError, changePassword } from "@/lib/auth/cognito";
 
@@ -22,7 +25,7 @@ function initialsOf(name: string): string {
 export default function ProfilePage() {
   return (
     <>
-      <PageHeader title="Profile" subtitle="Your own account. Workspace rules, team and integrations are in Settings." />
+      <PageHeader title="Profile" />
       <div className="app-container app-page max-w-3xl">
         <AccountSection />
         <PasswordSection />
@@ -32,15 +35,11 @@ export default function ProfilePage() {
   );
 }
 
-function Section({ id, title, description, children }: { id: string; title: string; description?: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section aria-labelledby={`${id}-title`} className="rounded-xl border border-border bg-card shadow-xs">
-      <header className="border-b border-border px-5 py-4">
-        <h2 id={`${id}-title`} className="text-lg font-semibold text-foreground">{title}</h2>
-        {description && <p className="mt-0.5 text-sm text-[var(--ink-600)]">{description}</p>}
-      </header>
-      <div className="p-5">{children}</div>
-    </section>
+    <Panel id={id} as="h2" title={title}>
+      {children}
+    </Panel>
   );
 }
 
@@ -49,32 +48,46 @@ function AccountSection() {
   if (status === "loading" || !user) {
     return (
       <Section id="account" title="Account">
-        <div className="flex items-center gap-4">
-          <Skeleton className="size-14 rounded-full" />
-          <div className="space-y-2"><Skeleton className="h-4 w-40" /><Skeleton className="h-3.5 w-56" /></div>
-        </div>
+        <SkeletonRegion label="your account">
+          <div aria-hidden className="flex items-center gap-3">
+            <Skeleton className="size-10 shrink-0 rounded-full" />
+            <div className="min-w-0">
+              <SkeletonLine text="text-sm font-semibold" width="w-40" />
+              <SkeletonLine text="text-sm" width="w-56" />
+            </div>
+          </div>
+          <div aria-hidden className="mt-4 grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
+            {[0, 1].map((i) => (
+              <div key={i}>
+                <SkeletonLine text="text-xs font-medium" width="w-12" />
+                <SkeletonLine text="text-sm" width="w-20" className="mt-1" />
+              </div>
+            ))}
+          </div>
+          <SkeletonLine text="text-xs" width="w-72" className="mt-4" />
+        </SkeletonRegion>
       </Section>
     );
   }
   const name = user.name || user.email.split("@")[0];
   const role = user.groups[0];
   return (
-    <Section id="account" title="Account" description="Your name and email come from your sign-in. Ask an admin to change them.">
-      <div className="flex items-center gap-4">
-        <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--navy-900)] text-lg font-semibold text-white" aria-hidden>
+    <Section id="account" title="Account">
+      <div className="flex items-center gap-3">
+        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--navy-700)] text-sm font-semibold text-white" aria-hidden>
           {initialsOf(name)}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-base font-semibold text-foreground">{name}</p>
+          <p className="truncate text-sm font-semibold text-foreground">{name}</p>
           <p className="truncate text-sm text-[var(--ink-600)]">{user.email}</p>
         </div>
       </div>
-      <dl className="mt-5 grid grid-cols-1 gap-4 border-t border-border pt-5 sm:grid-cols-2">
+      <dl className="mt-4 grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
         <div>
           <dt className="text-xs font-medium text-[var(--ink-600)]">Email</dt>
           <dd className="mt-1 flex items-center gap-1.5 text-sm text-foreground">
             {user.emailVerified ? (
-              <><CheckCircle2 size={14} className="text-[var(--success)]" aria-hidden />Verified</>
+              <><CheckCircle2 size={16} className="text-[var(--success-fg)]" aria-hidden />Verified</>
             ) : (
               "Not verified"
             )}
@@ -85,6 +98,7 @@ function AccountSection() {
           <dd className="mt-1 text-sm capitalize text-foreground">{role ? role.replace(/[-_]/g, " ") : "Member"}</dd>
         </div>
       </dl>
+      <p className="mt-4 text-xs text-[var(--ink-500)]">Name and email come from your sign-in; an admin changes them.</p>
     </Section>
   );
 }
@@ -137,14 +151,14 @@ function PasswordSection() {
   };
 
   return (
-    <Section id="password" title="Password" description="Use at least 8 characters with upper and lower case, a number and a symbol.">
+    <Section id="password" title="Password">
       <form onSubmit={submit} noValidate className="flex max-w-md flex-col gap-1">
         {error && (
-          <p role="alert" className="mb-3 rounded-lg border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">{error}</p>
+          <p role="alert" className="mb-3 rounded-md border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger-fg)]">{error}</p>
         )}
         {done && (
-          <p role="status" className="mb-3 flex items-center gap-2 rounded-lg border border-[var(--success-border)] bg-[var(--success-soft)] px-3 py-2.5 text-sm text-foreground">
-            <CheckCircle2 size={16} className="text-[var(--success)]" aria-hidden />Your password has been changed. Other devices stay signed in until you use Sign out everywhere below.
+          <p role="status" className="mb-3 flex items-start gap-2 rounded-md border border-[var(--success-border)] bg-[var(--success-soft)] px-3 py-2 text-sm text-foreground">
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[var(--success-fg)]" aria-hidden />Your password has been changed. Other devices stay signed in until you use Sign out everywhere below.
           </p>
         )}
         <PasswordField id="current-password" label="Current password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} error={errors.current} />
@@ -153,7 +167,7 @@ function PasswordSection() {
         <PasswordField id="confirm-password" label="Confirm new password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={errors.confirm} />
         <div className="mt-2">
           <Button type="submit" disabled={busy}>
-            {busy && <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden />}
+            {busy && <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden />}
             {busy ? "Changing password…" : "Change password"}
           </Button>
         </div>
@@ -166,23 +180,32 @@ function SessionsSection() {
   const { signOut } = useAuth();
   return (
     <Section id="sessions" title="Sign-in and sessions">
-      <ul className="flex flex-col gap-4">
-        <li className="flex flex-col gap-1">
+      <ul className="flex flex-col divide-y divide-border">
+        <li className="flex flex-col gap-0.5 pb-3">
           <p className="text-sm font-semibold text-foreground">Automatic sign-out</p>
-          <p className="text-sm text-[var(--ink-600)]">After 30 minutes without activity you are signed out, with a warning two minutes before.</p>
+          <p className="text-xs text-[var(--ink-600)]">After 30 minutes without activity, with a warning two minutes before.</p>
         </li>
-        <li className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+        <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">Sign out everywhere</p>
-            <p className="text-sm text-[var(--ink-600)]">Ends your session on every device and browser, including this one.</p>
+            <p className="text-xs text-[var(--ink-600)]">Ends your session on every device and browser, including this one.</p>
           </div>
-          <Button variant="outline" onClick={() => signOut({ everywhere: true })} className="shrink-0">
-            <LogOut size={15} aria-hidden />Sign out everywhere
-          </Button>
+          <ConfirmDialog
+            title="Sign out on every device?"
+            description="Every browser and device signed in to your account is signed out, including this one."
+            confirmLabel="Sign out everywhere"
+            tone="danger"
+            onConfirm={() => signOut({ everywhere: true })}
+            trigger={
+              <Button variant="outline" className="shrink-0">
+                <LogOut size={16} aria-hidden />Sign out everywhere
+              </Button>
+            }
+          />
         </li>
-        <li className="border-t border-border pt-4">
+        <li className="pt-3">
           <Link href="/notifications" className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)]">
-            Your notifications <ArrowRight size={14} aria-hidden />
+            Your notifications <ArrowRight size={16} aria-hidden />
           </Link>
         </li>
       </ul>

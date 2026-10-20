@@ -5,8 +5,9 @@ import { EditionGate } from "@/components/govern/EditionGate";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { SummaryTiles } from "@/components/ds/KpiTile";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -27,6 +28,7 @@ import { categoryLabel } from "@/lib/clause-categories";
 import { useDocuments } from "@/lib/queries/documents";
 import { usePlaybook, useRevertPlaybookRule } from "@/lib/queries/playbook";
 import { RULE_FAMILIES, foundCustomTypes, ruleFamily, type PlaybookRule } from "@/lib/playbook";
+import { PanelSkeleton, SkeletonRegion } from "@/components/ds/skeletons";
 
 type SourceFilter = "all" | "custom" | "default";
 type CheckFilter = "all" | "auto" | "manual";
@@ -55,7 +57,7 @@ export default function PlaybookPage() {
 
 function PlaybookPageContent() {
   const { isAdmin, loading: roleLoading } = useAdminAccess();
-  const { data: playbook, isLoading, isError, error, isFetching, refetch } = usePlaybook();
+  const { data: playbook, isLoading, error, isFetching, refetch } = usePlaybook();
   // Custom clause types found in the user's documents, offered when adding a rule.
   const { data: docs } = useDocuments();
   const revert = useRevertPlaybookRule();
@@ -114,92 +116,76 @@ function PlaybookPageContent() {
     <>
       <PageHeader
         title="Playbook"
-        subtitle="The standard positions your documents are graded against, clause type by clause type."
+        count={playbook ? rules.length : null}
         back={{ href: "/settings", label: "Settings" }}
+        actions={isAdmin && playbook ? <Button onClick={openAdd}><Plus size={16} aria-hidden />Add a rule</Button> : undefined}
       />
 
       <SettingsLayout>
         {!roleLoading && !isAdmin && <ReadOnlyNote what="You can read every rule; an admin makes the changes." />}
-        {/* Focal block: how many rules, and exactly when a change takes effect. */}
-        <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs md:grid-cols-12 md:gap-8">
-          <div className="min-w-0 md:col-span-4">
-            <div className="text-sm font-medium text-[var(--ink-600)]">Rules in your playbook</div>
-            <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-              <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">{playbook ? rules.length : "—"}</span>
-              {playbook && (
-                <span className="text-base text-[var(--ink-600)]">
-                  {playbook.customRuleCount === 0 ? "all built-in defaults" : `${playbook.customRuleCount} yours`}
-                </span>
-              )}
-            </div>
-            {playbook && (
-              <p className="mt-2 text-sm text-[var(--ink-600)]">
-                {autoCount} with an automatic check · {rules.length - autoCount} flagged for you to compare
-              </p>
-            )}
+        {playbook && (
+          <div className="flex flex-col gap-2">
+            <SummaryTiles
+              items={[
+                { label: "Rules", value: rules.length, footnote: playbook.customRuleCount === 0 ? "All built-in defaults" : `${playbook.customRuleCount} yours` },
+                { label: "Automatic check", value: autoCount },
+                { label: "Compared by you", value: rules.length - autoCount },
+              ]}
+            />
+            <p className="flex items-center gap-1 text-xs text-[var(--ink-600)]">
+              A change applies the next time a document is analyzed or re-analyzed.
+              <InfoTip label="How playbook changes apply" title="How changes apply" align="start">
+                <p>Documents already analyzed keep the result they were given.</p>
+                <p className="mt-1.5">A document is graded against the playbook of the workspace it was uploaded into: a document someone shared with you was graded against their playbook, not this one.</p>
+                <p className="mt-1.5">A clause whose type has no rule here is reported as &ldquo;no rule&rdquo;. That is not a pass: nothing was checked.</p>
+              </InfoTip>
+            </p>
           </div>
-          <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--ink-600)] md:col-span-8">
-            {playbook ? (
-              <>
-                <p><span className="font-semibold text-foreground">A change applies the next time a document is analyzed or re-analyzed.</span> Documents already analyzed keep the result they were given.</p>
-                <p>A document is graded against the playbook of the workspace it was uploaded into: a document someone else uploaded and shared with you was graded against their playbook, not this one.</p>
-                <p>A clause whose type has no rule here is reported as &ldquo;no rule&rdquo;. That is not a pass: nothing was checked.</p>
-              </>
-            ) : isError ? (
-              <p>The playbook couldn&apos;t be loaded, so its rules are unknown.</p>
-            ) : (
-              <p>Loading the playbook…</p>
-            )}
-          </div>
-        </div>
+        )}
 
         {isLoading ? (
-          <div className="space-y-4" aria-busy="true" aria-label="Loading the playbook">
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl" />
-          </div>
+          <SkeletonRegion label="the playbook" className="space-y-4">
+            <PanelSkeleton rows={2} actions={false} />
+            <PanelSkeleton rows={5} />
+            <PanelSkeleton rows={5} />
+          </SkeletonRegion>
         ) : !playbook ? (
-          <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-12 text-center">
-            <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-card text-[var(--danger)]"><AlertTriangle size={18} /></span>
-            <h2 className="text-lg font-semibold text-foreground">Couldn&apos;t load the playbook</h2>
+          <div role="alert" className="flex flex-col items-center rounded-xl border border-border bg-card px-5 py-12 text-center">
+            <AlertTriangle size={24} aria-hidden className="mb-3 text-[var(--danger)]" />
+            <h2 className="text-base font-semibold text-foreground">Couldn&apos;t load the playbook</h2>
             <p className="mt-1 max-w-md break-words text-sm leading-relaxed text-[var(--ink-700)]">
               {error instanceof Error ? error.message : "The request failed."} No rules are shown because none were received.
             </p>
-            <Button variant="outline" size="lg" className="mt-5" onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCw size={14} className={isFetching ? "animate-spin motion-reduce:animate-none" : undefined} />Try again
+            <Button variant="outline" className="mt-4" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw size={16} aria-hidden className={isFetching ? "animate-spin motion-reduce:animate-none" : undefined} />Try again
             </Button>
           </div>
         ) : (
           <>
-            {/* Search, filters and the page's one primary action */}
-            <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-xs sm:p-5">
-              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                <SettingsSearch id="playbook-search" label="Search rules" placeholder="Rule, clause type or wording" value={q} onChange={setQ} />
-                {isAdmin && <Button size="lg" className="w-full md:w-auto" onClick={openAdd}><Plus size={15} />Add a rule</Button>}
+            <div role="toolbar" aria-label="Filter rules" className="flex min-w-0 flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
+              <SettingsSearch id="playbook-search" label="Search rules" placeholder="Rule, clause type or wording" value={q} onChange={setQ} />
+              <FilterChips label="Source" options={SOURCE_OPTIONS} value={sourceFilter} onChange={setSourceFilter} />
+              <FilterChips label="Check" options={CHECK_OPTIONS} value={checkFilter} onChange={setCheckFilter} />
+              <div className="flex min-w-0 items-center gap-2">
+                <label htmlFor="playbook-type" className="shrink-0 text-xs text-[var(--ink-500)]">Clause type</label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger id="playbook-type" className="h-8 w-full min-w-0 text-xs md:w-48 max-md:h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_TYPES}>All clause types</SelectItem>
+                    {[...rules].sort((a, b) => typeName(a).localeCompare(typeName(b))).map((r) => (
+                      <SelectItem key={r.ruleId} value={r.ruleId}>{typeName(r)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                <div className="min-w-0 lg:col-span-5"><FilterChips label="Source" options={SOURCE_OPTIONS} value={sourceFilter} onChange={setSourceFilter} /></div>
-                <div className="min-w-0 lg:col-span-4"><FilterChips label="Check" options={CHECK_OPTIONS} value={checkFilter} onChange={setCheckFilter} /></div>
-                <div className="min-w-0 lg:col-span-3">
-                  <label htmlFor="playbook-type" className="mb-1.5 block text-sm font-medium text-[var(--ink-600)]">Clause type</label>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger id="playbook-type" className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={ALL_TYPES}>All clause types</SelectItem>
-                      {[...rules].sort((a, b) => typeName(a).localeCompare(typeName(b))).map((r) => (
-                        <SelectItem key={r.ruleId} value={r.ruleId}>{typeName(r)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="md:ml-auto">
+                <FilterSummary shown={visible.length} total={rules.length} noun="rules" active={filtering} onClear={clearFilters} />
               </div>
-              <FilterSummary shown={visible.length} total={rules.length} noun="rules" active={filtering} onClear={clearFilters} />
             </div>
 
             {rules.length === 0 ? (
-              <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-12 text-center">
-                <h2 className="text-lg font-semibold text-foreground">The playbook has no rules</h2>
+              <div className="flex flex-col items-center rounded-xl border border-border bg-card px-5 py-12 text-center">
+                <h2 className="text-base font-semibold text-foreground">The playbook has no rules</h2>
                 <p className="mt-1 max-w-md text-sm leading-relaxed text-[var(--ink-600)]">
                   The API returned an empty playbook, so no clause is being checked. Add a rule for a custom clause type to start.
                 </p>
@@ -211,7 +197,7 @@ function PlaybookPageContent() {
                 <SettingsSection
                   key={g.id}
                   id={`family-${g.id}`}
-                  title={<>{g.label} <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{g.rules.length}</span></>}
+                  title={<>{g.label} <span className="ml-1 text-xs font-normal tabular-nums text-[var(--ink-500)]">{g.rules.length}</span></>}
                   description={g.description}
                   flush
                 >

@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { MarkdownView } from "@/components/MarkdownView";
-import { MotionReveal } from "@/components/MotionReveal";
+import { Panel } from "@/components/ds/Panel";
+import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import {
   DraftSow, Sonar, Download, Loader2, ChevronLeft, FileSignature, Check, RefreshCw, AlertTriangle, Eye, Edit3, Send, DollarSign, Repeat, Scale, XCircle, Lock, CheckCircle2, Globe2, Gavel, ShieldAlert, GitBranch, Layers, type LucideIcon,
 } from "@/components/ui/icons";
@@ -137,22 +138,26 @@ function DraftSowPageContent() {
     <>
       <PageHeader
         title={step === "intake" ? "Draft a statement of work" : answers.title || "Your statement of work"}
-        subtitle={
-          step === "intake"
-            ? "Answer a few questions and Sonar drafts an editable SOW."
-            : "Edit directly or ask Sonar to revise, then start its review or download it as Word."
-        }
         actions={
           step === "editor" ? (
             <>
-              <Button variant="outline" className="h-10 md:h-9" onClick={startOver}>
-                <ChevronLeft size={15} />Start over
+              <ConfirmDialog
+                title="Start over?"
+                description="The current draft is discarded. Your answers to the questions are kept."
+                confirmLabel="Discard draft"
+                tone="danger"
+                onConfirm={startOver}
+                trigger={
+                  <Button variant="ghost">
+                    <ChevronLeft size={16} aria-hidden />Start over
+                  </Button>
+                }
+              />
+              <Button variant="outline" onClick={() => downloadDocx(draft, answers.title || "statement-of-work")}>
+                <Download size={16} aria-hidden />Download .docx
               </Button>
-              <Button variant="outline" className="h-10 md:h-9" onClick={() => downloadDocx(draft, answers.title || "statement-of-work")}>
-                <Download size={15} />Download .docx
-              </Button>
-              <Button className="h-10 md:h-9" onClick={() => void startReview()} disabled={sending || !draft.trim()}>
-                {sending ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" /> : <FileSignature size={15} />}
+              <Button onClick={() => void startReview()} disabled={sending || !draft.trim()}>
+                {sending ? <Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" /> : <FileSignature size={16} aria-hidden />}
                 {sending ? "Sending…" : "Start review"}
               </Button>
             </>
@@ -180,8 +185,8 @@ function DraftSowPageContent() {
 
 /* ── Intake questionnaire ───────────────────────────────────────── */
 
-const FIELD = "h-11 border-[var(--ink-300)] bg-card placeholder:text-[var(--ink-500)]";
-const AREA = "border-[var(--ink-300)] bg-card placeholder:text-[var(--ink-500)]";
+const FIELD = "bg-card placeholder:text-[var(--ink-500)]";
+const AREA = "bg-card placeholder:text-[var(--ink-500)]";
 
 function IntakeForm({
   answers, set, toggleClause, canDraft, busy, error, noKey, onGenerate,
@@ -202,11 +207,11 @@ function IntakeForm({
 
   return (
     <div className="app-container app-page">
-      <div className="flex max-w-3xl flex-col gap-4 md:gap-6">
+      <div className="flex max-w-3xl flex-col gap-6">
         {error && (
-          <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-3">
-            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--danger)]" />
-            <div className="min-w-0 text-sm leading-relaxed text-[var(--danger)]">
+          <div role="alert" className="flex items-start gap-2.5 rounded-md border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2.5">
+            <AlertTriangle size={16} aria-hidden className="mt-0.5 shrink-0 text-[var(--danger-fg)]" />
+            <div className="min-w-0 text-sm leading-relaxed text-[var(--danger-fg)]">
               <p className="font-medium">{error}</p>
               {noKey && (
                 <p className="mt-1 break-words">
@@ -216,9 +221,7 @@ function IntakeForm({
             </div>
           </div>
         )}
-
-        <MotionReveal>
-          <Section step={1} title="The engagement">
+          <Section title="Engagement">
             <Field label="Engagement title" required error={titleError}>
               <Input value={answers.title} onChange={(e) => set("title", e.target.value)} onBlur={() => setTouched((t) => ({ ...t, title: true }))} aria-invalid={!!titleError} placeholder="e.g. Acme Corp: Data Platform Implementation" className={FIELD} />
             </Field>
@@ -234,10 +237,7 @@ function IntakeForm({
               <Textarea value={answers.background} onChange={(e) => set("background", e.target.value)} placeholder="Acme is migrating off a legacy warehouse and needs…" rows={3} className={AREA} />
             </Field>
           </Section>
-        </MotionReveal>
-
-        <MotionReveal>
-          <Section step={2} title="Scope & deliverables">
+          <Section title="Scope and deliverables">
             <Field label="Scope of work" required error={scopeError} hint="What's included. Plain prose or bullet points both work.">
               <Textarea value={answers.scope} onChange={(e) => set("scope", e.target.value)} onBlur={() => setTouched((t) => ({ ...t, scope: true }))} aria-invalid={!!scopeError} placeholder="Design and build a data pipeline, including…" rows={4} className={AREA} />
             </Field>
@@ -248,10 +248,7 @@ function IntakeForm({
               <Textarea value={answers.assumptions} onChange={(e) => set("assumptions", e.target.value)} placeholder="Client provides data access by week 1. Mobile apps are out of scope." rows={3} className={AREA} />
             </Field>
           </Section>
-        </MotionReveal>
-
-        <MotionReveal>
-          <Section step={3} title="Timeline & commercials">
+          <Section title="Timeline and commercials">
             <Field label="Timeline & milestones" hint="Start/end dates and any phase milestones.">
               <Textarea value={answers.timeline} onChange={(e) => set("timeline", e.target.value)} placeholder={"Start: 1 Jun 2026, End: 30 Sep 2026\nPhase 1: Discovery (Jun)\nPhase 2: Build (Jul–Aug)\nPhase 3: Launch (Sep)"} rows={3} className={AREA} />
             </Field>
@@ -274,10 +271,7 @@ function IntakeForm({
               <Textarea value={answers.fees} onChange={(e) => set("fees", e.target.value)} placeholder="$240,000 fixed fee. 30% on signature, 40% at Phase 2, 30% on acceptance. Net 30." rows={3} className={AREA} />
             </Field>
           </Section>
-        </MotionReveal>
-
-        <MotionReveal>
-          <Section step={4} title="Clauses to include" subtitle="Pick the protections Sonar should draft. Each becomes its own section.">
+          <Section title="Clauses to include">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {CLAUSE_TYPES.filter((c) => c.id !== "other").map((c) => {
                 const Icon = CLAUSE_ICONS[c.id] ?? Layers;
@@ -288,18 +282,18 @@ function IntakeForm({
                     key={c.id}
                     onClick={() => toggleClause(c.id)}
                     aria-pressed={active}
-                    className={`flex min-w-0 items-start gap-3 rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] ${
+                    className={`flex min-w-0 items-start gap-2.5 rounded-md border px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] ${
                       active
                         ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)]"
-                        : "border-border bg-card hover:border-[var(--ink-300)] hover:bg-[var(--panel)]"
+                        : "border-border bg-card hover:bg-[var(--ink-50)]"
                     }`}
                   >
-                    <span className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${active ? "bg-[var(--brand-primary-600)] text-white" : "bg-muted text-[var(--ink-600)]"}`}>
-                      {active ? <Check size={16} /> : <Icon size={16} />}
+                    <span className={`mt-0.5 shrink-0 ${active ? "text-[var(--brand-primary-700)]" : "text-[var(--ink-500)]"}`}>
+                      {active ? <Check size={16} aria-hidden /> : <Icon size={16} aria-hidden />}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-base font-medium text-foreground">{c.label}</span>
-                      <span className="block text-xs leading-snug text-muted-foreground">{c.blurb}</span>
+                      <span className="block text-sm font-medium text-foreground">{c.label}</span>
+                      <span className="block text-xs leading-snug text-[var(--ink-600)]">{c.blurb}</span>
                     </span>
                   </button>
                 );
@@ -309,19 +303,18 @@ function IntakeForm({
               <Textarea value={answers.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Include a 12-month warranty on deliverables. Keep clauses concise." rows={2} className={AREA} />
             </Field>
           </Section>
-        </MotionReveal>
 
-        {/* The page's one focal block: a solid, sticky action bar. */}
+        {/* Sticky action bar: the page's one primary action. */}
         <div className="sticky bottom-3 z-10 md:bottom-4">
-          <div className="flex flex-col gap-3 rounded-xl bg-[var(--navy)] p-3 text-white shadow-md sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <Sonar size={16} className="shrink-0 text-[var(--navy-foreground)]" />
-              <p className="text-sm leading-snug text-[var(--navy-foreground)]" aria-live="polite">
-                {canDraft ? "Sonar drafts in a few seconds." : "Add at least a title and scope to begin."}
+          <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 shadow-md sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <Sonar size={16} aria-hidden className="shrink-0 text-[var(--ai-ink)]" />
+              <p className="text-sm text-[var(--ink-600)]" aria-live="polite">
+                {canDraft ? "Sonar drafts in a few seconds." : "Add a title and scope to draft."}
               </p>
             </div>
-            <Button size="lg" disabled={!canDraft} onClick={onGenerate} className="w-full shrink-0 disabled:bg-[var(--navy-accent)] disabled:text-[var(--navy-foreground)] disabled:opacity-100 sm:w-auto">
-              {busy ? <><Loader2 size={15} className="animate-spin" />Drafting…</> : <><DraftSow size={15} />Draft with Sonar</>}
+            <Button disabled={!canDraft} onClick={onGenerate} className="w-full shrink-0 sm:w-auto">
+              {busy ? <><Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />Drafting…</> : <><DraftSow size={16} aria-hidden />Draft with Sonar</>}
             </Button>
           </div>
         </div>
@@ -330,18 +323,11 @@ function IntakeForm({
   );
 }
 
-function Section({ step, title, subtitle, children }: { step: number; title: string; subtitle?: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-4 shadow-xs sm:p-6">
-      <div className="mb-4 flex items-start gap-3">
-        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-structure-soft text-sm font-semibold tabular-nums text-structure-soft-fg" aria-hidden="true">{step}</span>
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold leading-7 tracking-tight text-foreground">{title}</h2>
-          {subtitle && <p className="text-sm text-[var(--ink-600)]">{subtitle}</p>}
-        </div>
-      </div>
-      <div className="space-y-4">{children}</div>
-    </section>
+    <Panel as="h2" title={title} bodyClassName="gap-4">
+      {children}
+    </Panel>
   );
 }
 
@@ -356,7 +342,7 @@ function Field({ label, hint, required, error, children }: { label: string; hint
       {children}
       {error ? (
         <span role="alert" className="flex items-center gap-1.5 text-xs font-medium text-[var(--danger)]">
-          <AlertTriangle size={13} className="shrink-0" />{error}
+          <AlertTriangle size={12} aria-hidden className="shrink-0" />{error}
         </span>
       ) : (
         hint && <span className="block text-xs text-muted-foreground">{hint}</span>
@@ -406,15 +392,15 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
       <div className="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Document */}
         <main className="min-w-0">
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-[var(--panel)] px-3 py-2 sm:px-4">
-              <div className="inline-flex rounded-lg border border-[var(--ink-300)] bg-card p-0.5">
-                <ModeTab active={mode === "preview"} onClick={() => setMode("preview")} icon={<Eye size={15} />} label="Preview" />
-                <ModeTab active={mode === "edit"} onClick={() => setMode("edit")} icon={<Edit3 size={15} />} label="Edit source" />
+              <div role="group" aria-label="View" className="inline-flex h-8 rounded-md border border-[var(--ink-300)] bg-card p-0.5 max-md:h-11">
+                <ModeTab active={mode === "preview"} onClick={() => setMode("preview")} icon={<Eye size={12} aria-hidden />} label="Preview" />
+                <ModeTab active={mode === "edit"} onClick={() => setMode("edit")} icon={<Edit3 size={12} aria-hidden />} label="Edit source" />
               </div>
               {canUndo && (
-                <Button variant="ghost" className="h-10 md:h-9" onClick={undo}>
-                  <RefreshCw size={14} />Undo revision
+                <Button variant="ghost" onClick={undo}>
+                  <RefreshCw size={16} aria-hidden />Undo revision
                 </Button>
               )}
             </div>
@@ -440,10 +426,10 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
             <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4">
               <div className="mb-2 flex items-center gap-2">
                 <SonarMark size="sm" />
-                <h2 className="text-lg font-semibold text-foreground">Ask Sonar to revise</h2>
+                <h2 className="text-base font-semibold text-foreground">Ask Sonar to revise</h2>
               </div>
-              <p className="text-sm leading-relaxed text-[var(--ink-600)]">
-                Describe a change in plain English. Sonar rewrites the whole document and keeps everything else intact.
+              <p className="text-xs leading-relaxed text-[var(--ink-600)]">
+                Describe a change; Sonar rewrites the document and keeps the rest intact.
               </p>
 
               <div className="mt-3 flex flex-wrap gap-1.5">
@@ -453,9 +439,9 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
                     key={s}
                     disabled={revising}
                     onClick={() => revise(s)}
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[var(--ai-border)] bg-card px-3 text-left text-xs font-medium text-[var(--ai-text)] transition-colors hover:border-[var(--ai-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)] disabled:opacity-50 md:min-h-8"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-[var(--ai-border)] bg-card px-2.5 text-left text-xs font-medium text-[var(--ai-text)] transition-colors duration-150 hover:border-[var(--ai-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)] disabled:opacity-50 md:min-h-8"
                   >
-                    <Sonar size={12} className="shrink-0" />{s}
+                    <Sonar size={12} aria-hidden className="shrink-0" />{s}
                   </button>
                 ))}
               </div>
@@ -473,14 +459,14 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
                 />
                 <div className="absolute bottom-1.5 right-1.5">
                   <Button size="icon" variant="ai" className="shadow-none" aria-label="Send" disabled={revising || !instruction.trim()} onClick={() => revise(instruction)}>
-                    {revising ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                    {revising ? <Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" /> : <Send size={16} aria-hidden />}
                   </Button>
                 </div>
               </div>
 
               {error && <p role="alert" className="mt-2 text-sm text-[var(--danger)]">{error}</p>}
               <p className="mt-3 text-xs leading-relaxed text-[var(--ink-600)]">Review before sending. Sonar can be wrong.</p>
-              {revising && <p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--ai-text)]" role="status"><Loader2 size={13} className="animate-spin" />Sonar is revising the document…</p>}
+              {revising && <p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--ai-text)]" role="status"><Loader2 size={12} aria-hidden className="animate-spin motion-reduce:animate-none" />Sonar is revising the document…</p>}
             </div>
 
           </div>
@@ -496,8 +482,8 @@ function ModeTab({ active, onClick, icon, label }: { active: boolean; onClick: (
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] ${
-        active ? "bg-[var(--brand-primary-600)] text-white" : "text-[var(--ink-600)] hover:text-foreground"
+      className={`inline-flex h-full items-center gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] ${
+        active ? "bg-[var(--panel)] text-foreground" : "text-[var(--ink-600)] hover:text-foreground"
       }`}
     >
       {icon}{label}

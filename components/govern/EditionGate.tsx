@@ -22,7 +22,7 @@ export function EditionGate({ feature, children }: { feature: EditionFeature; ch
     <StatePanel
       art="empty"
       title="Not part of your edition"
-      description="This feature isn't part of your organization's edition of Govern. An admin can change the edition in Settings → Organization."
+      description="Not in your edition. An admin can change it in Settings → Organization."
     >
       <Button asChild size="lg"><Link href="/home">Go to home</Link></Button>
     </StatePanel>

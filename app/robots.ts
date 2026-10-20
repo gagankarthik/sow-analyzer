@@ -25,6 +25,8 @@ const PRIVATE = [
   "/settings",
   "/workflow",
   "/design-system",
+  // Counterparty portal links (also noindex on the page itself).
+  "/portal/",
 ];
 
 export default function robots(): MetadataRoute.Robots {

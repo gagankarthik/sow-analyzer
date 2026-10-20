@@ -60,20 +60,19 @@ export default function DataManagerPage() {
     <>
       <PageHeader
         title="Data manager"
-        subtitle="The agreement types and properties every contract is described with, and where each is used."
         back={{ href: "/settings", label: "Settings" }}
       />
       <SettingsLayout>
-        <div className="flex flex-wrap items-center gap-3">
-          <div role="tablist" aria-label="Data" className="inline-flex h-9 items-center rounded-lg border border-border bg-[var(--ink-50)] p-0.5">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+          <div role="radiogroup" aria-label="Show" className="inline-flex h-8 items-center rounded-md border border-[var(--ink-300)] bg-card p-0.5 max-md:h-11">
             {([["types", `Agreement types`], ["properties", `Properties`]] as const).map(([id, label]) => (
-              <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => { setTab(id); setOpenId(null); }}
-                className={cn("h-full rounded-md px-3 text-sm font-medium", tab === id ? "bg-card text-foreground shadow-xs ring-1 ring-border" : "text-[var(--ink-600)] hover:text-foreground")}>
+              <button key={id} type="button" role="radio" aria-checked={tab === id} onClick={() => { setTab(id); setOpenId(null); }}
+                className={cn("h-full rounded-sm px-2.5 text-xs font-medium transition-colors duration-150", tab === id ? "bg-[var(--panel)] text-foreground" : "text-[var(--ink-600)] hover:text-foreground")}>
                 {label}
               </button>
             ))}
           </div>
-          <SearchField label="Search by name" hideLabel placeholder="Search by name" value={q} onChange={setQ} className="sm:w-64" />
+          <SearchField label="Search by name" hideLabel placeholder="Search by name" value={q} onChange={setQ} className="w-full md:w-60" />
         </div>
 
         <div className={cn("grid grid-cols-1 gap-6", (openType || openProp) && "xl:grid-cols-[minmax(0,1fr)_22rem]")}>
@@ -137,10 +136,10 @@ function Captured({ filled, total, wide = false }: { filled: number; total: numb
 
 function DetailPanel({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <aside aria-label={`Details: ${title}`} className="h-fit rounded-xl border border-border bg-card p-5 shadow-xs xl:sticky xl:top-20">
+    <aside aria-label={`Details: ${title}`} className="h-fit rounded-xl border border-border bg-card p-4 xl:sticky xl:top-20">
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <button type="button" onClick={onClose} aria-label="Close details" className="-me-2 -mt-1 inline-flex size-8 items-center justify-center rounded-md text-[var(--ink-500)] hover:bg-[var(--ink-100)] hover:text-foreground">
+        <h2 className="min-w-0 text-base font-semibold text-foreground [overflow-wrap:anywhere]">{title}</h2>
+        <button type="button" onClick={onClose} aria-label="Close details" className="-me-2 -mt-1 inline-flex size-8 shrink-0 max-md:size-11 items-center justify-center rounded-md text-[var(--ink-500)] hover:bg-[var(--ink-100)] hover:text-foreground">
           <X size={16} aria-hidden />
         </button>
       </div>

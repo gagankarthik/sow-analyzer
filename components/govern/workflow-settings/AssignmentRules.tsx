@@ -56,10 +56,10 @@ export function AssignmentRules({
     <SettingsSection
       id="assignment"
       title="Auto-assignment"
-      description="Who a new contract goes to, by agreement type and department. The most specific rule wins; reviewers can still reassign by hand."
+      description="Who gets new contracts, by type and department. The most specific rule wins."
       action={!readOnly && (
-        <Button size="lg" variant="outline" className="w-full sm:w-auto md:h-9" onClick={add} disabled={draft.reviewers.length === 0}>
-          <Plus size={15} />Add a rule
+        <Button variant="outline" className="w-full sm:w-auto" onClick={add} disabled={draft.reviewers.length === 0}>
+          <Plus size={16} />Add a rule
         </Button>
       )}
       flush
@@ -116,7 +116,7 @@ export function AssignmentRules({
                       </Select>
                     </div>
                     <Button variant="ghost" className="h-10 justify-self-start text-[var(--danger)]" onClick={() => setRemoving(r)} aria-label={`Remove rule: ${ruleText(r)}`}>
-                      <Trash2 size={14} /><span className="md:sr-only">Remove</span>
+                      <Trash2 size={16} /><span className="md:sr-only">Remove</span>
                     </Button>
                   </div>
                 )}

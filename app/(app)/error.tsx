@@ -39,10 +39,10 @@ export default function AppError({
       description="Nothing was lost. Try again, and if it keeps happening, send the reference below to support."
       detail={error.digest ? `Reference ${error.digest}` : error.message || undefined}
     >
-      <Button size="lg" onClick={() => unstable_retry()}>
+      <Button onClick={() => unstable_retry()}>
         Try again
       </Button>
-      <Button size="lg" variant="outline" asChild>
+      <Button variant="outline" asChild>
         <Link href="/home">Go to home</Link>
       </Button>
     </StatePanel>

@@ -1,13 +1,7 @@
 "use client";
 
 import { SonarIcon } from "@/components/ui/brand-icons";
-import { docTypeLabel } from "@/lib/doc-types";
-import { AGREEMENT_TYPE_LABEL, STAGE_LABEL } from "@/lib/govern/labels";
-import { useContracts, useGovernMe } from "@/lib/govern/queries";
-import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useNotifications, type NotificationType } from "@/lib/notifications";
 import { Separator } from "@/components/ui/separator";
@@ -36,17 +30,14 @@ import {
   Menu,
   PanelLeft,
   Help,
-  Briefcase,
-  FileText,
-  Kanban,
-  BarChart3,
-  BookMarked,
 } from "@/components/ui/icons";
+import { Kbd } from "@/components/ui/kbd";
+import { useModKeyLabel } from "@/lib/hotkeys";
 import { useAuth, initialsOf } from "@/components/auth/AuthProvider";
-import { useDocuments } from "@/lib/queries/documents";
-import { useProjects } from "@/lib/projects-store";
 import { useUIStore } from "@/lib/stores/ui";
 import { useNow } from "@/lib/use-now";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
 
 type Props = {
   /** kept for API compatibility but no longer rendered as a button */
@@ -57,325 +48,36 @@ type Props = {
 
 /** 40px icon button used across the bar. */
 const ICON_BUTTON =
-  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[var(--ink-700)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "inline-flex h-9 w-9 max-md:h-11 max-md:w-11 shrink-0 items-center justify-center rounded-md text-[var(--ink-600)] transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 /* ──────────────────────────────────────────────── */
-/*  Search — live documents, projects and pages     */
+/*  Search — opens the command palette              */
 /* ──────────────────────────────────────────────── */
 
-type SearchHit = {
-  id: string;
-  label: string;
-  sub: string;
-  href: string;
-  group: "Contracts" | "Pages" | "Documents" | "Projects";
-  icon: React.ReactNode;
-  /** Extra words that find this hit (sponsor, PI, department, owner, IDs). */
-  keywords?: string;
-  /** Hidden from leaders (setup pages). */
-  adminOnly?: boolean;
-};
-
-const PAGE_HITS: SearchHit[] = [
-  // Each `sub` says what the page actually shows today (kept in step with the page headers).
-  { id: "p-dashboard", label: "Risk and documents", sub: "Clause risk, value and compliance", href: "/home?view=risk", group: "Pages", icon: <BarChart3 size={14} /> },
-
-  { id: "p-contracts", label: "Contracts", sub: "Every agreement, in progress and signed", href: "/contracts", group: "Pages", icon: <FileText size={14} /> },
-  { id: "p-workflow", label: "Workflow", sub: "Who has each agreement and what moves it to signature", href: "/workflow", group: "Pages", icon: <Kanban size={14} /> },
-
-  { id: "p-library", label: "Library", sub: "Every uploaded document", href: "/library", group: "Pages", icon: <FileText size={14} /> },
-  { id: "p-insights", label: "Insights", sub: "Portfolio insights", href: "/insights", group: "Pages", icon: <BarChart3 size={14} /> },
-  { id: "p-playbook", label: "Playbook", sub: "Settings · negotiation standards", href: "/settings/playbook", group: "Pages", icon: <BookMarked size={14} />, adminOnly: true },
-  { id: "p-clauses", label: "Clause library", sub: "Settings · clauses extracted from your documents", href: "/settings/clauses", group: "Pages", icon: <FileText size={14} />, adminOnly: true },
-  { id: "p-settings", label: "Settings", sub: "Review matrix, routing, team and integrations", href: "/settings", group: "Pages", icon: <Settings size={14} />, adminOnly: true },
-  { id: "p-profile", label: "Profile", sub: "Your account, password and sessions", href: "/profile", group: "Pages", icon: <User size={14} /> },
-];
-
-// Search is built from the shared, live documents query and the projects list
-// (so it reflects uploads and deletes), plus the static set of workspace pages.
-function useSearchIndex(): SearchHit[] {
-  const hasPlaybook = useEditionFeature("commercialPlaybook");
-  const hasDraft = useEditionFeature("sowDrafting");
-  const terms = useEditionTerms();
-  const { data } = useDocuments();
-  const docs = useMemo(() => data ?? [], [data]);
-
-  const projects = useProjects();
-  const contracts = useContracts(true).data?.contracts;
-  const isLeader = useGovernMe().data?.role === "leader";
-
-  return useMemo<SearchHit[]>(() => {
-    // Contracts first: found by title, sponsor or counterparty, PI, department,
-    // owner and Huron / Workday IDs, in plain words.
-    const contractHits: SearchHit[] = (contracts ?? []).map((c) => ({
-      id: `c-${c.contractId}`,
-      label: c.title || "Untitled contract",
-      sub: [AGREEMENT_TYPE_LABEL[c.agreementType], c.sponsor || c.counterparty, STAGE_LABEL[c.stage]].filter(Boolean).join(" · "),
-      href: `/contracts/${encodeURIComponent(c.contractId)}`,
-      group: "Contracts",
-      icon: <FileText size={14} />,
-      keywords: [c.piName, c.department, c.college, c.owner?.name, c.owner?.email, c.huronRecordId, c.workdayRef, c.counterparty, c.sponsor]
-        .filter(Boolean).join(" "),
-    }));
-    const projectHits: SearchHit[] = projects.map((p) => ({
-      id: p.id,
-      label: p.name,
-      sub: p.client ? `${terms.projects.slice(0, -1)} · ${p.client}` : terms.projects.slice(0, -1),
-      href: `/projects/${p.id}`,
-      group: "Projects",
-      icon: <Briefcase size={14} />,
-    }));
-    const docHits: SearchHit[] = docs.map((d) => ({
-      id: d.docId,
-      label: d.title || "Untitled document",
-      sub: `${docTypeLabel(d.docType)} · ${STAGE_LABEL[d.lifecycle as keyof typeof STAGE_LABEL] ?? d.lifecycle}`,
-      href: `/projects/${d.docId}`,
-      group: "Documents",
-      icon: <FileText size={14} />,
-    }));
-    // Pages the customer's edition hides are not offered (Requirement 7).
-    // Pages whose name or purpose depends on the edition.
-    const editionPages: SearchHit[] = [
-      { id: "p-projects", label: terms.projects, sub: terms.projectsHint, href: "/projects", group: "Pages", icon: <Briefcase size={14} /> },
-      { id: "p-obligations", label: "Obligations", sub: terms.obligationsHint, href: "/obligations", group: "Pages", icon: <FileText size={14} /> },
-      ...(hasDraft ? [{ id: "p-draft", label: "Draft SOW", sub: "Sonar drafts a statement of work from a short questionnaire", href: "/draft", group: "Pages" as const, icon: <FileText size={14} /> }] : []),
-    ];
-    const pages = [...editionPages, ...PAGE_HITS].filter((h) => (h.href !== "/settings/playbook" || hasPlaybook) && !(isLeader && h.adminOnly));
-    return [...contractHits, ...projectHits, ...docHits, ...pages];
-  }, [contracts, docs, projects, hasPlaybook, hasDraft, terms, isLeader]);
-}
-
-function SearchBar() {
-  const router = useRouter();
-  const index = useSearchIndex();
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
-  // Collapsed to an icon until asked for; it slides open and shut.
-  const [expanded, setExpanded] = useState(false);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const listId = useId();
-
-  // Click-outside
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (!wrapRef.current) return;
-      if (!wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        if (!inputRef.current?.value) setExpanded(false);
-      }
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
-
-  // Escape closes the results and, when empty, the field.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setOpen(false);
-        if (!inputRef.current?.value) setExpanded(false);
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
-
-  const results = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return [] as SearchHit[];
-    return index
-      .filter(
-        (h) =>
-          h.label.toLowerCase().includes(term) ||
-          h.sub.toLowerCase().includes(term) ||
-          (h.keywords?.toLowerCase().includes(term) ?? false),
-      )
-      .slice(0, 8);
-  }, [q, index]);
-
-  const grouped = useMemo(() => {
-    const g: Record<string, SearchHit[]> = {};
-    results.forEach((r) => (g[r.group] = [...(g[r.group] ?? []), r]));
-    return g;
-  }, [results]);
-
-  function go(hit: SearchHit) {
-    router.push(hit.href);
-    setOpen(false);
-    setQ("");
-    setExpanded(false);
-  }
-
-  function expand() {
-    setExpanded(true);
-    setOpen(true);
-    // Focus once the field is in the layout, as it starts to open.
-    requestAnimationFrame(() => inputRef.current?.focus());
-  }
-
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActive((i) => Math.min(results.length - 1, i + 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActive((i) => Math.max(0, i - 1));
-    } else if (e.key === "Enter") {
-      const hit = results[active];
-      if (hit) {
-        e.preventDefault();
-        go(hit);
-      }
-    }
-  }
-
+/** A compact field-shaped button: the palette holds the search itself. */
+function SearchTrigger() {
+  const setPaletteOpen = useUIStore((s) => s.setPaletteOpen);
+  const mod = useModKeyLabel();
   return (
-    <div
-      ref={wrapRef}
+    <button
+      type="button"
+      onClick={() => setPaletteOpen(true)}
+      aria-label="Search"
+      aria-keyshortcuts="Control+K Meta+K /"
+      aria-haspopup="dialog"
       className={cn(
-        "relative h-10 transition-[width] duration-200 ease-out motion-reduce:transition-none",
-        expanded ? "w-[min(440px,100%)]" : "w-10",
+        "inline-flex h-11 w-11 shrink-0 items-center justify-center gap-2 rounded-md text-[var(--ink-600)] transition-colors duration-150",
+        "hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        "md:h-8 md:w-[240px] md:justify-start md:border md:border-[var(--ink-200)] md:bg-[var(--ink-50)] md:px-2.5 md:hover:border-[var(--ink-300)] md:hover:bg-card",
       )}
     >
-      {!expanded && (
-        <button
-          type="button"
-          aria-label="Search"
-          onClick={expand}
-          className="absolute inset-0 z-10 inline-flex items-center justify-center rounded-lg text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-        >
-          <Search size={18} strokeWidth={1.75} />
-        </button>
-      )}
-      <Search
-        size={16}
-        strokeWidth={1.75}
-        className={cn("absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-opacity duration-150", !expanded && "opacity-0")}
-      />
-      <input
-        ref={inputRef}
-        type="search"
-        value={q}
-        onChange={(e) => {
-          setQ(e.target.value);
-          setActive(0);
-          setOpen(true);
-        }}
-        onFocus={() => { setExpanded(true); setOpen(true); }}
-        onKeyDown={onKeyDown}
-        tabIndex={expanded ? 0 : -1}
-        aria-hidden={!expanded || undefined}
-        placeholder="Search documents & pages…"
-        className={cn(
-          "h-10 w-full rounded-lg pl-9 pr-3 text-base text-foreground transition-opacity duration-150",
-          !expanded && "pointer-events-none opacity-0",
-          "bg-[var(--panel)] border border-[var(--ink-300)] placeholder:text-muted-foreground",
-          "focus:outline-none focus:bg-card focus:border-[var(--brand-primary-600)] focus:ring-2 focus:ring-ring/30",
-          "transition-colors",
-        )}
-        role="combobox"
-        aria-label="Search"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        autoComplete="off"
-      />
-
-      {/* Results dropdown */}
-      {open && expanded && (
-        <div id={listId} className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 min-w-[280px] rounded-xl border border-border bg-card shadow-md overflow-hidden">
-          {q.trim() === "" ? (
-            <div className="p-3">
-              <div className="text-xs font-medium text-muted-foreground mb-1.5 px-2">
-                Quick links
-              </div>
-              <ul className="space-y-0.5">
-                {index.filter((h) => h.group === "Pages").slice(0, 6).map((h) => (
-                  <li key={h.id}>
-                    <button
-                      type="button"
-                      onClick={() => go(h)}
-                      className="w-full flex items-center gap-2.5 min-h-10 rounded-lg px-2 text-left text-base text-foreground hover:bg-muted transition-colors"
-                    >
-                      <span className="text-muted-foreground">{h.icon}</span>
-                      <span className="flex-1 min-w-0 truncate">{h.label}</span>
-                      <span className="hidden lg:block shrink-0 max-w-[50%] truncate text-xs text-muted-foreground">
-                        {h.sub}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : results.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-muted-foreground break-words">
-              No matches for{" "}
-              <span className="font-medium text-foreground">&ldquo;{q}&rdquo;</span>
-            </div>
-          ) : (
-            <div className="max-h-[360px] overflow-y-auto">
-              {(["Projects", "Documents", "Pages"] as const).map(
-                (group) => {
-                  const items = grouped[group];
-                  if (!items?.length) return null;
-                  return (
-                    <div key={group}>
-                      <div className="px-3 pt-3 pb-1 text-xs font-medium text-muted-foreground">
-                        {group}
-                      </div>
-                      <ul>
-                        {items.map((h) => {
-                          const isActive =
-                            results.findIndex((r) => r.id === h.id) === active;
-                          return (
-                            <li key={h.id}>
-                              <button
-                                type="button"
-                                onMouseEnter={() =>
-                                  setActive(
-                                    results.findIndex((r) => r.id === h.id),
-                                  )
-                                }
-                                onClick={() => go(h)}
-                                className={cn(
-                                  "w-full flex items-center gap-3 px-3 py-2 min-h-11 text-left text-base transition-colors",
-                                  isActive
-                                    ? "bg-muted"
-                                    : "hover:bg-muted/60",
-                                )}
-                              >
-                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-[var(--ink-700)] shrink-0">
-                                  {h.icon}
-                                </span>
-                                <span className="flex-1 min-w-0">
-                                  <span className="block font-medium text-foreground truncate">
-                                    {h.label}
-                                  </span>
-                                  <span className="block text-xs text-muted-foreground truncate">
-                                    {h.sub}
-                                  </span>
-                                </span>
-                                <ArrowRight
-                                  size={14}
-                                  strokeWidth={2}
-                                  className="text-muted-foreground shrink-0"
-                                />
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  );
-                },
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+      <Search size={16} aria-hidden className="shrink-0" />
+      <span className="hidden flex-1 truncate text-left text-sm text-[var(--ink-500)] md:block">Search or jump to…</span>
+      <span aria-hidden className="hidden items-center gap-0.5 md:inline-flex">
+        <Kbd>{mod}</Kbd>
+        <Kbd>K</Kbd>
+      </span>
+    </button>
   );
 }
 
@@ -403,7 +105,7 @@ function notifAgo(ts: number, now: number): string {
 }
 
 function NotificationBell() {
-  const { notifications, unreadCount, markRead, isLoading, isError, refetch } = useNotifications();
+  const { notifications, unreadCount, markRead, isLoading, isError, refetch } = useNotifications({ deferUntilIdle: true });
   const now = useNow();
   const recent = notifications.slice(0, 6);
   // Until the documents the notifications are derived from have loaded, the
@@ -421,7 +123,7 @@ function NotificationBell() {
               aria-label={`Notifications · ${stateLabel}`}
               className={cn(ICON_BUTTON, "relative")}
             >
-              <Bell size={18} strokeWidth={1.75} />
+              <Bell size={16} aria-hidden />
               {unread > 0 && (
                 <span
                   className={cn(
@@ -450,9 +152,23 @@ function NotificationBell() {
           )}
         </DropdownMenuLabel>
         {isLoading ? (
-          <div role="status" className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Loading notifications…
-          </div>
+          <SkeletonRegion label="notifications">
+            <ul aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-b-0">
+                  <Skeleton className="mt-1.5 size-2 shrink-0 rounded-full" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <SkeletonLine text="text-sm font-semibold" width={i === 1 ? "w-1/2" : "w-3/5"} className="flex-1" />
+                      <SkeletonLine text="text-xs" width="w-8" className="shrink-0" />
+                    </div>
+                    <SkeletonLine text="text-sm leading-snug" width="w-full" className="mt-0.5" />
+                    <SkeletonLine text="text-sm leading-snug" width="w-2/3" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </SkeletonRegion>
         ) : isError ? (
           <div role="alert" className="px-4 py-6 text-center">
             <p className="text-sm text-[var(--ink-600)]">
@@ -507,7 +223,7 @@ function NotificationBell() {
             className="w-full inline-flex items-center justify-center gap-1.5 h-10 px-3 rounded-lg text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] hover:bg-[var(--brand-primary-50)] transition-colors"
           >
             {known && notifications.length > recent.length ? `View all ${notifications.length} notifications` : "View all notifications"}
-            <ArrowRight size={14} strokeWidth={2} />
+            <ArrowRight size={16} aria-hidden />
           </Link>
           </DropdownMenuItem>
         </div>
@@ -547,18 +263,18 @@ function ProfileMenu() {
           type="button"
           aria-label={`Account menu for ${displayName}`}
           className={cn(
-            "inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-1 md:pr-2",
+            "inline-flex h-9 max-md:h-11 shrink-0 items-center gap-2 rounded-md px-1 md:pr-2",
             "hover:bg-muted aria-expanded:bg-muted",
             "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           )}
         >
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--navy-700)] text-xs font-semibold uppercase text-white">
+          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--navy-700)] text-xs font-semibold uppercase text-white">
             {initials}
           </span>
           <span className="hidden max-w-[140px] truncate text-sm font-semibold text-foreground md:block">
             {displayName}
           </span>
-          <ChevronDown size={14} strokeWidth={2} className="hidden text-muted-foreground md:block" />
+          <ChevronDown size={12} aria-hidden className="hidden text-muted-foreground md:block" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[min(18rem,calc(100vw-1.5rem))] p-0">
@@ -569,7 +285,11 @@ function ProfileMenu() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-base font-semibold text-foreground">{displayName}</span>
-            <span className="block truncate text-sm font-normal text-[var(--ink-600)]" title={email}>{email}</span>
+            {status === "loading" && !user?.email ? (
+              <SkeletonLine text="text-sm" width="w-40" barClassName="bg-[var(--ink-200)]" />
+            ) : (
+              <span className="block truncate text-sm font-normal text-[var(--ink-600)]" title={email}>{email}</span>
+            )}
             {group && (
               <span className="mt-1 inline-flex max-w-full items-center truncate rounded-md border border-border bg-card px-1.5 py-0.5 text-xs font-medium capitalize text-[var(--ink-700)]">
                 {group}
@@ -618,7 +338,7 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
   return (
     <header
       className={cn(
-        "h-14 lg:h-16 sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3",
+        "h-[52px] sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3",
         "px-2 sm:px-4",
         "bg-card border-b border-border",
       )}
@@ -631,7 +351,7 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
         onClick={onMenuClick}
         className={cn(ICON_BUTTON, "lg:hidden text-foreground")}
       >
-        <Menu size={20} strokeWidth={2} />
+        <Menu size={20} aria-hidden />
       </button>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -642,7 +362,7 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
             aria-pressed={sidebarCollapsed}
             className={cn(ICON_BUTTON, "hidden lg:inline-flex")}
           >
-            <PanelLeft size={18} strokeWidth={1.75} />
+            <PanelLeft size={16} aria-hidden />
           </button>
         </TooltipTrigger>
         <TooltipContent>
@@ -652,28 +372,26 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
 
       <div className="flex-1" />
 
-      {/* Right cluster: search (an icon that slides open to the left), help,
+      {/* Right cluster: search (opens the command palette), Sonar, help,
           notifications, account. */}
       <div className="flex min-w-0 items-center justify-end gap-0.5 sm:gap-1.5">
-        <div className="flex min-w-0 justify-end w-[min(440px,55vw)]">
-          <SearchBar />
-        </div>
+        <SearchTrigger />
         {/* Sonar, the assistant: a small pill next to search, with a turning rainbow edge. */}
         {onCopilotToggle && (
           <button
             type="button"
             onClick={onCopilotToggle}
             aria-label="Ask Sonar"
-            className="sonar-button mx-1 inline-flex h-10 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
+            className="sonar-button mx-1 inline-flex h-8 max-md:h-11 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
           >
-            <SonarIcon size={15} strokeWidth={1.75} className="shrink-0 text-[var(--brand-primary-600)]" />
+            <SonarIcon size={16} aria-hidden className="shrink-0 text-[var(--brand-primary-600)]" />
             <span className="hidden sm:inline">Ask Sonar</span>
           </button>
         )}
         <Tooltip>
           <TooltipTrigger asChild>
             <Link href="/help" aria-label="Help" className={ICON_BUTTON}>
-              <Help size={18} strokeWidth={1.75} />
+              <Help size={16} aria-hidden />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="bottom">Help</TooltipContent>

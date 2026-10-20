@@ -8,8 +8,9 @@
 //      it says a feature is on or off, that wins);
 //   2. otherwise `NEXT_PUBLIC_GOVERN_FEATURES` — a comma list such as
 //      "exports,docusign" (camelCase or snake_case both work);
-//   3. otherwise the default below (routing, notifications, obligations and
-//      exports on; DocuSign sending and integrations off until set up).
+//   3. otherwise the default below (routing, notifications, obligations,
+//      exports and automations on; DocuSign sending and integrations off
+//      until set up).
 
 export const GOVERN_FEATURES = {
   routingRules: true,
@@ -18,6 +19,7 @@ export const GOVERN_FEATURES = {
   obligations: true,
   exports: true,
   integrations: false,
+  automations: true,
 } as const
 
 export type GovernFeature = keyof typeof GOVERN_FEATURES
@@ -49,6 +51,10 @@ export const GOVERN_FEATURE_LABEL: Record<GovernFeature, { title: string; descri
   integrations: {
     title: "Huron and Workday integration",
     description: "Keep contracts in step with Huron and Workday automatically, so records and references never need retyping.",
+  },
+  automations: {
+    title: "Automations",
+    description: "Rules that nudge, escalate and assign on their own when a contract waits too long or something needs attention.",
   },
 }
 

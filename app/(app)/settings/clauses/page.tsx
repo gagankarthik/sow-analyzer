@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   FilterChips,
   FilterSummary,
@@ -18,14 +17,17 @@ import { useDocuments, useClassifications, isProcessing } from "@/lib/queries/do
 import { categoryLabel, clauseSpecificType } from "@/lib/clause-categories";
 import { RISK_LABEL, RISK_ORDER_DESC } from "@/lib/chart-theme";
 import type { RiskLevel } from "@/lib/types";
+import { TableSkeleton, type SkeletonColumn } from "@/components/ds/skeletons";
 
 const RISK_RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2, critical: 3 };
+// Colour only where the risk needs attention; low and medium stay quiet.
 const RISK_TEXT: Record<RiskLevel, string> = {
-  critical: "text-[var(--danger)]",
-  high: "text-[var(--warning)]",
+  critical: "text-[var(--danger-fg)]",
+  high: "text-[var(--warning-fg)]",
   medium: "text-[var(--ink-700)]",
-  low: "text-[var(--success)]",
+  low: "text-[var(--ink-600)]",
 };
+const NUM = new Intl.NumberFormat("en-US");
 
 type CategoryRow = {
   key: string;
@@ -51,6 +53,15 @@ type RiskFilter = "all" | RiskLevel | "unrated";
  * fixed category list, so a category the backend starts sending tomorrow shows
  * up here on its own.
  */
+/** The categories table's columns, for its loading skeleton. */
+const CATEGORY_COLUMNS: SkeletonColumn[] = [
+  { id: "category", header: "Category", card: "title" },
+  { id: "clauses", header: "Clauses", numeric: true },
+  { id: "docs", header: "Documents", numeric: true },
+  { id: "risk", header: "Highest risk" },
+  { id: "types", header: "Types", priority: 2 },
+];
+
 export default function ClauseLibraryPage() {
   const docsQuery = useDocuments();
   const docs = useMemo(() => docsQuery.data ?? [], [docsQuery.data]);
@@ -109,7 +120,7 @@ export default function ClauseLibraryPage() {
     : docsFailed
       ? "Not available"
       : [
-          `${totalClauses.toLocaleString()} clause${totalClauses === 1 ? "" : "s"} in ${rows.length} categor${rows.length === 1 ? "y" : "ies"}`,
+          `${NUM.format(totalClauses)} clause${totalClauses === 1 ? "" : "s"} in ${rows.length} categor${rows.length === 1 ? "y" : "ies"}`,
           `from ${analysedDocs} of ${docs.length} document${docs.length === 1 ? "" : "s"}`,
           processingCount > 0 ? `${processingCount} still processing` : "",
           loadingCount > 0 ? `${loadingCount} loading` : "",
@@ -120,32 +131,27 @@ export default function ClauseLibraryPage() {
     <>
       <PageHeader
         title="Clause library"
-        subtitle="Every clause Sonar extracted from your analyzed documents, grouped by category."
         back={{ href: "/settings", label: "Settings" }}
       />
 
       <SettingsLayout>
-        <SettingsSection title="Clause categories" description={status}>
+        <SettingsSection title="Clause categories" flush>
           {stillLoading ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
-            </div>
+            <TableSkeleton label="clause categories" columns={CATEGORY_COLUMNS} rows={6} />
           ) : docsFailed ? (
-            <div role="alert" className="flex flex-col items-center rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-10 text-center">
-              <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={22} strokeWidth={1.75} /></span>
+            <div role="alert" className="flex flex-col items-center px-4 py-10 text-center">
+              <XCircle size={24} aria-hidden className="mb-3 text-[var(--danger)]" />
               <h3 className="text-base font-semibold text-foreground">Couldn&apos;t load your documents</h3>
               <p className="mt-1.5 max-w-sm break-words text-sm leading-relaxed text-[var(--ink-600)]">
                 {docsQuery.error instanceof Error ? docsQuery.error.message : "The request failed."}
               </p>
-              <Button variant="outline" size="lg" className="mt-5" onClick={() => docsQuery.refetch()}><RefreshCw size={14} />Try again</Button>
+              <Button variant="outline" className="mt-4" onClick={() => docsQuery.refetch()}><RefreshCw size={16} aria-hidden />Try again</Button>
             </div>
           ) : rows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--ink-300)] bg-[var(--panel)] px-4 py-10 text-center">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft">
-                <FileText size={20} className="text-[var(--brand-primary-700)]" />
-              </div>
-              <h3 className="text-base font-semibold tracking-tight text-foreground">No clauses yet</h3>
-              <p className="mt-2 max-w-sm text-base leading-relaxed text-[var(--ink-600)]">
+            <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+              <FileText size={24} aria-hidden className="mb-3 text-[var(--ink-400)]" />
+              <h3 className="text-sm font-semibold text-foreground">No clauses yet</h3>
+              <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
                 {docs.length === 0
                   ? "Upload a document and its clauses appear here once it has been analyzed."
                   : processingCount > 0
@@ -155,48 +161,63 @@ export default function ClauseLibraryPage() {
                       : "None of your documents has an analysis with clauses."}
               </p>
               {docs.length === 0 && (
-                <Button variant="outline" size="lg" className="mt-5" asChild>
+                <Button className="mt-4" asChild>
                   <Link href="/projects/new">Add a document</Link>
                 </Button>
               )}
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              <SettingsSearch id="clause-search" label="Search categories" placeholder="Category or clause type" value={q} onChange={setQ} />
-              {riskOptions.length > 2 && <FilterChips label="Highest risk found" value={risk} onChange={setRisk} options={riskOptions} />}
-              <FilterSummary shown={visible.length} total={rows.length} noun="categories" active={filtering} onClear={clearFilters} />
+            <>
+              <div role="toolbar" aria-label="Filter categories" className="flex min-w-0 flex-col gap-2 border-b border-border px-4 py-2.5 md:flex-row md:items-center md:gap-3">
+                <SettingsSearch id="clause-search" label="Search categories" placeholder="Category or clause type" value={q} onChange={setQ} />
+                {riskOptions.length > 2 && <FilterChips label="Highest risk" value={risk} onChange={setRisk} options={riskOptions} />}
+              </div>
 
               {visible.length === 0 ? (
                 <NoResults noun="categories" onClear={clearFilters} />
               ) : (
-                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-                  {visible.map((cat) => (
-                    <li key={cat.key || "__uncategorised"} className="min-w-0 rounded-lg border border-border bg-[var(--panel)] p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-semibold min-w-0 break-words text-foreground">{cat.label}</h3>
-                        <span className="shrink-0 text-xl font-semibold leading-none tabular-nums text-foreground">{cat.clauses.toLocaleString()}</span>
-                      </div>
-                      <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink-600)]">
-                        clause{cat.clauses === 1 ? "" : "s"} in {cat.docs} document{cat.docs === 1 ? "" : "s"}
-                      </p>
-                      <p className="mt-2 text-xs">
-                        {cat.peak === null ? (
-                          <span className="text-muted-foreground">Risk not assessed</span>
-                        ) : (
-                          <>
-                            <span className={`font-semibold ${RISK_TEXT[cat.peak]}`}>Highest risk: {RISK_LABEL[cat.peak].toLowerCase()}</span>
-                            {cat.highRisk > 0 && <span className="text-muted-foreground"> · {cat.highRisk} high or critical</span>}
-                          </>
-                        )}
-                      </p>
-                      {cat.types.length > 0 && (
-                        <p className="mt-2 break-words text-xs text-muted-foreground">Types: {cat.types.join(", ")}</p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <div className="max-w-full overflow-x-auto">
+                  <table className="w-full min-w-[640px] border-collapse text-sm">
+                    <caption className="sr-only">Clause categories</caption>
+                    <thead className="bg-[var(--panel)]">
+                      <tr className="h-[38px] text-left text-xs font-medium text-[var(--ink-600)]">
+                        <th scope="col" className="px-4 font-medium">Category</th>
+                        <th scope="col" className="px-4 text-right font-medium">Clauses</th>
+                        <th scope="col" className="px-4 text-right font-medium">Documents</th>
+                        <th scope="col" className="px-4 font-medium">Highest risk</th>
+                        <th scope="col" className="px-4 font-medium">Types</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visible.map((cat) => (
+                        <tr key={cat.key || "__uncategorised"} className="h-[42px] border-t border-border transition-colors duration-150 hover:bg-[var(--ink-50)]">
+                          <th scope="row" className="max-w-[16rem] truncate px-4 text-left font-medium text-foreground" title={cat.label}>{cat.label}</th>
+                          <td className="px-4 text-right tabular-nums text-foreground">{NUM.format(cat.clauses)}</td>
+                          <td className="px-4 text-right tabular-nums text-[var(--ink-700)]">{NUM.format(cat.docs)}</td>
+                          <td className="px-4 whitespace-nowrap">
+                            {cat.peak === null ? (
+                              <span className="text-[var(--ink-500)]">Not assessed</span>
+                            ) : (
+                              <>
+                                <span className={`font-medium ${RISK_TEXT[cat.peak]}`}>{RISK_LABEL[cat.peak]}</span>
+                                {cat.highRisk > 0 && <span className="text-[var(--ink-500)]"> · {NUM.format(cat.highRisk)} high or critical</span>}
+                              </>
+                            )}
+                          </td>
+                          <td className="max-w-[18rem] truncate px-4 text-[var(--ink-600)]" title={cat.types.join(", ") || undefined}>
+                            {cat.types.length > 0 ? cat.types.join(", ") : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </div>
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border px-4 py-2.5">
+                <FilterSummary shown={visible.length} total={rows.length} noun="categories in view" active={filtering} onClear={clearFilters} />
+                <p className="text-xs text-[var(--ink-500)] tabular-nums">{status}</p>
+              </div>
+            </>
           )}
         </SettingsSection>
       </SettingsLayout>

@@ -6,9 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ProjectHeader } from "@/components/ProjectHeader";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
 import { DocLoadError } from "@/components/DocLoadError";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -24,7 +24,7 @@ import {
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument, useDeleteVersion, useDeleteDocument } from "@/lib/queries/documents";
 import { can } from "@/lib/projects-store";
-import { formatDate, formatRelativeDays } from "@/lib/format";
+import { displayTitle, formatDate, formatRelativeDays } from "@/lib/format";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import type { ApiVersion } from "@/lib/types";
 import { ALL, ListFilters, NoResults, type FilterGroup } from "../_components/ListFilters";
@@ -59,7 +59,7 @@ export default function DocumentsPage() {
   const [method, setMethod] = useState(ALL);
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
 
-  if (isLoading) return <DocumentsSkeleton />;
+  if (isLoading) return <ProjectRecordSkeleton section="documents" />;
   if (isError && errorStatus(error) === 404) return <NotFound />;
   // Only when there is nothing to show: a failed background refresh keeps the
   // last good data on screen instead of replacing the page with an error.
@@ -121,7 +121,7 @@ export default function DocumentsPage() {
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
-      <div className="app-container py-6 md:py-8">
+      <div className="app-container py-5 md:py-6">
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
           <main className="min-w-0 space-y-4 md:space-y-6 lg:col-span-8">
             {/* Toolbar */}
@@ -131,11 +131,11 @@ export default function DocumentsPage() {
                 <p className="mt-1 text-sm text-[var(--ink-600)]">Every version of this document on record.</p>
               </div>
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                <Button size="lg" className="flex-1 sm:flex-none md:h-9" asChild><Link href="/projects/upload"><Upload size={14} />Upload new</Link></Button>
+                <Button size="lg" className="flex-1 sm:flex-none md:h-9" asChild><Link href="/projects/upload"><Upload size={16} />Upload new</Link></Button>
                 {/* Deleting needs the delete permission; the server enforces it too. */}
                 {canDelete && (
                   <Button variant="outline" size="lg" className="flex-1 border-[var(--danger)]/40 text-[var(--danger)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] sm:flex-none md:h-9" onClick={() => setConfirmDeleteDoc(true)}>
-                    <Trash2 size={14} />Delete document
+                    <Trash2 size={16} />Delete document
                   </Button>
                 )}
               </div>
@@ -143,21 +143,21 @@ export default function DocumentsPage() {
 
             {/* Focal block: the version in force */}
             {current && (
-              <section aria-label="Current version" className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
+              <section aria-label="Current version" className="rounded-xl border border-border bg-card p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
                   <div className="min-w-0">
-                    <h3 className="text-base font-semibold">Current version</h3>
-                    <div className="mt-1 text-4xl font-bold leading-none tabular-nums tracking-tight">v{current.versionNumber}</div>
-                    <p className="mt-2 flex items-start gap-1.5 text-base text-white"><FileText size={15} className="mt-0.5 shrink-0 text-[var(--navy-foreground)]" /><span className="min-w-0 break-all">{filename ?? "File name not recorded"}</span></p>
+                    <h3 className="text-base font-semibold text-foreground">Current version</h3>
+                    <div className="mt-1 text-3xl font-semibold leading-none tabular-nums tracking-tight text-foreground">v{current.versionNumber}</div>
+                    <p className="mt-2 flex items-start gap-1.5 text-sm text-foreground"><FileText size={16} aria-hidden className="mt-0.5 shrink-0 text-[var(--ink-500)]" /><span className="min-w-0 break-all">{filename ?? "File name not recorded"}</span></p>
                   </div>
                   <dl className="grid shrink-0 grid-cols-2 gap-x-8 gap-y-1 text-sm">
                     <div>
-                      <dt className="text-[var(--navy-foreground)]">Uploaded</dt>
-                      <dd className="mt-0.5 font-semibold" title={formatDate(current.createdAt)}>{formatRelativeDays(current.createdAt)}</dd>
+                      <dt className="text-[var(--ink-600)]">Uploaded</dt>
+                      <dd className="mt-0.5 font-medium text-foreground" title={formatDate(current.createdAt)}>{formatRelativeDays(current.createdAt)}</dd>
                     </div>
                     <div>
-                      <dt className="text-[var(--navy-foreground)]">Extraction</dt>
-                      <dd className="mt-0.5 font-semibold">{methodLabel(current.extractionMethod)}</dd>
+                      <dt className="text-[var(--ink-600)]">Extraction</dt>
+                      <dd className="mt-0.5 font-medium text-foreground">{methodLabel(current.extractionMethod)}</dd>
                     </div>
                   </dl>
                 </div>
@@ -166,7 +166,7 @@ export default function DocumentsPage() {
 
             {versions.length > 0 && (
               <ListFilters
-                className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+                className="mb-3"
                 search={query}
                 onSearch={setQuery}
                 placeholder="Search versions"
@@ -185,7 +185,7 @@ export default function DocumentsPage() {
             ) : shownVersions.length === 0 ? (
               <NoResults noun="versions" onClear={clearFilters} />
             ) : (
-              <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+              <section className="overflow-hidden rounded-xl border border-border bg-card">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[300px]">
                     <thead>
@@ -218,7 +218,7 @@ export default function DocumentsPage() {
 
             {/* Upload zone */}
             <Link href="/projects/new" className="block rounded-xl border-2 border-dashed border-[var(--ink-300)] bg-card p-6 text-center transition-colors hover:border-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:p-8">
-              <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Upload size={18} strokeWidth={1.75} /></span>
+              <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Upload size={16} /></span>
               <h3 className="text-base font-semibold text-foreground">Upload a new version</h3>
               <p className="mx-auto mt-1 max-w-xs text-sm leading-relaxed text-[var(--ink-600)]">Add an updated document to your workspace.</p>
             </Link>
@@ -226,7 +226,7 @@ export default function DocumentsPage() {
 
           {/* Sidebar */}
           <aside className="grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 md:gap-6 lg:col-span-4 lg:grid-cols-1">
-            <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-5">
               <h3 className="text-base font-semibold mb-3 text-foreground">Document info</h3>
               <ul className="divide-y divide-[var(--ink-100)] text-sm">
                 <Row label="Type"><DocTypeBadge type={doc.docType} /></Row>
@@ -238,12 +238,12 @@ export default function DocumentsPage() {
             </div>
 
             {doc.parties.length > 0 && (
-              <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
+              <div className="rounded-xl border border-border bg-card p-4 md:p-5">
                 <h3 className="text-base font-semibold mb-3 text-foreground">Parties</h3>
                 <ul className="space-y-2.5">
                   {doc.parties.map((p) => (
                     <li key={p} className="flex items-center gap-2.5">
-                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={15} strokeWidth={1.75} /></span>
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={16} /></span>
                       <span className="min-w-0 break-words text-sm font-medium text-foreground">{p}</span>
                     </li>
                   ))}
@@ -268,7 +268,7 @@ export default function DocumentsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteVersionMut.isPending || deleteDocMut.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmVersionDelete} disabled={deleteVersionMut.isPending || deleteDocMut.isPending} className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white">
-              {(deleteVersionMut.isPending || deleteDocMut.isPending) ? <><Loader2 size={13} className="animate-spin mr-1.5" />Deleting…</> : isLastVersion ? "Delete document" : "Delete version"}
+              {(deleteVersionMut.isPending || deleteDocMut.isPending) ? <><Loader2 size={12} className="animate-spin mr-1.5" />Deleting…</> : isLastVersion ? "Delete document" : "Delete version"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -279,12 +279,12 @@ export default function DocumentsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete document?</AlertDialogTitle>
-            <AlertDialogDescription><strong>{doc.title || "This document"}</strong> and all {versions.length} version{versions.length === 1 ? "" : "s"}, clauses, and analytics will be permanently removed. This cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription><strong>{displayTitle(doc.title) || "This document"}</strong> and all {versions.length} version{versions.length === 1 ? "" : "s"}, clauses, and analytics will be permanently removed. This cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteDocMut.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteDoc} disabled={deleteDocMut.isPending} className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white">
-              {deleteDocMut.isPending ? <><Loader2 size={13} className="animate-spin mr-1.5" />Deleting…</> : "Delete permanently"}
+              {deleteDocMut.isPending ? <><Loader2 size={12} className="animate-spin mr-1.5" />Deleting…</> : "Delete permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -303,34 +303,34 @@ function VersionRow({ v, filename, docStatus, isCurrent, onDelete, sowHref }: {
     <tr className="border-b border-[var(--ink-100)] transition-colors last:border-0 hover:bg-[var(--panel)]">
       <td className="px-3 py-3 md:px-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-[var(--ink-700)]"><Layers size={14} /></span>
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-[var(--ink-700)]"><Layers size={16} /></span>
           <span className="text-base font-semibold tabular-nums text-foreground">v{v.versionNumber}</span>
           {isCurrent && <Badge variant="success" size="sm" className="text-xs">Current</Badge>}
         </div>
       </td>
       <td className="hidden px-4 py-3 md:table-cell">
         {filename
-          ? <span className="inline-flex items-center gap-1.5 text-sm text-foreground"><FileText size={14} className="shrink-0 text-muted-foreground" /><span className="max-w-[220px] truncate" title={filename}>{filename}</span></span>
+          ? <span className="inline-flex items-center gap-1.5 text-sm text-foreground"><FileText size={16} className="shrink-0 text-muted-foreground" /><span className="max-w-[220px] truncate" title={filename}>{filename}</span></span>
           : <span className="text-sm text-muted-foreground">Not recorded</span>}
       </td>
       <td className="hidden px-4 py-3 sm:table-cell">
         <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium ${VERSION_TONE[state.tone]}`}>
-          {state.tone === "ok" ? <CheckCircle2 size={14} /> : state.tone === "busy" ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : state.tone === "bad" ? <XCircle size={14} /> : null}
+          {state.tone === "ok" ? <CheckCircle2 size={16} /> : state.tone === "busy" ? <Loader2 size={16} className="animate-spin motion-reduce:animate-none" /> : state.tone === "bad" ? <XCircle size={16} /> : null}
           {state.label}
         </span>
       </td>
       <td className="hidden px-4 py-3 lg:table-cell"><span className="text-sm text-[var(--ink-600)]">{methodLabel(v.extractionMethod)}</span></td>
-      <td className="px-3 py-3 md:px-4"><span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm text-[var(--ink-600)]" title={formatDate(v.createdAt)}><Clock size={13} className="shrink-0" />{formatRelativeDays(v.createdAt)}</span></td>
+      <td className="px-3 py-3 md:px-4"><span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm text-[var(--ink-600)]" title={formatDate(v.createdAt)}><Clock size={12} className="shrink-0" />{formatRelativeDays(v.createdAt)}</span></td>
       <td className="px-2 py-2 text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon-lg" aria-label={`Actions for version ${v.versionNumber}`}><MoreHorizontal size={16} /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem asChild className="gap-2 cursor-pointer"><Link href={sowHref}><FileText size={14} className="text-muted-foreground" />View clauses</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild className="gap-2 cursor-pointer"><Link href={sowHref}><FileText size={16} className="text-muted-foreground" />View clauses</Link></DropdownMenuItem>
             {onDelete && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onDelete} className="gap-2 cursor-pointer text-[var(--danger)] focus:text-[var(--danger)] focus:bg-[var(--danger-soft)]">
-                  <Trash2 size={14} />{isCurrent ? "Delete (rollback)" : "Delete version"}
+                  <Trash2 size={16} />{isCurrent ? "Delete (rollback)" : "Delete version"}
                 </DropdownMenuItem>
               </>
             )}
@@ -348,7 +348,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 function EmptyState() {
   return (
     <section className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center">
-      <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-4"><Layers size={20} strokeWidth={1.5} /></span>
+      <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-4"><Layers size={20} /></span>
       <h3 className="text-base font-semibold text-foreground">No versions yet</h3>
       <p className="mt-1.5 max-w-xs text-sm text-[var(--ink-600)]">No processed versions found. Upload a file to get started.</p>
     </section>
@@ -358,19 +358,10 @@ function EmptyState() {
 function NotFound() {
   return (
     <div className="app-container py-20 flex flex-col items-center text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project not found</h1>
-      <p className="mt-2 text-base text-muted-foreground max-w-sm">This engagement may have been archived, or the link is out of date.</p>
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} /></span>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Document not found</h1>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">It may have been deleted, or the link is out of date.</p>
       <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-sm font-semibold transition-colors">Back to projects</Link>
     </div>
-  );
-}
-
-function DocumentsSkeleton() {
-  return (
-    <>
-      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
-      <div className="app-container py-6 md:py-8"><div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12"><div className="space-y-4 lg:col-span-8"><Skeleton className="h-10 w-full" /><Skeleton className="h-32 rounded-xl" /><Skeleton className="h-48 rounded-xl" /></div><div className="lg:col-span-4 space-y-5"><Skeleton className="h-44 rounded-xl" /><Skeleton className="h-32 rounded-xl" /></div></div></div>
-    </>
   );
 }

@@ -21,11 +21,11 @@ export function SetupPrompt({ resume }: { resume: boolean }) {
           and reading its analysis. You need one contract file: {UPLOAD_REQUIREMENTS}.
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-          <Button size="lg" asChild>
-            <Link href="/onboarding">{resume ? "Resume setup" : "Start setup"} <ArrowRight size={15} /></Link>
+          <Button asChild>
+            <Link href="/onboarding">{resume ? "Resume setup" : "Start setup"} <ArrowRight size={16} /></Link>
           </Button>
-          <Button variant="outline" size="lg" asChild>
-            <Link href="/projects/new"><Plus size={15} />New project</Link>
+          <Button variant="outline" asChild>
+            <Link href="/projects/new"><Plus size={16} />New project</Link>
           </Button>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { ChevronRight } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BoardCardSkeleton, LaneHeaderSkeleton, SkeletonLine } from "@/components/ds/skeletons";
 import { PRE_SIGNATURE_STAGES, STAGES, STAGE_LABEL } from "@/lib/govern/labels";
 import type { Contract, Stage } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
@@ -73,8 +74,8 @@ export function PipelineStrip({
   loading: boolean;
 }) {
   const group = (title: string, stages: Stage[]) => (
-    <div className="flex min-w-0 flex-col gap-2">
-      <p className="text-sm font-semibold text-foreground">{title}</p>
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <p className="text-xs font-medium text-[var(--ink-600)]">{title}</p>
       <ol className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:items-stretch sm:gap-0">
         {stages.map((s, i) => {
           const sum = summaries.get(s)!;
@@ -87,7 +88,7 @@ export function PipelineStrip({
                 onClick={() => onSelect(s)}
                 aria-pressed={on}
                 className={cn(
-                  "flex h-full min-w-0 flex-1 flex-col gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
+                  "flex h-full min-w-0 flex-1 flex-col gap-1 rounded-lg border px-3 py-2 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
                   on
                     ? "border-[var(--brand-primary-400)] bg-[var(--brand-primary-50)]"
                     : "border-border bg-card hover:border-[var(--ink-300)]",
@@ -99,11 +100,11 @@ export function PipelineStrip({
                     {STAGE_LABEL[s]}
                   </span>
                 </span>
-                <span className="text-2xl font-semibold leading-none tabular-nums text-foreground">
-                  {loading ? <Skeleton className="h-6 w-8" /> : count}
+                <span className="text-lg font-semibold leading-none tabular-nums text-foreground">
+                  {loading ? <Skeleton className="h-4 w-6" /> : count}
                 </span>
                 <span className="truncate text-xs tabular-nums">
-                  {sum.overdue > 0 ? (
+                  {loading ? <SkeletonLine text="text-xs" width="w-16" /> : sum.overdue > 0 ? (
                     <span className="font-semibold text-[var(--danger)]">{sum.overdue} overdue</span>
                   ) : sum.late > 0 ? (
                     <span className="font-semibold text-[var(--warning-fg)]">{sum.late} running late</span>
@@ -148,7 +149,7 @@ export function PhaseSwitch({ summaries, selected, onSelect, loading }: {
   ];
   return (
     <nav aria-label="Workflow phase" className="hidden xl:block">
-      <div className="inline-flex rounded-lg border border-border bg-card p-1">
+      <div className="inline-flex h-8 rounded-lg border border-border-strong bg-card p-0.5">
         {phases.map(({ label, stages }) => {
           const on = stages.includes(selected);
           const count = stages.reduce((n, s) => n + (summaries.get(s)?.contracts.length ?? 0), 0);
@@ -156,11 +157,11 @@ export function PhaseSwitch({ summaries, selected, onSelect, loading }: {
           return (
             <button key={label} type="button" aria-pressed={on} onClick={() => onSelect(stages[0])}
               className={cn(
-                "inline-flex min-h-9 items-center gap-2 rounded-md px-3.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
-                on ? "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]" : "text-[var(--ink-700)] hover:bg-muted",
+                "inline-flex h-full items-center gap-2 rounded-sm px-3 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
+                on ? "bg-[var(--ink-100)] text-foreground" : "text-[var(--ink-600)] hover:text-foreground",
               )}>
               {label}
-              <span className="tabular-nums text-[var(--ink-600)]">{loading ? "…" : count}</span>
+              {loading ? <Skeleton className="h-3 w-5" /> : <span className="tabular-nums text-[var(--ink-600)]">{count.toLocaleString()}</span>}
               {!loading && overdue > 0 && <span className="text-xs font-semibold text-[var(--danger)]">{overdue} overdue</span>}
             </button>
           );
@@ -185,7 +186,7 @@ export function StageHeader({ summary, className }: { summary: StageSummary; cla
           {overdue > 0 && <span className="font-semibold text-[var(--danger)]"> · {overdue} overdue</span>}
         </p>
       </div>
-      <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-card px-2 text-xs font-semibold tabular-nums text-[var(--ink-700)] ring-1 ring-border" aria-label={`${contracts.length} agreements`}>
+      <span className="shrink-0 pt-0.5 text-xs font-medium tabular-nums text-[var(--ink-600)]" aria-label={`${contracts.length} agreements`}>
         {contracts.length}
       </span>
     </div>
@@ -204,15 +205,15 @@ export function StageLane({ summary, loading, highlighted }: { summary: StageSum
         highlighted ? "border-[var(--brand-primary-300)]" : "border-border",
       )}
     >
-      <StageHeader summary={summary} className="px-2 pb-3 pt-1.5" />
-      <div className="flex flex-1 flex-col gap-2">
+      {loading ? <LaneHeaderSkeleton name={STAGE_LABEL[summary.stage]} /> : <StageHeader summary={summary} className="px-1.5 pb-2 pt-1" />}
+      <div className="flex flex-1 flex-col gap-2" aria-busy={loading || undefined}>
         {loading ? (
           <>
-            <Skeleton className="h-40 w-full rounded-lg" />
-            <Skeleton className="h-40 w-full rounded-lg" />
+            <BoardCardSkeleton />
+            <BoardCardSkeleton />
           </>
         ) : summary.contracts.length === 0 ? (
-          <p className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-[var(--ink-300)] px-3 py-8 text-center text-sm text-[var(--ink-500)]">
+          <p className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-[var(--ink-300)] px-3 py-6 text-center text-sm text-[var(--ink-500)]">
             No agreements
           </p>
         ) : (

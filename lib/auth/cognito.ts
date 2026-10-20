@@ -12,6 +12,7 @@ import {
   type ISignUpResult,
 } from "amazon-cognito-identity-js";
 import { setSessionCookie, clearSessionCookie } from "./session";
+import { isPersonalStorageKey } from "./user-data";
 
 const REGION = process.env.NEXT_PUBLIC_COGNITO_REGION;
 const USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID;
@@ -25,7 +26,7 @@ export interface AuthUser {
   email: string;
   name?: string;
   emailVerified: boolean;
-  /** Tenant from the `custom:tenantId` claim; falls back to "default". */
+  /** Tenant from the `custom:tenantId` claim, else the private `u-<sub>` workspace. */
   tenantId: string;
   groups: string[];
   /** ID-token expiry, seconds since epoch. */
@@ -207,17 +208,14 @@ export async function confirmForgotPassword(
   });
 }
 
-/** Browser storage that holds a user's work or history (drafts, recent
- *  documents, read receipts, onboarding answers). Cleared at sign-out so the
- *  next person on a shared machine sees none of it. UI preferences (sidebar,
- *  table density) are not personal data and stay. */
-const PERSONAL_STORAGE = [/^blueiq:/, /^recent-docs$/, /^biq-notif-read$/, /^biq-dashboard-filters$/];
-
+/** Browser storage that holds a user's work or history (see user-data.ts for
+ *  the list). Cleared at sign-out so the next person on a shared machine sees
+ *  none of it. UI preferences (sidebar, table density) stay. */
 function clearPersonalStorage(): void {
   try {
     const keys = Object.keys(window.localStorage);
     for (const key of keys) {
-      if (PERSONAL_STORAGE.some((re) => re.test(key))) window.localStorage.removeItem(key);
+      if (isPersonalStorageKey(key)) window.localStorage.removeItem(key);
     }
     window.sessionStorage.clear();
   } catch {
@@ -362,10 +360,13 @@ function claimsFromSession(session: CognitoUserSession): AuthUser {
     email: String(p.email ?? ""),
     name: typeof p.name === "string" ? p.name : undefined,
     emailVerified: p.email_verified === true,
+    // Display only — the API derives the tenant from the verified token. Mirror
+    // its rule (shared/auth.py): the claim, else the private "u-<sub>"
+    // workspace. There is no shared "default" tenant.
     tenantId:
-      typeof p["custom:tenantId"] === "string"
-        ? (p["custom:tenantId"] as string)
-        : "default",
+      typeof p["custom:tenantId"] === "string" && (p["custom:tenantId"] as string).trim()
+        ? (p["custom:tenantId"] as string).trim()
+        : `u-${String(p.sub ?? "")}`,
     groups,
     exp: typeof p.exp === "number" ? p.exp : 0,
   };

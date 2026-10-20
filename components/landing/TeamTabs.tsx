@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState, type KeyboardEvent } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "@/components/ui/icons";
 import { QueueCard, type QueueItem } from "@/components/landing/ProductCards";
 import { SOLUTION_SECTIONS, type SolutionSectionId } from "@/components/landing/site-nav";
 import { useHashTab } from "@/components/landing/use-hash-tab";
@@ -141,14 +141,14 @@ export function TeamTabs() {
             <h3 className="lp-show-title">{HEADLINE[team.id]}</h3>
             <p className="lp-show-body">{content.body}</p>
             <Link href={`/solutions#${team.id}`} className="lp-trust-link">
-              Learn more <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
+              Learn more <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <div className="lp-show-arrows">
               <button type="button" className="lp-arrow" aria-label="Previous team" onClick={() => select(selected - 1)}>
-                <ArrowLeft size={16} strokeWidth={2} aria-hidden="true" />
+                <ArrowLeft size={16} aria-hidden="true" />
               </button>
               <button type="button" className="lp-arrow" aria-label="Next team" onClick={() => select(selected + 1)}>
-                <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+                <ArrowRight size={16} aria-hidden="true" />
               </button>
             </div>
           </div>

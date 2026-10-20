@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check } from "@/components/ui/icons";
 import { MarketingShell, PageIntro } from "@/components/landing/MarketingShell";
 import { StartCta } from "@/components/landing/StartCta";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -108,7 +108,7 @@ export default async function EditionPage({ params }: Props) {
         </div>
         <div className="lp-wrap mt-12">
           <Link href={`/editions/${other.id}`} className="lp-trust-link">
-            Reviewing {other.tagline.toLowerCase()}? See Govern {other.name} <ArrowRight size={14} aria-hidden="true" />
+            Reviewing {other.tagline.toLowerCase()}? See Govern {other.name} <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
       </section>

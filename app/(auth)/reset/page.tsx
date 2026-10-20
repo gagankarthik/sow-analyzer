@@ -24,6 +24,7 @@ import {
   secondaryPillClass,
   useCooldown,
 } from "@/components/auth/fields";
+import { AuthFormSkeleton } from "@/components/auth/AuthFormSkeleton";
 
 const STEPS = ["Email", "New password"];
 const RESEND_WAIT_SECONDS = 30;
@@ -336,7 +337,7 @@ function ResetFlow() {
 
 export default function ResetPage() {
   return (
-    <Suspense fallback={<div className="h-96" />}>
+    <Suspense fallback={<AuthFormSkeleton title="Reset your password" fields={1} />}>
       <ResetFlow />
     </Suspense>
   );

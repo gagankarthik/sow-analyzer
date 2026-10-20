@@ -388,6 +388,9 @@ export interface ChatResponse {
   /** The clause numbers the answer actually cites (absent on older APIs). */
   usedCitations?: string[]
   grounded?: boolean
+  /** Figures in the answer (amounts, dates, periods) that the cited clauses
+   *  don't contain — worth checking against the clause. Absent on older APIs. */
+  unverified?: string[]
 }
 
 export interface ApiDiffChange {

@@ -4,10 +4,14 @@ import { useEditionFeature } from "@/lib/govern/queries";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
-type Tab = { label: string; href: string; count?: number; badge?: React.ReactNode };
+type Tab = { label: string; href: string; count?: number };
 
+const NUMBER = new Intl.NumberFormat("en-US");
+
+/** The document's sub-page tabs (UI_SPEC section 3.4): underline tabs in one
+ *  row that scroll sideways when they overflow, never wrapping. Rendered
+ *  inside the record header band, whose bottom border is the tab baseline. */
 export function ProjectTabs({ projectId }: { projectId: string }) {
   const showSow = useEditionFeature("sowDocuments");
   const pathname = usePathname() ?? "";
@@ -16,7 +20,7 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
     { label: "Overview", href: base },
     { label: showSow ? "SOW" : "Clauses", href: `${base}/sow` },
     { label: "Amendments", href: `${base}/amendments` },
-    { label: "Insights", href: `${base}/insights`, badge: <Badge variant="ai" size="sm" className="text-xs">AI</Badge> },
+    { label: "Insights", href: `${base}/insights` },
     { label: "Timeline", href: `${base}/timeline` },
     { label: "Audit", href: `${base}/audit` },
     // The route keeps its old `/team` path; what it lists is the contract's parties.
@@ -25,38 +29,34 @@ export function ProjectTabs({ projectId }: { projectId: string }) {
   ];
 
   return (
-    // Rendered inside ProjectHeader, whose bottom border is the tab baseline.
-    <div className="app-container">
-        {/* Scrolls sideways on narrow screens; trailing padding keeps the last tab clear of the edge. */}
-        <nav
-          className="-mb-px flex items-center gap-5 overflow-x-auto pr-4 scrollbar-none md:gap-6"
-          aria-label="Project sections"
-        >
-          {tabs.map((t) => {
-            const active = t.href === base ? pathname === base : pathname === t.href || pathname.startsWith(t.href + "/");
-            return (
-              <Link
-                key={t.href}
-                href={t.href}
-                data-active={active || undefined}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "-mb-px inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-1 text-base font-medium text-[var(--ink-600)] transition-colors hover:border-[var(--ink-300)] hover:text-foreground",
-                  "rounded-t-md outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                  "data-[active=true]:border-[var(--brand-primary-600)] data-[active=true]:font-semibold data-[active=true]:text-[var(--brand-primary-700)]",
-                )}
-              >
-                {t.label}
-                {typeof t.count === "number" && (
-                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-[var(--ink-600)]">
-                    {t.count}
-                  </span>
-                )}
-                {t.badge}
-              </Link>
-            );
-          })}
-        </nav>
-    </div>
+    <nav
+      className="scrollbar-none flex min-w-0 items-end gap-1 overflow-x-auto"
+      aria-label="Project sections"
+    >
+      {tabs.map((t) => {
+        const active = t.href === base ? pathname === base : pathname === t.href || pathname.startsWith(t.href + "/");
+        return (
+          <Link
+            key={t.href}
+            href={t.href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 text-sm transition-colors duration-150 max-md:h-11",
+              "outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--brand-primary-600)]",
+              active
+                ? "border-[var(--brand-primary-600)] font-medium text-foreground"
+                : "border-transparent text-[var(--ink-600)] hover:text-foreground",
+            )}
+          >
+            {t.label}
+            {typeof t.count === "number" && (
+              <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums text-[var(--ink-600)]">
+                {NUMBER.format(t.count)}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

@@ -13,9 +13,9 @@ describe("parseFeatureList", () => {
 })
 
 describe("resolveFeatures", () => {
-  it("has routing, notifications, obligations and exports on by default; DocuSign and integrations off", () => {
+  it("has routing, notifications, obligations, exports and automations on by default; DocuSign and integrations off", () => {
     const flags = resolveFeatures(undefined)
-    expect(flags).toEqual({ routingRules: true, notifications: true, obligations: true, exports: true, docusign: false, integrations: false })
+    expect(flags).toEqual({ routingRules: true, notifications: true, obligations: true, exports: true, docusign: false, integrations: false, automations: true })
   })
 
   it("switches on what the build-time list names", () => {

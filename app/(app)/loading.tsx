@@ -1,9 +1,7 @@
-import { SonarLoader } from "@/components/ui/SonarLoader";
+import { PageSkeleton } from "@/components/ds/skeletons";
 
+// The fallback for workspace routes without a loading shape of their own:
+// a title row and panels inside the app shell (no full-page spinner).
 export default function Loading() {
-  return (
-    <div className="flex min-h-[70vh] items-center justify-center px-4">
-      <SonarLoader label="Loading your workspace…" />
-    </div>
-  );
+  return <PageSkeleton />;
 }

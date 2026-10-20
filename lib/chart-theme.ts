@@ -117,7 +117,7 @@ export const ACCENT_LIGHT = "var(--viz-compare)";
 /** Teal: the ONE highlighted series in a chart (selected item). Use sparingly. */
 export const HIGHLIGHT = "var(--viz-highlight)";
 /** Neutral mark for reductions / de-emphasised series. */
-export const NEUTRAL_MARK = "var(--viz-other)"; // #8A857B, 3.67:1 on white
+export const NEUTRAL_MARK = "var(--viz-other)"; // #8592A6, 3.16:1 on white
 
 /** Compact money for ticks and labels: $950, $12.3k, $1.3M, −$40k. No symbol
  *  is printed when the currency is unknown (see currencySymbol). */

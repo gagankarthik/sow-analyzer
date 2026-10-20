@@ -1,4 +1,4 @@
-import { OFFICE_LABEL } from "@/lib/govern/labels"
+import { OFFICE_LABEL, STATE_LABEL } from "@/lib/govern/labels"
 import type { Contract, Person } from "@/lib/govern/types"
 
 // The contract's journey as ordered steps, each with who holds it and where
@@ -102,4 +102,47 @@ export function contractSteps(c: Contract): ContractStep[] {
   })
 
   return steps
+}
+
+/** A step as the record page's Path draws it (components/ds/Record.tsx). */
+export type PathStatus = "done" | "current" | "upcoming" | "blocked"
+
+/**
+ * The steps as connected Path stages: waiting counts as current (the step is
+ * live, someone else holds it); a stopped step, or a read Sonar could not
+ * finish, is blocked.
+ */
+export function contractPathSteps(c: Contract): { id: ContractStep["id"]; label: string; status: PathStatus }[] {
+  const failed = c.analysisStatus === "FAILED"
+  let seenCurrent = false
+  return contractSteps(c).map((s) => {
+    let status: PathStatus = s.id === "read" && failed ? "blocked"
+      : s.status === "stopped" ? "blocked"
+      : s.status === "waiting" ? "current"
+      : s.status
+    // One current stage on the path: a later step that is also live
+    // (office approvals alongside review) is next, not now.
+    if (status === "current") {
+      if (seenCurrent) status = "upcoming"
+      seenCurrent = true
+    }
+    return { id: s.id, label: s.label, status }
+  })
+}
+
+/** The step the contract is on: the first live or blocked one. */
+export function currentContractStep(c: Contract): ContractStep | null {
+  const steps = contractSteps(c)
+  if (c.analysisStatus === "FAILED") return steps[0]
+  return steps.find((s) => s.status === "current" || s.status === "waiting" || s.status === "stopped") ?? null
+}
+
+/**
+ * The state in words for the record header. "Just arrived" only on the day it
+ * arrived: an intake contract that has sat longer reads as waiting for a
+ * reviewer (or not started, once someone owns it).
+ */
+export function contractStateLabel(c: Pick<Contract, "state" | "daysInStage" | "owner">): string {
+  if (c.state === "intake" && c.daysInStage > 1) return c.owner ? "Not started" : "Needs a reviewer"
+  return STATE_LABEL[c.state]
 }

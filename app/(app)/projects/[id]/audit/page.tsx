@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
+import { PanelRowsSkeleton, SkeletonRegion } from "@/components/ds/skeletons";
 import { DocLoadError } from "@/components/DocLoadError";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   CheckCircle2,
   Clock,
@@ -99,17 +100,17 @@ export default function AuditPage() {
   const [artifactState, setArtifactState] = useState(ALL);
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
 
-  if (isLoading) return <AuditSkeleton />;
+  if (isLoading) return <ProjectRecordSkeleton section="audit" />;
 
   if (isError && errorStatus(error) === 404) {
     return (
       <div className="app-container py-20 flex flex-col items-center text-center">
         <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5">
-          <Files size={24} strokeWidth={1.5} />
+          <Files size={24} />
         </span>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project not found</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Document not found</h1>
         <p className="mt-2 max-w-sm text-base text-[var(--ink-600)]">
-          This engagement may have been archived, or the link is out of date.
+          It may have been deleted, or the link is out of date.
         </p>
         <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-sm font-semibold transition-colors">
           Back to projects
@@ -149,7 +150,7 @@ export default function AuditPage() {
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
-      <div className="app-container space-y-6 py-6 md:space-y-8 md:py-8">
+      <div className="app-container space-y-6 py-5 md:py-6">
 
         {/* ── Govern activity: who reviewed, approved or sent back, and when ── */}
         <ContractActivity docId={id} />
@@ -157,28 +158,28 @@ export default function AuditPage() {
         {/* ── Status (focal) + document integrity ───────────── */}
 
         <section className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          <div className="flex flex-col rounded-xl bg-[var(--navy)] p-5 text-white md:p-6 lg:col-span-4">
-            <h2 className="text-lg font-semibold">Processing status</h2>
+          <div className="flex flex-col rounded-xl border border-border bg-card p-4 lg:col-span-4">
+            <h2 className="text-base font-semibold text-foreground">Processing status</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2.5">
-              <span className="text-3xl font-semibold capitalize leading-none tracking-tight">{rawStatus.toLowerCase()}</span>
+              <span className="text-3xl font-semibold capitalize leading-none tracking-tight text-foreground">{rawStatus.toLowerCase()}</span>
               <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CHIP[statusTone]}`}>
                 {statusTone === "success" ? <CheckCircle2 size={12} /> : statusTone === "danger" ? <XCircle size={12} /> : <Loader2 size={12} className="animate-spin" />}
                 {statusTone === "success" ? "Complete" : statusTone === "danger" ? "Needs attention" : "In progress"}
               </span>
             </div>
-            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-[var(--navy-border)] pt-4 text-sm lg:mt-auto">
+            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-border pt-3 text-sm lg:mt-auto">
               <div>
-                <dt className="text-[var(--navy-foreground)]">Latest version</dt>
-                <dd className="mt-0.5 font-semibold tabular-nums">v{doc.latestVersion}</dd>
+                <dt className="text-[var(--ink-600)]">Latest version</dt>
+                <dd className="mt-0.5 font-medium tabular-nums text-foreground">v{doc.latestVersion}</dd>
               </div>
               <div>
-                <dt className="text-[var(--navy-foreground)]">Last updated</dt>
-                <dd className="mt-0.5 font-semibold">{formatDate(doc.updatedAt)}</dd>
+                <dt className="text-[var(--ink-600)]">Last updated</dt>
+                <dd className="mt-0.5 font-medium text-foreground">{formatDate(doc.updatedAt)}</dd>
               </div>
             </dl>
           </div>
 
-          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 lg:col-span-8">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 md:p-6 lg:col-span-8">
             <h2 className="text-lg font-semibold mb-1 tracking-tight text-foreground">Document record</h2>
             <p className="mb-4 text-sm text-[var(--ink-600)]">Identifiers and hashes as stored for this document.</p>
             <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
@@ -209,7 +210,7 @@ export default function AuditPage() {
             </div>
           </div>
 
-          <ol className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-xs sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+          <ol className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
             {PIPELINE_STAGES.map((stage) => {
               const status = stageStatus(rawStatus, stage.key, sortedVersions[0]);
               const Icon = stage.icon;
@@ -232,7 +233,7 @@ export default function AuditPage() {
                     {status === "active" ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : (
-                      <Icon size={16} strokeWidth={1.75} />
+                      <Icon size={16} />
                     )}
                   </span>
                   <span className="min-w-0">
@@ -264,7 +265,7 @@ export default function AuditPage() {
           {sortedVersions.length === 0 ? (
             <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center">
               <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]">
-                <GitBranch size={20} strokeWidth={1.5} />
+                <GitBranch size={20} />
               </span>
               <p className="text-base font-semibold text-foreground">No versions yet</p>
               <p className="mt-1 text-sm text-[var(--ink-600)]">Upload a document to start generating version records.</p>
@@ -272,7 +273,7 @@ export default function AuditPage() {
           ) : (
             <div className="space-y-3">
               <ListFilters
-                className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+                className="mb-3"
                 search={query}
                 onSearch={setQuery}
                 placeholder="Search versions"
@@ -288,7 +289,7 @@ export default function AuditPage() {
                 const artifacts = versionArtifacts(v);
                 const isCurrent = v.versionNumber === doc.latestVersion;
                 return (
-                  <div key={v.versionNumber} className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
+                  <div key={v.versionNumber} className="rounded-xl border border-border bg-card p-4 md:p-5">
                     <div className="mb-4 flex items-start gap-3">
                       <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-semibold tabular-nums text-foreground">
                         v{v.versionNumber}
@@ -325,9 +326,9 @@ export default function AuditPage() {
                           ].join(" ")}
                         >
                           {a.available ? (
-                            <CheckCircle2 size={14} className="shrink-0 text-[var(--success)]" />
+                            <CheckCircle2 size={16} className="shrink-0 text-[var(--success)]" />
                           ) : (
-                            <Clock size={14} className="shrink-0" />
+                            <Clock size={16} className="shrink-0" />
                           )}
                           <span className="min-w-0 flex-1 font-medium">{a.label}</span>
                           <span className="shrink-0 text-xs">{a.available ? "Generated" : "Not generated"}</span>
@@ -354,7 +355,7 @@ function ContractActivity({ docId }: { docId: string }) {
 
   let body: React.ReactNode;
   if (found.isLoading || (found.contract && detail.isLoading)) {
-    body = <Skeleton className="h-32 w-full rounded-xl" />;
+    body = <SkeletonRegion label="workflow activity"><PanelRowsSkeleton rows={3} className="-mx-4 md:-mx-6" /></SkeletonRegion>;
   } else if (found.isError && !found.contract) {
     body = <p className="text-sm text-[var(--ink-600)]">The workflow activity could not be loaded right now. The document&rsquo;s processing record is below.</p>;
   } else if (!found.contract) {
@@ -371,7 +372,7 @@ function ContractActivity({ docId }: { docId: string }) {
   }
 
   return (
-    <section aria-labelledby="govern-activity-heading" className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+    <section aria-labelledby="govern-activity-heading" className="rounded-xl border border-border bg-card p-4 md:p-6">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id="govern-activity-heading" className="text-lg font-semibold tracking-tight text-foreground">Activity</h2>
@@ -415,27 +416,5 @@ function IntegrityField({
         {value}
       </dd>
     </div>
-  );
-}
-
-function AuditSkeleton() {
-  return (
-    <>
-      <div>
-        <div className="app-container space-y-3 pb-5 pt-4 md:pt-6">
-          <Skeleton className="h-3.5 w-28" />
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="h-4 w-1/2 sm:w-1/3" />
-        </div>
-      </div>
-      <div className="app-container space-y-6 py-6 md:space-y-8 md:py-8">
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          <Skeleton className="h-44 rounded-xl lg:col-span-4" />
-          <Skeleton className="h-44 rounded-xl lg:col-span-8" />
-        </div>
-        <Skeleton className="h-32 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    </>
   );
 }

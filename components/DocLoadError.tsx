@@ -15,7 +15,7 @@ export function DocLoadError({ error, onRetry, retrying = false }: { error: unkn
         {error instanceof Error ? error.message : "Couldn't load this document"}
       </p>
       <Button variant="outline" size="lg" className="mt-4" onClick={onRetry} disabled={retrying}>
-        <RefreshCw size={14} className={retrying ? "animate-spin motion-reduce:animate-none" : undefined} />
+        <RefreshCw size={16} aria-hidden className={retrying ? "animate-spin motion-reduce:animate-none" : undefined} />
         Try again
       </Button>
     </div>

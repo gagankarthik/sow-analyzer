@@ -12,9 +12,10 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ArrowRight, Ban, BadgeCheck, Building2, CheckCircle2, Coins, ExternalLink, Help, Hourglass, MessageSquare,
-  MoreHorizontal, PenLine, RefreshCw, Send, Trash2, Undo2, Upload, UserRound, type LucideIcon,
+  ArrowRight, Ban, BadgeCheck, Building2, CheckCircle2, ChevronDown, Coins, ExternalLink, Help, Hourglass, MessageSquare,
+  MoreHorizontal, PenLine, RefreshCw, Send, Share2, Trash2, Undo2, Upload, UserRound, type LucideIcon,
 } from "@/components/ui/icons";
+import { SharePortalDialog } from "@/components/govern/portal/SharePortalDialog";
 import { NEXT_ACTION_LABEL, OFFICE_LABEL } from "@/lib/govern/labels";
 import type { Contract, ContractAction, ContractDetail } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
@@ -221,11 +222,13 @@ export function NextStepButton({
 
 /** Every other action, in a "…" menu. */
 export function ContractActionsMenu({
-  contract, showOpen = false, size = "default", className, align = "end",
+  contract, showOpen = false, size = "default", className, align = "end", triggerLabel,
 }: {
   contract: AnyContract;
   /** Add "Open contract" (board cards). */
   showOpen?: boolean;
+  /** A text trigger ("Actions") instead of the "…" icon button. */
+  triggerLabel?: string;
   size?: "sm" | "default" | "lg";
   className?: string;
   align?: "start" | "end";
@@ -234,6 +237,9 @@ export function ContractActionsMenu({
   const [removing, setRemoving] = useState(false);
   // Removing deletes the documents too, which the server allows their owner only.
   const canRemove = contract.allowedActions.some((a) => a !== "comment");
+  // Portal links need edit access (leaders only comment / office-approve).
+  const [sharing, setSharing] = useState(false);
+  const canShare = !isClosed(contract) && contract.allowedActions.some((a) => a !== "comment" && a !== "office_approve");
   const primary = primaryAction(contract);
   const primaryKind = primary.type === "action" ? primary.kind : null;
   const actions = availableActions(contract).filter((k) => k !== primaryKind);
@@ -254,9 +260,15 @@ export function ContractActionsMenu({
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" size={iconSize} className={className} aria-label={`More actions for ${contract.title}`}>
-            <MoreHorizontal size={16} />
-          </Button>
+          {triggerLabel ? (
+            <Button type="button" variant="outline" size={size} className={className}>
+              {triggerLabel}<ChevronDown size={16} aria-hidden />
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size={iconSize} className={className} aria-label={`More actions for ${contract.title}`}>
+              <MoreHorizontal size={16} />
+            </Button>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align={align} className="w-56">
           {showOpen && (
@@ -271,6 +283,11 @@ export function ContractActionsMenu({
           {moves.map(item)}
           {moves.length > 0 && other.length > 0 && <DropdownMenuSeparator />}
           {other.map(item)}
+          {canShare && (
+            <DropdownMenuItem onSelect={() => setSharing(true)} className="min-h-9 cursor-pointer gap-2">
+              <Share2 size={14} className="text-muted-foreground" />Share with counterparty
+            </DropdownMenuItem>
+          )}
           {canRemove && (
             <>
               {actions.length > 0 && <DropdownMenuSeparator />}
@@ -283,6 +300,7 @@ export function ContractActionsMenu({
       </DropdownMenu>
       <ActionDialogHost kind={open} contract={contract} onClose={() => setOpen(null)} />
       {removing && <RemoveContractDialog contract={contract} open onOpenChange={setRemoving} />}
+      {sharing && <SharePortalDialog contract={contract} open onOpenChange={setSharing} />}
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditionFeature } from "@/lib/govern/queries";
+import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,8 +15,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ChevronLeft, FileText, MoreHorizontal, Trash2, Copy, Layers, Loader2, Sonar, CheckCircle2, ExternalLink, Building2, Eye,
+  ChevronDown, Trash2, Copy, Layers, Loader2, Sonar, CheckCircle2, ExternalLink, Eye, XCircle,
 } from "@/components/ui/icons";
+import { RecordHeader, type Highlight } from "@/components/ds/Record";
 import type { DocHeaderModel } from "@/lib/api";
 import { useDeleteDocument } from "@/lib/queries/documents";
 import { docTypeShort } from "@/lib/doc-types";
@@ -24,13 +25,18 @@ import { useUIStore } from "@/lib/stores/ui";
 import { can } from "@/lib/projects-store";
 import { ROLE_META } from "@/components/team/roles";
 import { ProjectTabs } from "@/components/ProjectTabs";
-import { formatRelativeDays, formatDate } from "@/lib/format";
+import { displayTitle, formatRelativeDays, formatDate } from "@/lib/format";
 import { WorkflowLinkChip } from "@/components/govern/WorkflowLinkChip";
 
-/** Header for one document. Every value shown is read from the API row
- *  (`project._raw`); there are no fallbacks that could pass for real data. */
+const NUMBER = new Intl.NumberFormat("en-US");
+
+/** Header band for one document (UI_SPEC section 8): breadcrumb, the
+ *  document name with its object tag, a highlights strip, one action and an
+ *  "Actions" menu, then the sub-page tabs. Every value shown is read from the
+ *  API row (`project._raw`); there are no fallbacks that could pass for real data. */
 export function ProjectHeader({ project }: { project: DocHeaderModel }) {
   const showSow = useEditionFeature("sowDocuments");
+  const terms = useEditionTerms();
   const router = useRouter();
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -39,7 +45,7 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
 
   const raw = project._raw;
   const docId = raw.docId;
-  const title = raw.title || "Untitled document";
+  const title = displayTitle(raw.title) || "Untitled document";
   const status = raw.status;
   const partyCount = raw.parties?.length ?? 0;
   const clauseCount = raw.clauseCount;
@@ -71,90 +77,79 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
     }
   }
 
+  const highlights: Highlight[] = [
+    { label: "Status", value: <StatusBadge status={status} lifecycle={raw.lifecycle} /> },
+    { label: "Type", value: docTypeShort(raw.docType) },
+    { label: "Version", value: `v${raw.latestVersion}` },
+    {
+      label: "Parties",
+      value: partyCount > 0 ? NUMBER.format(partyCount) : "—",
+    },
+    raw.updatedAt
+      ? { label: "Updated", value: <span title={formatDate(raw.updatedAt)}>{formatRelativeDays(raw.updatedAt)}</span> }
+      : { label: "Clauses", value: typeof clauseCount === "number" ? NUMBER.format(clauseCount) : "—" },
+  ];
+
   return (
-    <div>
-      <div className="app-container pb-5 pt-4 md:pt-6">
-        <Link
-          href="/projects"
-          className="-ml-1 mb-2 inline-flex h-10 items-center gap-1 rounded-md px-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-8"
-        >
-          <ChevronLeft size={14} />Back to projects
-        </Link>
-
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
-          {/* Title block */}
-          <div className="flex min-w-0 flex-1 items-start gap-3">
-            <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg sm:inline-flex">
-              <FileText size={18} strokeWidth={1.75} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                <h1 className="text-2xl font-semibold min-w-0 break-words leading-[1.2] tracking-tight text-foreground">
-                  {title}
-                </h1>
-                <StatusBadge status={status} lifecycle={raw.lifecycle} />
-                <WorkflowLinkChip docId={docId} />
-              </div>
-
-              {/* Meta row */}
-              <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted-foreground">
-                <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold text-[var(--ink-700)]">{docTypeShort(raw.docType)}</span>
-                <span className="font-mono text-xs">{String(docId).slice(0, 8).toUpperCase()}</span>
-                <Dot />
-                <span>v{raw.latestVersion}</span>
-                {raw.updatedAt && (<><Dot /><span title={formatDate(raw.updatedAt)}>Updated {formatRelativeDays(raw.updatedAt)}</span></>)}
-                {partyCount > 0 && (<><Dot /><span className="inline-flex items-center gap-1"><Building2 size={13} />{partyCount} part{partyCount === 1 ? "y" : "ies"}</span></>)}
-                {typeof clauseCount === "number" && clauseCount > 0 && (<><Dot /><span>{clauseCount} clauses</span></>)}
-              </div>
-
-              {shared && role && (
-                <p className="mt-2 flex items-start gap-1.5 text-sm leading-relaxed text-[var(--ink-600)]">
-                  <Eye size={14} className="mt-0.5 shrink-0" />
-                  <span className="min-w-0 break-words">
-                    <span className="font-semibold text-foreground">Shared with you{raw.ownerEmail ? ` by ${raw.ownerEmail}` : ""}</span>
-                    {" · "}{ROLE_META[role].label}.{" "}
-                    {role === "viewer" ? "You can read it; you cannot edit, re-analyze or delete it." : "You can edit and re-analyze it; only its owner can delete it."}
-                  </span>
-                </p>
+    <>
+      <RecordHeader
+        breadcrumb={[{ label: terms.projects, href: "/projects" }, { label: title }]}
+        title={title}
+        objectTag="Project"
+        highlights={highlights}
+        primaryAction={
+          <Button variant="ai" className="max-md:flex-1" onClick={toggleCopilot}>
+            <Sonar size={16} aria-hidden />Ask Sonar
+          </Button>
+        }
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Actions<ChevronDown size={12} aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                <Link href={`/projects/${docId}/documents`}><Layers size={16} aria-hidden className="text-muted-foreground" />View versions</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={copyLink} className="cursor-pointer gap-2">
+                <Copy size={16} aria-hidden className="text-muted-foreground" />Copy link
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                <Link href={`/projects/${docId}/sow`}><ExternalLink size={16} aria-hidden className="text-muted-foreground" />{showSow ? "Open SOW analyzer" : "Open clause analysis"}</Link>
+              </DropdownMenuItem>
+              {canDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setConfirmDelete(true)} className="cursor-pointer gap-2 text-[var(--danger)] focus:bg-[var(--danger-soft)] focus:text-[var(--danger)]">
+                    <Trash2 size={16} aria-hidden />Delete document…
+                  </DropdownMenuItem>
+                </>
               )}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex shrink-0 items-center gap-2">
-            <Button variant="ai" size="lg" className="flex-1 md:h-9 md:flex-none" onClick={toggleCopilot}>
-              <Sonar size={14} />Ask Sonar
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon-lg" className="md:size-9" aria-label="Document actions"><MoreHorizontal size={16} /></Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem asChild className="gap-2 cursor-pointer">
-                  <Link href={`/projects/${docId}/documents`}><Layers size={14} className="text-muted-foreground" />View versions</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={copyLink} className="gap-2 cursor-pointer">
-                  <Copy size={14} className="text-muted-foreground" />Copy link
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="gap-2 cursor-pointer">
-                  <Link href={`/projects/${docId}/sow`}><ExternalLink size={14} className="text-muted-foreground" />{showSow ? "Open SOW analyzer" : "Open clause analysis"}</Link>
-                </DropdownMenuItem>
-                {canDelete && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setConfirmDelete(true)} className="gap-2 cursor-pointer text-[var(--danger)] focus:text-[var(--danger)] focus:bg-[var(--danger-soft)]">
-                      <Trash2 size={14} />Delete document
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      >
+        {/* Empty (and hidden) unless the document is in workflow or shared. */}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 empty:hidden">
+          <WorkflowLinkChip docId={docId} />
+          {shared && role && (
+            <p className="flex min-w-0 items-center gap-1.5 text-xs text-[var(--ink-600)]">
+              <Eye size={12} aria-hidden className="shrink-0" />
+              <span className="min-w-0 truncate">
+                Shared with you{raw.ownerEmail ? ` by ${raw.ownerEmail}` : ""} · {ROLE_META[role].label}
+                {role === "viewer" ? " (read only)" : " (only the owner can delete)"}
+              </span>
+            </p>
+          )}
         </div>
-      </div>
-
-      {/* Section tabs: the one route to every sub-page of this document. */}
-      <ProjectTabs projectId={docId} />
+        {/* Section tabs: the one route to every sub-page of this document.
+            They sit on the band's bottom border. */}
+        <div className="-mb-4">
+          <ProjectTabs projectId={docId} />
+        </div>
+      </RecordHeader>
 
       <AlertDialog open={confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(false)}>
         <AlertDialogContent>
@@ -166,34 +161,36 @@ export function ProjectHeader({ project }: { project: DocHeaderModel }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white">
-              {deleting ? <><Loader2 size={13} className="animate-spin mr-1.5" />Deleting…</> : "Delete permanently"}
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90">
+              {deleting ? <><Loader2 size={12} aria-hidden className="mr-1.5 animate-spin" />Deleting…</> : "Delete permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 
-function Dot() {
-  return <span className="text-[var(--ink-300)]" aria-hidden>·</span>;
-}
-
+/** Analysis state: words plus an icon, never colour alone. */
 function StatusBadge({ status, lifecycle }: { status: string; lifecycle: string }) {
   if (status === "READY") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[var(--success-soft)] text-[var(--success-fg)] shrink-0 capitalize">
-        <CheckCircle2 size={12} />{lifecycle}
+      <span className="inline-flex items-center gap-1 capitalize text-[var(--success-fg)]">
+        <CheckCircle2 size={12} aria-hidden />{lifecycle}
       </span>
     );
   }
   if (status === "FAILED") {
-    return <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[var(--danger-soft)] text-[var(--danger)] shrink-0"><span className="h-1.5 w-1.5 rounded-full bg-[var(--danger)]" />Failed</span>;
+    return (
+      <span className="inline-flex items-center gap-1 text-[var(--danger)]">
+        <XCircle size={12} aria-hidden />Failed
+      </span>
+    );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-[var(--ink-100)] text-[var(--ink-600)] shrink-0">
-      <Loader2 size={12} className="animate-spin" />{status.charAt(0) + status.slice(1).toLowerCase()}…
+    <span className="inline-flex items-center gap-1 text-[var(--ink-600)]">
+      <Loader2 size={12} aria-hidden className="animate-spin motion-reduce:animate-none" />
+      {status.charAt(0) + status.slice(1).toLowerCase()}…
     </span>
   );
 }

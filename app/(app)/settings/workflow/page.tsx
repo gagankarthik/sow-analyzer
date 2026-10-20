@@ -8,6 +8,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { SummaryTiles } from "@/components/ds/KpiTile";
 import { SettingsLayout } from "@/components/settings/SettingsNav";
 import {
   LoadError, PageSkeleton, ReadOnlyNote, UnsavedBar, useAdminAccess, useUnsavedChangesGuard,
@@ -80,11 +81,6 @@ export default function WorkflowSettingsPage() {
     <>
       <PageHeader
         title="Workflow & routing"
-        subtitle={
-          features.routingRules || features.notifications
-            ? "How long each stage should take, who reviews what, which offices sign off before signature, and who hears about it."
-            : "How long each stage should take, who reviews what, and how new contracts are assigned."
-        }
         back={{ href: "/settings", label: "Settings" }}
       />
 
@@ -141,35 +137,36 @@ function Summary({ draft, features }: { draft: SettingsDraft; features: GovernFe
   const firstRule = features.routingRules ? draft.routingRules.find((r) => r.enabled) : undefined;
   const channels = [draft.notifications.email && "email", draft.notifications.teams && "Teams"].filter(Boolean) as string[];
 
+  const rulesOn = draft.assignmentRules.length + (features.routingRules ? draft.routingRules.filter((r) => r.enabled).length : 0);
+
   return (
-    <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs md:grid-cols-12 md:gap-8">
-      <div className="min-w-0 md:col-span-4">
-        <div className="text-sm font-medium text-[var(--ink-600)]">Target from arrival to signature</div>
-        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-          <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">{total > 0 ? total : "—"}</span>
-          {total > 0 && <span className="text-base text-[var(--ink-600)]">days</span>}
-        </div>
-        <p className="mt-2 text-sm text-[var(--ink-600)]">
-          {review !== null ? `${STAGE_LABEL.review}: ${plural(review, "day")}` : "No review target set"} · red after {Number.isFinite(draft.redAfterMultiple) ? draft.redAfterMultiple : "—"}× target
+    <div className="flex flex-col gap-2">
+      <SummaryTiles
+        items={[
+          { label: "Target to signature", value: total > 0 ? `${total} days` : null, unknownLabel: "Not set" },
+          {
+            label: STAGE_LABEL.review,
+            value: review !== null ? plural(review, "day") : null,
+            unknownLabel: "Not set",
+            footnote: `Red after ${Number.isFinite(draft.redAfterMultiple) ? draft.redAfterMultiple : "—"}× target`,
+          },
+          { label: "Reviewers", value: draft.reviewers.length },
+          {
+            label: "Rules on",
+            value: rulesOn,
+            footnote: features.routingRules
+              ? `${draft.assignmentRules.length} assignment · ${draft.routingRules.filter((r) => r.enabled).length} routing`
+              : "Assignment rules",
+          },
+        ]}
+      />
+      {(firstRule || features.notifications) && (
+        <p className="text-xs text-[var(--ink-600)]">
+          {firstRule && <span className="text-[var(--ink-700)]">{routingSentence(firstRule, currency)}</span>}
+          {firstRule && features.notifications && " · "}
+          {features.notifications && (channels.length ? `Alerts go out by ${channels.join(" and ")}.` : "Alerts are off.")}
         </p>
-      </div>
-      <div className="min-w-0 space-y-1.5 text-sm leading-relaxed text-[var(--ink-600)] md:col-span-8">
-        <p>
-          <span className="font-semibold text-foreground">{plural(draft.reviewers.length, "reviewer")}</span> in the directory,{" "}
-          {features.routingRules ? (
-            <>
-              {plural(draft.assignmentRules.length, "assignment rule")} and{" "}
-              {plural(draft.routingRules.filter((r) => r.enabled).length, "routing rule")} on.
-            </>
-          ) : (
-            <>and {plural(draft.assignmentRules.length, "assignment rule")} on.</>
-          )}
-        </p>
-        {firstRule && <p className="text-foreground">{routingSentence(firstRule, currency)}</p>}
-        {features.notifications && (
-          <p>{channels.length ? `Alerts go out by ${channels.join(" and ")}.` : "Alerts are off."}</p>
-        )}
-      </div>
+      )}
     </div>
   );
 }

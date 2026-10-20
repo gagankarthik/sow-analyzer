@@ -36,7 +36,7 @@ export function RoundsSection({ contract: c, uploadRef }: { contract: ContractDe
   return (
     <Section
       title="Rounds and versions"
-      description={`${plural(c.rounds, "round")} with the other side so far. Each version they send back is re-checked against the matrix.`}
+      description={plural(c.rounds, "round")}
     >
       {improved && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-border bg-card p-5">
@@ -90,7 +90,7 @@ function VersionRow({ version: v, index, previous, current }: { version: Contrac
             <p className="mt-0.5 truncate text-sm text-[var(--ink-600)]">{v.title || "Untitled"} · {formatDate(v.createdAt)}</p>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link href={`/projects/${encodeURIComponent(v.docId)}`}><ExternalLink size={13} />Open analysis</Link>
+            <Link href={`/projects/${encodeURIComponent(v.docId)}`}><ExternalLink size={12} />Open analysis</Link>
           </Button>
         </div>
         <div className="mt-3">
@@ -108,11 +108,11 @@ function VersionRow({ version: v, index, previous, current }: { version: Contrac
               </div>
             </div>
           ) : failed ? (
-            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--danger)]"><XCircle size={14} />Sonar could not read this version. Open it to try again.</p>
+            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--danger)]"><XCircle size={16} />Sonar could not read this version. Open it to try again.</p>
           ) : ready ? (
-            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-600)]"><CheckCircle2 size={14} />Read, not checked against the matrix.</p>
+            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-600)]"><CheckCircle2 size={16} />Read, not checked against the matrix.</p>
           ) : (
-            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ai-ink)]"><Loader2 size={14} className="animate-spin motion-reduce:animate-none" />Sonar is reading and checking this version…</p>
+            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ai-ink)]"><Loader2 size={16} className="animate-spin motion-reduce:animate-none" />Sonar is reading and checking this version…</p>
           )}
         </div>
       </div>
@@ -158,7 +158,7 @@ function RevisionUpload({ contract: c, buttonRef }: { contract: ContractDetail; 
         <input ref={inputRef} type="file" accept={ACCEPT} className="sr-only" tabIndex={-1} aria-hidden
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
         <Button ref={buttonRef} type="button" onClick={() => inputRef.current?.click()} disabled={busy}>
-          {busy ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
           Upload the other side&rsquo;s revised version
         </Button>
       </div>
@@ -170,7 +170,7 @@ function RevisionUpload({ contract: c, buttonRef }: { contract: ContractDetail; 
       )}
       {(state.kind === "done" || analyzing) && (
         <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ai-ink)]" aria-live="polite">
-          {analyzing ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <CheckCircle2 size={14} />}
+          {analyzing ? <Loader2 size={16} className="animate-spin motion-reduce:animate-none" /> : <CheckCircle2 size={16} />}
           {analyzing ? "Sonar is reading the new version and re-checking it against the matrix…" : `${state.kind === "done" ? state.name : "The new version"} is checked. See the results below.`}
         </p>
       )}

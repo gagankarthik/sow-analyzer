@@ -6,6 +6,10 @@ import { ChevronRight } from "@/components/ui/icons";
 import { useContracts, useGovernMe } from "@/lib/govern/queries";
 import { CONTRACT_VIEWS } from "@/lib/govern/views";
 import { cn } from "@/lib/utils";
+import { ListPanel } from "@/components/ds/Panel";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const NUMBER = new Intl.NumberFormat("en-US");
 
 /* Shortcuts into the Contracts dashboard: the views people open most, with
    the same live counts the dashboard's Views panel shows. */
@@ -26,29 +30,30 @@ export function ViewsCard() {
   }, [data, me, now]);
 
   return (
-    <section aria-labelledby="views-card-title" className="rounded-xl border border-border bg-card shadow-xs">
-      <header className="flex items-baseline justify-between gap-3 px-5 pb-2 pt-4">
-        <h2 id="views-card-title" className="text-base font-semibold text-foreground">Your views</h2>
-        <Link href="/contracts?view=all" className="text-sm font-medium text-[var(--brand-primary-700)] hover:underline">All contracts</Link>
-      </header>
-      <ul className="px-2 pb-2">
+    <ListPanel
+      as="h2"
+      title="Your views"
+      aria-busy={isLoading || undefined}
+      actions={<Link href="/contracts?view=all" className="text-sm font-medium text-[var(--brand-primary-700)] hover:underline underline-offset-4">All contracts</Link>}
+    >
+      <ul>
         {rows.map(({ view, count }) => (
           <li key={view.id}>
             <Link
               href={`/contracts?view=${view.id}`}
-              className="group flex h-10 items-center justify-between gap-3 rounded-lg px-3 text-sm text-[var(--ink-700)] transition-colors hover:bg-[var(--ink-50)] hover:text-foreground"
+              className="group flex h-9 min-w-0 items-center justify-between gap-3 px-4 text-sm text-[var(--ink-700)] transition-colors duration-150 hover:bg-[var(--ink-50)] hover:text-foreground max-md:h-11"
             >
-              <span className="truncate">{view.label}</span>
-              <span className="flex items-center gap-2">
+              <span className="min-w-0 truncate">{view.label}</span>
+              <span className="flex shrink-0 items-center gap-2">
                 <span className={cn("tabular-nums", count > 0 ? "font-semibold text-foreground" : "text-[var(--ink-500)]")}>
-                  {isLoading ? "–" : count.toLocaleString()}
+                  {isLoading ? <Skeleton className="inline-block h-3 w-5 align-middle" /> : NUMBER.format(count)}
                 </span>
-                <ChevronRight size={14} aria-hidden className="text-[var(--ink-400)] transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                <ChevronRight size={16} aria-hidden className="text-[var(--ink-400)] rtl:rotate-180" />
               </span>
             </Link>
           </li>
         ))}
       </ul>
-    </section>
+    </ListPanel>
   );
 }

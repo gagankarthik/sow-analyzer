@@ -51,7 +51,7 @@ export function CaptureGapChecklist({ contract: created }: { contract: ContractD
   if (gaps.length === 0) {
     return patch.isSuccess ? (
       <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--success)]" aria-live="polite">
-        <CheckCircle2 size={14} />All details captured
+        <CheckCircle2 size={16} />All details captured
       </p>
     ) : null;
   }
@@ -111,12 +111,12 @@ export function CaptureGapChecklist({ contract: created }: { contract: ContractD
       )}
       {error && <p role="alert" className="mt-2 text-sm text-[var(--danger)] [overflow-wrap:anywhere]">{error}</p>}
       {patch.isSuccess && !hasInput && (
-        <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--success)]" aria-live="polite"><CheckCircle2 size={14} />Saved</p>
+        <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--success)]" aria-live="polite"><CheckCircle2 size={16} />Saved</p>
       )}
       {inline.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button type="submit" className="h-10 md:h-8" disabled={!hasInput || patch.isPending}>
-            {patch.isPending ? <><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Saving…</> : <>Save details<ArrowRight size={13} /></>}
+            {patch.isPending ? <><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Saving…</> : <>Save details<ArrowRight size={12} /></>}
           </Button>
         </div>
       )}

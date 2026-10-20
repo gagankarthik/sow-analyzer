@@ -68,7 +68,6 @@ export type EditionTerms = {
   anyParty: string
   /** Principal investigator, college and the Huron record (research fields). */
   researchFields: boolean
-  searchPlaceholder: string
   obligationsHint: string
 }
 
@@ -81,7 +80,6 @@ export const EDITION_TERMS: Record<Edition, EditionTerms> = {
     partyHint: "e.g. National Science Foundation",
     anyParty: "Any sponsor",
     researchFields: true,
-    searchPlaceholder: "Search by title, sponsor, PI or department",
     obligationsHint: "Royalty reports, payments, milestones and renewal deadlines",
   },
   workforce: {
@@ -92,7 +90,6 @@ export const EDITION_TERMS: Record<Edition, EditionTerms> = {
     partyHint: "e.g. Northwind Consulting",
     anyParty: "Any vendor",
     researchFields: false,
-    searchPlaceholder: "Search by title, vendor, owner or department",
     obligationsHint: "Deliverables, invoices, milestones and renewal deadlines",
   },
 }

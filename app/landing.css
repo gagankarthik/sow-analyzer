@@ -1317,3 +1317,17 @@
 @layer components {
   @media (max-width: 639px) { .lp-features .lp-show-panel { padding: 0.875rem; border-radius: 18px; } }
 }
+
+/* Sonar on the public site (menu card, homepage loop badge, /product
+   section): the same turning rainbow edge as the in-app Ask Sonar button, so
+   Sonar reads as the AI everywhere it appears. Unlayered on purpose: it must
+   win over the flat `.sonar-rainbow` default in globals.css. Each element sets
+   --sonar-fill to its own surface. */
+.lp .sonar-rainbow {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--sonar-fill, #fff), var(--sonar-fill, #fff)) padding-box,
+    conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;
+  animation: sonar-ring 6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .lp .sonar-rainbow { animation: none; } }

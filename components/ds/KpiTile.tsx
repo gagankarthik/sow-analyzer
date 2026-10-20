@@ -5,10 +5,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { ArrowDown, ArrowRight, ArrowUp, Minus } from "@/components/ui/icons";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, CheckCircle2, Minus } from "@/components/ui/icons";
+import { SkeletonLine } from "./skeletons";
 import { formatValue, isUnknown, type FormatOptions } from "./format";
-import { TONE_DOT, TONE_TEXT, resolveTone, type ToneInput } from "./tone";
+import { TONE_TEXT, resolveTone, type ToneInput } from "./tone";
 import { Value } from "./Value";
 
 /* ─── Delta ──────────────────────────────────────────────────────── */
@@ -42,7 +42,7 @@ export function Delta({ value, format = { kind: "percent" }, goodWhen = "up", pe
   const spoken = `${dir === "flat" ? "No change" : `${dir === "up" ? "Up" : "Down"} ${formatValue(Math.abs(value), format)}`}${period ? ` ${period}` : ""}${judgement === "good" ? ", an improvement" : judgement === "bad" ? ", a decline" : ""}`;
   return (
     <span className={cn("inline-flex items-center gap-1 text-caption font-medium tabular-nums", TONE_TEXT[tone], className)}>
-      <Icon size={12} strokeWidth={2.25} aria-hidden />
+      <Icon size={12} aria-hidden />
       <span aria-hidden>{text}</span>
       {period && <span aria-hidden className="font-normal text-fg-tertiary">{period}</span>}
       <span className="sr-only">{spoken}</span>
@@ -53,7 +53,7 @@ export function Delta({ value, format = { kind: "percent" }, goodWhen = "up", pe
 /* ─── KpiTile ────────────────────────────────────────────────────── */
 
 export type KpiTileProps = {
-  /** What the number counts, in plain words: "Contracts waiting on your organization". */
+  /** What the number counts, in plain words: "Waiting on you". */
   label: string;
   /** A number (formatted with `format`), null/undefined for unknown, or a node. */
   value: number | null | undefined | React.ReactNode;
@@ -65,21 +65,40 @@ export type KpiTileProps = {
   sparkline?: React.ReactNode;
   /** One short line of context: "12 have no value yet". */
   footnote?: React.ReactNode;
-  /** Meaning of the number; shows as a small marker by the label. Default: none. */
+  /**
+   * Meaning of the number. Neutral by default (UI_SPEC section 5): only
+   * caution / blocked colour the VALUE (it needs action), and ok colours the
+   * note; each shows an icon beside the note, so colour is never alone.
+   */
   tone?: ToneInput;
   /** Makes the whole tile a link to the detail behind the number. */
   href?: string;
   /** Decorative icon at the top-right. */
   icon?: React.ReactNode;
-  /** `hero` = the one focal number on a page (larger value). */
+  /** `hero` = the one focal number on a page (32px instead of 24px). */
   emphasis?: "default" | "hero";
   loading?: boolean;
   className?: string;
 };
 
+const TILE_FRAME =
+  "relative flex h-full min-w-0 flex-col rounded-container border border-border-default bg-surface-raised px-4 py-3";
+
+/** Value colour + note colour + note icon for a tone that carries meaning. */
+function tileTone(tone: ToneInput | undefined) {
+  if (!tone) return null;
+  const t = resolveTone(tone);
+  if (t === "blocked" || t === "caution") {
+    return { value: TONE_TEXT[t], note: TONE_TEXT[t], Icon: AlertTriangle };
+  }
+  if (t === "ok") return { value: "text-fg-primary", note: TONE_TEXT.ok, Icon: CheckCircle2 };
+  return null;
+}
+
 /**
- * One headline number: label, value, optional delta, sparkline and
- * footnote. With `href` the whole tile is a link (one tab stop).
+ * One headline number (UI_SPEC section 3, summary tiles): 1px border, 8px
+ * radius, label 12px muted, value 24px tabular (32px for the one hero),
+ * optional delta and note. With `href` the whole tile is one link.
  */
 export function KpiTile({
   label,
@@ -97,26 +116,31 @@ export function KpiTile({
   className,
 }: KpiTileProps) {
   const isNumeric = typeof value === "number" || value === null || value === undefined;
-  const t = tone ? resolveTone(tone) : null;
+  const t = tileTone(tone);
 
   const body = (
-    <div className="@container flex min-w-0 flex-col">
-      <div className="flex items-start justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2 text-body font-medium text-fg-secondary">
-          {t && <span aria-hidden className={cn("size-2 shrink-0 rounded-full", TONE_DOT[t])} />}
-          <span className="min-w-0">{label}</span>
-        </span>
-        {icon && <span aria-hidden className="shrink-0 text-fg-tertiary [&_svg]:size-4">{icon}</span>}
-      </div>
+    <>
+      <span className="flex min-w-0 items-center justify-between gap-2 text-caption font-medium text-fg-tertiary">
+        <span className="min-w-0 truncate">{label}</span>
+        {icon && <span aria-hidden className="shrink-0 [&_svg]:size-3.5">{icon}</span>}
+        {href && !icon && (
+          <ArrowRight
+            size={12}
+            aria-hidden
+            className="shrink-0 text-fg-disabled transition-colors duration-(--duration-fast) group-hover:text-fg-link rtl:rotate-180"
+          />
+        )}
+      </span>
 
       {loading ? (
-        <Skeleton className="mt-3 h-8 w-28" />
+        <SkeletonLine className="mt-1" text={cn("font-semibold tracking-tight", emphasis === "hero" ? "text-4xl" : "text-3xl")} width="w-24" />
       ) : (
-        <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span
             className={cn(
-              "min-w-0 font-semibold tracking-tight text-fg-primary [overflow-wrap:anywhere]",
-              emphasis === "hero" ? "text-headline @[280px]:text-display" : "text-title @[220px]:text-headline",
+              "min-w-0 font-semibold tabular-nums tracking-tight [overflow-wrap:anywhere]",
+              emphasis === "hero" ? "text-4xl" : "text-3xl",
+              t?.value ?? "text-fg-primary",
             )}
           >
             {isNumeric ? (
@@ -126,41 +150,65 @@ export function KpiTile({
             )}
           </span>
           {delta && <Delta {...delta} />}
-        </div>
+        </span>
       )}
 
       {sparkline && !loading && (
-        <div aria-hidden className="mt-3 h-8 min-w-0">
+        <span aria-hidden className="mt-2 block h-8 min-w-0">
           {sparkline}
-        </div>
+        </span>
       )}
-      {footnote && <p className="mt-2 text-caption text-fg-tertiary">{footnote}</p>}
-    </div>
+      {footnote && (
+        <span className={cn("mt-1 flex min-w-0 items-start gap-1 text-caption", t?.note ?? "text-fg-tertiary")}>
+          {t && <t.Icon size={12} aria-hidden className="mt-0.5 shrink-0" />}
+          <span className="line-clamp-2 min-w-0">{footnote}</span>
+        </span>
+      )}
+    </>
   );
-
-  const frame =
-    "relative block min-w-0 rounded-container border border-border-default bg-surface-raised p-4 shadow-raised md:p-5";
 
   if (href) {
     return (
       <Link
         href={href}
         className={cn(
-          frame,
-          "group transition-colors duration-(--duration-fast) hover:border-[var(--brand-primary-300)] hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+          TILE_FRAME,
+          "group transition-colors duration-(--duration-fast) hover:border-border-strong hover:bg-surface-hover",
           className,
         )}
       >
         {body}
-        <ArrowRight
-          size={14}
-          aria-hidden
-          className="absolute end-4 bottom-4 text-fg-tertiary opacity-0 transition-opacity duration-(--duration-fast) group-hover:opacity-100 group-focus-visible:opacity-100 rtl:rotate-180 md:end-5 md:bottom-5"
-        />
       </Link>
     );
   }
-  return <div className={cn(frame, className)}>{body}</div>;
+  return <div aria-busy={loading || undefined} className={cn(TILE_FRAME, className)}>{body}</div>;
+}
+
+/* ─── SummaryTiles ───────────────────────────────────────────────── */
+
+/**
+ * The summary row: at most 4 KpiTiles (UI_SPEC section 3), two per row on
+ * phones, four from lg. Renders a labelled list so the figures are grouped
+ * for assistive tech.
+ */
+export function SummaryTiles({
+  items,
+  label = "Summary",
+  className,
+}: {
+  items: (KpiTileProps & { key?: string })[];
+  label?: string;
+  className?: string;
+}) {
+  return (
+    <ul aria-label={label} className={cn("grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4", className)}>
+      {items.slice(0, 4).map(({ key, ...tile }) => (
+        <li key={key ?? tile.label} className="min-w-0">
+          <KpiTile {...tile} />
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /* ─── StatGroup ──────────────────────────────────────────────────── */
@@ -192,7 +240,7 @@ export function StatGroup({
     <dl
       className={cn(
         "grid min-w-0 grid-cols-1 divide-y divide-border-subtle min-[480px]:grid-cols-2 min-[480px]:divide-y-0 lg:flex lg:divide-x lg:rtl:divide-x-reverse",
-        bordered && "rounded-container border border-border-default bg-surface-raised shadow-raised",
+        bordered && "rounded-container border border-border-default bg-surface-raised",
         className,
       )}
     >

@@ -20,7 +20,7 @@
  *  - Mutations: every write invalidates the list plus that document's queries.
  */
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
   useQuery,
   useQueries,
@@ -99,10 +99,12 @@ function syncDependents(qc: QueryClient, prev: ApiDocument[] | undefined, next: 
   }
 }
 
-export function useDocuments(): UseQueryResult<ApiDocument[]> {
+/** `enabled: false` holds the request back (cached data is still returned). */
+export function useDocuments(options: { enabled?: boolean } = {}): UseQueryResult<ApiDocument[]> {
   const qc = useQueryClient();
   return useQuery({
     queryKey: documentKeys.all,
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const next = await listDocuments();
       syncDependents(qc, qc.getQueryData<ApiDocument[]>(documentKeys.all), next);
@@ -180,27 +182,35 @@ export function useClassifications(docs: ApiDocument[]): {
   readyCount: number;
 } {
   const ready = useMemo(() => docs.filter((d) => d.status === "READY"), [docs]);
-  const results = useQueries({
+  // Stable per `ready`, so TanStack reuses the combined result between renders
+  // and only rebuilds it when an answer changes.
+  const combine = useCallback(
+    (results: { data?: ApiClassification; dataUpdatedAt: number; isLoading: boolean; isError: boolean }[]) => {
+      const m = new Map<string, ApiClassification>();
+      results.forEach((q, i) => {
+        if (q.data) m.set(ready[i].docId, q.data);
+      });
+      return {
+        byDoc: m,
+        version: results.map((q) => q.dataUpdatedAt).join(","),
+        loadingCount: results.filter((q) => q.isLoading).length,
+        failedCount: results.filter((q) => q.isError && !q.data).length,
+      };
+    },
+    [ready],
+  );
+  // `combine` folds the N queries into one result that keeps its identity
+  // until an answer actually changes, so N arriving answers don't each
+  // re-render the page and redo its aggregates.
+  const { byDoc, version, loadingCount, failedCount } = useQueries({
     queries: ready.map((d) => ({
       queryKey: documentKeys.classification(d.docId),
       queryFn: () => getClassification(d.docId),
       staleTime: ANALYSIS_STALE_MS,
       retry: retryTransient,
     })),
+    combine,
   });
-  const version = results.map((q) => q.dataUpdatedAt).join(",");
-  const loadingCount = results.filter((q) => q.isLoading).length;
-  const failedCount = results.filter((q) => q.isError && !q.data).length;
-  const byDoc = useMemo(() => {
-    const m = new Map<string, ApiClassification>();
-    ready.forEach((d, i) => {
-      const data = results[i]?.data;
-      if (data) m.set(d.docId, data);
-    });
-    return m;
-    // `version` stands in for `results`, whose identity changes every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, version]);
   return { byDoc, version, loadingCount, failedCount, readyCount: ready.length };
 }
 

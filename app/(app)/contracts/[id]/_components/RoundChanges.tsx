@@ -7,6 +7,7 @@
 
 import { useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowRight, CheckCircle2 } from "@/components/ui/icons";
 import { TierBadge } from "@/components/govern/primitives";
@@ -71,14 +72,30 @@ export function RoundChanges({ contract: c, versions }: { contract: ContractDeta
       {!ready ? (
         <p className="text-sm text-[var(--ink-600)]">The comparison appears when Sonar has finished reading the new version.</p>
       ) : diff.isLoading ? (
-        <div className="flex flex-col gap-2"><Skeleton className="h-20 rounded-lg" /><Skeleton className="h-20 rounded-lg" /></div>
+        <SkeletonRegion label="the changes" className="flex flex-col gap-3">
+          <SkeletonLine text="text-sm" width="w-64" />
+          <ul className="flex flex-col gap-3">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="flex flex-col gap-3 border-t border-border pt-4 first:border-t-0 first:pt-0">
+                <span className="flex items-center gap-2">
+                  <SkeletonLine text="text-sm font-semibold" width="w-40" className="flex-1" />
+                  <Skeleton className="h-6 w-20 rounded-pill" />
+                </span>
+                <span className="flex flex-col">
+                  <SkeletonLine text="text-sm" width="w-full" />
+                  <SkeletonLine text="text-sm" width={i % 2 ? "w-3/5" : "w-4/5"} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </SkeletonRegion>
       ) : diff.isError ? (
         <p className="text-sm text-[var(--ink-600)]">
           Couldn&rsquo;t compare the two versions right now.{" "}
           <button type="button" onClick={() => diff.refetch()} className="font-semibold text-[var(--brand-primary-600)] underline-offset-2 hover:underline">Try again</button>
         </p>
       ) : classified.length === 0 ? (
-        <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-700)]"><CheckCircle2 size={15} className="text-[var(--success)]" />No wording changed between the two versions.</p>
+        <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-700)]"><CheckCircle2 size={16} className="text-[var(--success)]" />No wording changed between the two versions.</p>
       ) : (
         <>
           <p className="text-sm text-[var(--ink-700)]" aria-live="polite">

@@ -40,13 +40,13 @@ export function RuleCard({
           </p>
         </div>
         <div className={readOnly ? "hidden" : "flex shrink-0 flex-wrap items-center gap-2"}>
-          <Button variant="outline" size="lg" className="md:h-9" onClick={onEdit} disabled={reverting} aria-label={`Edit rule: ${rule.label}`}>
-            <Pencil size={14} />Edit
+          <Button variant="outline" onClick={onEdit} disabled={reverting} aria-label={`Edit rule: ${rule.label}`}>
+            <Pencil size={16} />Edit
           </Button>
           {rule.source === "custom" && (
-            <Button variant="ghost" size="lg" className="md:h-9" onClick={onRevert} disabled={reverting} aria-label={`${rule.hasBuiltInDefault ? "Revert to default" : "Remove rule"}: ${rule.label}`}>
+            <Button variant="ghost" onClick={onRevert} disabled={reverting} aria-label={`${rule.hasBuiltInDefault ? "Revert to default" : "Remove rule"}: ${rule.label}`}>
               {reverting
-                ? <><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />{rule.hasBuiltInDefault ? "Reverting…" : "Removing…"}</>
+                ? <><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />{rule.hasBuiltInDefault ? "Reverting…" : "Removing…"}</>
                 : rule.hasBuiltInDefault ? "Revert to default" : "Remove rule"}
             </Button>
           )}
@@ -71,9 +71,9 @@ export function RuleCard({
         <Item label="Acceptable fallback" className="md:col-span-7">{rule.fallback ?? <Unset>None set</Unset>}</Item>
         <Item label="Automatic check" className="md:col-span-5">
           {rule.hasAutomaticCheck ? (
-            <span className="inline-flex items-start gap-1.5"><CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[var(--success)]" />Yes. Clauses of this type are graded automatically.</span>
+            <span className="inline-flex items-start gap-1.5"><CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[var(--success)]" />Yes. Clauses of this type are graded automatically.</span>
           ) : (
-            <span className="inline-flex items-start gap-1.5"><Eye size={14} className="mt-0.5 shrink-0 text-[var(--info)]" />No. Clauses of this type are flagged for you to compare.</span>
+            <span className="inline-flex items-start gap-1.5"><Eye size={16} className="mt-0.5 shrink-0 text-[var(--info)]" />No. Clauses of this type are flagged for you to compare.</span>
           )}
         </Item>
         {hasPhrases && (

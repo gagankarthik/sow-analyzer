@@ -6,7 +6,7 @@
 // dashboard only has to place it.
 
 import { useMemo } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SummaryTilesSkeleton } from "@/components/ds/skeletons";
 import { RefreshCw } from "@/components/ui/icons";
 import { plural } from "@/lib/govern/labels";
 import { formatCompact, formatMoney, valueSummary, type Money } from "@/lib/govern/metrics";
@@ -30,14 +30,11 @@ function countHint(m: Money, what: string): string {
 
 export function ValueTiles() {
   const { data, isLoading, isError, error, refetch } = useContracts();
-  const summary = useMemo(() => (data ? valueSummary(data.contracts) : null), [data]);
+  const contracts = data?.contracts;
+  const summary = useMemo(() => (contracts ? valueSummary(contracts) : null), [contracts]);
 
   if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-busy="true" aria-label="Loading contract value">
-        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-[104px] rounded-xl" />)}
-      </div>
-    );
+    return <SummaryTilesSkeleton label="contract value" labels={["Current value", "Potential value", "Value held up"]} columns={3} />;
   }
   // 404 on the list itself means the Govern API is not deployed for this
   // workspace yet: there is no contract value to show, which is not a failure.
@@ -49,9 +46,9 @@ export function ValueTiles() {
         <button
           type="button"
           onClick={() => void refetch()}
-          className="inline-flex min-h-10 items-center gap-1 font-semibold text-[var(--brand-primary-600)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] sm:min-h-0"
+          className="inline-flex items-center gap-1 font-medium text-[var(--brand-primary-700)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-md:min-h-11"
         >
-          <RefreshCw size={13} aria-hidden />Try again
+          <RefreshCw size={12} aria-hidden />Try again
         </button>
       </p>
     );
@@ -59,10 +56,9 @@ export function ValueTiles() {
   if (!summary || data?.contracts.length === 0) return null;
 
   return (
-    <section aria-label="Contract value" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <section aria-label="Contract value" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       <StatTile
         href="/reports/value"
-        tone="brand"
         label="Current value"
         value={<span title={formatMoney(summary.current)}>{tileValue(summary.current)}</span>}
         hint={countHint(summary.current, "Signed and active")}

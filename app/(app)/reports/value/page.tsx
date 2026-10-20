@@ -25,13 +25,14 @@ import { ContractRow } from "../../home/_components/ContractRow";
 import { ExportButtons } from "../_components/ExportButtons";
 import { LegendDot, MoneySplitBar, VALUE_FILL } from "../_components/ReportCharts";
 import {
-  FilterBar, NoContracts, Panel, ReportError, ReportSkeleton, StatTile, TEXT_LINK, reviewerNameFrom,
+  FilterBar, NoContracts, Panel, ReportError, StatTile, TEXT_LINK, reviewerNameFrom,
 } from "../_components/ReportKit";
 import { amountIn, mainCurrency } from "../_components/report-data";
 import { BREAKDOWN_KEYS, BreakdownSection, breakdownName } from "./_components/BreakdownSection";
 import { SpendSection } from "./_components/SpendSection";
 import { IncomeSection, incomeByKind } from "./_components/IncomeSection";
 import { useLicensingIncome } from "./_components/licensing-income";
+import { ValueReportSkeleton } from "../_components/ReportSkeletons";
 
 /** Older waits read darker: one hue, light to dark. */
 const DAYS_RAMP = ["var(--viz-seq-3)", "var(--viz-seq-4)", "var(--viz-seq-5)", "var(--viz-seq-7)"];
@@ -40,7 +41,7 @@ const DIRECTIONS: Direction[] = ["incoming", "outgoing"];
 export default function ValueReportPage() {
   const router = useRouter();
   const { data, isLoading, isError, error, refetch } = useContracts();
-  const all = useMemo(() => data?.contracts ?? [], [data]);
+  const all = useMemo(() => data?.contracts ?? [], [data?.contracts]);
   const [filters, setFilters] = useState<ContractFilters>(NO_FILTERS);
   const options = useMemo(() => filterOptions(all), [all]);
   const deferredFilters = useDeferredValue(filters);
@@ -63,7 +64,7 @@ export default function ValueReportPage() {
   // Takeaways, in the main currency.
   const topStep = [...view.heldUp.byStage].sort((a, b) => amountIn(b.money, currency) - amountIn(a.money, currency))[0];
   const stepTakeaway = topStep && amountIn(topStep.money, currency) > 0
-    ? `Most pipeline value is in "${STAGE_LABEL[topStep.stage]}": ${formatCompact(amountIn(topStep.money, currency), currency)} across ${plural(topStep.count, "contract")}. Select a step to see them.`
+    ? `Most pipeline value is in "${STAGE_LABEL[topStep.stage]}": ${formatCompact(amountIn(topStep.money, currency), currency)} across ${plural(topStep.count, "contract")}.`
     : "No pipeline contract has a value yet.";
   const oldMoney = view.heldUp.byDays.filter((b) => b.band === "15-30" || b.band === "31+").reduce((s, b) => s + amountIn(b.money, currency), 0);
   const daysTakeaway = oldMoney > 0
@@ -153,17 +154,12 @@ export default function ValueReportPage() {
     <>
       <PageHeader
         back={{ href: "/reports", label: "Reports" }}
-        title="Contract value"
-        subtitle="What is signed, what is on the way, and what slow steps are holding up. Money in and money out are reported separately."
-        actions={
-          <>
-            <ExportButtons build={buildReport} disabled={!data || all.length === 0} />
-          </>
-        }
+        title="Value"
+        actions={<ExportButtons build={buildReport} disabled={!data || all.length === 0} />}
       />
-      <div className="app-container space-y-8 py-6 md:py-8">
+      <div className="app-container app-page">
         {isLoading ? (
-          <ReportSkeleton />
+          <ValueReportSkeleton />
         ) : isError && !data ? (
           <ReportError error={error} onRetry={() => void refetch()} what="the value report" />
         ) : all.length === 0 ? (
@@ -180,29 +176,29 @@ export default function ValueReportPage() {
               noun="contracts"
             />
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatTile label="Current" tone="brand" value={formatMoney(summary.current)} hint={`Signed and active · ${plural(summary.current.valued, "contract")}`} />
-              <StatTile label="Potential" tone="neutral" value={formatMoney(summary.potential)} hint={`Still in the pipeline · ${plural(summary.potential.valued, "contract")}`} />
-              <StatTile label="Held up" tone={summary.heldUp.valued > 0 ? "warning" : "neutral"} value={formatMoney(summary.heldUp)} hint="Part of the potential: value past its step's target" href="/reports/bottlenecks" />
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatTile label="Current" value={formatMoney(summary.current)} hint={`Signed and active · ${plural(summary.current.valued, "contract")}`} />
+              <StatTile label="Potential" value={formatMoney(summary.potential)} hint={`Still in the pipeline · ${plural(summary.potential.valued, "contract")}`} />
+              <StatTile label="Held up" tone={summary.heldUp.valued > 0 ? "warning" : "neutral"} value={formatMoney(summary.heldUp)} hint="Past its step's target" href="/reports/bottlenecks" />
               <StatTile
                 label="No value yet"
                 tone={view.noValue.length > 0 ? "warning" : "neutral"}
                 value={view.noValue.length}
-                hint={view.noValue.length > 0 ? "Not in any total. Add their value." : "Every contract has a value"}
+                hint={view.noValue.length > 0 ? "Not in any total" : "Every contract has a value"}
                 href={view.noValue.length > 0 ? "#no-value" : undefined}
               />
             </div>
 
-            <Panel id="direction" title="Money in and money out" sub="Reported separately, never netted against each other.">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <Panel id="direction" title="Money in and money out">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:divide-x md:divide-border">
                 {DIRECTIONS.map((d) => {
                   const s = view.byDirection[d];
                   const cur = mainCurrency(s.current, s.potential);
                   const any = s.current.totals.length + s.potential.totals.length > 0;
                   return (
-                    <div key={d} className="min-w-0">
-                      <h3 className="text-base font-semibold text-foreground">{DIRECTION_LABEL[d]}</h3>
-                      <p className="text-sm text-[var(--ink-600)]">{DIRECTION_HINT[d]}</p>
+                    <div key={d} className="min-w-0 md:[&:not(:first-child)]:ps-6">
+                      <h3 className="text-sm font-semibold text-foreground">{DIRECTION_LABEL[d]}</h3>
+                      <p className="text-xs text-[var(--ink-600)]">{DIRECTION_HINT[d]}</p>
                       {any ? (
                         <>
                           <div className="mt-4">
@@ -220,7 +216,7 @@ export default function ValueReportPage() {
                           </dl>
                         </>
                       ) : (
-                        <p className="mt-4 text-base text-[var(--ink-600)]">No valued contracts.</p>
+                        <p className="mt-4 text-sm text-[var(--ink-600)]">No valued contracts.</p>
                       )}
                     </div>
                   );
@@ -278,11 +274,11 @@ export default function ValueReportPage() {
             </div>
 
             {byEdition(false, true) && (
-              <Panel id="spend" title="Vendor spend" sub="Signed vendor agreements by how the work is priced, and committed value against purchase orders.">
+              <Panel id="spend" title="Vendor spend">
                 <SpendSection contracts={contracts} currency={currency} />
               </Panel>
             )}
-            {byEdition(true, false) && <Panel id="licensing" title="Licensing income" sub="Upfront fees, milestones, royalties, equity and sublicense income from license and option agreements.">
+            {byEdition(true, false) && <Panel id="licensing" title="Licensing income">
               <IncomeSection
                 rows={income.rows}
                 currency={currency}
@@ -302,23 +298,24 @@ export default function ValueReportPage() {
 
             <Panel
               id="no-value"
-              title="Contracts with no value yet"
-              sub="These are left out of every total above. Open one and add its value so the totals are complete."
+              title="No value yet"
+              meta={view.noValue.length > 0 ? `${plural(view.noValue.length, "contract")} · not in any total` : undefined}
+              bodyClassName="p-0"
             >
               {view.noValue.length === 0 ? (
-                <p className="text-base text-[var(--ink-600)]">Every open or active contract has a value. The totals are complete.</p>
+                <p className="px-4 py-6 text-sm text-[var(--ink-600)]">Every open or active contract has a value. The totals are complete.</p>
               ) : (
-                <ul className="-mx-4 -my-4 divide-y divide-border md:-mx-6 md:-my-6">
+                <ul className="divide-y divide-border">
                   {view.noValue.map((c) => (
-                    <ContractRow key={c.contractId} c={c} reason="No value recorded yet. Add the value on the contract page." />
+                    <ContractRow key={c.contractId} c={c} reason="No value recorded" />
                   ))}
                 </ul>
               )}
             </Panel>
 
-            <p className="text-sm text-[var(--ink-600)]">
-              Bars and charts show {currency || "the main currency"} only; amounts in other currencies are listed in the figures and the downloads.{" "}
-              <Link href="/reports/trends" className={TEXT_LINK}>Value signed over time <ArrowRight size={14} /></Link>
+            <p className="text-xs text-[var(--ink-600)]">
+              Charts show {currency || "the main currency"} only; other currencies are in the figures and downloads.{" "}
+              <Link href="/reports/trends" className={TEXT_LINK}>Value signed over time <ArrowRight size={12} aria-hidden /></Link>
             </p>
           </>
         )}

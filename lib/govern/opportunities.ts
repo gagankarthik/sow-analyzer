@@ -65,8 +65,8 @@ export function findOpportunities(
     const over = late.reduce((s, c) => s + Math.max(0, c.daysInStage - (c.targetDays ?? 0)), 0)
     out.push({
       id: "past-target", kind: "time", weight: 90 + late.length,
-      figure: plural(over, "day"),
-      title: `${plural(late.length, "contract")} ${late.length === 1 ? "is" : "are"} past the step target`,
+      figure: `${plural(over, "day")} over`,
+      title: `${plural(late.length, "contract")} past the step target`,
       detail: `Together ${over === 1 ? "it is" : "they are"} ${plural(over, "day")} over target. Clearing the oldest first frees the most time.`,
       href: "/workflow", action: "Open the board",
     })
@@ -77,7 +77,7 @@ export function findOpportunities(
     out.push({
       id: "unassigned", kind: "time", weight: 70 + unassigned.length,
       figure: String(unassigned.length),
-      title: `${plural(unassigned.length, "contract")} ${unassigned.length === 1 ? "has" : "have"} no reviewer`,
+      title: `${plural(unassigned.length, "contract")} with no reviewer`,
       detail: "Nobody owns the next step, so the clock runs with no one acting. Assign a reviewer to start the review.",
       href: "/workflow", action: "Assign reviewers",
     })
@@ -90,7 +90,7 @@ export function findOpportunities(
     out.push({
       id: "biggest-queue", kind: "time", weight: 50 + avg,
       figure: `${avg} days`,
-      title: `Most waiting time sits with ${queue.label.toLowerCase()}`,
+      title: `Most waiting sits with ${queue.label.toLowerCase()}`,
       detail: `${plural(queue.count, "contract")} wait there ${avg} days on average. Agreeing a turnaround with them saves the most time across the board.`,
       href: "/reports/bottlenecks", action: "See bottlenecks",
     })
@@ -101,7 +101,7 @@ export function findOpportunities(
     out.push({
       id: "many-rounds", kind: "time", weight: 40 + manyRounds.length,
       figure: String(manyRounds.length),
-      title: `${plural(manyRounds.length, "contract")} needed three or more rounds of changes`,
+      title: `${plural(manyRounds.length, "contract")} took 3+ rounds`,
       detail: "Repeated send-backs usually come from the same few terms. Adding agreed fallbacks for them to the matrix shortens negotiation.",
       href: "/reports/trends", action: "See what causes changes",
     })
@@ -115,7 +115,7 @@ export function findOpportunities(
     out.push({
       id: "held-up", kind: "money", weight: 95,
       figure: formatCompact(heldUp, main.currency),
-      title: "Value is held up by delays",
+      title: "Value held up by delays",
       detail: `${formatCompact(heldUp, main.currency)} of pipeline value is in contracts past their target. Moving them to signature brings that money in sooner.`,
       href: "/reports/value", action: "See held-up value",
     })
@@ -127,7 +127,7 @@ export function findOpportunities(
     out.push({
       id: "obligations-overdue", kind: "money", weight: 100 + overdue.length,
       figure: String(overdue.length),
-      title: `${plural(overdue.length, "obligation")} ${overdue.length === 1 ? "is" : "are"} overdue`,
+      title: `${plural(overdue.length, "obligation")} overdue`,
       detail: `${amount > 0 ? `${formatCompact(amount, currency)} is attached to them. ` : ""}Late reports and payments can cost fees, interest or the relationship. Complete or reschedule them.`,
       href: "/obligations?view=overdue", action: "See overdue obligations",
     })
@@ -138,7 +138,7 @@ export function findOpportunities(
     out.push({
       id: "unverified", kind: "money", weight: 85 + unverified.length,
       figure: String(unverified.length),
-      title: `${plural(unverified.length, "obligation")} Sonar found ${unverified.length === 1 ? "needs" : "need"} checking`,
+      title: `${plural(unverified.length, "obligation")} to verify`,
       detail: "Confirm each against the agreement so due dates and amounts can be relied on for reminders and reports.",
       href: "/obligations", action: "Verify obligations",
     })
@@ -150,7 +150,7 @@ export function findOpportunities(
     out.push({
       id: "terms-ending", kind: "money", weight: 80 + ending.length,
       figure: String(ending.length),
-      title: `${plural(ending.length, "agreement")} ${ending.length === 1 ? "ends" : "end"} within 90 days`,
+      title: `${plural(ending.length, "agreement")} ending in 90 days`,
       detail: "Decide now whether to renew, renegotiate or let each lapse, while there is still time to use the notice window.",
       href: "/obligations?view=90", action: "Review term ends",
     })
@@ -163,7 +163,7 @@ export function findOpportunities(
     out.push({
       id: "payments-due", kind: "money", weight: 60 + payments.length,
       figure: amount > 0 ? formatCompact(amount, currency) : String(payments.length),
-      title: `${plural(payments.length, "milestone payment")} due in the next 30 days`,
+      title: `${plural(payments.length, "payment")} due in 30 days`,
       detail: "Planning them now avoids late-payment terms and keeps cash forecasts accurate.",
       href: "/obligations?view=30", action: "See payments due",
     })

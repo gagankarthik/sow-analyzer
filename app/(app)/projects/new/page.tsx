@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, AlertCircle, Loader2 } from "@/components/ui/icons";
 import { createProject } from "@/lib/projects-store";
+import { Panel } from "@/components/ds/Panel";
 
-const FIELD =
-  "h-11 border-[var(--ink-300)] bg-card text-base placeholder:text-[var(--ink-500)]";
+const FIELD = "bg-card placeholder:text-[var(--ink-500)]";
 
 export default function NewProjectPage() {
   const terms = useEditionTerms();
@@ -49,13 +49,14 @@ export default function NewProjectPage() {
         title={byEdition("New project", "New engagement")}
       />
 
-      <div className="app-container py-6 md:py-8">
+      <div className="app-container app-page">
         <form
           noValidate
           onSubmit={(e) => { e.preventDefault(); void create(); }}
-          className="max-w-xl rounded-xl border border-border bg-card p-4 shadow-xs sm:p-6"
+          className="max-w-xl"
         >
-          <div className="space-y-5">
+        <Panel as="h2" title="Details">
+          <div className="space-y-4">
             <div className="space-y-1.5">
               <label htmlFor="project-name" className="block text-sm font-medium text-foreground">
                 {byEdition("Project name", "Engagement name")} <span className="text-[var(--danger)]" aria-hidden="true">*</span>
@@ -74,8 +75,8 @@ export default function NewProjectPage() {
                 className={FIELD}
               />
               {nameError ? (
-                <p id="project-name-error" role="alert" className="flex items-center gap-1.5 text-xs font-medium text-[var(--danger)]">
-                  <AlertCircle size={13} className="shrink-0" />{byEdition("Enter a project name.", "Enter an engagement name.")}
+                <p id="project-name-error" role="alert" className="flex items-center gap-1.5 text-xs font-medium text-[var(--danger-fg)]">
+                  <AlertCircle size={12} aria-hidden className="shrink-0" />{byEdition("Enter a project name.", "Enter an engagement name.")}
                 </p>
               ) : (
                 <p id="project-name-hint" className="text-xs text-muted-foreground">
@@ -99,18 +100,19 @@ export default function NewProjectPage() {
           </div>
 
           {error && (
-            <p role="alert" className="mt-5 flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">
-              <AlertCircle size={15} className="mt-0.5 shrink-0" />
+            <p role="alert" className="mt-4 flex items-start gap-2 rounded-md border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2 text-sm text-[var(--danger-fg)]">
+              <AlertCircle size={16} aria-hidden className="mt-0.5 shrink-0" />
               <span className="min-w-0 break-words">{byEdition("The project was not created.", "The engagement was not created.")} {error}</span>
             </p>
           )}
 
-          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">{byEdition("You will own the project.", "You will own the engagement.")} You upload documents and invite people in the next step.</p>
-            <Button type="submit" size="lg" disabled={creating} className="w-full sm:w-auto">
-              {creating ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project…", "Creating engagement…")}</> : <>{byEdition("Create project", "Create engagement")} <ArrowRight size={15} /></>}
+          <div className="mt-4 flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-[var(--ink-600)]">{byEdition("You will own the project.", "You will own the engagement.")} Add documents and people next.</p>
+            <Button type="submit" disabled={creating} className="w-full sm:w-auto">
+              {creating ? <><Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project…", "Creating engagement…")}</> : <>{byEdition("Create project", "Create engagement")} <ArrowRight size={16} aria-hidden /></>}
             </Button>
           </div>
+        </Panel>
         </form>
       </div>
     </>

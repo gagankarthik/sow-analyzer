@@ -5,10 +5,11 @@ import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
+import { ChartSkeleton, PanelRowsSkeleton, PanelSkeleton, SkeletonLine, SkeletonText } from "@/components/ds/skeletons";
 import { DocLoadError } from "@/components/DocLoadError";
 import { Button } from "@/components/ui/button";
 import { SonarMark } from "@/components/ui/SonarMark";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ProcessingState } from "@/components/ProcessingState";
 import {
   ArrowRight, Files, XCircle, CheckCircle2, TrendingUp, ShieldAlert, AlertTriangle, Info, Sonar, FileText,
@@ -22,18 +23,18 @@ import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { RISK_LABEL } from "@/lib/chart-theme";
 import { clauseTypeLabel } from "@/lib/clause-categories";
 import { docValueOrNull, fmtMoney, persistedOf } from "@/lib/contract-value";
-import { formatDate } from "@/lib/format";
+import { displayTitle, formatDate } from "@/lib/format";
 import type { ApiClassification, ApiDocument, FindingSeverity, RiskLevel } from "@/lib/types";
 import { ALL, ListFilters, NoResults, type FilterGroup } from "../_components/ListFilters";
 
 type Project = ReturnType<typeof apiDocToProject>;
 
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode; rank: number }> = {
-  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={14} />, rank: 4 },
-  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={14} />, rank: 3 },
-  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={14} />, rank: 2 },
-  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={14} />, rank: 1 },
-  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={14} />, rank: 0 },
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={16} />, rank: 4 },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={16} />, rank: 3 },
+  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={16} />, rank: 2 },
+  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={16} />, rank: 1 },
+  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={16} />, rank: 0 },
 };
 
 const SEVERITY_ORDER: FindingSeverity[] = ["critical", "high", "medium", "low", "info"];
@@ -56,7 +57,7 @@ export default function ProjectInsightsPage() {
     [classification],
   );
 
-  if (isLoading) return <InsightsSkeleton />;
+  if (isLoading) return <ProjectRecordSkeleton section="insights" />;
   if (isError && errorStatus(error) === 404) return <NotFound />;
   // Only when there is nothing to show: a failed background refresh keeps the
   // last good data on screen instead of replacing the page with an error.
@@ -100,10 +101,10 @@ export default function ProjectInsightsPage() {
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
+      <div className="app-container space-y-6 py-5 md:py-6">
         {isFailed && (
           <div role="alert" className="flex items-start gap-3 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-4 md:px-5">
-            <XCircle size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+            <XCircle size={16} className="mt-0.5 shrink-0 text-[var(--danger)]" />
             <p className="text-base leading-relaxed text-[var(--ink-700)]"><span className="font-semibold text-[var(--danger)]">Processing failed.</span> Insights are unavailable.</p>
           </div>
         )}
@@ -111,13 +112,13 @@ export default function ProjectInsightsPage() {
 
         {/* KPI row: overall risk is the focal block */}
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-12">
-          <div className="flex flex-col rounded-xl bg-[var(--navy)] p-5 text-white sm:col-span-2 md:p-6 lg:col-span-4">
+          <div className="flex flex-col rounded-xl border border-border bg-card px-4 py-3 sm:col-span-2 lg:col-span-4">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold">Overall risk</h2>
-              <TrendingUp size={16} className="shrink-0 text-[var(--navy-foreground)]" />
+              <h2 className="text-xs font-medium text-[var(--ink-500)]">Overall risk</h2>
+              <TrendingUp size={12} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
             </div>
-            <div className={`mt-2 font-bold capitalize leading-none tracking-tight ${isReady && overallRisk ? "text-4xl" : "text-2xl"}`}>{!isReady ? "—" : overallRisk ?? "Not assessed"}</div>
-            <p className="mt-3 text-sm leading-relaxed text-[var(--navy-foreground)] lg:mt-auto lg:pt-4">
+            <div className="mt-1 text-3xl font-semibold capitalize leading-tight tracking-tight text-foreground">{!isReady ? "—" : overallRisk ?? "Not assessed"}</div>
+            <p className="mt-1 text-xs leading-relaxed text-[var(--ink-500)]">
               {isReady && !overallRisk ? "The analysis returned no overall risk level for this document." : "Sonar\u2019s assessment across every clause in this document."}
             </p>
           </div>
@@ -152,19 +153,19 @@ export default function ProjectInsightsPage() {
           <div className="flex items-start gap-3.5">
             <SonarMark size="md" tile className="hidden sm:inline-flex" />
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-semibold mb-1.5">Summary from the analysis</h2>
+              <h2 className="text-lg font-semibold mb-1.5">Sonar summary</h2>
               {summary ? (
                 <p className="max-w-[58ch] text-base leading-relaxed text-foreground">{summary}</p>
               ) : !isReady ? (
                 <p className="max-w-[58ch] text-base leading-relaxed text-[var(--ink-600)]">The summary appears once processing completes.</p>
               ) : classLoading ? (
-                <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
+                <SkeletonText lines={2} label="the summary" />
               ) : (
                 <p className="max-w-[58ch] text-base leading-relaxed text-[var(--ink-600)]">{classError ? "The summary couldn\u2019t be loaded." : "No summary was extracted for this document."}</p>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Button variant="ai" size="lg" className="md:h-9" onClick={toggleCopilot}><Sonar size={14} />Ask Sonar</Button>
-                <Button variant="outline" size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}><FileText size={14} />View clauses</Link></Button>
+                <Button variant="ai" size="lg" className="md:h-9" onClick={toggleCopilot}><Sonar size={16} />Ask Sonar</Button>
+                <Button variant="outline" size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}><FileText size={16} />View clauses</Link></Button>
               </div>
             </div>
           </div>
@@ -173,28 +174,28 @@ export default function ProjectInsightsPage() {
         {isReady && <DocInsightBlocks doc={doc} classification={classification} loading={classLoading} failed={classError && !classification} />}
 
         {/* Key findings returned by the analysis */}
-        <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4 md:px-6 md:py-5">
             <div className="flex min-w-0 items-center gap-2.5">
               <SonarMark size="sm" />
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold tracking-tight text-foreground">What did the analysis flag?</h2>
+                <h2 className="text-lg font-semibold tracking-tight text-foreground">Flagged by the analysis</h2>
                 <p className="mt-0.5 text-sm text-[var(--ink-600)]">Key findings from the analysis, most severe first.</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}>{showSow ? "Open SOW" : "Open clause analysis"}<ArrowRight size={14} /></Link></Button>
+              <Button size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}>{showSow ? "Open SOW" : "Open clause analysis"}<ArrowRight size={16} /></Link></Button>
             </div>
           </div>
 
           {!isReady ? (
             <div className="flex flex-col items-center px-4 py-10 text-center md:px-6">
-              <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]"><Sonar size={18} strokeWidth={1.5} /></span>
+              <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]"><Sonar size={16} /></span>
               <p className="mb-1 text-base font-semibold text-foreground">Insights appear once processing completes.</p>
               <p className="text-sm text-[var(--ink-600)]">Sonar is still analyzing this document.</p>
             </div>
           ) : !classification && classLoading ? (
-            <div className="space-y-3 p-4 md:px-6">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}</div>
+            <PanelRowsSkeleton rows={3} className="py-2" />
           ) : !classification ? (
             <div className="flex flex-col items-center px-4 py-10 text-center md:px-6">
               <p className="mb-1 text-base font-semibold text-foreground">Findings couldn&apos;t be loaded.</p>
@@ -203,7 +204,7 @@ export default function ProjectInsightsPage() {
             </div>
           ) : findings.length === 0 ? (
             <div className="flex flex-col items-center px-4 py-10 text-center md:px-6">
-              <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--success-soft)] text-[var(--success-fg)]"><CheckCircle2 size={18} /></span>
+              <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--success-soft)] text-[var(--success-fg)]"><CheckCircle2 size={16} /></span>
               <p className="mb-1 text-base font-semibold text-foreground">No key findings.</p>
               <p className="max-w-sm text-sm text-[var(--ink-600)]">The analysis of this document returned no key findings.</p>
             </div>
@@ -321,8 +322,12 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
   if (!classification && loading) {
     return (
       <div className="space-y-4 md:space-y-6" aria-busy="true">
-        <Skeleton className="h-48 rounded-xl" />
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2"><Skeleton className="h-56 rounded-xl" /><Skeleton className="h-56 rounded-xl" /></div>
+        <span role="status" className="sr-only">Loading clause detail</span>
+        <PanelSkeleton title="Clauses that need attention" rows={4} actions={false} />
+        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+          <PanelSkeleton padded actions={false}><ChartSkeleton height="h-40" /></PanelSkeleton>
+          <PanelSkeleton padded actions={false}><ChartSkeleton height="h-40" bars={5} /></PanelSkeleton>
+        </div>
       </div>
     );
   }
@@ -330,14 +335,14 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
   return (
     <>
       {/* Which clauses need attention first? */}
-      <section aria-labelledby="doc-attention" className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+      <section aria-labelledby="doc-attention" className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-border px-4 py-3.5 md:px-6">
-          <h2 id="doc-attention" className="text-lg font-semibold tracking-tight text-foreground">Which clauses need attention first?</h2>
-          <span className="text-sm tabular-nums text-muted-foreground">{classification ? `${attention.length} rated critical or high` : loading ? "Loading…" : "Not available"}</span>
+          <h2 id="doc-attention" className="text-lg font-semibold tracking-tight text-foreground">Clauses that need attention</h2>
+          <span className="text-sm tabular-nums text-muted-foreground">{classification ? `${attention.length} rated critical or high` : loading ? <SkeletonLine text="text-sm" width="w-32" className="inline-block" /> : "Not available"}</span>
         </div>
         {!classification ? (
           loading
-            ? <div className="space-y-3 p-4 md:p-6">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}</div>
+            ? <PanelRowsSkeleton rows={3} className="py-2" />
             : <p className="px-4 py-8 text-center text-sm text-[var(--ink-600)] md:px-6">Clause detail isn&apos;t available for this document.</p>
         ) : attention.length === 0 ? (
           <div className="flex flex-col items-center px-4 py-8 text-center md:px-6">
@@ -354,7 +359,7 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
                     <span className={`mt-0.5 shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${RISK_PILL[c.riskLevel as "critical" | "high"]}`}>{RISK_LABEL[c.riskLevel]}</span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="break-words text-base font-semibold text-foreground">{c.title || `Clause ${c.number}`}</span>
+                        <span className="break-words text-base font-semibold text-foreground">{displayTitle(c.title) || `Clause ${c.number}`}</span>
                         {c.number && <span className="font-mono text-xs text-muted-foreground">§{c.number}</span>}
                         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-[var(--ink-600)]">{clauseTypeLabel(c)}</span>
                       </span>
@@ -376,13 +381,13 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
 
       <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
         {/* Where does risk concentrate? */}
-        <section className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+        <section className="min-w-0 rounded-xl border border-border bg-card p-4 md:p-6">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 className="text-lg font-semibold tracking-tight text-foreground">Where does risk concentrate?</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">Risk by category</h2>
             <span className="text-sm tabular-nums text-muted-foreground">{classification ? `${rated.length} rated clause${rated.length === 1 ? "" : "s"} · ${categoryCount} categor${categoryCount === 1 ? "y" : "ies"}` : ""}</span>
           </div>
           {!classification ? (
-            loading ? <Skeleton className="h-40 rounded-lg" /> : <p className="text-sm text-[var(--ink-600)]">Clause detail isn&apos;t available for this document.</p>
+            loading ? <ChartSkeleton height="h-40" label="clause detail" /> : <p className="text-sm text-[var(--ink-600)]">Clause detail isn&apos;t available for this document.</p>
           ) : rated.length === 0 ? (
             <p className="text-sm text-[var(--ink-600)]">No clause in this document has a risk level.</p>
           ) : (
@@ -392,8 +397,8 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
         </section>
 
         {/* What money and dates does it state? */}
-        <section className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-          <h2 className="text-lg font-semibold mb-4 tracking-tight text-foreground">What money and dates does it state?</h2>
+        <section className="min-w-0 rounded-xl border border-border bg-card p-4 md:p-6">
+          <h2 className="text-lg font-semibold mb-4 tracking-tight text-foreground">Money and dates</h2>
           <dl className="divide-y divide-[var(--ink-100)] text-sm">
             <Fact label="Contract value" value={value !== null ? fmtMoney(value, currency) : null} note={value !== null && !currency ? "Currency not extracted" : undefined} />
             {(doc.docType === "AMENDMENT" || delta !== null) && (
@@ -421,16 +426,16 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
       </div>
 
       {/* What is missing? */}
-      <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+      <section className="rounded-xl border border-border bg-card p-4 md:p-6">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">What is missing?</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Missing clauses</h2>
           <span className="text-sm tabular-nums text-muted-foreground">{missing.length} item{missing.length === 1 ? "" : "s"}</span>
         </div>
         {missing.length === 0 ? (
           <p className="text-sm text-[var(--ink-600)]">Nothing: this document has a value, at least one date, parties and a risk assessment.</p>
         ) : (
           <ul className="space-y-1.5 text-sm text-[var(--ink-700)]">
-            {missing.map((m) => <li key={m} className="flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5 shrink-0 text-[var(--warning)]" /><span className="min-w-0">{m}</span></li>)}
+            {missing.map((m) => <li key={m} className="flex items-start gap-2"><AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" /><span className="min-w-0">{m}</span></li>)}
           </ul>
         )}
       </section>
@@ -462,13 +467,13 @@ function Stat({ label, value, hint, icon, tone = "neutral", className = "" }: {
   label: string; value: React.ReactNode; hint: string; icon: React.ReactNode; tone?: keyof typeof STAT_TONE; className?: string;
 }) {
   return (
-    <div className={`min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-5 ${className}`}>
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="text-base font-semibold leading-snug">{label}</h3>
-        <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${STAT_TONE[tone]}`}>{icon}</span>
+    <div className={`min-w-0 rounded-xl border border-border bg-card px-4 py-3 ${className}`}>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="min-w-0 truncate text-xs font-medium text-[var(--ink-500)]">{label}</h3>
+        <span aria-hidden className={`shrink-0 [&_svg]:size-3 ${tone === "neutral" ? "text-[var(--ink-500)]" : STAT_TONE[tone].split(" ")[1]}`}>{icon}</span>
       </div>
-      <div className="mt-2 break-words text-3xl font-semibold leading-none tabular-nums tracking-tight text-foreground">{value}</div>
-      <p className={`mt-2 text-sm first-letter:uppercase ${tone === "neutral" ? "text-muted-foreground" : STAT_TONE[tone].split(" ")[1]}`}>{hint}</p>
+      <div className="mt-1 break-words text-3xl font-semibold leading-tight tabular-nums tracking-tight text-foreground">{value}</div>
+      <p className={`mt-1 text-xs first-letter:uppercase ${tone === "neutral" ? "text-[var(--ink-500)]" : STAT_TONE[tone].split(" ")[1]}`}>{hint}</p>
     </div>
   );
 }
@@ -476,23 +481,10 @@ function Stat({ label, value, hint, icon, tone = "neutral", className = "" }: {
 function NotFound() {
   return (
     <div className="app-container py-20 flex flex-col items-center text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project not found</h1>
-      <p className="mt-2 text-base text-muted-foreground max-w-sm">This engagement may have been archived, or the link is out of date.</p>
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} /></span>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Document not found</h1>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">It may have been deleted, or the link is out of date.</p>
       <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-sm font-semibold transition-colors">Back to projects</Link>
     </div>
-  );
-}
-
-function InsightsSkeleton() {
-  return (
-    <>
-      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
-        <Skeleton className="h-28 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    </>
   );
 }

@@ -16,6 +16,7 @@ const MODULE_LABEL: Partial<Record<GovernFeature, { name: string; hint: string }
   notifications: { name: "Alerts", hint: "Tell people when something needs them" },
   integrations: { name: "Integrations", hint: "Connect your systems of record" },
   docusign: { name: "E-signature", hint: "Send agreements for signature" },
+  automations: { name: "Automations", hint: "Rules that nudge, escalate and assign on their own" },
 };
 
 export function ModulesChoice({ enabled, canEdit }: { enabled: string[] | null; canEdit: boolean }) {

@@ -11,27 +11,39 @@
  */
 
 import { EDITION_AGREEMENT_TYPES, EDITION_TERMS, editionHas, resolveEdition, type Edition, type EditionFeature, type EditionTerms } from "@/lib/edition";
-import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import { deleteDocument, isNotFound, isPermanentError, reprocessDocument } from "@/lib/api";
 import { resolveFeatures, type GovernFeature, type GovernFeatureFlags } from "./features";
 import { documentKeys } from "@/lib/queries/documents";
 import {
-  addBlocker, addObligation, createContract, listObligations, getCaptureReport, getContract, getTrends, getGovernMe, getMatrix, getMatrixVersion, getSyncLog,
+  addBlocker, addObligation, createContract, getContractActivity, listObligations, getCaptureReport, getContract, getTrends, getGovernMe, getMatrix, getMatrixVersion, getSyncLog,
   getUnmatchedContracts, getWorkflowSettings, importMatrix, listConnectors, listContracts,
   patchContract, removeContract, rescoreContract, runConnectorSync, runContractAction, saveConnector, saveIncome,
   saveMatrix, saveWorkflowSettings, updateBlocker, updateObligation,
+  bulkUpdateContracts, createView, deleteView, listGovernPeople, listViews, updateView,
+  createAutomation, deleteAutomation, listAutomations, testAutomation, updateAutomation,
+  addOrgAdmin, getGovernOrg, removeOrgAdmin,
 } from "./api";
+import { chunk, mergeBulkResponses } from "./bulk";
+import { mergeActivity } from "./activity";
+import { pollInterval, useGovernLive } from "./realtime-state";
 import type {
   AgreementType, BlockerInput, CaptureReport, Trends, Connector, ConnectorId, ConnectorInput, Contract, ContractAction,
-  ContractDetail, ContractPatch, GovernMe, IncomeItem, Matrix, MatrixImportRow, MatrixPlaybook,
+  ContractDetail, ContractPatch, GovernMe, GovernOrg, IncomeItem, Matrix, MatrixImportRow, MatrixPlaybook,
   MatrixVersionInfo, ObligationInput, SyncRun, WorkflowSettings, WorkflowSettingsInput,
+  BulkUpdateInput, DirectoryPerson, SavedView, SavedViewInput, SavedViewPatch, ViewModule,
+  Automation, AutomationInput, AutomationList,
 } from "./types";
 
 export const governKeys = {
-  contracts: (includeClosed: boolean) => ["govern", "contracts", includeClosed] as const,
+  // One cached list for every caller: open-only views filter it on the client,
+  // so a page that needs both never fetches the list twice.
+  contracts: () => ["govern", "contracts", "all"] as const,
   allContracts: ["govern", "contracts"] as const,
   contract: (id: string) => ["govern", "contract", id] as const,
+  /** Older activity pages, continuing from the detail's cursor (a new cursor starts over). */
+  activity: (id: string, cursor: string | null) => ["govern", "contract-activity", id, cursor] as const,
   matrix: ["govern", "matrix"] as const,
   matrixVersion: (v: number) => ["govern", "matrix", "version", v] as const,
   settings: ["govern", "settings"] as const,
@@ -39,9 +51,13 @@ export const governKeys = {
   syncLog: ["govern", "sync-log"] as const,
   unmatched: ["govern", "unmatched"] as const,
   me: ["govern", "me"] as const,
+  org: ["govern", "org"] as const,
   trends: (g: string, n: number) => ["govern", "trends", g, n] as const,
   capture: ["govern", "capture"] as const,
   obligations: ["govern", "obligations"] as const,
+  views: (module: ViewModule) => ["govern", "views", module] as const,
+  people: ["govern", "people"] as const,
+  automations: ["govern", "automations"] as const,
 };
 
 const MINUTE = 60_000;
@@ -52,14 +68,27 @@ function retryTransient(failureCount: number, error: Error): boolean {
 
 // ── Reads ──────────────────────────────────────────────────────────────────
 
-export function useContracts(includeClosed = false): UseQueryResult<{ contracts: Contract[]; generatedAt: string | null }> {
+/** States the open-only list leaves out (the server's TERMINAL_STATES). */
+const TERMINAL_STATES = new Set(["rejected", "closed"]);
+
+type ContractList = { contracts: Contract[]; generatedAt: string | null };
+
+function openOnly(d: ContractList): ContractList {
+  return { ...d, contracts: d.contracts.filter((c) => !TERMINAL_STATES.has(c.state)) };
+}
+
+export function useContracts(includeClosed = false): UseQueryResult<ContractList> {
+  const live = useGovernLive();
   return useQuery({
-    queryKey: governKeys.contracts(includeClosed),
-    queryFn: () => listContracts(includeClosed),
+    queryKey: governKeys.contracts(),
+    queryFn: () => listContracts(true),
+    select: includeClosed ? undefined : openOnly,
     staleTime: 15_000,
-    // Other people's changes show within half a minute; a person's own
-    // changes show at once (each mutation writes its result into the cache).
-    refetchInterval: 30_000,
+    // Other people's changes arrive over the real-time channel (lib/govern/realtime.ts);
+    // without it they show within a minute (the list call is heavy on the
+    // server). A person's own changes show at once: each mutation writes its
+    // result into the cache.
+    refetchInterval: pollInterval(live, MINUTE),
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     retry: retryTransient,
@@ -67,6 +96,7 @@ export function useContracts(includeClosed = false): UseQueryResult<{ contracts:
 }
 
 export function useContract(id: string): UseQueryResult<ContractDetail> {
+  const live = useGovernLive();
   return useQuery({
     queryKey: governKeys.contract(id),
     queryFn: () => getContract(id),
@@ -76,11 +106,43 @@ export function useContract(id: string): UseQueryResult<ContractDetail> {
     refetchInterval: (query) => {
       if (isPermanentError(query.state.error)) return false;
       const c = query.state.data as ContractDetail | undefined;
-      return c && c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED" ? 5_000 : MINUTE;
+      return c && c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED" ? 5_000 : pollInterval(live, MINUTE);
     },
     refetchOnWindowFocus: true,
     retry: retryTransient,
   });
+}
+
+/**
+ * The contract's timeline: the newest entries the detail carries, then older
+ * pages from GET /contracts/{id}/activity on "Show older". Nothing is fetched
+ * until then. An older API (no `activityCount`) sends up to 200 entries and
+ * no cursor: everything it has is shown and there is nothing older to load.
+ */
+export function useContractActivity(c: ContractDetail) {
+  const cursor = c.activityCount === undefined ? null : c.activityCursor ?? null;
+  const [started, setStarted] = useState(false);
+  const q = useInfiniteQuery({
+    queryKey: governKeys.activity(c.contractId, cursor),
+    queryFn: ({ pageParam }) => getContractActivity(c.contractId, pageParam, 50),
+    initialPageParam: cursor ?? "",
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: started && !!cursor,
+    staleTime: Infinity,    // the log is append-only: an older page never changes
+    retry: retryTransient,
+  });
+  const entries = useMemo(() => mergeActivity(c.activity, q.data?.pages), [c.activity, q.data]);
+  const hasOlder = !!cursor && (!q.data || q.hasNextPage);
+  return {
+    entries,
+    hasOlder,
+    loadingOlder: q.isFetching,
+    error: q.isError ? q.error : null,
+    loadOlder: () => {
+      if (!started) setStarted(true);
+      else void q.fetchNextPage();
+    },
+  };
 }
 
 export function useMatrix(): UseQueryResult<{ current: Matrix; versions: MatrixVersionInfo[] }> {
@@ -117,7 +179,34 @@ export function useUnmatchedContracts(): UseQueryResult<Contract[]> {
  *  obligations)? Leaders only view, comment and approve; the server enforces
  *  this too. True while the role is loading, so editors never see a flash. */
 export function useCanEditContracts(): boolean {
-  return useGovernMe().data?.role !== "leader";
+  const me = useGovernMe().data;
+  return !(me?.isLeader ?? me?.role === "leader");
+}
+
+/** The organization (tenant): its creator, admins, and — for admins — its members. */
+export function useGovernOrg(): UseQueryResult<GovernOrg> {
+  return useQuery({ queryKey: governKeys.org, queryFn: getGovernOrg, staleTime: MINUTE, retry: retryTransient });
+}
+
+function useOrgAdminMutation<T>(fn: (input: T, rev: number) => Promise<GovernOrg>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: T) => fn(input, qc.getQueryData<GovernOrg>(governKeys.org)?.rev ?? 0),
+    onSuccess: (org) => {
+      qc.setQueryData(governKeys.org, org);
+      void qc.invalidateQueries({ queryKey: governKeys.me });
+    },
+    // A stale rev (someone else changed the admins) or any refusal: show the server's list again.
+    onError: () => void qc.invalidateQueries({ queryKey: governKeys.org }),
+  });
+}
+
+export function useAddOrgAdmin() {
+  return useOrgAdminMutation<string>((email, rev) => addOrgAdmin(email, rev));
+}
+
+export function useRemoveOrgAdmin() {
+  return useOrgAdminMutation<string>((sub, rev) => removeOrgAdmin(sub, rev));
 }
 
 export function useGovernMe(): UseQueryResult<GovernMe> {
@@ -215,13 +304,10 @@ export function useRemoveContract() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { docIds } = await removeContract(id);
-      for (const docId of docIds) {
-        try {
-          await deleteDocument(docId);
-        } catch (e) {
-          if (!isNotFound(e)) throw e;   // already gone
-        }
-      }
+      // The documents are independent: delete them in parallel.
+      await Promise.all(docIds.map((docId) => deleteDocument(docId).catch((e) => {
+        if (!isNotFound(e)) throw e;   // already gone is fine
+      })));
       return id;
     },
     onSuccess: (id) => {
@@ -380,6 +466,9 @@ export function useTrends(granularity: "month" | "week" = "month", periods = 12)
   return useQuery({
     queryKey: governKeys.trends(granularity, periods),
     queryFn: () => getTrends(granularity, periods),
+    // Switching Month / Week keeps the current charts on screen until the
+    // new series arrives, instead of flashing the skeleton.
+    placeholderData: keepPreviousData,
     staleTime: 5 * MINUTE,
     retry: retryTransient,
   });
@@ -387,4 +476,132 @@ export function useTrends(granularity: "month" | "week" = "month", periods = 12)
 
 export function useCaptureReport(): UseQueryResult<CaptureReport> {
   return useQuery({ queryKey: governKeys.capture, queryFn: getCaptureReport, staleTime: MINUTE, retry: retryTransient });
+}
+
+// ── Saved views ────────────────────────────────────────────────────────────
+
+/** Saved views for a list page. A failure (an API without /views yet) is
+ *  reported, never thrown: the page keeps its presets and local filters. */
+export function useSavedViews(module: ViewModule): UseQueryResult<SavedView[]> {
+  return useQuery({
+    queryKey: governKeys.views(module),
+    queryFn: () => listViews(module),
+    staleTime: MINUTE,
+    refetchOnWindowFocus: true,
+    retry: retryTransient,
+  });
+}
+
+function useWriteView(module: ViewModule) {
+  const qc = useQueryClient();
+  return (view: SavedView) => {
+    qc.setQueryData<SavedView[]>(governKeys.views(module), (list) => {
+      const rest = (list ?? []).filter((v) => v.id !== view.id);
+      return [...rest, view];
+    });
+    void qc.invalidateQueries({ queryKey: governKeys.views(module) });
+  };
+}
+
+export function useCreateView(module: ViewModule) {
+  const write = useWriteView(module);
+  return useMutation({ mutationFn: (input: Omit<SavedViewInput, "module">) => createView({ ...input, module }), onSuccess: write });
+}
+
+export function useUpdateView(module: ViewModule) {
+  const write = useWriteView(module);
+  return useMutation({ mutationFn: ({ id, patch }: { id: string; patch: SavedViewPatch }) => updateView(id, patch), onSuccess: write });
+}
+
+export function useDeleteView(module: ViewModule) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteView(id),
+    onSuccess: ({ id }) => {
+      qc.setQueryData<SavedView[]>(governKeys.views(module), (list) => (list ?? []).filter((v) => v.id !== id));
+      void qc.invalidateQueries({ queryKey: governKeys.views(module) });
+    },
+  });
+}
+
+// ── People and bulk update ─────────────────────────────────────────────────
+
+export function useGovernPeople(enabled = true): UseQueryResult<DirectoryPerson[]> {
+  return useQuery({ queryKey: governKeys.people, queryFn: listGovernPeople, enabled, staleTime: 5 * MINUTE, retry: retryTransient });
+}
+
+/** Updates any number of contracts: requests of at most 200 run one after
+ *  another; the answer lists every contract that could not be changed. */
+export function useBulkUpdateContracts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: BulkUpdateInput) => {
+      const parts: Parameters<typeof mergeBulkResponses>[0] = [];
+      for (const ids of chunk(input.contractIds)) {
+        try {
+          parts.push({ ok: true, ids, response: await bulkUpdateContracts({ ...input, contractIds: ids }) });
+        } catch (e) {
+          parts.push({ ok: false, ids, message: e instanceof Error ? e.message : "The request failed." });
+        }
+      }
+      return mergeBulkResponses(parts);
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: governKeys.allContracts });
+      void qc.invalidateQueries({ queryKey: ["govern", "contract"] });
+    },
+  });
+}
+
+// ── Automations ────────────────────────────────────────────────────────────
+
+export function useAutomations(): UseQueryResult<AutomationList> {
+  return useQuery({ queryKey: governKeys.automations, queryFn: listAutomations, staleTime: 30_000, retry: retryTransient });
+}
+
+/** Put a saved rule in the cached list (new or changed), then re-read. */
+function useWriteAutomation() {
+  const qc = useQueryClient();
+  return (rule: Automation) => {
+    qc.setQueryData<AutomationList>(governKeys.automations, (list) => {
+      if (!list) return list;
+      const exists = list.automations.some((r) => r.id === rule.id);
+      const automations = exists ? list.automations.map((r) => (r.id === rule.id ? rule : r)) : [...list.automations, rule];
+      return { ...list, automations, count: automations.length };
+    });
+    void qc.invalidateQueries({ queryKey: governKeys.automations });
+  };
+}
+
+export function useCreateAutomation() {
+  const write = useWriteAutomation();
+  return useMutation({ mutationFn: (input: AutomationInput) => createAutomation(input), onSuccess: write });
+}
+
+export function useUpdateAutomation() {
+  const write = useWriteAutomation();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<AutomationInput> & { rev?: number } }) => updateAutomation(id, patch),
+    onSuccess: write,
+  });
+}
+
+export function useDeleteAutomation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteAutomation(id),
+    onSuccess: ({ id }) => {
+      qc.setQueryData<AutomationList>(governKeys.automations, (list) =>
+        list ? { ...list, automations: list.automations.filter((r) => r.id !== id), count: list.count - 1 } : list);
+      void qc.invalidateQueries({ queryKey: governKeys.automations });
+    },
+  });
+}
+
+/** Dry run: never cached, never changes anything. */
+export function useTestAutomation() {
+  return useMutation({
+    mutationFn: ({ id, contractId, rule }: { id: string | null; contractId: string; rule?: AutomationInput }) =>
+      testAutomation(id, contractId, rule),
+  });
 }

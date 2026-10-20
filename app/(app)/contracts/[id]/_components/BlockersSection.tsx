@@ -43,7 +43,7 @@ export function BlockersPreview({ contract: c, onSeeAll }: { contract: ContractD
         <ul className="flex flex-col gap-2">
           {open.slice(0, PREVIEW_COUNT).map((b) => (
             <li key={b.id} className="flex items-start gap-2.5 text-sm leading-relaxed">
-              <ShieldAlert size={15} className="mt-0.5 shrink-0 text-[var(--warning)]" />
+              <ShieldAlert size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" />
               <span className="min-w-0 text-foreground">
                 {b.text}
                 {b.office && <span className="text-[var(--ink-600)]"> · {OFFICE_LABEL[b.office]}</span>}
@@ -54,7 +54,7 @@ export function BlockersPreview({ contract: c, onSeeAll }: { contract: ContractD
       )}
       <button type="button" onClick={onSeeAll} className="inline-flex w-fit items-center gap-1 rounded text-sm font-semibold text-[var(--brand-primary-600)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
         {open.length > PREVIEW_COUNT ? `See all ${open.length} items` : open.length ? "See details and suggested language" : "Add an item"}
-        <ArrowRight size={13} />
+        <ArrowRight size={12} />
       </button>
     </section>
   );
@@ -71,8 +71,7 @@ export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
   return (
     <Section
       title="What blocks signature"
-      description="Sonar lists every clause outside your matrix. Close an item when the other side fixes it; add your own for anything else."
-      actions={canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={14} />Add an item</Button>}
+      actions={canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={16} />Add an item</Button>}
     >
       {adding && <BlockerForm contract={c} onDone={() => setAdding(false)} />}
 
@@ -82,7 +81,7 @@ export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
           No open items. Nothing in the matrix review is holding up signature.
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">{open.map((b) => <BlockerRow key={b.id} blocker={b} contract={c} />)}</ul>
+        <ul className="divide-y divide-border rounded-lg border border-border bg-card">{open.map((b) => <BlockerRow key={b.id} blocker={b} contract={c} />)}</ul>
       )}
 
       {closed.length > 0 && (
@@ -93,19 +92,31 @@ export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
             onClick={() => setShowClosed((v) => !v)}
             className="inline-flex w-fit items-center gap-1.5 rounded text-sm font-semibold text-[var(--ink-700)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
           >
-            <ChevronDown size={14} className={cn("transition-transform motion-reduce:transition-none", showClosed && "rotate-180")} />
+            <ChevronDown size={16} className={cn("transition-transform motion-reduce:transition-none", showClosed && "rotate-180")} />
             {plural(closed.length, "closed item")}
           </button>
-          {showClosed && <ul className="flex flex-col gap-3">{closed.map((b) => <BlockerRow key={b.id} blocker={b} contract={c} />)}</ul>}
+          {showClosed && <ul className="divide-y divide-border rounded-lg border border-dashed border-[var(--ink-300)] bg-[var(--panel)]">{closed.map((b) => <BlockerRow key={b.id} blocker={b} contract={c} />)}</ul>}
         </div>
       )}
     </Section>
   );
 }
 
+/** A blocker's text as a short title and the rest: Sonar writes
+ *  "<what> is missing; the matrix requires: <rule>", so the part before the
+ *  first "; " is the title and the rule waits behind "Details". */
+export function splitBlockerText(text: string): { title: string; detail: string | null } {
+  const i = text.indexOf("; ");
+  if (i <= 0) return { title: text, detail: null };
+  const detail = text.slice(i + 2).trim();
+  return { title: text.slice(0, i).trim(), detail: detail ? detail.charAt(0).toUpperCase() + detail.slice(1) : null };
+}
+
 function BlockerRow({ blocker: b, contract: c }: { blocker: Blocker; contract: ContractDetail }) {
   const canEdit = useCanEditContracts();
   const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const { title, detail } = splitBlockerText(b.text);
   const update = useUpdateBlocker(c.contractId);
   const onError = useGovernErrorToast();
   const isOpen = b.status === "open";
@@ -120,14 +131,16 @@ function BlockerRow({ blocker: b, contract: c }: { blocker: Blocker; contract: C
     }
   }
 
-  if (editing) return <li><BlockerForm contract={c} blocker={b} onDone={() => setEditing(false)} /></li>;
+  if (editing) return <li className="p-4"><BlockerForm contract={c} blocker={b} onDone={() => setEditing(false)} /></li>;
+  const hasMore = !!detail || (isOpen && !!b.suggestedLanguage);
+  const detailsId = `blocker-${b.id}-details`;
 
   return (
-    <li className={cn("flex flex-col gap-3 rounded-xl border bg-card p-4", isOpen ? "border-border" : "border-dashed border-[var(--ink-300)] bg-[var(--panel)]")}>
+    <li className="flex flex-col gap-3 px-4 py-3">
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
-        {isOpen ? <ShieldAlert size={17} className="mt-0.5 shrink-0 text-[var(--warning)]" /> : <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-[var(--success)]" />}
+        {isOpen ? <ShieldAlert size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" /> : <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[var(--success)]" />}
         <div className="min-w-0 flex-1">
-          <p className={cn("break-words text-base font-medium leading-snug", isOpen ? "text-foreground" : "text-[var(--ink-600)] line-through decoration-[var(--ink-300)]")}>{b.text}</p>
+          <p title={b.text} className={cn("line-clamp-2 break-words text-sm font-medium leading-snug", isOpen ? "text-foreground" : "text-[var(--ink-600)] line-through decoration-[var(--ink-300)]")}>{title}</p>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--ink-600)]">
             {b.source === "sonar"
               ? <span className="inline-flex items-center gap-1 font-medium text-[var(--ai-ink)]"><Sonar size={12} />Found by Sonar</span>
@@ -135,21 +148,33 @@ function BlockerRow({ blocker: b, contract: c }: { blocker: Blocker; contract: C
             {clause && <span>{clause}</span>}
             {b.office && <span className="inline-flex items-center gap-1"><Building2 size={12} />{OFFICE_LABEL[b.office]}</span>}
             {!isOpen && b.closedAt && <span>Closed {formatDate(b.closedAt)}{b.closedBy ? ` by ${personName(b.closedBy)}` : ""}</span>}
+            {hasMore && (
+              <button type="button" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} aria-controls={detailsId}
+                className="inline-flex min-h-11 items-center gap-1 font-medium text-[var(--brand-primary-700)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:min-h-0">
+                <ChevronDown size={12} className={cn("transition-transform motion-reduce:transition-none", expanded && "rotate-180")} />
+                {expanded ? "Hide details" : "Details"}
+              </button>
+            )}
           </p>
         </div>
         <div className={cn("flex shrink-0 items-center gap-1.5", !canEdit && "hidden")}>
           {isOpen && (
             <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(true)} aria-label={`Edit: ${b.text}`}>
-              <Pencil size={13} />Edit
+              <Pencil size={12} />Edit
             </Button>
           )}
           <Button type="button" variant="outline" size="sm" disabled={update.isPending} onClick={() => setStatus(isOpen ? "closed" : "open")}>
-            {update.isPending ? <Loader2 size={13} className="animate-spin" /> : isOpen ? <CheckCircle2 size={13} /> : <RefreshCw size={13} />}
+            {update.isPending ? <Loader2 size={12} className="animate-spin" /> : isOpen ? <CheckCircle2 size={12} /> : <RefreshCw size={12} />}
             {isOpen ? "Close item" : "Reopen"}
           </Button>
         </div>
       </div>
-      {isOpen && b.suggestedLanguage && <SuggestedLanguage text={b.suggestedLanguage} />}
+      {expanded && (
+        <div id={detailsId} className="flex flex-col gap-3 ps-7">
+          {detail && <p className="max-w-[70ch] text-sm leading-relaxed text-[var(--ink-700)]">{detail}</p>}
+          {isOpen && b.suggestedLanguage && <SuggestedLanguage text={b.suggestedLanguage} />}
+        </div>
+      )}
     </li>
   );
 }
@@ -227,7 +252,7 @@ function BlockerForm({ contract: c, blocker, onDone }: { contract: ContractDetai
       <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone} disabled={pending}>Cancel</Button>
         <Button type="submit" disabled={!text.trim() || pending}>
-          {pending && <Loader2 size={13} className="animate-spin" />}{blocker ? "Save changes" : "Add item"}
+          {pending && <Loader2 size={12} className="animate-spin" />}{blocker ? "Save changes" : "Add item"}
         </Button>
       </div>
     </form>

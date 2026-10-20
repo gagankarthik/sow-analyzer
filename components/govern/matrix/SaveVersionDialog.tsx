@@ -45,7 +45,7 @@ export function SaveVersionDialog({
           </DialogHeader>
           {error && (
             <p role="alert" className="flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2 text-sm text-foreground">
-              <AlertCircle size={15} className="mt-0.5 shrink-0 text-[var(--danger)]" /><span className="[overflow-wrap:anywhere]">{error}</span>
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-[var(--danger)]" /><span className="[overflow-wrap:anywhere]">{error}</span>
             </p>
           )}
           <Field label="What changed" htmlFor={`${uid}-note`} error={noteError} required>
@@ -55,9 +55,9 @@ export function SaveVersionDialog({
             <Input id={`${uid}-date`} type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="sm:w-48" />
           </Field>
           <DialogFooter>
-            <Button type="button" variant="outline" size="lg" className="md:h-9" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-            <Button type="submit" size="lg" className="md:h-9" disabled={saving}>
-              {saving ? <><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Saving…</> : "Save new version"}
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? <><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Saving…</> : "Save new version"}
             </Button>
           </DialogFooter>
         </form>

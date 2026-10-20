@@ -5,10 +5,11 @@ import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
+import { CardListSkeleton } from "@/components/ds/skeletons";
 import { DocLoadError } from "@/components/DocLoadError";
 import { ProcessingState } from "@/components/ProcessingState";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import {
@@ -78,7 +79,7 @@ export default function AmendmentsPage() {
     return n;
   }, [changes]);
 
-  if (isLoading) return <AmendmentsSkeleton />;
+  if (isLoading) return <ProjectRecordSkeleton section="amendments" />;
   if (isError && errorStatus(error) === 404) return <NotFound />;
   // Only when there is nothing to show: a failed background refresh keeps the
   // last good data on screen instead of replacing the page with an error.
@@ -112,12 +113,12 @@ export default function AmendmentsPage() {
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
-      <div className="app-container py-6 md:py-8">
+      <div className="app-container py-5 md:py-6">
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
           <main className="min-w-0 space-y-4 md:space-y-6 lg:col-span-8">
             {isFailed && (
               <div role="alert" className="flex items-start gap-3 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-4 md:px-5">
-                <XCircle size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+                <XCircle size={16} className="mt-0.5 shrink-0 text-[var(--danger)]" />
                 <p className="text-base leading-relaxed text-[var(--ink-700)]"><span className="font-semibold text-[var(--danger)]">Processing failed.</span> Amendment data is unavailable.</p>
               </div>
             )}
@@ -125,49 +126,49 @@ export default function AmendmentsPage() {
 
             {/* Parent relationship */}
             {isAmendment && doc.parentDocId && (
-              <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between md:p-5">
+              <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
                 <div className="flex min-w-0 items-start gap-3">
-                  <AlertCircle size={18} className="mt-0.5 shrink-0 text-[var(--info)]" />
+                  <AlertCircle size={16} className="mt-0.5 shrink-0 text-[var(--info)]" />
                   <div className="min-w-0">
                     <h2 className="text-lg font-semibold text-foreground">Amendment relationship</h2>
                     <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">This document is an <Badge variant="neutral" size="sm" className="text-xs">AMENDMENT</Badge> to a parent contract.</p>
                   </div>
                 </div>
-                <Link href={`/projects/${doc.parentDocId}`} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><GitBranch size={14} />View parent document<ArrowRight size={13} strokeWidth={2.25} /></Link>
+                <Link href={`/projects/${doc.parentDocId}`} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><GitBranch size={16} />View parent document<ArrowRight size={12} /></Link>
               </section>
             )}
 
             {/* Change analysis + changes */}
             {isReady && (
               diffLoading ? (
-                <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
+                <CardListSkeleton count={4} minHeight="min-h-24" label="amendment changes" />
               ) : diffFailed ? (
                 <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-4 py-12 text-center">
                   <h3 className="text-base font-semibold mb-1 text-foreground">Couldn&apos;t load the change analysis</h3>
                   <p className="mb-5 max-w-sm break-words text-sm leading-relaxed text-[var(--ink-600)]">{diffError instanceof Error ? diffError.message : "The request failed."}</p>
-                  <Button variant="outline" size="lg" onClick={() => refetchDiff()}><RefreshCw size={14} />Try again</Button>
+                  <Button variant="outline" size="lg" onClick={() => refetchDiff()}><RefreshCw size={16} />Try again</Button>
                 </div>
               ) : changes.length > 0 ? (
                 <>
                   {/* Focal block: how much changed, and how badly */}
-                  <section aria-labelledby="change-analysis" className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
+                  <section aria-labelledby="change-analysis" className="rounded-xl border border-border bg-card p-4">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <h2 id="change-analysis" className="text-lg font-semibold">Sonar change analysis</h2>
-                      <span className="text-sm text-[var(--navy-foreground)]">vs parent, v{doc.latestVersion}</span>
+                      <h2 id="change-analysis" className="text-base font-semibold text-foreground">Sonar change analysis</h2>
+                      <span className="text-xs text-[var(--ink-600)]">vs parent, v{doc.latestVersion}</span>
                     </div>
                     <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-start md:gap-8">
                       <div className="shrink-0">
-                        <div className="text-4xl font-bold leading-none tabular-nums tracking-tight">{changes.length}</div>
-                        <div className="mt-1 text-sm text-[var(--navy-foreground)]">clause change{changes.length === 1 ? "" : "s"}</div>
+                        <div className="text-3xl font-semibold leading-none tabular-nums tracking-tight text-foreground">{changes.length}</div>
+                        <div className="mt-1 text-xs text-[var(--ink-600)]">clause change{changes.length === 1 ? "" : "s"}</div>
                       </div>
-                      <p className="max-w-[58ch] text-base leading-relaxed text-white">{diff?.impactSummary || "No written summary was returned for these changes."}</p>
+                      <p className="max-w-[64ch] text-sm leading-relaxed text-foreground">{diff?.impactSummary || "No written summary was returned for these changes."}</p>
                     </div>
                     {/* Counts per band, straight from the scored changes — no overall "risk" verdict is invented. */}
-                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--navy-border)] pt-4 text-sm">
-                      {bands.high > 0 && <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--danger-soft)] px-2.5 py-1 font-semibold text-[var(--danger)]"><ShieldAlert size={13} />{bands.high} high impact</span>}
-                      {bands.medium > 0 && <span className="inline-flex items-center rounded-full bg-[var(--navy-accent)] px-2.5 py-1 font-medium text-white">{bands.medium} medium impact</span>}
-                      {bands.low > 0 && <span className="inline-flex items-center rounded-full bg-[var(--navy-accent)] px-2.5 py-1 font-medium text-white">{bands.low} low impact</span>}
-                      {bands.unscored > 0 && <span className="inline-flex items-center rounded-full bg-[var(--navy-accent)] px-2.5 py-1 font-medium text-white">{bands.unscored} not scored</span>}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs">
+                      {bands.high > 0 && <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--danger-soft)] px-2 py-0.5 font-medium text-[var(--danger)]"><ShieldAlert size={12} aria-hidden />{bands.high} high impact</span>}
+                      {bands.medium > 0 && <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-medium text-[var(--ink-700)]">{bands.medium} medium impact</span>}
+                      {bands.low > 0 && <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-medium text-[var(--ink-700)]">{bands.low} low impact</span>}
+                      {bands.unscored > 0 && <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-medium text-[var(--ink-700)]">{bands.unscored} not scored</span>}
                     </div>
                   </section>
 
@@ -175,7 +176,7 @@ export default function AmendmentsPage() {
                   <div className="space-y-3">
                     <h2 className="text-lg font-semibold tracking-tight text-foreground">Clause changes</h2>
                     <ListFilters
-                      className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+                      className="mb-3"
                       search={query}
                       onSearch={setQuery}
                       placeholder="Search changes"
@@ -202,7 +203,7 @@ export default function AmendmentsPage() {
                       ? "This amendment introduced no detected clause changes versus its parent, or the parent could not be matched."
                       : "No change analysis exists for this document. Upload an amendment that references it and Sonar compares the clauses."}
                   </p>
-                  <Button size="lg" asChild><Link href="/projects/new"><Plus size={14} />Upload amendment</Link></Button>
+                  <Button size="lg" asChild><Link href="/projects/new"><Plus size={16} />Upload amendment</Link></Button>
                 </div>
               )
             )}
@@ -210,7 +211,7 @@ export default function AmendmentsPage() {
 
           {/* Sidebar */}
           <aside className="grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 md:gap-6 lg:col-span-4 lg:grid-cols-1">
-            <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-5">
               <h3 className="text-base font-semibold mb-3 text-foreground">Document info</h3>
               <ul className="divide-y divide-[var(--ink-100)]">
                 <InfoRow label="Type"><DocTypeBadge type={doc.docType} /></InfoRow>
@@ -224,7 +225,7 @@ export default function AmendmentsPage() {
             </div>
 
             {isReady && changes.length > 0 && (
-              <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
+              <div className="rounded-xl border border-border bg-card p-4 md:p-5">
                 <h3 className="text-base font-semibold mb-3 text-foreground">Impact breakdown</h3>
                 <div className="space-y-3">
                   {([["High impact", "70 or more", bands.high, "bg-[var(--danger)]"], ["Medium impact", "40 to 69", bands.medium, "bg-[var(--warning)]"], ["Low impact", "under 40", bands.low, "bg-[var(--success)]"], ["Not scored", "", bands.unscored, "bg-[var(--ink-400)]"]] as const).filter(([label, , n]) => label !== "Not scored" || n > 0).map(([label, range, n, bar]) => (
@@ -251,7 +252,7 @@ function ChangeCard({ change, isExpanded, onToggle }: { change: ApiDiffChange; i
   const band = bandOf(change.impactScore);
   const im = BAND_META[band];
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <button type="button" onClick={onToggle} aria-expanded={isExpanded} className="flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
@@ -287,19 +288,10 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 function NotFound() {
   return (
     <div className="app-container py-20 flex flex-col items-center text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project not found</h1>
-      <p className="mt-2 text-base text-muted-foreground max-w-sm">This engagement may have been archived, or the link is out of date.</p>
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} /></span>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Document not found</h1>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">It may have been deleted, or the link is out of date.</p>
       <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-sm font-semibold transition-colors">Back to projects</Link>
     </div>
-  );
-}
-
-function AmendmentsSkeleton() {
-  return (
-    <>
-      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
-      <div className="app-container py-6 md:py-8"><div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12"><div className="space-y-4 lg:col-span-8"><Skeleton className="h-36 rounded-xl" /><Skeleton className="h-48 rounded-xl" /></div><div className="space-y-4 lg:col-span-4"><Skeleton className="h-48 rounded-xl" /><Skeleton className="h-36 rounded-xl" /></div></div></div>
-    </>
   );
 }

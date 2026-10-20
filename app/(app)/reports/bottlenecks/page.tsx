@@ -22,23 +22,24 @@ import { useContracts } from "@/lib/govern/queries";
 import { ExportButtons } from "../_components/ExportButtons";
 import { SlaLegend, StageFlow, WaitingBars, stageTable, waitingTable } from "../_components/ReportCharts";
 import {
-  FilterBar, NoContracts, Panel, ReportError, ReportSkeleton, StatTile, reviewerNameFrom,
+  FilterBar, NoContracts, Panel, ReportError, StatTile, reviewerNameFrom,
 } from "../_components/ReportKit";
 import { useStageTargets } from "../_components/report-data";
 import { useHashFocus, type ReportFocus } from "../_components/use-hash-focus";
 import { OpenContractsTable, sortContracts, useContractSort } from "./_components/OpenContractsTable";
+import { BottlenecksSkeleton } from "../_components/ReportSkeletons";
 
-/** "In review is the slowest step: 14 days on average against a 10-day target." */
+/** "Slowest: In review · 14 days avg vs a 10-day target" */
 function stageTakeaway(stages: StageQueue[], targets: Partial<Record<Stage, number | null>>): string {
   const withWait = stages.filter((s) => s.averageDays !== null);
   if (withWait.length === 0) return "No contract is in a step right now.";
   const ratio = (s: StageQueue) => (targets[s.stage] ? (s.averageDays ?? 0) / (targets[s.stage] as number) : 0);
   const over = withWait.filter((s) => ratio(s) > 1).sort((a, b) => ratio(b) - ratio(a))[0];
   if (over) {
-    return `"${STAGE_LABEL[over.stage]}" is furthest behind: the contracts there now have waited ${daysLabel(Math.round(over.averageDays ?? 0))} on average, against a ${targets[over.stage]}-day target.`;
+    return `Slowest: ${STAGE_LABEL[over.stage]} · ${daysLabel(Math.round(over.averageDays ?? 0))} avg vs a ${targets[over.stage]}-day target`;
   }
   const slowest = [...withWait].sort((a, b) => (b.averageDays ?? 0) - (a.averageDays ?? 0))[0];
-  return `Every step is within its target on average. The longest is "${STAGE_LABEL[slowest.stage]}" at ${daysLabel(Math.round(slowest.averageDays ?? 0))}.`;
+  return `All steps on target · longest: ${STAGE_LABEL[slowest.stage]}, ${daysLabel(Math.round(slowest.averageDays ?? 0))}`;
 }
 
 /** "Most are waiting on the other side (9). The longest waits are with internal office (avg 18 days)." */
@@ -58,7 +59,7 @@ function focusLabel(f: NonNullable<ReportFocus>): string {
 
 export default function BottlenecksPage() {
   const { data, isLoading, isError, error, refetch } = useContracts();
-  const all = useMemo(() => data?.contracts ?? [], [data]);
+  const all = useMemo(() => data?.contracts ?? [], [data?.contracts]);
   const [filters, setFilters] = useState<ContractFilters>(NO_FILTERS);
   const [focus, setFocus] = useHashFocus();
   const { sort, toggle } = useContractSort();
@@ -140,17 +141,12 @@ export default function BottlenecksPage() {
     <>
       <PageHeader
         back={{ href: "/reports", label: "Reports" }}
-        title="Where contracts are stuck"
-        subtitle="Every contract not yet signed, by step and by who has it, against the target days your admins set."
-        actions={
-          <>
-            <ExportButtons build={buildReport} disabled={!data || all.length === 0} />
-          </>
-        }
+        title="Bottlenecks"
+        actions={<ExportButtons build={buildReport} disabled={!data || all.length === 0} />}
       />
-      <div className="app-container space-y-8 py-6 md:py-8">
+      <div className="app-container app-page">
         {isLoading ? (
-          <ReportSkeleton />
+          <BottlenecksSkeleton />
         ) : isError && !data ? (
           <ReportError error={error} onRetry={() => void refetch()} what="the bottleneck report" />
         ) : all.length === 0 ? (
@@ -168,7 +164,7 @@ export default function BottlenecksPage() {
             />
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <StatTile label="Waiting for signature" value={open.length} tone="brand" />
+              <StatTile label="Waiting for signature" value={open.length} />
               {/* On time is quiet: only overdue and late take a colour. */}
               <StatTile label="Overdue" value={view.overdue} tone={view.overdue > 0 ? "danger" : "neutral"} hint={view.overdue > 0 ? "Well past the step's target" : "None"} />
               <StatTile label="Running late" value={view.late} tone={view.late > 0 ? "warning" : "neutral"} hint="Past the step's target" />
@@ -187,14 +183,14 @@ export default function BottlenecksPage() {
             )}
 
             {open.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-10 text-center text-base text-[var(--ink-600)]">
+              <p className="rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-10 text-center text-sm text-[var(--ink-600)]">
                 {!isFiltering(filters) ? "Nothing is waiting for signature. Every contract is signed, rejected or closed." : "No open contract matches these filters."}
               </p>
             ) : (
               <>
                 <Panel
                   id="stages"
-                  title="How long each step takes"
+                  title="Time by step"
                   sub={stageTakeaway(view.stages, targets)}
                   table={stageTable(view.stages, targets)}
                 >
@@ -211,7 +207,7 @@ export default function BottlenecksPage() {
                   <Panel
                     id="waiting"
                     className="lg:col-span-7"
-                    title="Who it is waiting on"
+                    title="Waiting on"
                     sub={waitingTakeaway(view.waiting)}
                     action={<SlaLegend />}
                     table={waitingTable(view.waiting, open)}
@@ -223,27 +219,28 @@ export default function BottlenecksPage() {
                       onSelect={(k) => setFocus(focus?.kind === "waiting" && focus.value === k ? null : { kind: "waiting", value: k })}
                     />
                   </Panel>
-                  <Panel id="who" className="lg:col-span-5" title="Who exactly" sub={byEdition("Each person, office or sponsor holding contracts, most first.", "Each person, office or vendor holding contracts, most first.")}>
+                  <Panel id="who" className="lg:col-span-5" title={byEdition("Holders: people, offices, sponsors", "Holders: people, offices, vendors")}>
                     <WhoList queues={view.waiting} />
                   </Panel>
                 </div>
 
                 <Panel
                   id="open-contracts"
-                  title={focus ? `${focusLabel(focus)}: ${plural(view.listed.length, "contract")}` : `Every open contract (${view.listed.length})`}
-                  sub="Select a contract to see what is blocking it."
+                  title={focus ? focusLabel(focus) : "Open contracts"}
+                  meta={plural(view.listed.length, "contract")}
+                  bodyClassName="p-0"
                   action={focus && (
                     <button
                       type="button"
                       onClick={() => setFocus(null)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--brand-primary-300)] bg-[var(--brand-primary-50)] px-3 text-sm font-medium text-[var(--brand-primary-700)] hover:bg-[var(--brand-primary-100)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--brand-primary-600)] bg-card px-2.5 text-xs font-medium text-[var(--brand-primary-700)] hover:bg-[var(--brand-primary-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-md:h-11"
                     >
-                      Show all open contracts <X size={14} aria-hidden />
+                      Show all <X size={12} aria-hidden />
                     </button>
                   )}
                 >
                   {view.listed.length === 0
-                    ? <p className="py-6 text-center text-base text-[var(--ink-600)]">No open contract is in this group.</p>
+                    ? <p className="px-4 py-6 text-center text-sm text-[var(--ink-600)]">No open contract is in this group.</p>
                     : <OpenContractsTable contracts={view.listed} sort={sort} onSort={toggle} />}
                 </Panel>
               </>
@@ -259,14 +256,14 @@ function WhoList({ queues }: { queues: ReturnType<typeof waitingQueues> }) {
   const rows = queues.flatMap((q) => q.who.map((w) => ({ ...w, group: q.label, key: `${q.kind}-${w.label}` })))
     .sort((a, b) => b.count - a.count || b.averageDays - a.averageDays)
     .slice(0, 12);
-  if (rows.length === 0) return <p className="text-base text-[var(--ink-600)]">Nobody is holding a contract.</p>;
+  if (rows.length === 0) return <p className="text-sm text-[var(--ink-600)]">Nobody is holding a contract.</p>;
   return (
     <ul className="divide-y divide-border">
       {rows.map((r) => (
         <li key={r.key} className="flex items-baseline justify-between gap-3 py-2.5">
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-base font-medium text-foreground" title={r.label}>{r.label}</span>
-            <span className="block text-sm text-[var(--ink-600)]">{r.group}</span>
+            <span className="block truncate text-sm font-medium text-foreground" title={r.label}>{r.label}</span>
+            <span className="block text-xs text-[var(--ink-600)]">{r.group}</span>
             {/* Who holds the most, at a glance: the bar is their share of the longest queue. */}
             <ProgressMeter className="mt-1.5 max-w-xs" size="sm" hideLabel label={`${r.label} holds ${r.count}`} value={r.count} max={rows[0].count} valueText={String(r.count)} tone="brand" />
           </span>

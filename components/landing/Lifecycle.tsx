@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp } from "@/components/ui/icons";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
 import {
   IconApprove,
@@ -71,10 +71,10 @@ export function Lifecycle() {
             )}
           </ol>
           <span className="lp-loop-turn lp-loop-turn-right" aria-hidden="true">
-            <ChevronDown size={16} strokeWidth={2} />
+            <ChevronDown size={16} />
           </span>
           <span className="lp-loop-turn lp-loop-turn-left" aria-hidden="true">
-            <ChevronUp size={16} strokeWidth={2} />
+            <ChevronUp size={16} />
           </span>
           <span className="lp-loop-core sonar-rainbow" aria-hidden="true">
             <SonarMark size="sm" />
@@ -87,7 +87,7 @@ export function Lifecycle() {
         <div className="mt-10 flex justify-center">
           <Link href="/product" className="lp-btn lp-btn-dark lp-btn-lg">
             Explore the platform
-            <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+            <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
         </div>

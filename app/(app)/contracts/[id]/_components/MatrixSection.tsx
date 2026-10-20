@@ -50,17 +50,17 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
 
   const recheckButton = (
     <Button type="button" variant={outdated ? "default" : "outline"} onClick={recheck} disabled={rescore.isPending || analyzing}>
-      {rescore.isPending ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+      {rescore.isPending ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
       Re-check against current matrix
     </Button>
   );
 
   if (!review) {
     return (
-      <Section title="Matrix review" description="How each clause compares with your accepted positions.">
+      <Section title="Matrix review">
         <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-[var(--ink-300)] p-6">
           {analyzing ? (
-            <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-700)]"><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />Sonar is still reading this agreement. The review appears here when it is done.</p>
+            <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-700)]"><Loader2 size={16} className="animate-spin motion-reduce:animate-none" />Sonar is still reading this agreement. The review appears here when it is done.</p>
           ) : (
             <>
               <p className="text-sm text-[var(--ink-700)]">This agreement has not been checked against the matrix yet.</p>
@@ -77,7 +77,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
   const blocking = blockingCount(review.counts);
 
   return (
-    <Section title="Matrix review" description="How each clause compares with your accepted positions." actions={recheckButton}>
+    <Section title="Matrix review" actions={recheckButton}>
       {/* Summary infographic */}
       <div className="grid grid-cols-1 gap-5 rounded-xl border border-border bg-card p-5 lg:grid-cols-[minmax(0,1fr)_16rem]">
         <div className="flex min-w-0 flex-col gap-4">
@@ -187,7 +187,7 @@ function ClauseRow({ clause: cl }: { clause: MatrixClauseResult }) {
           {/* The office only matters when the clause is outside the standard. */}
           {cl.escalationOffice && cl.tier !== "within" && cl.tier !== "fallback" && (
             <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-700)]">
-              <Building2 size={14} />Review by {OFFICE_LABEL[cl.escalationOffice]} if it is not changed
+              <Building2 size={16} />Review by {OFFICE_LABEL[cl.escalationOffice]} if it is not changed
             </p>
           )}
           {cl.suggestedLanguage && <SuggestedLanguage text={cl.suggestedLanguage} />}

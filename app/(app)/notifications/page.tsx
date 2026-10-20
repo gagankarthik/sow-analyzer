@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { MotionReveal } from "@/components/MotionReveal";
+import { RadioFilterButton } from "@/components/ds/FilterButton";
+import { Toolbar } from "@/components/ds/Toolbar";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationListSkeleton } from "./_components/NotificationsSkeleton";
 import { useNow } from "@/lib/use-now";
 import {
   useNotifications,
@@ -20,19 +21,18 @@ import {
   AlertTriangle,
   Users,
   Check,
-  ArrowRight,
-  X,
 } from "@/components/ui/icons";
 
 const TYPE_META: Record<
   NotificationType,
-  { icon: typeof Bell; label: string; tint: string; bg: string }
+  { icon: typeof Bell; label: string; tint: string }
 > = {
-  risk: { icon: ShieldAlert, label: "Risk", tint: "text-[var(--danger)]", bg: "bg-[var(--danger-soft)]" },
-  renewal: { icon: CalendarClock, label: "Renewal", tint: "text-[var(--warning)]", bg: "bg-[var(--warning-soft)]" },
-  analysis: { icon: CheckCircle2, label: "Analysis", tint: "text-[var(--success)]", bg: "bg-[var(--success-soft)]" },
-  failed: { icon: AlertTriangle, label: "Failed", tint: "text-[var(--danger)]", bg: "bg-[var(--danger-soft)]" },
-  team: { icon: Users, label: "Team", tint: "text-structure-soft-fg", bg: "bg-structure-soft" },
+  // Colour only where something needs attention; the type word always shows.
+  risk: { icon: ShieldAlert, label: "Risk", tint: "text-[var(--danger-fg)]" },
+  renewal: { icon: CalendarClock, label: "Renewal", tint: "text-[var(--warning-fg)]" },
+  analysis: { icon: CheckCircle2, label: "Analysis", tint: "text-[var(--ink-500)]" },
+  failed: { icon: AlertTriangle, label: "Failed", tint: "text-[var(--danger-fg)]" },
+  team: { icon: Users, label: "Team", tint: "text-[var(--ink-500)]" },
 };
 
 const FILTERS: { key: NotificationType | "all"; label: string }[] = [
@@ -44,8 +44,7 @@ const FILTERS: { key: NotificationType | "all"; label: string }[] = [
   { key: "team", label: "Team" },
 ];
 
-const CHIP =
-  "h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-structure-border aria-[pressed=true]:bg-structure-soft aria-[pressed=true]:text-structure-soft-fg sm:h-8";
+const SHORT_DATE = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
 
 function bucketOf(ts: number, now: number): "Today" | "This week" | "Earlier" {
   const startToday = new Date(now).setHours(0, 0, 0, 0);
@@ -64,7 +63,7 @@ function relTime(ts: number, now: number): string {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
-  return new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return SHORT_DATE.format(new Date(ts));
 }
 
 export default function NotificationsPage() {
@@ -95,126 +94,130 @@ export default function NotificationsPage() {
     <>
       <PageHeader
         title="Notifications"
+        count={isLoading ? null : notifications.length}
+        countLoading={isLoading}
         actions={
-          <>
-            <Button variant="outline" className="h-10 sm:h-9" onClick={markAllRead} disabled={unreadCount === 0}>
-              <Check size={14} />
-              Mark all read
-            </Button>
-          </>
+          <Button variant="outline" onClick={markAllRead} disabled={unreadCount === 0}>
+            <Check size={16} aria-hidden />
+            Mark all read
+          </Button>
         }
       />
 
-      {/* A reading column, not a full-bleed table: the list stays at a comfortable measure on wide screens. */}
-      <div className="app-container app-page">
-        <div className="max-w-[880px]">
-          {/* Filter bar — read state + type; one row that scrolls sideways on narrow screens */}
-          <div className="mb-5 space-y-2.5">
-            <div className="-mx-4 overflow-x-auto px-4 scrollbar-none sm:mx-0 sm:px-0">
-              <div className="flex w-max items-center gap-1.5">
-                <div role="group" aria-label="Filter by read state" className="flex items-center gap-1.5">
-                  <button type="button" onClick={() => setUnreadOnly(false)} aria-pressed={!unreadOnly} className={CHIP}>All</button>
-                  <button type="button" onClick={() => setUnreadOnly(true)} aria-pressed={unreadOnly} className={CHIP}>
-                    Unread<span className="ml-1.5 tabular-nums">{unreadCount}</span>
-                  </button>
-                </div>
-                <span className="mx-1.5 h-5 w-px bg-[var(--ink-300)]" aria-hidden />
-                <div role="group" aria-label="Filter by type" className="flex items-center gap-1.5">
-                  {FILTERS.map((f) => (
-                    <button key={f.key} type="button" onClick={() => setFilter(f.key)} aria-pressed={filter === f.key} className={CHIP}>
-                      {f.key === "all" ? "All types" : f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1 sm:min-h-8">
-              <p className="text-sm text-[var(--ink-600)]" aria-live="polite">
-                Showing <span className="font-semibold tabular-nums text-foreground">{visible.length}</span> of <span className="tabular-nums">{notifications.length}</span>
-              </p>
-              {activeFilters > 0 && (
-                <Button variant="ghost" className="h-10 text-[var(--brand-primary-700)] sm:h-8" onClick={clearFilters}>
-                  <X size={14} />Clear filters ({activeFilters})
-                </Button>
-              )}
-            </div>
-          </div>
+      {/* A reading column: the list stays at a comfortable measure on wide screens. */}
+      <div className="app-container app-page gap-3">
+        <div className="flex max-w-[880px] flex-col gap-3">
+          {(() => {
+            const quick = (
+              <>
+                <RadioFilterButton
+                  label="Show"
+                  value={unreadOnly ? "unread" : "all"}
+                  anyValue="all"
+                  onChange={(v) => setUnreadOnly(v === "unread")}
+                  options={[
+                    { value: "all", label: "All" },
+                    { value: "unread", label: `Unread (${unreadCount})` },
+                  ]}
+                />
+                <RadioFilterButton
+                  label="Type"
+                  value={filter}
+                  anyValue="all"
+                  onChange={setFilter}
+                  options={FILTERS.map((f) => ({ value: f.key, label: f.label }))}
+                />
+              </>
+            );
+            return (
+              <Toolbar
+                label="Filter notifications"
+                activeCount={activeFilters}
+                mobileSheet={<div className="flex flex-col items-start gap-3">{quick}</div>}
+              >
+                <Toolbar.Filters always>{quick}</Toolbar.Filters>
+                <Toolbar.Clear count={activeFilters} onClear={clearFilters} />
+              </Toolbar>
+            );
+          })()}
 
           {isLoading ? (
-            <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[76px] rounded-xl" />)}</div>
+            <NotificationListSkeleton rows={6} label="notifications" />
           ) : isError && notifications.length === 0 ? (
-            <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-14 text-center">
-              <p className="mb-1 text-lg font-semibold text-foreground">Couldn&apos;t load notifications</p>
-              <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">Your documents couldn&apos;t be loaded, so there is nothing to derive notifications from yet.</p>
-              <Button variant="outline" className="mt-5 h-10 sm:h-9" onClick={() => refetch()}>Try again</Button>
+            <div role="alert" className="flex flex-col items-center border-y border-border px-5 py-12 text-center">
+              <AlertTriangle size={24} aria-hidden className="mb-3 text-[var(--danger)]" />
+              <p className="text-sm font-semibold text-foreground">Couldn&apos;t load notifications</p>
+              <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">Your documents couldn&apos;t be loaded, so there is nothing to derive notifications from yet.</p>
+              <Button variant="outline" className="mt-4" onClick={() => refetch()}>Try again</Button>
             </div>
           ) : notifications.length > 0 && visible.length === 0 ? (
-            <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
-              <p className="mb-1 text-lg font-semibold text-foreground">No notifications match these filters</p>
-              <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
+            <div className="flex flex-col items-center border-y border-border px-5 py-12 text-center">
+              <p className="text-sm font-semibold text-foreground">No notifications match these filters</p>
+              <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
                 {unreadOnly ? "You have no unread notifications of this type." : "Nothing of this type right now."}
               </p>
-              <Button variant="outline" className="mt-5 h-10 sm:h-9" onClick={clearFilters}>Clear filters</Button>
+              <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear filters</Button>
             </div>
           ) : visible.length === 0 ? (
-            <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
-              <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-[var(--ink-600)]">
-                <Bell size={22} strokeWidth={1.5} />
-              </span>
-              <p className="mb-1 text-lg font-semibold text-foreground">You&apos;re all caught up</p>
-              <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
-                Risk findings, renewal dates, failed analyses and pending invitations appear here as your documents are analyzed.
+            <div className="flex flex-col items-center border-y border-border px-5 py-12 text-center">
+              <Bell size={24} aria-hidden className="mb-3 text-[var(--ink-400)]" />
+              <p className="text-sm font-semibold text-foreground">No notifications</p>
+              <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
+                Risk findings, renewal dates, failed analyses and pending invitations appear here.
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="border-y border-border">
               {groups.map(([bucket, items]) => (
-                <section key={bucket}>
-                  <h2 className="text-lg font-semibold mb-2.5 tracking-tight text-foreground">{bucket}</h2>
-                  <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-                    {items.map((n, i) => {
+                <section key={bucket} aria-labelledby={`notif-${bucket}`}>
+                  <h2 id={`notif-${bucket}`} className="flex h-8 items-center border-b border-border bg-[var(--panel)] px-4 text-xs font-medium text-[var(--ink-600)]">
+                    {bucket}
+                  </h2>
+                  <ul className="divide-y divide-border">
+                    {items.map((n) => {
                       const meta = TYPE_META[n.type];
                       const Icon = meta.icon;
                       const read = isRead(n.id);
                       return (
-                        <MotionReveal key={n.id} delay={Math.min(i * 0.02, 0.12)}>
-                          {/* Unread rows carry a brand edge + bold title; read rows drop to regular weight
-                              on the panel tint (no opacity fade, so text stays AA). */}
+                        <li key={n.id}>
                           <Link
                             href={n.href}
                             onClick={() => markRead(n.id)}
-                            data-read={read}
-                            className="group relative flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)] data-[read=true]:bg-[var(--panel)] data-[read=true]:hover:bg-muted sm:gap-3.5 sm:px-5"
+                            className="group flex min-h-[52px] items-start gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)]"
                           >
-                            {!read && <span className="absolute inset-y-0 left-0 w-[3px] bg-[var(--brand-primary-600)]" aria-hidden />}
-                            <span className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${meta.bg}`}>
-                              <Icon size={16} className={meta.tint} strokeWidth={1.85} />
+                            <span className="mt-0.5 flex w-4 shrink-0 justify-center">
+                              <Icon size={16} aria-hidden className={meta.tint} />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-start gap-3">
-                                <span className={`min-w-0 flex-1 text-base leading-snug [overflow-wrap:anywhere] ${read ? "font-medium text-[var(--ink-700)]" : "font-semibold text-foreground"}`}>
+                              <div className="flex min-w-0 items-baseline gap-3">
+                                <span className={`min-w-0 flex-1 truncate text-sm ${read ? "text-[var(--ink-700)]" : "font-semibold text-foreground"}`}>
                                   {!read && <span className="sr-only">Unread: </span>}
                                   {n.title}
                                 </span>
-                                <span className="shrink-0 whitespace-nowrap pt-px text-xs tabular-nums text-muted-foreground">
+                                <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-[var(--ink-500)]">
                                   {relTime(n.timestamp, now)}
                                 </span>
                               </div>
-                              <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-[var(--ink-600)]">{n.body}</p>
-                              <span className={`mt-1.5 inline-block text-xs font-medium ${meta.tint}`}>{meta.label}</span>
+                              <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-[var(--ink-600)]">
+                                <span className={`shrink-0 font-medium ${meta.tint === "text-[var(--ink-500)]" ? "text-[var(--ink-600)]" : meta.tint}`}>{meta.label}</span>
+                                <span aria-hidden>·</span>
+                                <span className="min-w-0 truncate">{n.body}</span>
+                              </p>
                             </div>
-                            <ArrowRight
-                              size={16}
-                              className="mt-1 hidden shrink-0 text-[var(--ink-300)] transition-colors group-hover:text-[var(--brand-primary-600)] sm:block"
-                            />
+                            {!read && <span className="mt-2 size-2 shrink-0 rounded-full bg-[var(--brand-primary-600)]" aria-hidden />}
                           </Link>
-                        </MotionReveal>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 </section>
               ))}
             </div>
+          )}
+          {!isLoading && visible.length > 0 && (
+            <p className="text-xs text-[var(--ink-500)] tabular-nums" aria-live="polite">
+              {visible.length} of {notifications.length} in view
+            </p>
           )}
         </div>
       </div>

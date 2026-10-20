@@ -5,21 +5,21 @@
 // cards below.
 
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw } from "@/components/ui/icons";
 import { useSyncLog } from "@/lib/govern/queries";
 import type { Connector, SyncRun } from "@/lib/govern/types";
 import { Chip, LoadError, formatDateTime } from "@/components/govern/admin/shared";
 import { RUN_STATUS_LABEL, RUN_STATUS_TONE, TRIGGER_LABEL, connectorName } from "./meta";
+import { PanelRowsSkeleton, SkeletonRegion } from "@/components/ds/skeletons";
 
 export function SyncLog({ connectors }: { connectors: Connector[] | undefined }) {
   const log = useSyncLog();
 
   if (log.isLoading) {
     return (
-      <div className="space-y-2 p-4 sm:p-5" aria-busy="true" aria-label="Loading the sync log">
-        <Skeleton className="h-10 rounded-lg" /><Skeleton className="h-10 rounded-lg" /><Skeleton className="h-10 rounded-lg" />
-      </div>
+      <SkeletonRegion label="the sync log">
+        <PanelRowsSkeleton rows={3} />
+      </SkeletonRegion>
     );
   }
   if (log.isError || !log.data) {

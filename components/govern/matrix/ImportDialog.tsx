@@ -178,15 +178,15 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
           </label>
           {fileError && (
             <p role="alert" className="flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2 text-sm text-foreground">
-              <AlertCircle size={15} className="mt-0.5 shrink-0 text-[var(--danger)]" />{fileError}
+              <AlertCircle size={16} className="mt-0.5 shrink-0 text-[var(--danger)]" />{fileError}
             </p>
           )}
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-[var(--panel)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm leading-relaxed text-[var(--ink-700)]">
               Columns: Agreement type, Clause type, Standard position, Fallback, Unacceptable terms, Escalation office, Beneficial terms, Suggested language. Your own headings are fine; you can match them next.
             </p>
-            <Button variant="outline" className="h-10 shrink-0 md:h-9" onClick={() => void getTemplate()} disabled={templateBusy}>
-              {templateBusy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Download size={14} />}Download template
+            <Button variant="outline" className="h-10 shrink-0" onClick={() => void getTemplate()} disabled={templateBusy}>
+              {templateBusy ? <Loader2 size={16} className="animate-spin motion-reduce:animate-none" /> : <Download size={16} />}Download template
             </Button>
           </div>
         </div>
@@ -217,8 +217,8 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
           </div>
           {mappingError && <ErrorText>{mappingError}</ErrorText>}
           <DialogFooter>
-            <Button variant="outline" size="lg" className="md:h-9" onClick={() => setStep("file")}>Choose another file</Button>
-            <Button size="lg" className="md:h-9" disabled={!!mappingError} onClick={() => {
+            <Button variant="outline" onClick={() => setStep("file")}>Choose another file</Button>
+            <Button disabled={!!mappingError} onClick={() => {
               if (mapping.agreementType === null && target === SPLIT) setTarget(defaultType);
               setStep("review");
             }}>Check rows</Button>
@@ -266,11 +266,11 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
 
           <div className="flex flex-wrap gap-2 text-sm" aria-live="polite">
             <span className="inline-flex items-center gap-1.5 rounded-md bg-[var(--success-soft)] px-2 py-1 font-medium text-[var(--success-fg)]">
-              <CheckCircle2 size={14} />{plural(valid.length, "row")} ready
+              <CheckCircle2 size={16} />{plural(valid.length, "row")} ready
             </span>
             {flagged.length > 0 && (
               <span className="inline-flex items-center gap-1.5 rounded-md bg-[var(--warning-soft)] px-2 py-1 font-medium text-[var(--warning-fg)]">
-                <AlertTriangle size={14} />{plural(flagged.length, "row")} will be left out
+                <AlertTriangle size={16} />{plural(flagged.length, "row")} will be left out
               </span>
             )}
             {[...byType.entries()].map(([t, rows]) => (
@@ -284,23 +284,21 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
 
           {mode === "replace" && byType.size > 0 && (
             <p className="flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2 text-sm text-foreground">
-              <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+              <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--danger)]" />
               Replace removes every clause of {[...byType.keys()].map((t) => AGREEMENT_TYPE_LABEL[t]).join(", ")} that is not in this file. Earlier versions stay in the version history.
             </p>
           )}
 
           <DialogFooter>
-            <Button variant="outline" size="lg" className="md:h-9" onClick={() => setStep("map")} disabled={running}>Back</Button>
+            <Button variant="outline" onClick={() => setStep("map")} disabled={running}>Back</Button>
             <Button
-              size="lg"
               variant={mode === "replace" ? "destructive" : "default"}
-              className="md:h-9"
               disabled={running || valid.length === 0}
               onClick={() => void runImport()}
             >
               {running
-                ? <><Loader2 size={14} className="animate-spin motion-reduce:animate-none" />Importing…</>
-                : <><Upload size={14} />{mode === "replace" ? "Replace with" : "Import"} {plural(valid.length, "row")}</>}
+                ? <><Loader2 size={16} className="animate-spin motion-reduce:animate-none" />Importing…</>
+                : <><Upload size={16} />{mode === "replace" ? "Replace with" : "Import"} {plural(valid.length, "row")}</>}
             </Button>
           </DialogFooter>
         </div>
@@ -314,9 +312,9 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-semibold text-foreground">{AGREEMENT_TYPE_LABEL[r.agreementType]}</span>
                   {r.error ? (
-                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--danger)]"><AlertCircle size={14} />Not imported</span>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--danger)]"><AlertCircle size={16} />Not imported</span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--success)]"><CheckCircle2 size={14} />{plural(r.imported, "clause")} imported</span>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--success)]"><CheckCircle2 size={16} />{plural(r.imported, "clause")} imported</span>
                   )}
                 </div>
                 {r.error && <p className="mt-1 text-sm text-[var(--ink-700)] [overflow-wrap:anywhere]">{r.error}</p>}
@@ -343,9 +341,9 @@ function ImportWizard({ defaultType, onClose }: { defaultType: AgreementType; on
           </p>
           <DialogFooter>
             {results.some((r) => r.error) && (
-              <Button variant="outline" size="lg" className="md:h-9" onClick={() => setStep("review")}>Back to rows</Button>
+              <Button variant="outline" onClick={() => setStep("review")}>Back to rows</Button>
             )}
-            <Button size="lg" className="md:h-9" onClick={onClose}>Done</Button>
+            <Button onClick={onClose}>Done</Button>
           </DialogFooter>
         </div>
       )}
@@ -392,7 +390,7 @@ function PreviewTable({ rows, showType }: { rows: PreviewRow[]; showType: boolea
               <td className="px-3 py-2">
                 {r.problems.length
                   ? <span className="font-medium text-[var(--warning)]">{r.problems.join("; ")}</span>
-                  : <span className="inline-flex items-center gap-1 text-[var(--success)]"><CheckCircle2 size={13} />Ready</span>}
+                  : <span className="inline-flex items-center gap-1 text-[var(--success)]"><CheckCircle2 size={12} />Ready</span>}
               </td>
             </tr>
           ))}

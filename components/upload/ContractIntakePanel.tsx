@@ -36,19 +36,19 @@ export function ContractIntakePanel({
   const filled = hasIntakeDetails(values);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs" aria-labelledby={id("title")}>
+    <section className="overflow-hidden rounded-xl border border-border bg-card" aria-labelledby={id("title")}>
       <button
         type="button"
         onClick={() => setIsOpen((o) => !o)}
         aria-expanded={isOpen}
         aria-controls={id("body")}
-        className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50"
+        className="flex min-h-11 w-full items-start gap-3 px-4 py-2.5 text-left transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)]"
       >
         <span className="min-w-0 flex-1">
-          <span id={id("title")} className="block text-base font-semibold text-foreground">
-            Contract details <span className="font-normal text-muted-foreground">(optional)</span>
+          <span id={id("title")} className="block text-sm font-semibold text-foreground">
+            Contract details <span className="text-xs font-normal text-[var(--ink-500)]">Optional</span>
           </span>
-          <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground">
+          <span className="mt-0.5 block text-xs leading-relaxed text-[var(--ink-600)]">
             {filled
               ? "Details entered. They go with the next single file you add."
               : lastApplied
@@ -56,14 +56,14 @@ export function ContractIntakePanel({
                 : byEdition("Sonar reads most details from the document. Add the ones it can't know, like the PI or the Huron record.", "Sonar reads most details from the document. Add the ones it can't know, like the department or the Workday reference.")}
           </span>
         </span>
-        <ChevronDown size={18} aria-hidden className={cn("mt-1 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none", isOpen && "rotate-180")} />
+        <ChevronDown size={16} aria-hidden className={cn("mt-0.5 shrink-0 text-[var(--ink-500)] transition-transform duration-150 motion-reduce:transition-none", isOpen && "rotate-180")} />
       </button>
 
       {isOpen && (
         <div id={id("body")} className="grid gap-5 border-t border-border px-4 py-4">
           <fieldset className="grid gap-3">
             <legend className="mb-1 flex items-center gap-2 text-sm font-semibold text-foreground">
-              <UserRound size={15} aria-hidden className="text-[var(--brand-primary-600)]" />
+              <UserRound size={16} aria-hidden className="text-[var(--ink-500)]" />
               Usually not in the document
             </legend>
             <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">Sonar can&apos;t find these, so the contract shows them as gaps until someone adds them.</p>
@@ -81,7 +81,7 @@ export function ContractIntakePanel({
 
           <fieldset className="grid gap-3">
             <legend className="mb-1 flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Sonar size={15} aria-hidden className="text-[var(--ai-ink)]" />
+              <Sonar size={16} aria-hidden className="text-[var(--ai-ink)]" />
               Sonar reads these from the document
             </legend>
             <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">Leave them blank to let Sonar fill them. Anything you enter is kept as you wrote it.</p>
@@ -126,7 +126,7 @@ export function ContractIntakePanel({
                     <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                {valueError && <p id={id("value-error")} role="alert" className="text-sm text-[var(--danger)]">{valueError}</p>}
+                {valueError && <p id={id("value-error")} role="alert" className="text-xs text-[var(--danger-fg)]">{valueError}</p>}
               </div>
             </div>
           </fieldset>

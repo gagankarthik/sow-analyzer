@@ -16,9 +16,9 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
       <StatePanel
         art="empty"
         title="Settings are managed by your administrators"
-        description="The review matrix, routing, team and integrations are set up by a Govern admin. You can see every contract, report and trend, comment, and approve for your office."
+        description="A Govern admin manages these settings. You can view them."
       >
-        <Button asChild size="lg"><Link href="/home">Back to home</Link></Button>
+        <Button asChild><Link href="/home">Back to home</Link></Button>
       </StatePanel>
     );
   }

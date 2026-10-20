@@ -36,14 +36,14 @@ export function ProcessingState({
   return (
     <div
       role="status"
-      className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 md:p-6"
+      className="rounded-xl border border-border bg-card p-4"
     >
       <div className="flex items-start gap-3">
         <SonarMark size="sm" className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-2 text-lg font-semibold leading-snug text-foreground">
+          <div className="flex items-start gap-2 text-base font-semibold leading-snug text-foreground">
             <span className="min-w-0">{title ?? "Sonar is analyzing this document"}</span>
-            <Loader2 size={15} className="mt-1 shrink-0 animate-spin text-[var(--ai-ink)]" />
+            <Loader2 size={16} aria-hidden className="mt-0.5 shrink-0 animate-spin motion-reduce:animate-none text-[var(--ai-ink)]" />
           </div>
           <div className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">
             {subtitle ??

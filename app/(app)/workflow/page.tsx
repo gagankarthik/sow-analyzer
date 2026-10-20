@@ -4,32 +4,30 @@
 // card with its owner, clock, blockers and one next step. Status changes only
 // through actions people take, so there is no drag-and-drop.
 //
-// Layout: quick views (the Contracts dashboard's saved filters) narrow the
-// board; a pipeline strip shows all eight stages in order with their counts
-// and health; selecting a stage drives the board. A card opens the preview
-// panel; "List" shows the same contracts as the Contracts table. On a wide screen the board
-// shows the four lanes of that stage's phase (before or after signature);
-// below that it shows the selected stage's agreements as a grid.
+// Layout (UI_SPEC sections 3, 7, 9), the same as the Contracts list: title
+// row, view tabs with counts (the quick views) and the Table / Board switch,
+// one 32px toolbar, then the board or the flat table. View and layout live in
+// the URL. On the board, a pipeline strip (or, on wide screens, a phase
+// switch) picks the stage; a card opens the preview panel.
 
 import { byEdition } from "@/lib/edition-runtime";
-import { PageSkeleton } from "@/components/govern/admin/shared";
 import { EditionOnly } from "@/components/govern/EditionOnly";
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { BoardCardSkeleton } from "@/components/ds/skeletons";
+import { WorkflowSkeleton } from "./_components/WorkflowSkeleton";
 import { StatePanel } from "@/components/ui/StatePanel";
 import { FileSignature, Plus, Search } from "@/components/ui/icons";
+import { LayoutSwitch, ViewTabs } from "@/components/ds/ViewTabs";
 import { isForbidden } from "@/lib/api";
-import { PRE_SIGNATURE_STAGES, STAGES, STAGE_LABEL, plural } from "@/lib/govern/labels";
+import { PRE_SIGNATURE_STAGES, STAGES, STAGE_LABEL } from "@/lib/govern/labels";
 import { NO_FILTERS, applyFilters, byUrgency, filterOptions, isFiltering, type ContractFilters } from "@/lib/govern/metrics";
 import { useContracts, useGovernMe } from "@/lib/govern/queries";
 import { CONTRACT_VIEWS } from "@/lib/govern/views";
 import { ContractPreview } from "@/components/govern/ContractPreview";
-import { QuickViews } from "./_components/BoardHeader";
-import { LayoutSwitch, type Layout } from "@/components/govern/LayoutSwitch";
 import { WorkflowList } from "./_components/WorkflowList";
 import { PreviewContext } from "./_components/preview-context";
 import type { Stage } from "@/lib/govern/types";
@@ -39,11 +37,13 @@ import { PhaseSwitch, PipelineStrip, StageLane, summariseStage, type StageSummar
 
 const POST_SIGNATURE_STAGES = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
 
+type Layout = "board" | "list";
+
 const QUICK_VIEWS = ["in-progress", "mine", "unassigned", "overdue", "other-side"];
 
 export default function WorkflowPage() {
   return (
-    <Suspense fallback={<div className="app-container py-8"><PageSkeleton label="Loading workflow" /></div>}>
+    <Suspense fallback={<WorkflowSkeleton />}>
       <Workflow />
     </Suspense>
   );
@@ -51,7 +51,6 @@ export default function WorkflowPage() {
 
 function Workflow() {
   const params = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const quickId = QUICK_VIEWS.includes(params.get("view") ?? "") ? (params.get("view") as string) : "in-progress";
   const me = useGovernMe().data?.email?.toLowerCase() ?? null;
@@ -60,12 +59,11 @@ function Workflow() {
   const closePreview = useCallback(() => setPreviewId(null), []);
   const [showClosed, setShowClosed] = useState(false);
   const [filters, setFilters] = useState<ContractFilters>(NO_FILTERS);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [pickedStage, setPickedStage] = useState<Stage | null>(null);
 
   const query = useContracts(showClosed);
   const { data, isLoading, isError, error, refetch } = query;
-  const all = useMemo(() => data?.contracts ?? [], [data]);
+  const all = useMemo(() => data?.contracts ?? [], [data?.contracts]);
   // Typing in the search box stays smooth on a large board.
   const deferredFilters = useDeferredValue(filters);
 
@@ -85,25 +83,12 @@ function Workflow() {
     const qs = q.toString();
     return qs ? `${pathname}?${qs}` : pathname;
   };
-  const setQuick = (id: string) => router.replace(urlFor(id, layout), { scroll: false });
-  const setLayout = (next: Layout) => router.replace(urlFor(quickId, next), { scroll: false });
   const options = useMemo(() => filterOptions(all), [all]);
   const summaries = useMemo(() => {
     const map = new Map<Stage, StageSummary>();
     for (const stage of STAGES) map.set(stage, summariseStage(stage, visible.filter((c) => c.stage === stage)));
     return map;
   }, [visible]);
-  const totals = useMemo(() => {
-    // The figures follow the quick view, so they match its chip.
-    const open = all.filter((c) => quick.test(c, { me, now }));
-    return {
-      open: open.length,
-      overdue: open.filter((c) => c.slaStatus === "red").length,
-      late: open.filter((c) => c.slaStatus === "amber").length,
-      unassigned: open.filter((c) => !c.owner).length,
-    };
-  }, [all, quick, me, now]);
-
   // Below the wide layout, show the stage picked, else the busiest open stage.
   const defaultStage = PRE_SIGNATURE_STAGES.find((s) => (summaries.get(s)?.contracts.length ?? 0) > 0)
     ?? STAGES.find((s) => (summaries.get(s)?.contracts.length ?? 0) > 0) ?? "review";
@@ -120,15 +105,15 @@ function Workflow() {
   const header = (
     <PageHeader
       title="Workflow"
-      subtitle="Every contract, who has it, how long it has waited and what happens next."
+      count={isLoading || failed ? null : visible.length}
+      countLoading={isLoading}
       actions={
         <>
-          <LayoutSwitch value={layout} onChange={setLayout} />
-          <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9">
-            <Link href="/draft"><FileSignature size={15} />Draft a SOW</Link>
+          <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-8">
+            <Link href="/draft"><FileSignature size={16} aria-hidden />Draft a SOW</Link>
           </Button></EditionOnly>
-          <Button asChild variant={stateHasCta ? "outline" : "default"} size="lg" className="md:h-9">
-            <Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />Upload a contract</Link>
+          <Button asChild variant={stateHasCta ? "outline" : "default"} size="lg" className="md:h-8">
+            <Link href="/projects/upload"><Plus size={16} aria-hidden />Upload contract</Link>
           </Button>
         </>
       }
@@ -158,9 +143,9 @@ function Workflow() {
         <StatePanel
           art="empty"
           title={showClosed ? "No contracts yet" : "No open contracts"}
-          description="Upload a contract to start. Sonar checks it against your matrix and it appears here with its next step."
+          description="Uploaded contracts appear here with their next step."
         >
-          <Button asChild size="lg"><Link href="/projects/upload"><Plus size={15} />Upload a contract</Link></Button>
+          <Button asChild size="lg"><Link href="/projects/upload"><Plus size={16} aria-hidden />Upload contract</Link></Button>
           {!showClosed && <Button variant="outline" size="lg" onClick={() => setShowClosed(true)}>Show all contracts</Button>}
         </StatePanel>
       </>
@@ -172,50 +157,40 @@ function Workflow() {
       {header}
       <div className="app-container app-page">
         {isError && (
-          <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-[color-mix(in_srgb,var(--danger)_30%,transparent)] bg-[var(--danger-soft)] p-3.5 text-sm text-[var(--danger)]">
+          <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-[color-mix(in_srgb,var(--danger)_30%,transparent)] bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">
             <span className="min-w-0 flex-1">Couldn&rsquo;t refresh, so the board may be out of date.</span>
-            <button type="button" onClick={() => refetch()} className="rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]">Try again</button>
+            <button type="button" onClick={() => refetch()} className="rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)] max-md:min-h-11">Try again</button>
           </div>
         )}
 
-        <QuickViews views={quickViews} active={quickId} onChange={setQuick} />
+        <div className="flex min-w-0 flex-col gap-3">
+          <ViewTabs
+            label="Workflow views"
+            views={quickViews.map((v) => ({ id: v.id, label: v.label, count: isLoading ? null : v.count, href: urlFor(v.id, layout) }))}
+            activeId={quickId}
+            loading={isLoading}
+            layout={<LayoutSwitch current={layout === "list" ? "table" : "board"} tableHref={urlFor(quickId, "list")} boardHref={urlFor(quickId, "board")} />}
+          />
 
-        <BoardFilters
-          filters={filters}
-          onChange={setFilters}
-          options={options}
-          open={filtersOpen}
-          onOpenChange={setFiltersOpen}
-          showClosed={showClosed}
-          onShowClosedChange={setShowClosed}
-        />
-
-        <p className="-mt-1 text-sm text-[var(--ink-600)]" aria-live="polite">
-          {isLoading ? "Loading agreements…" : filtering ? (
-            <>Showing <strong className="font-semibold text-foreground">{visible.length}</strong> of {plural(all.length, "agreement")}{" · "}
-              <button type="button" className="font-semibold text-[var(--brand-primary-600)] underline-offset-2 hover:underline" onClick={() => setFilters(NO_FILTERS)}>Clear search and filters</button>
-            </>
-          ) : (
-            <>
-              <strong className="font-semibold text-foreground">{totals.open}</strong> open
-              {totals.overdue > 0 && <> · <span className="font-semibold text-[var(--danger)]">{totals.overdue} overdue</span></>}
-              {totals.late > 0 && <> · <span className="font-semibold text-[var(--warning)]">{totals.late} running late</span></>}
-              {totals.unassigned > 0 && <> · {totals.unassigned} unassigned</>}
-            </>
-          )}
-        </p>
+          <BoardFilters
+            filters={filters}
+            onChange={setFilters}
+            options={options}
+            showClosed={showClosed}
+            onShowClosedChange={setShowClosed}
+          />
 
         {noMatches ? (
-          <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center">
-            <Search size={22} className="mb-3 text-[var(--ink-500)]" />
-            <h2 className="text-lg font-semibold text-foreground">Nothing matches &ldquo;{filters.q || "these filters"}&rdquo;</h2>
-            <p className="mt-1.5 max-w-sm text-sm text-[var(--ink-600)]">{byEdition("Try a sponsor name, a PI’s surname or a department. Closed and rejected agreements show under All.", "Try a vendor name, an owner’s surname or a department. Closed and rejected agreements show under All.")}</p>
-            <Button variant="outline" size="lg" className="mt-5" onClick={() => setFilters(NO_FILTERS)}>Clear search and filters</Button>
+          <div className="flex flex-col items-center border-y border-border-default px-4 py-12 text-center">
+            <Search size={24} aria-hidden className="mb-3 text-[var(--ink-500)]" />
+            <h2 className="text-base font-semibold text-foreground">Nothing matches &ldquo;{filters.q || "these filters"}&rdquo;</h2>
+            <p className="mt-1 max-w-sm text-sm text-[var(--ink-600)]">{byEdition("Search by sponsor, PI surname or department. Set Status to All to include closed agreements.", "Search by vendor, owner surname or department. Set Status to All to include closed agreements.")}</p>
+            <Button variant="outline" className="mt-4" onClick={() => { setFilters(NO_FILTERS); setShowClosed(false); }}>Clear search and filters</Button>
           </div>
         ) : layout === "list" ? (
           <WorkflowList contracts={visible} loading={isLoading} previewId={previewId} onPreview={setPreviewId} />
         ) : (
-          <>
+          <div className="flex min-w-0 flex-col gap-3">
             {/* iPad and phone: the stages, to pick which one to show. Wide screens
                 show every lane of a phase, so a phase switch is all they need. */}
             <div className="xl:hidden">
@@ -234,8 +209,9 @@ function Workflow() {
             <div className="xl:hidden">
               <StageGrid summary={summaries.get(selectedStage)!} loading={isLoading} />
             </div>
-          </>
+          </div>
         )}
+        </div>
       </div>
       {preview && <ContractPreview contract={preview} me={me} onClose={closePreview} />}
     </PreviewContext.Provider>
@@ -245,16 +221,17 @@ function Workflow() {
 function StageGrid({ summary, loading }: { summary: StageSummary; loading: boolean }) {
   return (
     <section aria-label={STAGE_LABEL[summary.stage]} className="flex flex-col gap-3">
-      <p className="text-sm text-[var(--ink-600)]">
-        <strong className="font-semibold text-foreground">{STAGE_LABEL[summary.stage]}</strong>
-        {summary.averageDays !== null && <> · average {summary.averageDays} days here</>}
+      <p className="text-xs text-[var(--ink-600)]">
+        <strong className="text-sm font-semibold text-foreground">{STAGE_LABEL[summary.stage]}</strong>
+        {summary.averageDays !== null && <span className="tabular-nums"> · avg {summary.averageDays} days</span>}
       </p>
       {loading ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}
+        <div aria-busy="true" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <span role="status" className="sr-only">Loading agreements</span>
+          {Array.from({ length: 3 }, (_, i) => <BoardCardSkeleton key={i} />)}
         </div>
       ) : summary.contracts.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-[var(--ink-300)] px-4 py-10 text-center text-sm text-[var(--ink-600)]">No agreements in {STAGE_LABEL[summary.stage].toLowerCase()} right now.</p>
+        <p className="rounded-xl border border-dashed border-[var(--ink-300)] px-4 py-8 text-center text-sm text-[var(--ink-600)]">No agreements in {STAGE_LABEL[summary.stage].toLowerCase()}.</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {summary.contracts.map((c) => <ContractCard key={c.contractId} contract={c} />)}

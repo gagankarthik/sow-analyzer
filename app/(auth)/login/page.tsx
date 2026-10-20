@@ -18,6 +18,7 @@ import {
   commonAuthMessage,
   focusField,
 } from "@/components/auth/fields";
+import { AuthFormSkeleton } from "@/components/auth/AuthFormSkeleton";
 
 // Set by the confirm and sign-up screens when they hand over to sign in.
 const NOTICES: Record<string, string> = {
@@ -154,7 +155,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="h-96" />}>
+    <Suspense fallback={<AuthFormSkeleton title="Sign in" />}>
       <LoginForm />
     </Suspense>
   );

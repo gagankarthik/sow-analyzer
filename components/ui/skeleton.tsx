@@ -1,10 +1,18 @@
 import { cn } from "@/lib/utils"
 
-function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * One placeholder block: slate panel tint (#F1F5F9), 6px radius, a calm
+ * opacity pulse that stops under prefers-reduced-motion. Decorative: the
+ * region it sits in carries aria-busy and the spoken "Loading …" status
+ * (see components/ds/skeletons.tsx).
+ */
+function Skeleton({ className, ...props }: React.ComponentProps<"span">) {
+  // A block <span>, so it is valid inside buttons, links and other phrasing content.
   return (
-    <div
+    <span
       data-slot="skeleton"
-      className={cn("animate-pulse rounded-md bg-muted motion-reduce:animate-none", className)}
+      aria-hidden
+      className={cn("block animate-skeleton rounded-[6px] bg-surface-sunken motion-reduce:animate-none", className)}
       {...props}
     />
   )

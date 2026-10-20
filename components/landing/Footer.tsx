@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp } from "@/components/ui/icons";
 import { FooterBackdrop } from "@/components/landing/FooterBackdrop";
 import { PrivacyChoicesLink } from "@/components/landing/CookieSettingsLink";
 import { Logo } from "@/components/landing/primitives";
@@ -111,7 +111,7 @@ export function Footer() {
               <span>© 2026 Blue-IQ. All rights reserved.</span>
             </p>
             <a href="#main-content" className="lp-footer-top" aria-label="Back to top">
-              <ArrowUp size={18} strokeWidth={2} aria-hidden="true" />
+              <ArrowUp size={20} aria-hidden="true" />
             </a>
           </div>
         </div>

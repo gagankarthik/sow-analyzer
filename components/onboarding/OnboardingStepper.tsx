@@ -27,18 +27,18 @@ export function OnboardingStepper({ current }: { current: OnboardingStep }) {
               )}
               <span
                 className={cn(
-                  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
+                  "inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
                   done && "bg-[var(--brand-primary-600)] text-white",
-                  active && "bg-[var(--brand-primary-600)] text-white ring-4 ring-[var(--brand-primary-100)]",
-                  !done && !active && "border border-[var(--ink-300)] bg-card text-muted-foreground",
+                  active && "border-2 border-[var(--brand-primary-600)] bg-card text-[var(--brand-primary-700)]",
+                  !done && !active && "border border-[var(--ink-300)] bg-card text-[var(--ink-500)]",
                 )}
               >
-                {done ? <Check size={14} strokeWidth={3} aria-hidden /> : i + 1}
+                {done ? <Check size={12} aria-hidden /> : i + 1}
               </span>
               <span
                 className={cn(
                   "ml-2 hidden whitespace-nowrap text-sm sm:inline",
-                  active ? "font-semibold text-foreground" : done ? "font-medium text-foreground" : "text-muted-foreground",
+                  active ? "font-semibold text-foreground" : done ? "text-foreground" : "text-[var(--ink-500)]",
                 )}
               >
                 {step.label}
@@ -48,7 +48,7 @@ export function OnboardingStepper({ current }: { current: OnboardingStep }) {
           );
         })}
       </ol>
-      <p className="mt-3 text-sm text-[var(--ink-600)] sm:hidden">
+      <p className="mt-2 text-xs text-[var(--ink-600)] sm:hidden">
         Step {currentIdx + 1} of {ONBOARDING_STEPS.length}:{" "}
         <span className="font-semibold text-foreground">{ONBOARDING_STEPS[currentIdx]?.label}</span>
       </p>

@@ -22,14 +22,14 @@ export default function NotFound() {
       <main className="flex flex-1 items-center justify-center">
         <StatePanel
           art="missing"
-          title="This page is not in the contract"
-          description="The address may be mistyped, or the page was moved or deleted. Your documents are not affected."
+          title="Page not found"
+          description="The link may be mistyped, or the page has moved."
         >
           <Button size="lg" asChild>
-            <Link href="/home">Go to home</Link>
+            <Link href="/home">Open workspace</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
-            <Link href="/">Back to home</Link>
+            <Link href="/">Go to website</Link>
           </Button>
         </StatePanel>
       </main>

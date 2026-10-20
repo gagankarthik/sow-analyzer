@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { GitBranch } from "lucide-react";
+import { GitBranch } from "@/components/ui/icons";
 import { StageDots } from "@/components/govern/StageDots";
 import { contractValueText } from "@/lib/govern/metrics";
 import { useContracts } from "@/lib/govern/queries";
@@ -29,11 +29,11 @@ export function ContractFamily({ contract: c }: { contract: Contract }) {
       <ul className="mt-3 flex flex-col gap-2">
         {c.parentContractId && (
           <li>
-            <FamilyLink contract={parent} id={c.parentContractId} note="Signing this amendment updates its value and term end." />
+            <FamilyLink contract={parent} id={c.parentContractId} note="Original agreement" />
           </li>
         )}
         {amendments.map((a) => (
-          <li key={a.contractId}><FamilyLink contract={a} id={a.contractId} note={`Changes the value by ${contractValueText(a)}`} /></li>
+          <li key={a.contractId}><FamilyLink contract={a} id={a.contractId} note={`Value change ${contractValueText(a)}`} /></li>
         ))}
       </ul>
     </section>

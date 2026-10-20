@@ -1,6 +1,7 @@
 "use client";
 
 import { RolesMatrix } from "@/components/settings/RolesMatrix";
+import { OrgAdmins } from "@/components/settings/OrgAdmins";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
@@ -31,7 +32,7 @@ import { ROLE_META, ROLE_ORDER, initialsFromEmail, roleRank } from "@/components
 import {
   AlertTriangle, Check, ChevronDown, Clock, Lock, LogOut, Plus, RefreshCw, ShieldCheck, Trash2, Users,
 } from "@/components/ui/icons";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PanelRowsSkeleton, SkeletonRegion } from "@/components/ds/skeletons";
 
 type Status = "invited" | "active";
 
@@ -170,14 +171,14 @@ export default function TeamSettingsPage() {
 
   const canInvite = ownedProjects.length > 0;
   const inviteAction = canInvite ? (
-    <Button size="lg" className="w-full sm:w-auto" onClick={() => setInviting(true)}>
-      <Plus size={14} />
+    <Button onClick={() => setInviting(true)}>
+      <Plus size={16} aria-hidden />
       Invite people
     </Button>
   ) : (
-    <Button size="lg" className="w-full sm:w-auto" asChild>
+    <Button asChild>
       <Link href="/projects/new">
-        <Plus size={14} />
+        <Plus size={16} aria-hidden />
         Create a project
       </Link>
     </Button>
@@ -187,18 +188,18 @@ export default function TeamSettingsPage() {
     <>
       <PageHeader
         title="Team & roles"
-        subtitle="Invite colleagues to your projects, set their role and remove them when the work is done."
         back={{ href: "/settings", label: "Settings" }}
+        actions={!projectsLoading && !projectsFailed ? inviteAction : undefined}
       />
 
       <SettingsLayout>
         {/* ── People (focal) ── */}
         <SettingsSection
           title={
-            <span className="flex flex-wrap items-baseline gap-x-2">
+            <span className="flex items-baseline gap-x-2">
               People
               {!projectsLoading && !projectsFailed && (
-                <span className="text-sm font-medium text-muted-foreground tabular-nums">{people.length}</span>
+                <span className="text-xs font-normal text-[var(--ink-500)] tabular-nums">{people.length}</span>
               )}
             </span>
           }
@@ -209,111 +210,90 @@ export default function TeamSettingsPage() {
                 ? "Access is granted per project, by its owner. You don't own a project, so the people on the projects shared with you are shown read-only."
                 : "Access is granted per project, by its owner. You don't own a project yet."
           }
-          action={!projectsLoading && !projectsFailed && teammates > 0 ? inviteAction : undefined}
           flush
         >
           {projectsLoading ? (
-            <div role="status" aria-label="Loading people" className="space-y-3 p-4 sm:p-5">
-              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
-            </div>
+            <SkeletonRegion label="people">
+              <PanelRowsSkeleton rows={4} />
+            </SkeletonRegion>
           ) : projectsFailed ? (
-            <div role="alert" className="flex flex-col items-start px-4 py-10 sm:px-8 sm:py-12">
-              <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--danger-soft)] text-[var(--danger)]">
-                <AlertTriangle size={22} strokeWidth={1.5} />
-              </span>
-              <p className="text-xl font-semibold tracking-tight text-foreground">Couldn&apos;t load your projects</p>
-              <p className="mt-1.5 max-w-md break-words text-base leading-relaxed text-[var(--ink-600)]">
+            <div role="alert" className="flex flex-col items-start px-4 py-10">
+              <AlertTriangle size={24} aria-hidden className="mb-3 text-[var(--danger)]" />
+              <p className="text-sm font-semibold text-foreground">Couldn&apos;t load your projects</p>
+              <p className="mt-1 max-w-md break-words text-sm leading-relaxed text-[var(--ink-600)]">
                 People are listed from your projects, so nobody can be shown until they load.
                 {projectsSync.error ? ` ${projectsSync.error}` : ""}
               </p>
-              <Button variant="outline" size="lg" className="mt-5 w-full sm:w-auto" onClick={() => void refreshProjects()}>
-                <RefreshCw size={14} />
+              <Button variant="outline" className="mt-4 w-full sm:w-auto" onClick={() => void refreshProjects()}>
+                <RefreshCw size={16} aria-hidden />
                 Try again
               </Button>
             </div>
           ) : teammates === 0 ? (
-            <div className="flex flex-col items-start px-4 py-10 sm:px-8 sm:py-12">
-              <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft text-structure-soft-fg">
-                <Users size={22} strokeWidth={1.5} />
-              </span>
-              <p className="text-xl font-semibold tracking-tight text-foreground">It&apos;s just you so far</p>
-              <p className="mt-1.5 max-w-md text-base leading-relaxed text-[var(--ink-600)]">
+            <div className="flex flex-col items-start px-4 py-10">
+              <Users size={24} aria-hidden className="mb-3 text-[var(--ink-400)]" />
+              <p className="text-sm font-semibold text-foreground">It&apos;s just you so far</p>
+              <p className="mt-1 max-w-md text-sm leading-relaxed text-[var(--ink-600)]">
                 {canInvite
-                  ? "Invite the people who review contracts with you. Pick one or more of your projects and a role for each batch of invitations."
-                  : "People are invited to a project, so create one first. You will then be able to invite colleagues to it from here."}
+                  ? "Invite the people who review contracts with you: pick one or more of your projects and a role."
+                  : "People are invited to a project, so create one first."}
               </p>
-              <div className="mt-5 w-full sm:w-auto">{inviteAction}</div>
             </div>
           ) : (
             <>
               {projectsSync.error && (
-                <p role="status" className="flex items-start gap-2 border-b border-border bg-[var(--warning-soft)] px-4 py-2.5 text-sm text-foreground sm:px-5">
-                  <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--warning)]" />
+                <p role="status" className="flex items-start gap-2 border-b border-border bg-[var(--warning-soft)] px-4 py-2.5 text-sm text-foreground">
+                  <AlertTriangle size={16} aria-hidden className="mt-0.5 shrink-0 text-[var(--warning-fg)]" />
                   <span className="min-w-0 break-words">The latest refresh or save failed, so this list may be out of date. {projectsSync.error}</span>
                 </p>
               )}
-              <div className="flex flex-col gap-4 border-b border-border p-4 sm:p-5">
-                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                  <SettingsSearch
-                    id="team-search"
-                    label="Search people"
-                    placeholder="Email or project name"
-                    value={q}
-                    onChange={setQ}
-                  />
-                  <div className="w-full md:w-[210px]">
-                    <span id="team-sort-label" className="mb-1.5 block text-sm font-medium text-[var(--ink-600)]">
-                      Sort by
-                    </span>
-                    <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-                      <SelectTrigger aria-labelledby="team-sort-label" className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SORTS.map((s) => (
-                          <SelectItem key={s.value} value={s.value} className="min-h-10">{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-4 md:flex-row md:gap-8">
-                  <FilterChips
-                    label="Role"
-                    value={roleFilter}
-                    onChange={setRoleFilter}
-                    options={[
-                      { value: "all", label: "All roles" },
-                      ...ROLE_ORDER.map((r) => ({ value: r, label: ROLE_META[r].label })),
-                    ]}
-                  />
-                  <FilterChips
-                    label="Status"
-                    value={statusFilter}
-                    onChange={setStatusFilter}
-                    options={[
-                      { value: "all", label: "Any status" },
-                      { value: "active", label: "Active" },
-                      { value: "invited", label: "Invited" },
-                    ]}
-                  />
-                </div>
-                <FilterSummary
-                  shown={visible.length}
-                  total={people.length}
-                  noun="people"
-                  active={filtering}
-                  onClear={clearFilters}
+              <div role="toolbar" aria-label="Filter people" className="flex min-w-0 flex-col gap-2 border-b border-border px-4 py-2.5 md:flex-row md:flex-wrap md:items-center md:gap-3">
+                <SettingsSearch
+                  id="team-search"
+                  label="Search people"
+                  placeholder="Email or project name"
+                  value={q}
+                  onChange={setQ}
                 />
+                <FilterChips
+                  label="Role"
+                  value={roleFilter}
+                  onChange={setRoleFilter}
+                  options={[
+                    { value: "all", label: "All" },
+                    ...ROLE_ORDER.map((r) => ({ value: r, label: ROLE_META[r].label })),
+                  ]}
+                />
+                <FilterChips
+                  label="Status"
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={[
+                    { value: "all", label: "Any" },
+                    { value: "active", label: "Active" },
+                    { value: "invited", label: "Invited" },
+                  ]}
+                />
+                <div className="flex min-w-0 items-center gap-2 md:ml-auto">
+                  <span id="team-sort-label" className="shrink-0 text-xs text-[var(--ink-500)]">Sort</span>
+                  <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+                    <SelectTrigger aria-labelledby="team-sort-label" className="h-8 w-full text-xs md:w-44 max-md:h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORTS.map((s) => (
+                        <SelectItem key={s.value} value={s.value} className="min-h-10">{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {visible.length === 0 ? (
-                <div className="p-4 sm:p-5">
-                  <NoResults noun="people" onClear={clearFilters} />
-                </div>
+                <NoResults noun="people" onClear={clearFilters} />
               ) : (
                 <>
-                  <div aria-hidden className={cn("hidden border-b border-border px-5 py-2 text-xs font-medium text-muted-foreground", COLUMNS)}>
+                  <div aria-hidden className={cn("hidden h-[38px] items-center border-b border-border bg-[var(--panel)] px-4 text-xs font-medium text-[var(--ink-600)]", COLUMNS)}>
                     <span>Person</span>
                     <span>Status</span>
                     <span>Highest role</span>
@@ -333,22 +313,28 @@ export default function TeamSettingsPage() {
                       />
                     ))}
                   </ul>
+                  <div className="border-t border-border px-4 py-2.5">
+                    <FilterSummary shown={visible.length} total={people.length} noun="people in view" active={filtering} onClear={clearFilters} />
+                  </div>
                 </>
               )}
             </>
           )}
         </SettingsSection>
 
+        {/* ── Who administers this organization ── */}
+        <OrgAdmins />
+
         {/* ── Projects other people own and shared with me ── */}
         {!projectsLoading && !projectsFailed && sharedProjects.length > 0 && (
           <SettingsSection
             title={
-              <span className="flex flex-wrap items-baseline gap-x-2">
+              <span className="flex items-baseline gap-x-2">
                 Shared with you
-                <span className="text-sm font-medium text-muted-foreground tabular-nums">{sharedProjects.length}</span>
+                <span className="text-xs font-normal text-[var(--ink-500)] tabular-nums">{sharedProjects.length}</span>
               </span>
             }
-            description="Projects you were invited to. Their owner decides who is on them and what your role is; you can leave at any time."
+            description="Projects you were invited to. You can leave any time."
             flush
           >
             <ul className="divide-y divide-border">
@@ -356,31 +342,31 @@ export default function TeamSettingsPage() {
                 const role = p.role ?? "viewer";
                 const owner = projectOwnerEmail(p);
                 return (
-                  <li key={p.id} className="flex flex-col gap-3 px-4 py-3 sm:px-5 md:flex-row md:items-center md:justify-between md:gap-4">
+                  <li key={p.id} className="flex flex-col gap-2 px-4 py-2.5 md:flex-row md:items-center md:justify-between md:gap-4">
                     <div className="min-w-0">
                       <Link
                         href={`/projects/${p.id}`}
-                        className="break-words text-base font-semibold text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                        className="break-words text-sm font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]"
                       >
                         {p.name || "Untitled project"}
                       </Link>
-                      <p className="mt-0.5 break-words text-sm leading-relaxed text-[var(--ink-600)]">
+                      <p className="mt-0.5 break-words text-xs text-[var(--ink-600)]">
                         {owner ? `Owned by ${owner}.` : "Owner not recorded."} {ROLE_META[role].summary}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <Badge variant={ROLE_META[role].tone} size="md">{ROLE_META[role].label}</Badge>
-                      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Lock size={14} className="shrink-0" />
-                        Membership is read-only
+                      <span className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-500)]">
+                        <Lock size={12} aria-hidden className="shrink-0" />
+                        Read-only
                       </span>
                       {me && (
                         <button
                           type="button"
                           onClick={() => setRemoveTarget({ email: me, projectId: p.id, projectName: p.name, self: true })}
-                          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-[var(--danger-fg)] transition-colors duration-150 hover:bg-[var(--danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-md:h-11"
                         >
-                          <LogOut size={15} />
+                          <LogOut size={16} aria-hidden />
                           Leave
                         </button>
                       )}
@@ -395,10 +381,10 @@ export default function TeamSettingsPage() {
         {/* ── Roles reference ── */}
         <SettingsSection
           title="Roles"
-          description="A role is chosen per project when you invite someone, and the owner can change it later. The same person can hold different roles on different projects."
+          description="Roles are set per project. One person can hold different roles."
         >
-          <div className="flex items-start gap-3 rounded-lg border border-[color-mix(in_srgb,var(--info)_18%,transparent)] bg-[var(--info-soft)] p-3 sm:p-4">
-            <ShieldCheck size={16} className="mt-0.5 shrink-0 text-[var(--info)]" />
+          <div className="flex items-start gap-3 rounded-md bg-[var(--panel)] p-3">
+            <ShieldCheck size={16} aria-hidden className="mt-0.5 shrink-0 text-[var(--ink-600)]" />
             <p className="min-w-0 text-sm leading-relaxed text-foreground">
               <span className="font-semibold">Roles are enforced on every request.</span> A person sees a project
               only if they own it or were invited to it, and a document only if they uploaded it or it is in a
@@ -407,14 +393,14 @@ export default function TeamSettingsPage() {
             </p>
           </div>
 
-          <dl className="mt-4 divide-y divide-border sm:mt-5">
+          <dl className="mt-4 divide-y divide-border">
             {ROLE_ORDER.map((role) => {
               const meta = ROLE_META[role];
               const Icon = meta.icon;
               return (
                 <div key={role} className="grid grid-cols-1 gap-x-6 gap-y-1 py-3 first:pt-0 last:pb-0 md:grid-cols-[176px_minmax(0,1fr)_auto] md:items-baseline">
-                  <dt className="flex items-center gap-2 text-base font-semibold text-foreground">
-                    <Icon size={16} className="shrink-0 text-[var(--ink-600)]" />
+                  <dt className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Icon size={16} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
                     {meta.label}
                   </dt>
                   <dd className="text-sm leading-relaxed text-[var(--ink-600)]">{meta.summary}</dd>
@@ -430,7 +416,7 @@ export default function TeamSettingsPage() {
         {/* ── Permissions by role, as the server enforces them ── */}
         <SettingsSection
           title="Roles and permissions"
-          description="What each Govern role can do, and what each workspace role adds. A person's Govern role is set by your administrator at sign-in."
+          description="What each role can do. Govern roles are set by your admin."
         >
           <RolesMatrix />
         </SettingsSection>
@@ -472,18 +458,18 @@ function PersonRow({
         aria-expanded={open}
         aria-controls={panelId}
         className={cn(
-          "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--panel)] sm:px-5",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50",
+          "flex min-h-[42px] w-full items-center gap-3 px-4 py-2 text-left transition-colors duration-150 hover:bg-[var(--ink-50)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)]",
           COLUMNS,
         )}
       >
         <span className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-structure-soft text-sm font-semibold text-structure-soft-fg">
+          <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-structure-soft text-xs font-semibold text-structure-soft-fg">
             {initialsFromEmail(person.email)}
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-base font-semibold text-foreground" title={person.email}>
+              <span className="truncate text-sm font-medium text-foreground" title={person.email}>
                 {person.email}
               </span>
               {isYou && (
@@ -493,10 +479,10 @@ function PersonRow({
               )}
             </span>
             {isYou && yourName && (
-              <span className="hidden truncate text-sm text-muted-foreground md:block">{yourName}</span>
+              <span className="hidden truncate text-xs text-[var(--ink-500)] md:block">{yourName}</span>
             )}
             {/* Stacked summary below `md`, where the columns are hidden. */}
-            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-[var(--ink-600)] md:hidden">
+            <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--ink-600)] md:hidden">
               <StatusLabel status={person.status} />
               <span aria-hidden>·</span>
               {meta.label}
@@ -511,33 +497,33 @@ function PersonRow({
         </span>
         <span className="hidden md:block">
           <Badge variant={meta.tone} size="md">
-            <RoleIcon size={12} />
+            <RoleIcon size={12} aria-hidden />
             {meta.label}
           </Badge>
         </span>
         <span className="hidden text-sm tabular-nums text-[var(--ink-600)] md:block">{projectsLabel}</span>
-        <span className="flex shrink-0 items-center justify-end gap-1 text-sm font-semibold text-[var(--brand-primary-600)]">
+        <span className="flex shrink-0 items-center justify-end gap-1 text-sm font-medium text-[var(--brand-primary-600)]">
           <span className="hidden md:inline">{canManageAny ? "Manage" : "View"}</span>
-          <ChevronDown size={16} className={cn("transition-transform duration-200 motion-reduce:transition-none", open && "rotate-180")} />
+          <ChevronDown size={16} aria-hidden className={cn("transition-transform duration-150 motion-reduce:transition-none", open && "rotate-180")} />
         </span>
       </button>
 
       {open && (
-        <div id={panelId} className="border-t border-border bg-[var(--panel)] px-4 py-3 sm:px-5 md:pl-[4.5rem]">
-          <ul className="flex flex-col gap-2">
+        <div id={panelId} className="border-t border-border bg-[var(--panel)] px-4 md:pl-14">
+          <ul className="flex flex-col divide-y divide-border">
             {person.memberships.map((m) => (
               <li
                 key={`${m.projectId}-${m.isCreator ? "creator" : "member"}`}
-                className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 md:flex-row md:items-center md:justify-between md:gap-4"
+                className="flex flex-col gap-2 py-2.5 md:flex-row md:items-center md:justify-between md:gap-4"
               >
                 <div className="min-w-0">
                   <Link
                     href={`/projects/${m.projectId}`}
-                    className="break-words text-base font-semibold text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    className="break-words text-sm font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]"
                   >
                     {m.projectName}
                   </Link>
-                  <p className="mt-0.5 text-sm text-[var(--ink-600)]">{membershipNote(m)}</p>
+                  <p className="mt-0.5 text-xs text-[var(--ink-600)]">{membershipNote(m)}</p>
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -557,9 +543,9 @@ function PersonRow({
                       type="button"
                       onClick={() => onRemove({ email: person.email, projectId: m.projectId, projectName: m.projectName })}
                       aria-label={`Remove ${person.email} from ${m.projectName}`}
-                      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-[var(--danger-fg)] transition-colors duration-150 hover:bg-[var(--danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-md:h-11"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={16} aria-hidden />
                       Remove
                     </button>
                   )}
@@ -567,14 +553,14 @@ function PersonRow({
                     <button
                       type="button"
                       onClick={() => onRemove({ email: person.email, projectId: m.projectId, projectName: m.projectName, self: true })}
-                      className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-[var(--danger-fg)] transition-colors duration-150 hover:bg-[var(--danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-md:h-11"
                     >
-                      <LogOut size={15} />
+                      <LogOut size={16} aria-hidden />
                       Leave
                     </button>
                   ) : !m.isCreator && !m.manageable && (
-                    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Lock size={14} className="shrink-0" />
+                    <span className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-500)]">
+                      <Lock size={12} aria-hidden className="shrink-0" />
                       Read-only
                     </span>
                   )}
@@ -605,12 +591,12 @@ function membershipNote(m: Membership): string {
 function StatusLabel({ status }: { status: Status }) {
   return status === "active" ? (
     <span className="inline-flex items-center gap-1">
-      <Check size={14} className="text-[var(--success)]" />
+      <Check size={12} aria-hidden className="text-[var(--ink-500)]" />
       Active
     </span>
   ) : (
     <span className="inline-flex items-center gap-1">
-      <Clock size={14} />
+      <Clock size={12} aria-hidden className="text-[var(--ink-500)]" />
       Invited
     </span>
   );

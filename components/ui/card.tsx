@@ -24,7 +24,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card relative flex flex-col gap-4 rounded-xl bg-card text-card-foreground border border-border shadow-xs",
+        "group/card relative flex flex-col gap-4 rounded-xl bg-card text-card-foreground border border-border",
         // padding presets
         inset === "sm" && "p-4 gap-3",
         inset === "md" && "p-5",

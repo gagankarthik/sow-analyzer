@@ -27,9 +27,15 @@ export { PageHeader } from "@/components/PageHeader";
 /* Layout */
 export { Page, PageIntro, PageSection, Grid, Stack, Inline } from "./layout";
 export type { PageProps, PageIntroProps, PageSectionProps, GridProps, StackProps, InlineProps } from "./layout";
+export { Panel, ListPanel, PanelRow, PanelEmpty, type PanelProps } from "./Panel";
+export { ViewTabs, LayoutSwitch, type ListView } from "./ViewTabs";
+export {
+  Breadcrumb, HighlightsStrip, RecordHeader, Path, PathGuidance, RecordLayout, RecordSidebar,
+  type Crumb, type Highlight, type RecordHeaderProps, type PathStep, type PathStepStatus, type RecordSidebarTab,
+} from "./Record";
 
 /* Data display */
-export { KpiTile, StatGroup, Delta, type KpiTileProps, type DeltaProps, type StatGroupItem } from "./KpiTile";
+export { KpiTile, SummaryTiles, StatGroup, Delta, type KpiTileProps, type DeltaProps, type StatGroupItem } from "./KpiTile";
 export { KeyValueList, type KeyValueItem, type KeyValueListProps } from "./KeyValueList";
 export { StatusPill, Tag, type StatusPillProps, type TagProps } from "./StatusPill";
 export { OutcomeBadge, OutcomeIcon, OUTCOME_COLOR, OUTCOME_LABEL, OUTCOME_HINT, type Outcome } from "./OutcomeBadge";
@@ -59,3 +65,10 @@ export { Stepper, type Step, type StepStatus } from "./Stepper";
 export { EmptyState, NoResults, ErrorState, LoadingState, Callout, Banner, LiveRegion } from "./feedback";
 export type { EmptyStateProps, ErrorStateProps, LoadingStateProps, CalloutProps } from "./feedback";
 export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog";
+export {
+  SkeletonRegion, SkeletonLine, SkeletonText, TableSkeleton, TableFooterSkeleton, ToolbarSkeleton, ViewTabsSkeleton,
+  SummaryTilesSkeleton, PanelSkeleton, PanelRowsSkeleton, RecordHeaderSkeleton, PathSkeleton, RecordSidebarSkeleton,
+  BoardSkeleton, BoardCardSkeleton, LaneHeaderSkeleton, ChartSkeleton, CardListSkeleton, FormRowsSkeleton,
+  PageTitleSkeleton, PageSkeleton,
+  type SkeletonColumn, type TableSkeletonProps, type PanelSkeletonRow,
+} from "./skeletons";

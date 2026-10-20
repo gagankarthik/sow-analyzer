@@ -138,7 +138,7 @@ function RuleForm({ target, onClose }: { target: RuleDialogTarget; onClose: () =
 
       {formError && (
         <p role="alert" className="flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2 text-sm text-foreground">
-          <AlertCircle size={15} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+          <AlertCircle size={16} className="mt-0.5 shrink-0 text-[var(--danger)]" />
           <span className="[overflow-wrap:anywhere]">{formError}</span>
         </p>
       )}
@@ -262,9 +262,9 @@ function RuleForm({ target, onClose }: { target: RuleDialogTarget; onClose: () =
       </div>
 
       <DialogFooter>
-        <Button type="button" variant="outline" size="lg" className="md:h-9" onClick={onClose} disabled={save.isPending}>Cancel</Button>
-        <Button type="submit" size="lg" className="md:h-9" disabled={save.isPending}>
-          {save.isPending ? <><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Saving…</> : rule ? "Save rule" : "Add rule"}
+        <Button type="button" variant="outline" onClick={onClose} disabled={save.isPending}>Cancel</Button>
+        <Button type="submit" disabled={save.isPending}>
+          {save.isPending ? <><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Saving…</> : rule ? "Save rule" : "Add rule"}
         </Button>
       </DialogFooter>
     </form>

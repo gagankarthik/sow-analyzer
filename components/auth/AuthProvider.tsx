@@ -6,9 +6,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { shouldClearUserCache } from "@/lib/auth/user-data";
 import {
   SessionUnavailableError,
   getAuthUser,
@@ -36,6 +39,10 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  // AppProviders mounts QueryProvider outside AuthProvider, so the client is in scope.
+  const queryClient = useQueryClient();
+  /** The user the query cache currently holds data for. */
+  const lastSub = useRef<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
@@ -106,12 +113,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         await cognitoSignOut(opts);
       } finally {
+        // /login is a client-side navigation, so the query cache would
+        // otherwise survive it and show this user's documents, contracts and
+        // people to whoever signs in next in this tab.
+        queryClient.clear();
+        lastSub.current = null;
         setUser(null);
         setStatus("unauthenticated");
         router.replace("/login");
       }
     })();
-  }, [router]);
+  }, [router, queryClient]);
+
+  // Whatever path changes the signed-in user — sign-out here, a sign-out or a
+  // sign-in as someone else in another tab (the storage listener below), an
+  // expired session — the cached server data belonged to the previous person:
+  // drop it before the new user's screens render from it.
+  const sub = user?.sub ?? null;
+  useEffect(() => {
+    if (status === "loading") return;
+    if (shouldClearUserCache(lastSub.current, sub)) queryClient.clear();
+    lastSub.current = sub;
+  }, [sub, status, queryClient]);
 
   // Signing in or out in another tab changes the stored Cognito session:
   // re-read it here so this tab follows.

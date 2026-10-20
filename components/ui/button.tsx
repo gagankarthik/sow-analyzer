@@ -10,9 +10,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-xs hover:bg-[var(--brand-primary-700)]",
+        default: "bg-primary text-primary-foreground hover:bg-[var(--brand-primary-700)]",
         outline:
-          "border-[var(--ink-300)] bg-card text-foreground shadow-xs hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border-[var(--ink-300)] bg-card text-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
@@ -21,7 +21,7 @@ const buttonVariants = cva(
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
         ai: "bg-[var(--ai-surface)] text-[var(--ai-ink)] border-[var(--ai-border)] hover:bg-[color-mix(in_srgb,var(--ai-ink)_10%,var(--ai-surface))]",
-        primary: "bg-[var(--brand-primary-600)] text-white shadow-xs hover:bg-[var(--brand-primary-700)]",
+        primary: "bg-[var(--brand-primary-600)] text-white hover:bg-[var(--brand-primary-700)]",
       },
       size: {
         default:

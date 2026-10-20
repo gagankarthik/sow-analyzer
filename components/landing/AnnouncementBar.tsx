@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, X } from "@/components/ui/icons";
 import { useStoredValue, writeStoredValue } from "@/lib/use-stored-value";
 
 /* One line of real product news above the header. Closing it hides this
@@ -21,7 +21,7 @@ export function AnnouncementBar() {
         New in Govern: obligations Sonar finds now wait for a person to verify them, so every due date can be trusted.
       </p>
       <Link href="/product#capture" className="lp-announce-link">
-        See how <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
+        See how <ArrowRight size={16} aria-hidden="true" />
       </Link>
       <button
         type="button"
@@ -29,7 +29,7 @@ export function AnnouncementBar() {
         aria-label="Close announcement"
         onClick={() => writeStoredValue(STORAGE_KEY, ANNOUNCEMENT_ID)}
       >
-        <X size={16} strokeWidth={2} aria-hidden="true" />
+        <X size={16} aria-hidden="true" />
       </button>
     </div>
   );

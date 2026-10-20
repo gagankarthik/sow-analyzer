@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Building2, Users, Files } from "@/components/ui/icons";
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useDocument, useClassification } from "@/lib/queries/documents";
@@ -42,7 +42,7 @@ export default function TeamPage() {
   const [role, setRole] = useState(ALL);
   const [sort, setSort] = useState<"document" | "name">("document");
 
-  if (isLoading) return <TeamSkeleton />;
+  if (isLoading) return <ProjectRecordSkeleton section="team" />;
   if (isError && errorStatus(error) === 404) return <NotFound />;
   if (isError) {
     return (
@@ -89,7 +89,7 @@ export default function TeamPage() {
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
-      <div className="app-container py-6 md:py-8">
+      <div className="app-container py-5 md:py-6">
         <div className="max-w-4xl">
           <main className="min-w-0 space-y-4 md:space-y-6">
             <div>
@@ -114,7 +114,7 @@ export default function TeamPage() {
 
             {parties.length > 0 && (
               <ListFilters
-                className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+                className="mb-3"
                 search={query}
                 onSearch={setQuery}
                 placeholder="Search parties"
@@ -135,10 +135,10 @@ export default function TeamPage() {
                 {shownParties.map((party) => (
                   <div
                     key={party.key}
-                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-xs md:p-5"
+                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 md:p-5"
                   >
                     <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg">
-                      <Building2 size={18} strokeWidth={1.75} />
+                      <Building2 size={16} />
                     </span>
                     <div className="min-w-0">
                       <div className="break-words text-base font-semibold text-foreground">
@@ -154,7 +154,7 @@ export default function TeamPage() {
             ) : (
               <section className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-12 text-center">
                 <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]">
-                  <Users size={22} strokeWidth={1.5} />
+                  <Users size={24} />
                 </span>
                 <p className="mb-1 text-lg font-semibold text-foreground">
                   No parties extracted yet
@@ -179,9 +179,9 @@ function NotFound() {
   return (
     <div className="app-container py-20 flex flex-col items-center text-center">
       <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5">
-        <Files size={24} strokeWidth={1.5} />
+        <Files size={24} />
       </span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Document not found</h1>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Document not found</h1>
       <p className="mt-2 text-base text-muted-foreground max-w-sm">
         No document with this ID is in your workspace. It may have been deleted, or the link is out of date.
       </p>
@@ -189,35 +189,5 @@ function NotFound() {
         Back to projects
       </Link>
     </div>
-  );
-}
-
-function TeamSkeleton() {
-  return (
-    <>
-      <div>
-        <div className="app-container pt-5 md:pt-6 pb-4 space-y-3">
-          <Skeleton className="h-3.5 w-28" />
-          <Skeleton className="h-7 w-1/2" />
-          <Skeleton className="h-4 w-1/3" />
-        </div>
-      </div>
-      <div className="app-container py-6 md:py-8">
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          <div className="space-y-4 lg:col-span-8">
-            <Skeleton className="h-24 rounded-xl" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
-              ))}
-            </div>
-          </div>
-          <div className="lg:col-span-4 space-y-5">
-            <Skeleton className="h-40 rounded-xl" />
-            <Skeleton className="h-44 rounded-xl" />
-          </div>
-        </div>
-      </div>
-    </>
   );
 }

@@ -10,14 +10,13 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ProjectHeader } from "@/components/ProjectHeader";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
+import { PanelSkeleton, SkeletonText } from "@/components/ds/skeletons";
 import { DocLoadError } from "@/components/DocLoadError";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import { ProcessingState } from "@/components/ProcessingState";
-import { SonarMark } from "@/components/ui/SonarMark";
 import { ContractEvolution } from "@/components/ContractEvolution";
 import { KeyDatesCard } from "@/components/dates/KeyDatesCard";
 import { ReanalyseNotice } from "@/components/dates/ReanalyseNotice";
@@ -27,15 +26,17 @@ import { MotionReveal } from "@/components/MotionReveal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ArrowRight, Files, XCircle, Loader2, Pencil, RefreshCw,
-  Building2, FileText, ShieldAlert, AlertTriangle, Info,
+  ArrowRight, Files, Loader2, Pencil, RefreshCw,
+  Building2, ShieldAlert, AlertTriangle, Info, Sonar,
 } from "@/components/ui/icons";
+import { ListPanel, Panel, PanelRow } from "@/components/ds/Panel";
+import { Path, PathGuidance, RecordLayout, RecordSidebar, type PathStep } from "@/components/ds/Record";
 import { apiDocToProject, errorStatus } from "@/lib/api";
 // Only projects with several documents use the workspace; single documents never load it.
-const ProjectWorkspace = dynamic(() => import("@/components/ProjectWorkspace").then((m) => m.ProjectWorkspace), { loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
+const ProjectWorkspace = dynamic(() => import("@/components/ProjectWorkspace").then((m) => m.ProjectWorkspace), { loading: () => <ProjectRecordSkeleton section="workspace" /> });
 import { isProjectId } from "@/lib/projects-store";
 import { useDocument, useClassification, useTimeline, useUpdateDocument, useReprocess } from "@/lib/queries/documents";
-import { formatDate } from "@/lib/format";
+import { displayTitle, formatDate } from "@/lib/format";
 import { useNow } from "@/lib/use-now";
 import { buildKeyDateTimeline, canReanalyze, documentKeyDates } from "@/lib/key-dates";
 import { can } from "@/lib/projects-store";
@@ -50,6 +51,13 @@ const LIFECYCLE_LABEL: Record<Lifecycle, string> = {
   signed: "Signed", active: "Active", renewal: "Renewal", expired: "Expired",
 };
 
+/** The lifecycle as Path stages; renewal and expired follow active. */
+const PATH_STAGES: Lifecycle[] = ["draft", "review", "negotiation", "approval", "signed", "active"];
+const STATUS_LABEL: Record<string, string> = { READY: "Analyzed", FAILED: "Failed" };
+const NUMBER = new Intl.NumberFormat("en-US");
+const TEXT_LINK =
+  "inline-flex items-center gap-1 rounded-sm text-xs font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] hover:underline underline-offset-2 max-md:min-h-11";
+
 const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const RISK_LEVELS: RiskLevel[] = ["critical", "high", "medium", "low"];
 const RISK_META: Record<RiskLevel, { label: string; bg: string; text: string; bar: string }> = {
@@ -59,11 +67,11 @@ const RISK_META: Record<RiskLevel, { label: string; bg: string; text: string; ba
   low: { label: "Low", bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", bar: "bg-[var(--success)]" },
 };
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode }> = {
-  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={13} /> },
-  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
-  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
-  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
-  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={12} aria-hidden /> },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={12} aria-hidden /> },
+  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={12} aria-hidden /> },
+  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={12} aria-hidden /> },
+  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={12} aria-hidden /> },
 };
 const SEV_FILL: Record<FindingSeverity, string> = {
   critical: "bg-[var(--danger)]", high: "bg-[var(--warning)]", medium: "bg-[var(--ink-400)]", low: "bg-[var(--success)]", info: "bg-[var(--info)]",
@@ -130,7 +138,7 @@ function DocumentOverview() {
   const dateSource = useMemo(() => (docRow ? documentKeyDates(docRow, classification) : null), [docRow, classification]);
   const keyDates = useMemo(() => buildKeyDateTimeline(dateSource?.dates ?? [], now), [dateSource, now]);
 
-  if (isLoading) return <OverviewSkeleton />;
+  if (isLoading) return <ProjectRecordSkeleton section="overview" />;
 
   if (isError && errorStatus(error) === 404) {
     return <NotFound />;
@@ -148,7 +156,6 @@ function DocumentOverview() {
   const totalRiskClauses = riskCounts.low + riskCounts.medium + riskCounts.high + riskCounts.critical;
   const summary = classification?.summary || doc.summary || "";
   const needsReview = riskCounts.critical + riskCounts.high;
-  const showFocal = !!isReady && totalRiskClauses > 0;
 
   function openEdit() {
     setEditTitle(doc.title || "");
@@ -186,220 +193,268 @@ function DocumentOverview() {
     }
   }
 
+  // The stages as a Path (UI_SPEC section 8): the lifecycle, with the
+  // analysis state as the current step's guidance. It replaces the large
+  // failure banner and the "clauses needing review" focal block.
+  const stageIndex = PATH_STAGES.indexOf(doc.lifecycle);
+  const pathSteps: PathStep[] = [
+    ...PATH_STAGES.map((st, i): PathStep => ({
+      id: st,
+      label: LIFECYCLE_LABEL[st],
+      status: stageIndex < 0 || i < stageIndex ? "done" : i === stageIndex ? (isFailed ? "blocked" : "current") : "upcoming",
+    })),
+    ...(stageIndex < 0 ? [{ id: doc.lifecycle, label: LIFECYCLE_LABEL[doc.lifecycle], status: (isFailed ? "blocked" : "current") as PathStep["status"] }] : []),
+  ];
+  const reanalyzeButton = canReanalyze(doc.role) ? (
+    <Button variant="outline" onClick={onReanalyze} disabled={reprocess.isPending || isProcessing}>
+      <RefreshCw size={16} aria-hidden className={reprocess.isPending ? "animate-spin motion-reduce:animate-none" : undefined} />
+      {reprocess.isPending ? "Re-analyzing…" : "Re-analyze"}
+    </Button>
+  ) : null;
+  const guidance = isFailed ? (
+    <PathGuidance
+      title="Processing failed"
+      holder={doc.errorMessage ? undefined : "No reason was reported. Re-analyze, or delete the document and upload it again."}
+      action={reanalyzeButton}
+    >
+      {doc.errorMessage && (
+        <p role="alert" className="break-all font-mono text-xs leading-relaxed text-[var(--ink-700)]">
+          {doc.errorMessage.length > 300 ? doc.errorMessage.slice(0, 300) + "…" : doc.errorMessage}
+        </p>
+      )}
+    </PathGuidance>
+  ) : isProcessing ? (
+    <PathGuidance title="Analysis in progress" holder="Sonar is reading the document" />
+  ) : needsReview > 0 ? (
+    <PathGuidance
+      title={`Review ${NUMBER.format(needsReview)} high or critical ${needsReview === 1 ? "clause" : "clauses"}`}
+      holder={`${NUMBER.format(totalRiskClauses)} clauses rated`}
+      fields={RISK_LEVELS.map((r) => ({ label: RISK_META[r].label, value: NUMBER.format(riskCounts[r]) }))}
+      action={
+        <Button asChild>
+          <Link href={`/projects/${project.id}/sow`}>Review clauses<ArrowRight size={16} aria-hidden /></Link>
+        </Button>
+      }
+    />
+  ) : (
+    <PathGuidance title={LIFECYCLE_LABEL[doc.lifecycle]} holder={isReady ? "No high or critical clauses" : undefined} />
+  );
+
+  const sidebar = (
+    <RecordSidebar
+      label="Document details"
+      tabs={[
+        {
+          id: "details",
+          label: "Details",
+          content: (
+            <div className="flex flex-col gap-4">
+              <dl className="divide-y divide-[var(--ink-100)]">
+                <DetailItem label="Type"><DocTypeBadge type={doc.docType} /></DetailItem>
+                <DetailItem label="Stage"><span className="text-sm text-foreground">{stageLabel(doc.lifecycle)}</span></DetailItem>
+                <DetailItem label="Status"><span className="text-sm text-foreground">{STATUS_LABEL[rawStatus] ?? rawStatus}</span></DetailItem>
+                {doc.effectiveDate && <DetailItem label="Effective"><span className="text-sm text-foreground">{formatDate(doc.effectiveDate)}</span></DetailItem>}
+                <DetailItem label="Versions"><span className="text-sm tabular-nums text-foreground">{NUMBER.format(doc.latestVersion)}</span></DetailItem>
+                {isReady && <DetailItem label="Clauses rated"><span className="text-sm tabular-nums text-foreground">{NUMBER.format(totalRiskClauses)}</span></DetailItem>}
+              </dl>
+              {/* Owners and editors only; the API enforces it either way. */}
+              {(can(doc.role, "edit") || reanalyzeButton) && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {can(doc.role, "edit") && (
+                    <Button variant="outline" onClick={openEdit}><Pencil size={16} aria-hidden />Edit details</Button>
+                  )}
+                  {!isFailed && reanalyzeButton}
+                </div>
+              )}
+            </div>
+          ),
+        },
+        {
+          id: "related",
+          label: "Related",
+          count: doc.parties.length + (doc.parentDocId ? 1 : 0),
+          content: (
+            <div className="flex flex-col gap-4">
+              {doc.parentDocId && (
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs text-muted-foreground">Parent agreement</p>
+                  <Link href={`/projects/${doc.parentDocId}`} className="w-fit truncate font-mono text-xs text-[var(--brand-primary-600)] hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
+                    {doc.parentDocId.slice(0, 12)}…
+                  </Link>
+                </div>
+              )}
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-muted-foreground">Parties</p>
+                {doc.parties.length === 0 ? (
+                  <p className="text-sm text-[var(--ink-600)]">No parties identified in this document.</p>
+                ) : (
+                  <ul className="divide-y divide-[var(--ink-100)]">
+                    {doc.parties.map((party, i) => (
+                      <li key={i} className="flex min-w-0 items-center gap-2 py-2 first:pt-0 last:pb-0">
+                        <Building2 size={16} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
+                        <span className="min-w-0 break-words text-sm text-foreground">{party}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          ),
+        },
+        {
+          id: "files",
+          label: "Files",
+          content: (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-foreground">
+                <span className="tabular-nums">{NUMBER.format(doc.latestVersion)}</span> {doc.latestVersion === 1 ? "version" : "versions"}
+              </p>
+              <Button variant="outline" asChild className="w-fit">
+                <Link href={`/projects/${project.id}/documents`}><Files size={16} aria-hidden />Versions and files</Link>
+              </Button>
+            </div>
+          ),
+        },
+      ]}
+    />
+  );
+
   return (
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Overview</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Owners and editors only; the API enforces it either way. */}
-            {canReanalyze(doc.role) && (
-              <Button variant="outline" size="lg" className="md:h-9" onClick={onReanalyze} disabled={reprocess.isPending || isProcessing} title="Re-run the analysis pipeline on this document">
-                <RefreshCw size={14} className={reprocess.isPending ? "animate-spin" : undefined} />{reprocess.isPending ? "Re-analyzing…" : "Re-analyze"}
-              </Button>
-            )}
-            {can(doc.role, "edit") && (
-              <Button variant="outline" size="lg" className="md:h-9" onClick={openEdit}><Pencil size={14} />Edit details</Button>
-            )}
-          </div>
-        </div>
+      <div className="app-container flex flex-col gap-6 py-5 md:py-6">
+        <Path label="Document stages" steps={pathSteps}>{guidance}</Path>
 
-        {isFailed && (
-          <div role="alert" className="flex items-start gap-3 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-4 md:px-5">
-            <XCircle size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--danger)]" />
-            <div className="min-w-0">
-              <p className="text-base font-semibold text-[var(--danger)]">Processing failed.</p>
-              {doc.errorMessage ? (
-                <p className="mt-1 break-all font-mono text-xs leading-relaxed text-[var(--ink-700)]">{doc.errorMessage.length > 300 ? doc.errorMessage.slice(0, 300) + "…" : doc.errorMessage}</p>
-              ) : (
-                <p className="mt-0.5 text-sm text-[var(--ink-700)]">The pipeline reported no reason. Re-analyze the document, or delete it and upload it again.</p>
-              )}
-            </div>
-          </div>
-        )}
-        {isProcessing && <ProcessingState status={rawStatus} />}
+        <RecordLayout
+          sidebar={sidebar}
+          main={
+            <>
+              {isProcessing && <ProcessingState status={rawStatus} />}
 
-        {/* ── Executive summary + focal block: clauses needing review ── */}
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          <section className={`rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 md:p-6 ${showFocal ? "lg:col-span-8" : "lg:col-span-12"}`}>
-            <div className="flex items-start gap-3.5">
-              <SonarMark size="md" tile className="hidden sm:inline-flex" />
-              <div className="min-w-0 flex-1">
-                <h3 className="text-base font-semibold mb-1.5">Sonar executive summary</h3>
+              {/* Sonar summary */}
+              <Panel
+                as="h2"
+                title={<span className="inline-flex items-center gap-2"><Sonar size={16} aria-hidden className="text-[var(--ai-ink)]" />Sonar summary</span>}
+                actions={
+                  <Link href={`/projects/${project.id}/sow`} className={TEXT_LINK}>
+                    All clauses<ArrowRight size={12} aria-hidden />
+                  </Link>
+                }
+              >
                 {!isReady ? (
-                  <p className="text-base text-[var(--ink-600)]">The summary appears once processing completes.</p>
+                  <p className="text-sm text-[var(--ink-600)]">The summary appears once processing completes.</p>
                 ) : summary ? (
-                  <p className="max-w-[60ch] text-base leading-relaxed text-foreground">{summary}</p>
+                  <p className="max-w-[72ch] text-sm leading-relaxed text-foreground">{summary}</p>
                 ) : !classification && classError ? (
-                  <p className="text-base text-[var(--ink-600)]">
+                  <p className="text-sm text-[var(--ink-600)]">
                     The analysis for this document couldn&apos;t be loaded.{" "}
-                    <button type="button" onClick={() => refetchClass()} className="font-semibold text-[var(--brand-primary-600)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Try again</button>
+                    <button type="button" onClick={() => refetchClass()} className="font-semibold text-[var(--brand-primary-600)] underline-offset-2 hover:underline">Try again</button>
                   </p>
                 ) : !classification ? (
-                  <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
+                  <SkeletonText lines={2} label="the summary" />
                 ) : (
-                  <p className="text-base text-[var(--ink-600)]">No summary was extracted. Open the clause analysis for the full breakdown.</p>
+                  <p className="text-sm text-[var(--ink-600)]">No summary was extracted. Open the clause analysis for the full breakdown.</p>
                 )}
-                <div className="mt-4">
-                  <Button variant="outline" size="lg" className="md:h-9" asChild>
-                    <Link href={`/projects/${project.id}/sow`}><FileText size={14} />View all clauses<ArrowRight size={13} strokeWidth={2.25} /></Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </section>
+              </Panel>
 
-          {showFocal && (
-            <section aria-label="Clauses needing review" className="flex flex-col rounded-xl bg-[var(--navy)] p-5 text-white md:p-6 lg:col-span-4">
-              <h3 className="text-base font-semibold">Clauses needing review</h3>
-              <div className="mt-2 flex flex-wrap items-baseline gap-x-2">
-                <span className="text-4xl font-bold leading-none tabular-nums tracking-tight">{needsReview}</span>
-                <span className="text-sm text-[var(--navy-foreground)]">of {totalRiskClauses} clauses are high or critical</span>
-              </div>
-              <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-2 border-t border-[var(--navy-border)] pt-4 text-sm">
-                {RISK_LEVELS.map((r) => (
-                  <div key={r} className="flex items-center justify-between gap-2">
-                    <dt className="text-[var(--navy-foreground)]">{RISK_META[r].label}</dt>
-                    <dd className="font-semibold tabular-nums">{riskCounts[r]}</dd>
+              {/* Risk intelligence (visual) */}
+              {isReady && totalRiskClauses > 0 && (
+                <MotionReveal><RiskIntelligence counts={riskCounts} /></MotionReveal>
+              )}
+
+              {/* Clauses that need attention: one flat list */}
+              {isReady && topRiskClauses.length > 0 && (
+                <ListPanel
+                  as="h2"
+                  title="Clauses that need attention"
+                  meta={NUMBER.format(topRiskClauses.length)}
+                  actions={<Link href={`/projects/${project.id}/sow`} className={TEXT_LINK}>View all<ArrowRight size={12} aria-hidden /></Link>}
+                >
+                  <ul>
+                    {topRiskClauses.map((c) => {
+                      const m = RISK_META[c.riskLevel ?? "low"];
+                      return (
+                        <PanelRow key={c.number} className="flex items-start gap-3">
+                          <span className="mt-0.5 min-w-[2rem] shrink-0 font-mono text-xs text-muted-foreground">{c.number}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="min-w-0 break-words text-sm font-medium text-foreground">{displayTitle(c.title) || c.number}</span>
+                              <span className={`inline-flex items-center gap-1 text-xs font-medium ${m.text}`}>
+                                {c.riskLevel === "critical" ? <ShieldAlert size={12} aria-hidden /> : <AlertTriangle size={12} aria-hidden />}
+                                {m.label} risk
+                              </span>
+                              <span className="text-xs text-[var(--ink-600)]">{clauseTypeLabel(c)}</span>
+                            </div>
+                            {c.summary && <p className="text-sm leading-relaxed text-[var(--ink-600)]">{c.summary}</p>}
+                          </div>
+                        </PanelRow>
+                      );
+                    })}
+                  </ul>
+                </ListPanel>
+              )}
+
+              {/* Key findings: a flat list, most severe first */}
+              {isReady && classification && classification.keyFindings.length > 0 && (
+                <ListPanel as="h2" title="Key findings" meta={NUMBER.format(classification.keyFindings.length)}>
+                  <div className="border-b border-border px-4 py-3">
+                    <FindingsStrip findings={classification.keyFindings} />
                   </div>
-                ))}
-              </dl>
-              <div className="mt-5 lg:mt-auto lg:pt-5">
-                <Button size="lg" className="w-full lg:w-auto lg:self-start" asChild>
-                  <Link href={`/projects/${project.id}/sow`}>Review clauses<ArrowRight size={14} strokeWidth={2.25} /></Link>
-                </Button>
-              </div>
-            </section>
-          )}
-        </div>
+                  <ul>
+                    {[...classification.keyFindings].sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).map((f, i) => {
+                      const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
+                      return (
+                        <PanelRow key={i} className="flex items-start gap-3">
+                          <span className={`mt-0.5 shrink-0 ${s.text}`}>{s.icon}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                              <span className="min-w-0 break-words font-medium text-foreground">{f.label}</span>
+                              <span className={`text-xs font-medium capitalize ${s.text}`}>{f.severity}</span>
+                            </p>
+                            <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">{f.detail}</p>
+                          </div>
+                        </PanelRow>
+                      );
+                    })}
+                  </ul>
+                </ListPanel>
+              )}
 
-        {/* ── Risk intelligence (visual) ────────────────────── */}
-        {isReady && totalRiskClauses > 0 && (
-          <MotionReveal><RiskIntelligence counts={riskCounts} /></MotionReveal>
-        )}
+              {/* Risk by category: heatmap */}
+              {isReady && clauses.length > 0 && (
+                <MotionReveal delay={0.05}>
+                  <Panel as="h2" title="Risk by category">
+                    {/* Rated clauses only (an unrated clause is not "low"), and every
+                        category listed: no row cap, so none is silently dropped. */}
+                    <ClauseHeatmap clauses={clauses.filter((c) => c.riskRated !== false)} maxRows={Math.max(1, catData.length)} />
+                  </Panel>
+                </MotionReveal>
+              )}
 
-        {/* ── Risk analysis: heatmap + radar ────────────────── */}
-        {isReady && clauses.length > 0 && (
-          <MotionReveal delay={0.05}>
-            <section>
-              <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                  <h3 className="text-base font-semibold tracking-tight text-foreground">Risk by category</h3>
-                  <span className="text-sm text-muted-foreground">Category by severity</span>
-                </div>
-                {/* Rated clauses only (an unrated clause is not "low"), and every
-                    category listed: no row cap, so none is silently dropped. */}
-                <ClauseHeatmap clauses={clauses.filter((c) => c.riskRated !== false)} maxRows={Math.max(1, catData.length)} />
-              </div>
-            </section>
-          </MotionReveal>
-        )}
+              {/* Key dates: current, next and most recent */}
+              {isReady && dateSource && (classLoading ? (
+                <PanelSkeleton title="Key dates" rows={3} label="key dates" />
+              ) : (
+                <>
+                  {!dateSource.extracted && !(classError && !classification) && (
+                    <ReanalyseNotice docId={id} role={doc.role} busy={isProcessing} title="Analyzed before full date extraction">
+                      {dateSource.source === "legacy"
+                        ? "These dates come from the earlier analysis. Re-analyze to extract every date, deadline and payment."
+                        : "The earlier analysis recorded no dates. Re-analyze to extract them."}
+                    </ReanalyseNotice>
+                  )}
+                  <KeyDatesCard docId={id} source={dateSource} timeline={keyDates} />
+                </>
+              ))}
 
-        {/* ── Key dates: current, next and most recent ──────── */}
-        {isReady && dateSource && (classLoading ? (
-          <Skeleton className="h-40 rounded-xl" />
-        ) : (
-          <>
-            {!dateSource.extracted && !(classError && !classification) && (
-              <ReanalyseNotice docId={id} role={doc.role} busy={isProcessing} title="Analyzed before full date extraction">
-                {dateSource.source === "legacy"
-                  ? "The dates below are the ones the earlier analysis recorded. Re-analyze this document to extract every date, deadline and payment."
-                  : "The earlier analysis recorded no dates. Re-analyze this document to extract dates."}
-              </ReanalyseNotice>
-            )}
-            <KeyDatesCard docId={id} source={dateSource} timeline={keyDates} />
-          </>
-        ))}
-
-        {/* ── Contract evolution (hero) ─────────────────────── */}
-        {isReady && timeline && (Object.keys(timeline.currentState).length > 0 || Object.keys(timeline.initialState).length > 0) && (
-          <ContractEvolution timeline={timeline} />
-        )}
-
-        {/* ── Key findings (visual) ─────────────────────────── */}
-        {isReady && classification && classification.keyFindings.length > 0 && (
-          <section>
-            <FindingsStrip findings={classification.keyFindings} />
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
-              {[...classification.keyFindings].sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).map((f, i) => {
-                const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
-                return (
-                  <div key={i} className="rounded-xl border border-border bg-card p-4 shadow-xs">
-                    <div className="mb-2 flex items-start gap-2.5">
-                      <span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${s.bg} ${s.text} shrink-0`}>{s.icon}</span>
-                      <span className="min-w-0 flex-1"><span className="block break-words text-base font-semibold leading-snug text-foreground">{f.label}</span><span className={`text-xs font-medium capitalize ${s.text}`}>{f.severity}</span></span>
-                    </div>
-                    <p className="text-sm leading-relaxed text-[var(--ink-600)]">{f.detail}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ── Attention clauses ─────────────────────────────── */}
-        {isReady && topRiskClauses.length > 0 && (
-          <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2"><ShieldAlert size={16} className="shrink-0 text-[var(--danger)]" /><h3 className="text-base font-semibold tracking-tight text-foreground">Clauses that need attention</h3></div>
-              <Link href={`/projects/${project.id}/sow`} className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0">View all<ArrowRight size={13} strokeWidth={2.25} /></Link>
-            </div>
-            <div className="space-y-2.5">
-              {topRiskClauses.map((c) => {
-                const m = RISK_META[c.riskLevel ?? "low"];
-                return (
-                  <div key={c.number} className={`rounded-lg border ${c.riskLevel === "critical" ? "border-[var(--danger)]/40" : "border-border"} bg-card p-3.5`}>
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 min-w-[2rem] shrink-0 font-mono text-xs text-muted-foreground">{c.number}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="break-words text-base font-semibold text-foreground">{c.title || c.number}</span>
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${m.bg} ${m.text}`}>{m.label} risk</span>
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-[var(--ink-600)]">{clauseTypeLabel(c)}</span>
-                        </div>
-                        {c.summary && <p className="text-sm leading-relaxed text-[var(--ink-600)]">{c.summary}</p>}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ── Row D: Parties + Document details ─────────────── */}
-        <section className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
-          <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 lg:col-span-2">
-            <h3 className="text-base font-semibold tracking-tight text-foreground mb-4">Contract parties {doc.parties.length > 0 && <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{doc.parties.length}</span>}</h3>
-            {doc.parties.length === 0 ? (
-              <p className="text-sm text-[var(--ink-600)]">No parties identified in this document.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {doc.parties.map((party, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg shrink-0"><Building2 size={15} strokeWidth={1.75} /></span>
-                    <div className="min-w-0"><div className="break-words text-base font-semibold text-foreground">{party}</div><div className="text-xs text-muted-foreground">Party {i + 1}</div></div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
-            <h3 className="text-base font-semibold mb-4 tracking-tight text-foreground">Document details</h3>
-            <dl className="divide-y divide-[var(--ink-100)]">
-              <DetailItem label="Type"><DocTypeBadge type={doc.docType} /></DetailItem>
-              <DetailItem label="Stage"><Badge variant="neutral" size="sm" className="text-xs">{stageLabel(doc.lifecycle)}</Badge></DetailItem>
-              <DetailItem label="Status"><Badge variant={rawStatus === "READY" ? "success" : rawStatus === "FAILED" ? "danger" : "warning"} size="sm" className="text-xs">{rawStatus}</Badge></DetailItem>
-              {doc.effectiveDate && <DetailItem label="Effective"><span className="text-sm font-medium text-foreground">{formatDate(doc.effectiveDate)}</span></DetailItem>}
-              {doc.parentDocId && <DetailItem label="Parent"><Link href={`/projects/${doc.parentDocId}`} className="text-xs font-mono text-[var(--brand-primary-600)] hover:underline truncate max-w-[120px] inline-block">{doc.parentDocId.slice(0, 12)}…</Link></DetailItem>}
-              <DetailItem label="Versions"><span className="text-sm font-semibold tabular-nums text-foreground">{doc.latestVersion}</span></DetailItem>
-            </dl>
-          </div>
-        </section>
-
+              {/* Contract evolution */}
+              {isReady && timeline && (Object.keys(timeline.currentState).length > 0 || Object.keys(timeline.initialState).length > 0) && (
+                <ContractEvolution timeline={timeline} />
+              )}
+            </>
+          }
+        />
       </div>
 
       {/* Edit dialog */}
@@ -422,7 +477,7 @@ function DocumentOverview() {
           <DialogFooter>
             <Button variant="outline" size="lg" className="md:h-9" onClick={() => setShowEdit(false)} disabled={updateMut.isPending}>Cancel</Button>
             <Button size="lg" className="md:h-9" onClick={handleSave} disabled={updateMut.isPending}>
-              {updateMut.isPending && <Loader2 size={13} className="animate-spin" />}
+              {updateMut.isPending && <Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />}
               Save changes
             </Button>
           </DialogFooter>
@@ -446,20 +501,15 @@ function FindingsStrip({ findings }: { findings: ApiKeyFinding[] }) {
   const total = findings.length;
   const counts = SEV_ORDER.map((sev) => ({ sev, n: findings.filter((f) => f.severity === sev).length })).filter((x) => x.n > 0);
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
-      <div className="flex items-center gap-2">
-        <ShieldAlert size={16} className="shrink-0 text-[var(--warning)]" />
-        <h3 className="text-base font-semibold tracking-tight text-foreground">Key findings</h3>
-        <span className="text-sm tabular-nums text-muted-foreground">{total}</span>
-      </div>
-      <div className="flex min-w-0 flex-col gap-2 md:max-w-md md:flex-1">
+    <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-2 md:max-w-md">
         <div className="flex h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
           {counts.map(({ sev, n }) => <div key={sev} className={SEV_FILL[sev]} style={{ width: `${(n / total) * 100}%` }} />)}
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {counts.map(({ sev, n }) => (
             <span key={sev} className="inline-flex items-center gap-1.5 text-xs capitalize text-[var(--ink-600)]">
-              <span className={`h-2 w-2 rounded-full ${SEV_FILL[sev]}`} />{sev} <span className="font-semibold tabular-nums text-foreground">{n}</span>
+              <span aria-hidden className={`h-2 w-2 rounded-full ${SEV_FILL[sev]}`} />{sev} <span className="font-semibold tabular-nums text-foreground">{n}</span>
             </span>
           ))}
         </div>
@@ -471,29 +521,10 @@ function FindingsStrip({ findings }: { findings: ApiKeyFinding[] }) {
 function NotFound() {
   return (
     <div className="app-container py-20 flex flex-col items-center text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project not found</h1>
-      <p className="mt-2 text-base text-muted-foreground max-w-sm">This engagement may have been archived, or the link is out of date.</p>
-      <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-sm font-semibold transition-colors">Back to projects</Link>
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} aria-hidden /></span>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Document not found</h1>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">It may have been deleted, or the link is out of date.</p>
+      <Button asChild className="mt-6"><Link href="/projects">Back to projects</Link></Button>
     </div>
-  );
-}
-
-function OverviewSkeleton() {
-  return (
-    <>
-      <div>
-        <div className="app-container pt-5 md:pt-6 pb-4 space-y-3">
-          <Skeleton className="h-3.5 w-28" />
-          <div className="flex items-center gap-2.5"><Skeleton className="h-9 w-9 rounded-lg" /><Skeleton className="h-7 w-1/2" /></div>
-          <Skeleton className="h-4 w-1/2 sm:ml-[46px] sm:w-1/3" />
-        </div>
-      </div>
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12"><Skeleton className="h-40 rounded-xl lg:col-span-8" /><Skeleton className="h-40 rounded-xl lg:col-span-4" /></div>
-        <Skeleton className="h-56 rounded-xl" />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div>
-      </div>
-    </>
   );
 }

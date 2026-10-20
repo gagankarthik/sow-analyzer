@@ -84,7 +84,7 @@ export function SearchField({
             aria-label={`Clear ${label.toLowerCase()}`}
             className="absolute end-1 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-fg-tertiary hover:bg-surface-hover hover:text-fg-primary"
           >
-            <X size={14} aria-hidden />
+            <X size={12} aria-hidden />
           </button>
         )}
       </div>
@@ -357,7 +357,7 @@ export function TabsTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "-mb-px inline-flex h-10 shrink-0 items-center gap-2 border-b-2 border-transparent px-3 text-body font-medium whitespace-nowrap text-fg-secondary transition-colors duration-(--duration-instant) hover:text-fg-primary",
+        "-mb-px inline-flex h-10 shrink-0 items-center gap-2 border-b-2 border-transparent px-3 text-body max-md:h-11 font-medium whitespace-nowrap text-fg-secondary transition-colors duration-(--duration-instant) hover:text-fg-primary",
         "data-[state=active]:border-interactive data-[state=active]:font-semibold data-[state=active]:text-fg-link",
         "disabled:pointer-events-none disabled:opacity-50",
         className,

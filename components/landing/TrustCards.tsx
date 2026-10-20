@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Check, Lock } from "lucide-react";
+import { ArrowRight, Check, Lock } from "@/components/ui/icons";
 
 /* Why teams trust it: three claims, each proved by a slice of the product in
    the card's coloured header rather than an illustration. */
@@ -26,7 +26,7 @@ export function TrustCards() {
             <div className="lp-trust-body">
               <h3 className="lp-trust-title">Your matrix, not ours</h3>
               <p>Clauses are checked against the positions and fallbacks your office already uses, agreement type by agreement type.</p>
-              <Link href="/product#matrix" className="lp-trust-link">Learn more <ArrowRight size={14} aria-hidden="true" /></Link>
+              <Link href="/product#matrix" className="lp-trust-link">Learn more <ArrowRight size={16} aria-hidden="true" /></Link>
             </div>
           </li>
           <li className="lp-trust-card">
@@ -40,21 +40,21 @@ export function TrustCards() {
             <div className="lp-trust-body">
               <h3 className="lp-trust-title">Every finding shows its work</h3>
               <p>Sonar&apos;s AI reads the agreement; your matrix&apos;s rules rate each clause. Every rating names the clause and the rule, and the same clause gets the same answer every time.</p>
-              <Link href="/product#capture" className="lp-trust-link">Learn more <ArrowRight size={14} aria-hidden="true" /></Link>
+              <Link href="/product#capture" className="lp-trust-link">Learn more <ArrowRight size={16} aria-hidden="true" /></Link>
             </div>
           </li>
           <li className="lp-trust-card">
             <div className="lp-trust-head lp-trust-navy" aria-hidden="true">
               <div className="lp-trust-snip lp-trust-snip-dark">
-                <p className="lp-trust-snip-row"><Lock size={13} /><span>AES-256 at rest · TLS 1.2+ in transit</span></p>
-                <p className="lp-trust-snip-row"><Check size={13} /><span>Each workspace isolated by tenant</span></p>
-                <p className="lp-trust-snip-row"><Check size={13} /><span>No model trained on your documents</span></p>
+                <p className="lp-trust-snip-row"><Lock size={12} /><span>AES-256 at rest · TLS 1.2+ in transit</span></p>
+                <p className="lp-trust-snip-row"><Check size={12} /><span>Each workspace isolated by tenant</span></p>
+                <p className="lp-trust-snip-row"><Check size={12} /><span>No model trained on your documents</span></p>
               </div>
             </div>
             <div className="lp-trust-body">
               <h3 className="lp-trust-title">Your data stays yours</h3>
               <p>Encrypted end to end, isolated per workspace, and never used to train a model. Ready for your security review.</p>
-              <Link href="/security" className="lp-trust-link">Learn more <ArrowRight size={14} aria-hidden="true" /></Link>
+              <Link href="/security" className="lp-trust-link">Learn more <ArrowRight size={16} aria-hidden="true" /></Link>
             </div>
           </li>
         </ul>

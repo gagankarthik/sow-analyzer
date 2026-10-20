@@ -10,19 +10,13 @@ import {
   Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
-  AXIS_STROKE, AXIS_TICK, ChartDataTable, GRID_STROKE, type ChartTable, RESPONSIVE_INITIAL, TooltipRow, TooltipShell, useChartMotion,
+  AXIS_STROKE, AXIS_TICK, ChartDataTable, GRID_STROKE, RESPONSIVE_INITIAL, TooltipRow, TooltipShell, useChartMotion,
 } from "@/components/charts/primitives";
 import { cn } from "@/lib/utils";
 import { LegendDot } from "./ReportCharts";
+import { chartRowsTable, type ChartRow, type ChartSeries } from "./chart-rows";
 
-export type ChartRow = { label: string; tooltipLabel?: string } & Record<string, string | number | null | undefined>;
-
-export interface ChartSeries {
-  key: string;
-  label: string;
-  color: string;
-  dashed?: boolean;
-}
+export { chartRowsTable, type ChartRow, type ChartSeries };
 
 function Legend({ series }: { series: ChartSeries[] }) {
   if (series.length < 2) return null;
@@ -51,15 +45,6 @@ function ChartTooltip({
       })}
     </TooltipShell>
   );
-}
-
-/** The chart's rows as a table (screen-reader twin and "View as table"). */
-export function chartRowsTable(caption: string, rows: ChartRow[], series: ChartSeries[], format: (n: number) => string = (n) => n.toLocaleString()): ChartTable {
-  return {
-    caption,
-    columns: ["Period", ...series.map((s) => s.label)],
-    rows: rows.map((r) => [r.tooltipLabel ?? r.label, ...series.map((s) => (typeof r[s.key] === "number" ? format(r[s.key] as number) : "—"))]),
-  };
 }
 
 function table(caption: string, rows: ChartRow[], series: ChartSeries[], format: (n: number) => string) {

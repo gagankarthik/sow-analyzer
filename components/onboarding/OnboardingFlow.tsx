@@ -19,6 +19,7 @@ import { ProjectStep } from "./ProjectStep";
 import { UploadStep } from "./UploadStep";
 import { AnalysisStep } from "./AnalysisStep";
 import { DoneStep } from "./DoneStep";
+import { FormRowsSkeleton, PanelSkeleton, SkeletonRegion } from "@/components/ds/skeletons";
 
 const START: OnboardingState = { step: "welcome" };
 
@@ -135,18 +136,22 @@ export function OnboardingFlow() {
         title="Setup guide"
         actions={
           step !== "done" && (
-            <Button variant="outline" className="h-10" onClick={skip}>Skip for now</Button>
+            <Button variant="ghost" onClick={skip}>Skip for now</Button>
           )
         }
       />
 
-      <div className="app-container py-6 md:py-8">
+      <div className="app-container app-page">
         <div className="max-w-[720px] space-y-6">
           {loading ? (
-            <div role="status" aria-label="Loading setup" className="space-y-6">
-              <Skeleton className="h-7 rounded-lg" />
-              <Skeleton className="h-80 rounded-xl" />
-            </div>
+            <SkeletonRegion label="setup" className="space-y-6">
+              <div aria-hidden className="flex items-center gap-2">
+                {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-7 flex-1 rounded-lg" />)}
+              </div>
+              <PanelSkeleton padded actions={false} className="min-h-80">
+                <FormRowsSkeleton rows={3} />
+              </PanelSkeleton>
+            </SkeletonRegion>
           ) : (
             <>
               <OnboardingStepper current={step} />

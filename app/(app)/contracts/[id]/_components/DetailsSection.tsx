@@ -87,7 +87,8 @@ const GAP_FIELD: Record<CaptureGap, string | null> = {
   agreementTypeUnsure: "agreementType",
 };
 
-const fieldId = (key: string) => `contract-field-${key}`;
+/** Field ids carry a prefix: the sidebar and the Details tab can both be editing. */
+const fieldId = (key: string, prefix = "contract-field") => `${prefix}-${key}`;
 
 const NUMBER_KEYS = ["expectedValue", "manualValue", "poAmount"] as const;
 const AMOUNT_ERROR = "Enter an amount, e.g. 250,000 or $250k";
@@ -138,7 +139,12 @@ function diff(c: ContractDetail, d: Draft): ContractPatch | "invalid" {
   return patch;
 }
 
-export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
+export function DetailsSection({ contract: c, compact = false }: {
+  contract: ContractDetail;
+  /** The record sidebar's Details tab: one column of properties, edited in place; no checklist, routing or signature. */
+  compact?: boolean;
+}) {
+  const idPrefix = compact ? "contract-side" : "contract-field";
   const terms = useEditionTerms();
   const canEdit = useCanEditContracts();
   const patch = usePatchContract(c.contractId);
@@ -155,17 +161,17 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
     pendingFocus.current = focusField ?? null;
     if (!editing) setAttempted(false);
     setDraft((d) => d ?? toDraft(c));
-    if (editing && focusField) document.getElementById(fieldId(focusField))?.focus();
+    if (editing && focusField) document.getElementById(fieldId(focusField, idPrefix))?.focus();
   }
 
   // Focus the field a checklist item asked for once the form is on screen.
   useEffect(() => {
     if (!editing || !pendingFocus.current) return;
-    const el = document.getElementById(fieldId(pendingFocus.current));
+    const el = document.getElementById(fieldId(pendingFocus.current, idPrefix));
     pendingFocus.current = null;
     el?.scrollIntoView({ block: "center", behavior: "smooth" });
     el?.focus({ preventScroll: true });
-  }, [editing]);
+  }, [editing, idPrefix]);
 
   async function save() {
     if (!draft) return;
@@ -173,7 +179,7 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
     if (changes === "invalid") {
       setAttempted(true);
       const bad = NUMBER_KEYS.find((k) => parseAmount(draft.numbers[k]) === "invalid");
-      if (bad) document.getElementById(fieldId(bad))?.focus();
+      if (bad) document.getElementById(fieldId(bad, idPrefix))?.focus();
       return;
     }
     if (Object.keys(changes).length === 0) { setDraft(null); return; }
@@ -208,19 +214,19 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      {c.value === null && c.state !== "rejected" && c.state !== "closed" && (
+    <div className={compact ? "flex flex-col" : "flex flex-col gap-8"}>
+      {!compact && c.value === null && c.state !== "rejected" && c.state !== "closed" && (
         <div className="flex flex-col gap-3 rounded-xl border border-structure-border bg-card p-5 sm:flex-row sm:items-center">
           <Coins size={20} className="shrink-0 text-structure-soft-fg" />
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-foreground">Add the contract value so totals are never incomplete</p>
             <p className="text-sm text-[var(--ink-700)]">Sonar could not find a value in this agreement. Until someone adds it, it is counted apart in every report.</p>
           </div>
-          <Button type="button" variant="outline" onClick={() => setValueDialog(true)}><Coins size={14} />Add the value</Button>
+          <Button type="button" variant="outline" onClick={() => setValueDialog(true)}><Coins size={16} />Add the value</Button>
         </div>
       )}
 
-      {gaps.length > 0 && (
+      {!compact && gaps.length > 0 && (
         <MissingChecklist
           contract={c}
           gaps={gaps}
@@ -232,28 +238,28 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
       )}
 
       <Section
-        title="Details"
-        description="What was entered at intake and what Sonar found. Edits are logged in the activity."
+        title={compact ? "Properties" : "Details"}
         actions={editing ? (
           <>
             {/* On phones the sticky bar under the form carries these. */}
-            <Button type="button" variant="outline" className="max-md:hidden" onClick={() => setDraft(null)} disabled={patch.isPending}>Cancel</Button>
-            <Button type="button" className="max-md:hidden" onClick={save} disabled={patch.isPending}>{patch.isPending && <Loader2 size={14} className="animate-spin" />}Save details</Button>
+            <Button type="button" variant="outline" size={compact ? "sm" : "default"} className="max-md:hidden" onClick={() => setDraft(null)} disabled={patch.isPending}>Cancel</Button>
+            <Button type="button" size={compact ? "sm" : "default"} className="max-md:hidden" onClick={save} disabled={patch.isPending}>{patch.isPending && <Loader2 size={16} className="animate-spin" />}Save</Button>
           </>
         ) : canEdit ? (
-          <Button type="button" variant="outline" onClick={() => startEditing()}><Pencil size={14} />Edit details</Button>
+          <Button type="button" variant="outline" size={compact ? "sm" : "default"} onClick={() => startEditing()}><Pencil size={16} />Edit</Button>
         ) : null}
+        className={compact ? "gap-3" : undefined}
       >
         {draft ? (
           <>
-            <DetailsForm draft={draft} onChange={setDraft} onSubmit={save} showWorkdayMatch={isIntegrationsOn} attempted={attempted} />
+            <DetailsForm draft={draft} onChange={setDraft} onSubmit={save} showWorkdayMatch={isIntegrationsOn} attempted={attempted} compact={compact} idPrefix={idPrefix} />
             <div className="sticky bottom-3 z-20 mt-3 flex gap-2 rounded-xl border border-border bg-card p-3 shadow-sm md:hidden">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setDraft(null)} disabled={patch.isPending}>Cancel</Button>
-              <Button type="button" className="flex-1" onClick={save} disabled={patch.isPending}>{patch.isPending && <Loader2 size={14} className="animate-spin" />}Save details</Button>
+              <Button type="button" className="flex-1" onClick={save} disabled={patch.isPending}>{patch.isPending && <Loader2 size={16} className="animate-spin" />}Save</Button>
             </div>
           </>
         ) : (
-          <dl className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2 lg:grid-cols-3">
+          <dl className={compact ? "grid grid-cols-1 gap-y-3" : "grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2 lg:grid-cols-3"}>
             <Fact label="Agreement type">{AGREEMENT_TYPE_LABEL[c.agreementType]}</Fact>
             <Fact label="Money">{DIRECTION_LABEL[c.direction]}</Fact>
             <Fact label={terms.researchFields ? "Other party" : terms.party} provenance={mark("counterparty")}>{c.counterparty}</Fact>
@@ -289,7 +295,7 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
         )}
       </Section>
 
-      <RoutingAndSignature contract={c} />
+      {!compact && <RoutingAndSignature contract={c} />}
 
       {valueDialog && <ActionDialogHost kind="add_value" contract={c} onClose={() => setValueDialog(false)} />}
     </div>
@@ -315,16 +321,16 @@ function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming
             {gap === "agreementTypeUnsure" ? (
               <span className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-[var(--ink-600)]">Is it a {AGREEMENT_TYPE_LABEL[c.agreementType].toLowerCase()}?</span>
-                <Button type="button" size="sm" variant="outline" onClick={onConfirmType} pending={confirming} disabled={disabled}><Check size={13} />Confirm type</Button>
+                <Button type="button" size="sm" variant="outline" onClick={onConfirmType} pending={confirming} disabled={disabled}><Check size={12} />Confirm type</Button>
                 <Button type="button" size="sm" variant="outline" onClick={() => onFill(gap)}>Change type</Button>
               </span>
             ) : gap === "value" ? (
-              <Button type="button" size="sm" variant="outline" onClick={() => onFill(gap)}><Coins size={13} />Add value</Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => onFill(gap)}><Coins size={12} />Add value</Button>
             ) : GAP_FIELD[gap] ? (
-              <Button type="button" size="sm" variant="outline" onClick={() => onFill(gap)}>Fill in<ArrowRight size={13} /></Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => onFill(gap)}>Fill in<ArrowRight size={12} /></Button>
             ) : (
               <Button asChild size="sm" variant="ghost">
-                <Link href={docHref}><ExternalLink size={13} />Check the document</Link>
+                <Link href={docHref}><ExternalLink size={12} />Check the document</Link>
               </Button>
             )}
           </li>
@@ -334,14 +340,18 @@ function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming
   );
 }
 
-function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch, attempted }: {
+function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch, attempted, compact, idPrefix }: {
   draft: Draft; onChange: (d: Draft) => void; onSubmit: () => void;
+  /** One column (the sidebar). */
+  compact: boolean;
+  idPrefix: string;
   /** A save was tried: show amount errors even on fields not yet left. */
   attempted: boolean;
   /** The match status only means something once the Workday integration is live. */
   showWorkdayMatch: boolean;
 }) {
   const terms = useEditionTerms();
+  const fid = (key: string) => fieldId(key, idPrefix);
   const agreementTypes = useAgreementTypes(draft.agreementType);
   const setText = (key: TextKey, v: string) => onChange({ ...draft, text: { ...draft.text, [key]: v } });
   const setNumber = (key: NumberKey, v: string) => onChange({ ...draft, numbers: { ...draft.numbers, [key]: v } });
@@ -352,59 +362,59 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch, attempted }:
   const amountProps = (key: NumberKey) => {
     const error = amountError(key);
     return {
-      id: fieldId(key),
+      id: fid(key),
       inputMode: "decimal" as const,
       value: draft.numbers[key],
       onChange: (e: React.ChangeEvent<HTMLInputElement>) => setNumber(key, e.target.value),
       onBlur: () => setBlurred((b) => new Set(b).add(key)),
       "aria-invalid": error ? true : undefined,
-      "aria-describedby": error ? `${fieldId(key)}-error` : undefined,
+      "aria-describedby": error ? `${fid(key)}-error` : undefined,
     };
   };
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
-      className="grid grid-cols-1 gap-x-6 gap-y-4 rounded-xl border border-[var(--brand-primary-300)] bg-card p-5 sm:grid-cols-2 lg:grid-cols-3"
+      className={compact ? "grid grid-cols-1 gap-y-3" : "grid grid-cols-1 gap-x-6 gap-y-4 rounded-xl border border-[var(--brand-primary-300)] bg-card p-5 sm:grid-cols-2 lg:grid-cols-3"}
     >
-      <FormField label="Agreement type" id={fieldId("agreementType")}>
+      <FormField label="Agreement type" id={fid("agreementType")}>
         <Select value={draft.agreementType} onValueChange={(v) => onChange({ ...draft, agreementType: v as AgreementType })}>
-          <SelectTrigger id={fieldId("agreementType")} className="w-full"><SelectValue /></SelectTrigger>
+          <SelectTrigger id={fid("agreementType")} className="w-full"><SelectValue /></SelectTrigger>
           <SelectContent>{agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}</SelectContent>
         </Select>
       </FormField>
-      <FormField label="Money" id={fieldId("direction")} hint={DIRECTION_HINT[draft.direction]}>
+      <FormField label="Money" id={fid("direction")} hint={DIRECTION_HINT[draft.direction]}>
         <Select value={draft.direction} onValueChange={(v) => onChange({ ...draft, direction: v as Direction })}>
-          <SelectTrigger id={fieldId("direction")} className="w-full"><SelectValue /></SelectTrigger>
+          <SelectTrigger id={fid("direction")} className="w-full"><SelectValue /></SelectTrigger>
           <SelectContent>{(["incoming", "outgoing"] as Direction[]).map((d) => <SelectItem key={d} value={d}>{DIRECTION_LABEL[d]}</SelectItem>)}</SelectContent>
         </Select>
       </FormField>
       {TEXT_FIELDS.slice(0, 5).filter((f) => (terms.researchFields ? !WORKFORCE_KEYS.has(f.key) : !RESEARCH_KEYS.has(f.key))).map((f) => (
-        <FormField key={f.key} label={f.key === "counterparty" && !terms.researchFields ? terms.party : f.key === "sponsor" ? terms.party : f.label} id={fieldId(f.key)}>
-          <Input id={fieldId(f.key)} value={draft.text[f.key]} placeholder={f.key === "counterparty" && !terms.researchFields ? terms.partyHint : f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
+        <FormField key={f.key} label={f.key === "counterparty" && !terms.researchFields ? terms.party : f.key === "sponsor" ? terms.party : f.label} id={fid(f.key)}>
+          <Input id={fid(f.key)} value={draft.text[f.key]} placeholder={f.key === "counterparty" && !terms.researchFields ? terms.partyHint : f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
         </FormField>
       ))}
-      <FormField label="Expected value" id={fieldId("expectedValue")} hint="What intake expected it to be worth." error={amountError("expectedValue")}>
+      <FormField label="Expected value" id={fid("expectedValue")} hint="What intake expected it to be worth." error={amountError("expectedValue")}>
         <Input {...amountProps("expectedValue")} placeholder="e.g. 250000" />
       </FormField>
-      <FormField label="Value (entered by hand)" id={fieldId("manualValue")} hint="Overrides what Sonar found." error={amountError("manualValue")}>
+      <FormField label="Value (entered by hand)" id={fid("manualValue")} hint="Overrides what Sonar found." error={amountError("manualValue")}>
         <Input {...amountProps("manualValue")} placeholder="e.g. 250000" />
       </FormField>
-      <FormField label="Currency" id={fieldId("currency")}>
-        <Input id={fieldId("currency")} maxLength={3} value={draft.text.currency} placeholder="USD" onChange={(e) => setText("currency", e.target.value.toUpperCase())} />
+      <FormField label="Currency" id={fid("currency")}>
+        <Input id={fid("currency")} maxLength={3} value={draft.text.currency} placeholder="USD" onChange={(e) => setText("currency", e.target.value.toUpperCase())} />
       </FormField>
       {TEXT_FIELDS.slice(5).filter((f) => (terms.researchFields ? !WORKFORCE_KEYS.has(f.key) : !RESEARCH_KEYS.has(f.key))).map((f) => (
-        <FormField key={f.key} label={f.label} id={fieldId(f.key)}>
-          <Input id={fieldId(f.key)} type={f.type} value={draft.text[f.key]} placeholder={f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
+        <FormField key={f.key} label={f.label} id={fid(f.key)}>
+          <Input id={fid(f.key)} type={f.type} value={draft.text[f.key]} placeholder={f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
         </FormField>
       ))}
       {!terms.researchFields && (
         <>
-          <FormField label="PO amount" id={fieldId("poAmount")} hint="What the purchase order allows; spend is tracked against it." error={amountError("poAmount")}>
+          <FormField label="PO amount" id={fid("poAmount")} hint="What the purchase order allows; spend is tracked against it." error={amountError("poAmount")}>
             <Input {...amountProps("poAmount")} placeholder="e.g. 120000" />
           </FormField>
-          <FormField label="Pricing" id={fieldId("pricingModel")}>
+          <FormField label="Pricing" id={fid("pricingModel")}>
             <Select value={draft.pricingModel ?? PRICING_NONE} onValueChange={(v) => onChange({ ...draft, pricingModel: v === PRICING_NONE ? null : v as PricingModel })}>
-              <SelectTrigger id={fieldId("pricingModel")} className="w-full"><SelectValue /></SelectTrigger>
+              <SelectTrigger id={fid("pricingModel")} className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={PRICING_NONE}>Not known</SelectItem>
                 {(Object.keys(PRICING_MODEL_LABEL) as PricingModel[]).map((m) => <SelectItem key={m} value={m}>{PRICING_MODEL_LABEL[m]}</SelectItem>)}
@@ -414,9 +424,9 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch, attempted }:
         </>
       )}
       {showWorkdayMatch && (
-        <FormField label="Workday match" id={fieldId("workdayMatch")}>
+        <FormField label="Workday match" id={fid("workdayMatch")}>
           <Select value={draft.workdayMatch} onValueChange={(v) => onChange({ ...draft, workdayMatch: v as WorkdayMatch })}>
-            <SelectTrigger id={fieldId("workdayMatch")} className="w-full"><SelectValue /></SelectTrigger>
+            <SelectTrigger id={fid("workdayMatch")} className="w-full"><SelectValue /></SelectTrigger>
             <SelectContent>{(Object.keys(WORKDAY_MATCH_LABEL) as WorkdayMatch[]).map((m) => <SelectItem key={m} value={m}>{WORKDAY_MATCH_LABEL[m]}</SelectItem>)}</SelectContent>
           </Select>
         </FormField>
@@ -451,9 +461,7 @@ function RoutingAndSignature({ contract: c }: { contract: ContractDetail }) {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Section
         title="Approvals"
-        description={isRoutingOn
-          ? "Offices this contract must pass before signature, from your routing rules."
-          : <span className="inline-flex flex-wrap items-center gap-2">Who approved it before signature. Office routing rules are <ComingSoonBadge /></span>}
+        description={isRoutingOn ? undefined : <span className="inline-flex flex-wrap items-center gap-2">Office routing <ComingSoonBadge /></span>}
       >
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
           {c.routing.approvals.length === 0 && pending.size === 0 ? (
@@ -462,13 +470,13 @@ function RoutingAndSignature({ contract: c }: { contract: ContractDetail }) {
             <ul className="flex flex-col gap-2.5">
               {c.routing.approvals.map((a) => (
                 <li key={`${a.office}-${a.at}`} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-[var(--success)]" />
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[var(--success)]" />
                   <span><strong className="font-semibold text-foreground">{a.office === "reviewer" ? "Reviewer" : OFFICE_LABEL[a.office]}</strong> approved · {personName(a.by)}, {formatDate(a.at)}</span>
                 </li>
               ))}
               {[...pending].map((o) => (
                 <li key={o} className="flex items-start gap-2 text-sm">
-                  <Building2 size={15} className="mt-0.5 shrink-0 text-[var(--ink-500)]" />
+                  <Building2 size={16} className="mt-0.5 shrink-0 text-[var(--ink-500)]" />
                   <span><strong className="font-semibold text-foreground">{OFFICE_LABEL[o]}</strong> <span className="text-[var(--ink-600)]">· still to approve</span></span>
                 </li>
               ))}
@@ -483,7 +491,7 @@ function RoutingAndSignature({ contract: c }: { contract: ContractDetail }) {
         </div>
       </Section>
 
-      <Section title="Signature" description="How and when it is being signed.">
+      <Section title="Signature">
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
           {c.rejection ? (
             <div className="rounded-lg bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger)]">
@@ -500,7 +508,7 @@ function RoutingAndSignature({ contract: c }: { contract: ContractDetail }) {
               {c.signature.envelopeId && <Fact label="DocuSign envelope" className="col-span-2"><span className="font-mono text-xs">{c.signature.envelopeId}</span></Fact>}
             </dl>
           ) : (
-            <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-600)]"><PenLine size={15} />Not sent for signature yet.</p>
+            <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-600)]"><PenLine size={16} />Not sent for signature yet.</p>
           )}
         </div>
       </Section>

@@ -6,11 +6,12 @@
 // the sticky "changes not saved" bar.
 
 import { useEffect, useId, useState } from "react";
-import { isForbidden } from "@/lib/api";
+import { errorStatus, isForbidden, isNotFound } from "@/lib/api";
 import { useGovernMe } from "@/lib/govern/queries";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { FormRowsSkeleton, PanelSkeleton, SkeletonRegion } from "@/components/ds/skeletons";
+import { loadingSubject } from "@/lib/skeleton-geometry";
 import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import { AlertTriangle, Loader2, Lock, Plus, RefreshCw, X } from "@/components/ui/icons";
 
@@ -18,7 +19,8 @@ import { AlertTriangle, Loader2, Lock, Plus, RefreshCw, X } from "@/components/u
  *  edits: the API checks again, but the UI never offers what will be refused. */
 export function useAdminAccess(): { isAdmin: boolean; loading: boolean } {
   const me = useGovernMe();
-  return { isAdmin: me.data?.role === "admin", loading: me.isLoading };
+  // Admin of THIS organization (the server decides; older APIs only send role).
+  return { isAdmin: me.data?.isAdmin ?? me.data?.role === "admin", loading: me.isLoading };
 }
 
 /** Shown on admin pages to anyone who is not an admin. */
@@ -34,14 +36,22 @@ export function ReadOnlyNote({ what }: { what?: string }) {
   );
 }
 
+/** What went wrong, in plain words: never the raw browser or server message. */
+function loadErrorText(error: unknown): string {
+  if (isNotFound(error)) return "This isn't available on the server yet.";
+  // fetch() rejects with a TypeError ("Failed to fetch") when no response came back.
+  if (error instanceof TypeError || errorStatus(error) === undefined) return "Couldn't reach the server. Check your connection and try again.";
+  return "Something went wrong on our side. Try again in a moment.";
+}
+
 /** Error panel with retry; says "no permission" in plain words on a 403. */
 export function LoadError({
   what, error, onRetry, retrying,
 }: { what: string; error: unknown; onRetry: () => void; retrying?: boolean }) {
   const forbidden = isForbidden(error);
   return (
-    <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-12 text-center">
-      <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-card text-[var(--danger)]">
+    <div role="alert" className="flex flex-col items-center rounded-lg border border-border bg-card px-5 py-12 text-center">
+      <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--danger-soft)] text-[var(--danger)]">
         {forbidden ? <Lock size={18} /> : <AlertTriangle size={18} />}
       </span>
       <h2 className="text-lg font-semibold text-foreground">
@@ -50,7 +60,7 @@ export function LoadError({
       <p className="mt-1 max-w-md break-words text-sm leading-relaxed text-[var(--ink-700)]">
         {forbidden
           ? "Your role doesn't include this page. Ask an admin if you need it."
-          : `${error instanceof Error ? error.message : "The request failed."} Nothing is shown because nothing was received.`}
+          : loadErrorText(error)}
       </p>
       {!forbidden && (
         <Button variant="outline" size="lg" className="mt-5" onClick={onRetry} disabled={retrying}>
@@ -62,13 +72,18 @@ export function LoadError({
   );
 }
 
+/** A settings page's sections while they load: a form panel, then two
+ *  divided lists, inside the settings layout. `label` is spoken
+ *  ("Loading the review matrix"). */
 export function PageSkeleton({ label }: { label: string }) {
   return (
-    <div className="space-y-4" aria-busy="true" aria-label={label}>
-      <Skeleton className="h-28 rounded-xl" />
-      <Skeleton className="h-64 rounded-xl" />
-      <Skeleton className="h-48 rounded-xl" />
-    </div>
+    <SkeletonRegion label={loadingSubject(label)} className="flex flex-col gap-6">
+      <PanelSkeleton padded actions={false}>
+        <FormRowsSkeleton rows={2} />
+      </PanelSkeleton>
+      <PanelSkeleton rows={5} />
+      <PanelSkeleton rows={3} />
+    </SkeletonRegion>
   );
 }
 

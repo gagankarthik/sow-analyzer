@@ -82,9 +82,9 @@ export function GettingStarted({
 
   return (
     <section aria-labelledby="getting-started-title" className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 md:px-6">
+      <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-3">
         <div>
-          <h2 id="getting-started-title" className="text-lg font-semibold text-foreground">
+          <h2 id="getting-started-title" className="text-base font-semibold text-foreground">
             Get your first contract reviewed
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
@@ -93,7 +93,7 @@ export function GettingStarted({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {resumeSetup && (
-            <Button variant="outline" className="h-10" asChild>
+            <Button variant="outline" asChild>
               <Link href="/onboarding">Resume setup</Link>
             </Button>
           )}
@@ -101,9 +101,9 @@ export function GettingStarted({
             type="button"
             onClick={dismiss}
             aria-label="Dismiss getting started"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex h-8 w-8 max-md:h-11 max-md:w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
       </div>
@@ -112,7 +112,7 @@ export function GettingStarted({
         {steps.map((step, i) => {
           const current = i === next;
           return (
-            <li key={step.title} className={cn("flex flex-col gap-3 p-5 md:p-6", current && "bg-structure-soft")}>
+            <li key={step.title} className={cn("flex flex-col gap-3 p-4", current && "bg-[var(--panel)]")}>
               <span
                 className={cn(
                   "inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold",
@@ -123,14 +123,14 @@ export function GettingStarted({
                       : "bg-muted text-muted-foreground",
                 )}
               >
-                {step.done ? <Check size={14} strokeWidth={3} aria-label="Done" /> : i + 1}
+                {step.done ? <Check size={12} aria-label="Done" /> : i + 1}
               </span>
               <div>
                 <h3 className="text-base font-semibold text-foreground">{step.title}</h3>
                 <p className="mt-1 text-sm text-[var(--ink-600)]">{step.body}</p>
               </div>
               {!step.done && step.action && (
-                <Button variant={current ? "default" : "outline"} className="mt-auto h-10 w-fit" asChild>
+                <Button variant={current ? "default" : "outline"} className="mt-auto w-fit" asChild>
                   <Link href={step.action.href}>{step.action.label}</Link>
                 </Button>
               )}

@@ -1,3 +1,5 @@
+import { displayTitle } from "@/lib/format";
+import { SummaryTiles } from "@/components/ds/KpiTile";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users } from "@/components/ui/icons";
@@ -24,7 +26,7 @@ export function DoneStep({ doc, onAnother }: { doc: ApiDocument; onAnother: () =
   const flagged = !hasRating ? undefined : doc.riskCounts ? doc.riskCounts.high + doc.riskCounts.critical : doc.highRiskCount ?? undefined;
   const critical = hasRating ? doc.riskCounts?.critical : undefined;
   const overallRisk = hasRating ? doc.overallRisk : undefined;
-  const name = doc.title || "Your contract";
+  const name = displayTitle(doc.title) || "Your contract";
 
   let headline = "The analysis is ready to read.";
   if (clauses === 0) {
@@ -37,59 +39,51 @@ export function DoneStep({ doc, onAnother }: { doc: ApiDocument; onAnother: () =
       : "No clause is rated high or critical.";
   }
 
-  const stats: { label: string; value: React.ReactNode }[] = [
-    { label: "Clauses extracted", value: clauses ?? "—" },
-    { label: "High or critical", value: flagged ?? "—" },
-    { label: "Critical", value: critical ?? "—" },
-    { label: "Key findings", value: doc.findingsCount ?? "—" },
+  const stats = [
+    { label: "Clauses extracted", value: clauses ?? null },
+    { label: "High or critical", value: flagged ?? null, tone: typeof flagged === "number" && flagged > 0 ? ("caution" as const) : undefined },
+    { label: "Critical", value: critical ?? null, tone: typeof critical === "number" && critical > 0 ? ("blocked" as const) : undefined },
+    { label: "Key findings", value: doc.findingsCount ?? null },
   ];
 
   return (
     <StepCard title="Your first analysis is ready" lead={`${name} has been analyzed. This is what Sonar found.`}>
-      {/* The one focal block of the flow */}
-      <div className="rounded-xl bg-[var(--navy)] p-5 text-white md:p-6">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="text-base font-medium text-[var(--navy-foreground)]">Overall risk</span>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-[var(--ink-600)]">Overall risk</span>
           {overallRisk ? (
             <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold capitalize ${RISK_PILL[overallRisk]}`}>
               {overallRisk}
             </span>
           ) : (
-            <span className="text-base text-[var(--navy-foreground)]">Not assessed</span>
+            <span className="text-xs text-[var(--ink-600)]">Not assessed</span>
           )}
         </div>
-        <p className="mt-3 max-w-[40ch] text-xl font-semibold leading-snug">{headline}</p>
-        <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-[var(--navy-border)] pt-5 sm:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.label} className="min-w-0">
-              <dt className="text-xs text-[var(--navy-foreground)]">{s.label}</dt>
-              <dd className="mt-1 text-2xl font-semibold tabular-nums">{s.value}</dd>
-            </div>
-          ))}
-        </dl>
+        <p className="text-base font-semibold text-foreground">{headline}</p>
+        <SummaryTiles label="Analysis summary" items={stats.map((st) => ({ ...st, unknownLabel: "—" }))} />
       </div>
 
       {doc.summary && (
-        <p className="mt-5 line-clamp-4 max-w-[58ch] text-sm leading-relaxed text-[var(--ink-600)]">{doc.summary}</p>
+        <p className="mt-4 line-clamp-4 max-w-[68ch] text-sm leading-relaxed text-[var(--ink-700)]">{doc.summary}</p>
       )}
 
-      <div className="mt-6 flex flex-col gap-2 border-t border-border pt-5 sm:flex-row sm:flex-wrap sm:items-center">
-        <Button size="lg" asChild>
+      <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:flex-wrap sm:items-center">
+        <Button asChild>
           <Link href={`/projects/${doc.docId}/sow`}>
-            {typeof flagged === "number" && flagged > 0 ? "Review the high and critical clauses" : "Read the clause analysis"} <ArrowRight size={15} />
+            {typeof flagged === "number" && flagged > 0 ? "Review the high and critical clauses" : "Read the clause analysis"} <ArrowRight size={16} aria-hidden />
           </Link>
         </Button>
-        <Button variant="outline" size="lg" asChild>
-          <Link href="/settings/team"><Users size={15} />Invite your team</Link>
+        <Button variant="outline" asChild>
+          <Link href="/settings/team"><Users size={16} aria-hidden />Invite your team</Link>
         </Button>
-        <Button variant="outline" size="lg" asChild>
+        <Button variant="outline" asChild>
           <Link href="/home">Go to home</Link>
         </Button>
       </div>
       <button
         type="button"
         onClick={onAnother}
-        className="mt-3 inline-flex min-h-10 items-center rounded-sm text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+        className="mt-3 inline-flex items-center rounded-sm text-sm font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-md:min-h-11"
       >
         Run setup again with another contract
       </button>

@@ -1,8 +1,9 @@
 "use client";
 
+import { displayTitle } from "@/lib/format";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { ChevronsRight, Maximize2 } from "lucide-react";
+import { ChevronsRight, Maximize2 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { StatusBanner } from "@/components/govern/StatusBanner";
 import { AvatarStack } from "@/components/ds/Avatar";
@@ -42,17 +43,17 @@ export function ContractPreview({ contract: c, me, onClose }: { contract: Contra
       <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-4 py-2.5">
         <div className="flex items-center gap-1">
           <button type="button" onClick={onClose} aria-label="Close preview" className="inline-flex size-9 items-center justify-center rounded-md text-[var(--ink-600)] hover:bg-[var(--ink-100)] hover:text-foreground">
-            <ChevronsRight size={17} aria-hidden />
+            <ChevronsRight size={16} aria-hidden />
           </button>
           <Link href={href} aria-label="Open the full contract page" className="inline-flex size-9 items-center justify-center rounded-md text-[var(--ink-600)] hover:bg-[var(--ink-100)] hover:text-foreground">
-            <Maximize2 size={15} aria-hidden />
+            <Maximize2 size={16} aria-hidden />
           </Link>
         </div>
         <Button asChild size="sm"><Link href={href}>Open contract</Link></Button>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-5">
-        <h2 className="text-xl font-semibold leading-snug tracking-tight text-foreground">{c.title || "Untitled contract"}</h2>
+        <h2 className="text-xl font-semibold leading-snug tracking-tight text-foreground">{displayTitle(c.title) || "Untitled contract"}</h2>
         <p className="mt-1.5 text-sm text-[var(--ink-600)]">
           {[c.owner ? `Owned by ${personName(c.owner)}` : "No owner yet", shortDate(c.createdAt) ? `Created ${shortDate(c.createdAt)}` : null].filter(Boolean).join(" · ")}
         </p>

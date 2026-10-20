@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check } from "@/components/ui/icons";
 import { EDITIONS, EDITION_IDS, type EditionId } from "@/components/landing/editions-data";
 
 /* One Govern, two editions: a switch between Campus and Workforce, and the
@@ -70,7 +70,7 @@ export function Editions() {
                   <p className="lp-edition-audience">{e.audience}</p>
                 </div>
                 <Link href={`/editions/${id}`} className="lp-trust-link lp-epanel-link">
-                  Explore Govern {e.name} <ArrowRight size={14} aria-hidden="true" />
+                  Explore Govern {e.name} <ArrowRight size={16} aria-hidden="true" />
                 </Link>
               </div>
 

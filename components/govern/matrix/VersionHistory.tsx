@@ -4,7 +4,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Eye, History } from "@/components/ui/icons";
 import { SettingsSection } from "@/components/settings/SettingsNav";
@@ -14,6 +13,7 @@ import { AGREEMENT_TYPES, AGREEMENT_TYPE_LABEL, personName, plural } from "@/lib
 import type { AgreementType, MatrixVersionInfo } from "@/lib/govern/types";
 import { ClauseCard } from "./ClauseCard";
 import { TypeSwitcher } from "./TypeSwitcher";
+import { PanelSkeleton, SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
 
 export function VersionHistory({ versions, currentVersion }: { versions: MatrixVersionInfo[]; currentVersion: number }) {
   const [viewing, setViewing] = useState<number | null>(null);
@@ -23,7 +23,7 @@ export function VersionHistory({ versions, currentVersion }: { versions: MatrixV
     <SettingsSection
       id="versions"
       title={<span className="inline-flex items-center gap-2"><History size={16} aria-hidden />Version history</span>}
-      description="Each contract records which version it was checked against. Re-check a contract from its page to apply a newer version."
+      description="Re-check a contract from its page to apply a newer version."
       flush
     >
       {sorted.length === 0 ? (
@@ -47,7 +47,7 @@ export function VersionHistory({ versions, currentVersion }: { versions: MatrixV
                 </p>
               </div>
               <Button variant="ghost" className="h-10 md:h-8" onClick={() => setViewing(v.version)} aria-label={`View version ${v.version}`}>
-                <Eye size={14} /><span className="hidden sm:inline">View</span>
+                <Eye size={16} /><span className="hidden sm:inline">View</span>
               </Button>
             </li>
           ))}
@@ -76,7 +76,7 @@ function VersionSheet({ version, onClose }: { version: number | null; onClose: (
         </SheetHeader>
         <div className="grid gap-4 px-4 pb-6">
           {isLoading ? (
-            <div className="space-y-3" aria-busy="true" aria-label="Loading this version"><Skeleton className="h-10" /><Skeleton className="h-48" /></div>
+            <SkeletonRegion label="this version" className="space-y-3"><SkeletonLine text="text-base font-semibold" width="w-48" /><PanelSkeleton rows={5} actions={false} /></SkeletonRegion>
           ) : !matrix ? (
             <LoadError what="this version" error={error} onRetry={() => refetch()} retrying={isFetching} />
           ) : (

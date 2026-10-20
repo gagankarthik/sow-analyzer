@@ -1,7 +1,7 @@
 "use client";
 
 import { byEdition, noun } from "@/lib/edition-runtime";
-import { useEditionFeature, useEditionTerms } from "@/lib/govern/queries";
+import { useEditionTerms } from "@/lib/govern/queries";
 import { useCallback, useId, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
@@ -11,6 +11,7 @@ import { AlertTriangle, RefreshCw } from "@/components/ui/icons";
 import { can, projectOwnerEmail, refreshProjects, useProjects, useProjectsSync } from "@/lib/projects-store";
 import { ROLE_META } from "@/components/team/roles";
 import { ContractIntakePanel } from "@/components/upload/ContractIntakePanel";
+import { Panel } from "@/components/ds/Panel";
 import { EMPTY_INTAKE, intakePatch, type IntakeValues } from "@/components/upload/contract-intake";
 
 const NO_PROJECT = "none";
@@ -23,7 +24,6 @@ function projectFromUrl(): string {
 
 export default function UploadPage() {
   const terms = useEditionTerms();
-  const showSow = useEditionFeature("sowDocuments");
   const pickerId = useId();
   const projects = useProjects();
   const sync = useProjectsSync();
@@ -60,13 +60,12 @@ export default function UploadPage() {
       <PageHeader
         back={{ href: "/projects", label: `Back to ${terms.projects.toLowerCase()}` }}
         title="Upload a contract"
-        subtitle={showSow ? "Upload a SOW, MSA or amendment for analysis." : "Upload an agreement: Sonar reads it and checks it against your review matrix."}
       />
 
-      <div className="app-container py-6 md:py-8">
-        <div className="max-w-3xl space-y-4">
-          <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-            <label htmlFor={pickerId} className="mb-1.5 block text-sm font-medium text-foreground">{noun("Project")}</label>
+      <div className="app-container app-page">
+        <div className="flex max-w-3xl flex-col gap-6">
+          <Panel as="h2" title={noun("Project")}>
+            <label htmlFor={pickerId} className="sr-only">{noun("Project")}</label>
             <Select value={choice} onValueChange={setPicked} disabled={loading}>
               <SelectTrigger id={pickerId} className="w-full sm:max-w-sm">
                 <SelectValue placeholder={loading ? byEdition("Loading your projects…", "Loading your engagements…") : undefined} />
@@ -78,7 +77,7 @@ export default function UploadPage() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-xs leading-relaxed text-[var(--ink-600)]">
               {loading
                 ? byEdition("Loading the projects you can upload to…", "Loading the engagements you can upload to…")
                 : project
@@ -89,17 +88,17 @@ export default function UploadPage() {
               )}
             </p>
             {failed && (
-              <div role="alert" className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-3 py-2.5">
-                <AlertTriangle size={15} className="shrink-0 text-[var(--warning)]" />
+              <div role="alert" className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2">
+                <AlertTriangle size={16} aria-hidden className="shrink-0 text-[var(--warning-fg)]" />
                 <p className="min-w-0 flex-1 basis-48 break-words text-sm text-foreground">
                   {byEdition("Your projects could not be loaded, so only “No project” is offered.", "Your engagements could not be loaded, so only “No engagement” is offered.")}{sync.error ? ` ${sync.error}` : ""}
                 </p>
-                <Button variant="outline" className="h-10 md:h-9" onClick={() => void refreshProjects()}>
-                  <RefreshCw size={14} />Try again
+                <Button variant="outline" onClick={() => void refreshProjects()}>
+                  <RefreshCw size={16} aria-hidden />Try again
                 </Button>
               </div>
             )}
-          </div>
+          </Panel>
 
           <ContractIntakePanel values={intake} onChange={setIntake} lastApplied={lastApplied} />
 

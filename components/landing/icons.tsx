@@ -32,21 +32,20 @@ import {
   Users,
   Workflow,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/ui/icons";
 
-/* Icons for the public site: Lucide, the same set the app uses, so every
-   icon shares one 24px grid, one stroke weight and round caps. Drawn in
+/* Icons for the public site: the app icon module (@/components/ui/icons), so
+   every icon shares one 24px grid, the 12/16/20/24 scale, one optical stroke
+   and round caps. Drawn in
    currentColor so the parent sets the colour. Decorative (aria-hidden):
    the label beside each icon carries the meaning. */
 
 export type IconProps = { className?: string; size?: number };
 export type Icon = (props: IconProps) => ReactNode;
 
-const STROKE = 1.5;
-
 function icon(Glyph: LucideIcon): Icon {
   const Wrapped: Icon = ({ size = 20, className }) => (
-    <Glyph size={size} strokeWidth={STROKE} className={className} aria-hidden="true" focusable="false" />
+    <Glyph size={size} className={className} aria-hidden="true" focusable="false" />
   );
   return Wrapped;
 }

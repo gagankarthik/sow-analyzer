@@ -101,7 +101,7 @@ function Entry({ item: k, docId }: { item: DerivedKeyDate; docId: string }) {
 
   return (
     <article className={cn(
-      "min-w-0 flex-1 overflow-hidden rounded-xl border bg-card shadow-xs",
+      "min-w-0 flex-1 overflow-hidden rounded-xl border bg-card",
       k.state === "current" ? "border-[var(--brand-primary-300)]" : "border-border",
     )}>
       <div className="px-4 py-3">
@@ -138,7 +138,7 @@ function Entry({ item: k, docId }: { item: DerivedKeyDate; docId: string }) {
             href={`/projects/${docId}/sow#clause-${encodeURIComponent(k.clauseNumber)}`}
             className="mt-2 inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0"
           >
-            Clause {k.clauseNumber}<ArrowUpRight size={13} />
+            Clause {k.clauseNumber}<ArrowUpRight size={12} />
           </Link>
         )}
       </div>
@@ -152,7 +152,7 @@ function Entry({ item: k, docId }: { item: DerivedKeyDate; docId: string }) {
             aria-controls={panelId}
             className="flex min-h-10 w-full items-center justify-center gap-1.5 border-t border-border py-2 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
           >
-            {open ? <><ChevronUp size={14} />Hide wording</> : <><ChevronDown size={14} />Show wording and source</>}
+            {open ? <><ChevronUp size={16} />Hide wording</> : <><ChevronDown size={16} />Show wording and source</>}
           </button>
           <div id={panelId} hidden={!open} className="border-t border-border bg-[var(--panel)] px-4 py-3">
             {k.rawText ? (

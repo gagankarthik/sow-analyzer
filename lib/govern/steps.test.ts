@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { contractSteps } from "./steps"
+import { contractPathSteps, contractStateLabel, contractSteps, currentContractStep } from "./steps"
 import { CONTRACT_VIEWS } from "./views"
 import type { Contract } from "./types"
 
@@ -63,5 +63,38 @@ describe("contract views", () => {
     const c = { ...base, state: "active" } as Contract
     expect(view("in-progress").test(c, ctx)).toBe(false)
     expect(view("signed").test(c, ctx)).toBe(true)
+  })
+})
+
+describe("contractPathSteps", () => {
+  it("shows a waiting step as current and a stopped one as blocked", () => {
+    const waiting = { ...base, waitingOn: { kind: "counterparty", label: "Waiting on the other side" } } as unknown as Contract
+    expect(contractPathSteps(waiting).map((s) => s.status)).toEqual(["done", "current", "upcoming", "upcoming"])
+    const rejected = { ...base, state: "rejected" } as unknown as Contract
+    expect(contractPathSteps(rejected).slice(1).map((s) => s.status)).toEqual(["blocked", "blocked", "blocked"])
+  })
+
+  it("blocks the read step when Sonar could not read the document", () => {
+    const failed = { ...base, analysisStatus: "FAILED" } as unknown as Contract
+    expect(contractPathSteps(failed)[0].status).toBe("blocked")
+    expect(currentContractStep(failed)?.id).toBe("read")
+    expect(currentContractStep(base)?.id).toBe("review")
+  })
+})
+
+describe("contractStateLabel", () => {
+  it("says Just arrived only on the first day", () => {
+    expect(contractStateLabel({ state: "intake", daysInStage: 0, owner: null })).toBe("Just arrived")
+    expect(contractStateLabel({ state: "intake", daysInStage: 1, owner: null })).toBe("Just arrived")
+    expect(contractStateLabel({ state: "intake", daysInStage: 6, owner: null })).toBe("Needs a reviewer")
+    expect(contractStateLabel({ state: "intake", daysInStage: 6, owner: { email: "a@b.c", name: null } })).toBe("Not started")
+    expect(contractStateLabel({ state: "in_review", daysInStage: 9, owner: null })).toBe("Being reviewed")
+  })
+})
+
+describe("contractPathSteps with office approvals", () => {
+  it("keeps one current stage when approvals run alongside review", () => {
+    const c = { ...base, routing: { required: ["legal_affairs"], approvals: [], reasons: [] } } as unknown as Contract
+    expect(contractPathSteps(c).map((s) => s.status)).toEqual(["done", "current", "upcoming", "upcoming", "upcoming"])
   })
 })

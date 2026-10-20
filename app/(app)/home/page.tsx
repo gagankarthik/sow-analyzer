@@ -1,8 +1,8 @@
 "use client";
 
-// The leader home (Requirement 5): one screen that answers what needs me,
-// where the money is, and what is stuck and why. Layout: a compact header,
-// four summary tiles, then panels in rows of matched height (8 + 4 columns).
+// The home (Requirement 5): one screen with what needs you, the value and
+// what is waiting. Layout (UI_SPEC section 3): title row, four summary
+// tiles, then panels in two columns (8 + 4).
 // Technical detail sits in the Risk and documents view and in Reports.
 // Every contract row opens the contract page, where its blockers are listed.
 //
@@ -17,10 +17,12 @@ import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ViewTabs } from "@/components/ui/view-tabs";
 import { toast } from "sonner";
-import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowRight, RefreshCw } from "@/components/ui/icons";
 import { plural } from "@/lib/govern/labels";
+import { PageHeader } from "@/components/PageHeader";
+import { ListPanel } from "@/components/ds/Panel";
+import { Toolbar } from "@/components/ds/Toolbar";
 import {
   byUrgency, formatCompact, isCurrent, isUnsigned, matchesSearch, needsAttention, stageQueues, sumMoney, valueSummary, waitingQueues,
 } from "@/lib/govern/metrics";
@@ -29,24 +31,19 @@ import Link from "next/link";
 import { findOpportunities } from "@/lib/govern/opportunities";
 import { cn } from "@/lib/utils";
 import { ExportButtons } from "../reports/_components/ExportButtons";
-import { NoContracts, ReportError, SearchField, TEXT_LINK } from "../reports/_components/ReportKit";
+import { NoContracts, ReportError, TEXT_LINK } from "../reports/_components/ReportKit";
 import { amountIn, hasCaptureGaps, mainCurrency, useStageTargets } from "../reports/_components/report-data";
 import { ContractRow } from "./_components/ContractRow";
 import {
-  AllClear, AttentionPanel, HomeSkeleton, OpportunitiesPanel, KpiStrip, LongestPanel, MoneyPanel, StepsPanel, WaitingPanel, type Kpi,
+  AllClear, AttentionPanel, HomeActionsSkeleton, HomePageSkeleton, HomeSkeleton, OpportunitiesPanel, KpiStrip, LongestPanel, MoneyPanel, StepsPanel, WaitingPanel, type Kpi,
 } from "./_components/HomeSections";
 // Loaded when the Risk view opens: it carries the charts.
-const RiskView = dynamic(() => import("./_components/RiskView").then((m) => m.RiskView), { loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
+const RiskView = dynamic(() => import("./_components/RiskView").then((m) => m.RiskView), { loading: () => <RiskViewSkeleton label="risk and documents" /> });
 import { buildHomeReport } from "./_components/home-export";
+import { RiskViewSkeleton } from "./_components/RiskViewSkeleton";
 
 const SEARCH_LIMIT = 8;
 const LONGEST = 5;
-
-function greetingFor(hour: number): string {
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
 
 type View = "overview" | "risk";
 const VIEWS: { id: View; label: string }[] = [
@@ -57,7 +54,7 @@ const VIEWS: { id: View; label: string }[] = [
 // useSearchParams needs a Suspense boundary so the page can still prerender.
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="app-container py-6 md:py-8"><HomeSkeleton /></div>}>
+    <Suspense fallback={<HomePageSkeleton />}>
       <Home />
     </Suspense>
   );
@@ -73,10 +70,9 @@ function Home() {
   const isLeader = useGovernMe().data?.role === "leader";
   const setView = (v: View) => router.replace(v === "overview" ? "/home" : `/home?view=${v}`, { scroll: false });
 
-  const { user, status } = useAuth();
   const me = useGovernMe();
   const { data, isLoading, isError, error, isFetching, refetch } = useContracts();
-  const contracts = useMemo(() => data?.contracts ?? [], [data]);
+  const contracts = useMemo(() => data?.contracts ?? [], [data?.contracts]);
   const [q, setQ] = useState("");
   const [showAllResults, setShowAllResults] = useState(false);
 
@@ -105,18 +101,13 @@ function Home() {
   const obligationsQuery = useObligations();
   // Admins see a reminder until organization setup is finished.
   const workflowSettings = useWorkflowSettings();
-  const setupPending = me.data?.role === "admin" && !!workflowSettings.data && !workflowSettings.data.organization?.setupCompletedAt;
+  const setupPending = (me.data?.isAdmin ?? me.data?.role === "admin") &&!!workflowSettings.data && !workflowSettings.data.organization?.setupCompletedAt;
   const opportunities = useMemo(
     () => findOpportunities(contracts, obligationsQuery.data?.obligations ?? []),
     [contracts, obligationsQuery.data],
   );
 
   const results = useMemo(() => (q.trim() ? contracts.filter((c) => matchesSearch(c, q)) : []), [contracts, q]);
-
-  // Names and the time of day are only known in the browser, after sign-in is read.
-  const ready = status === "authenticated";
-  const firstName = (user?.name || me.data?.name || "").trim().split(/\s+/)[0];
-  const now = ready ? new Date() : null;
 
   const refresh = async () => {
     const r = await refetch();
@@ -127,40 +118,17 @@ function Home() {
   const hasData = contracts.length > 0;
   const staleError = isError && !!data;
 
-  const header = (
-    <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-foreground">
-          {now ? `${greetingFor(now.getHours())}${firstName ? `, ${firstName}` : ""}` : "Home"}
-        </h1>
-        <p className="mt-1 text-sm text-[var(--ink-600)]">
-          {now ? now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }) : "Your contracts today"}
-          {hasData && (
-            <>
-              {" · "}
-              <span className="font-semibold text-foreground">{view.attention.length === 0 ? "nothing" : plural(view.attention.length, "contract")}</span>
-              {view.attention.length <= 1 ? " needs" : " need"} you
-            </>
-          )}
-        </p>
-      </div>
-      {tab === "overview" && <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        {hasData && (
-          <SearchField
-            id="home-search"
-            label="Search contracts"
-            placeholder="Search contracts"
-            className="sm:w-72"
-            value={q}
-            onChange={(v) => { setQ(v); setShowAllResults(false); }}
-          />
-        )}
-        <div className="flex items-center gap-3">
-          {hasData && <ExportButtons compact build={() => buildHomeReport({ ...view, targets })} />}
-        </div>
-      </div>}
-    </header>
-  );
+  const actions = tab === "overview" && hasData ? (
+    <>
+      <Toolbar.Search
+        label="Search contracts"
+        placeholder="Search contracts"
+        value={q}
+        onChange={(v) => { setQ(v); setShowAllResults(false); }}
+      />
+      <ExportButtons compact build={() => buildHomeReport({ ...view, targets })} />
+    </>
+  ) : tab === "overview" && isLoading ? <HomeActionsSkeleton /> : undefined;
 
   let body: React.ReactNode;
   if (isLoading) body = <HomeSkeleton />;
@@ -211,39 +179,36 @@ function Home() {
               Couldn&apos;t refresh. These are the figures loaded earlier.
             </p>
             <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={isFetching}>
-              <RefreshCw size={14} className={cn(isFetching && "animate-spin motion-reduce:animate-none")} />
+              <RefreshCw size={16} aria-hidden className={cn(isFetching && "animate-spin motion-reduce:animate-none")} />
               Try again
             </Button>
           </div>
         )}
 
         {q.trim() && (
-          <section aria-labelledby="results-title" className="rounded-xl border border-border bg-card shadow-xs" aria-live="polite">
-            <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
-              <h2 id="results-title" className="text-lg font-semibold text-foreground">
-                {results.length === 0 ? "No matches" : `${plural(results.length, "contract")} found`}
-              </h2>
-              <button type="button" onClick={() => setQ("")} className={TEXT_LINK}>Clear search</button>
-            </header>
+          <ListPanel
+            id="results"
+            as="h2"
+            title={results.length === 0 ? "No matches" : "Search results"}
+            meta={results.length || undefined}
+            aria-live="polite"
+            actions={<button type="button" onClick={() => setQ("")} className={TEXT_LINK}>Clear search</button>}
+            footer={results.length > SEARCH_LIMIT ? (
+              <button type="button" className={TEXT_LINK} onClick={() => setShowAllResults((v) => !v)} aria-expanded={showAllResults}>
+                {showAllResults ? "Show fewer" : `Show all ${results.length}`}
+              </button>
+            ) : undefined}
+          >
             {results.length === 0 ? (
-              <p className="px-5 py-6 text-sm text-[var(--ink-600)]">
+              <p className="px-4 py-5 text-sm text-[var(--ink-600)]">
                 Nothing matches &ldquo;{q.trim()}&rdquo;. Try part of a name, such as a surname or a department.
               </p>
             ) : (
-              <>
-                <ul className="divide-y divide-border">
-                  {shownResults.map((c) => <ContractRow key={c.contractId} c={c} showValue />)}
-                </ul>
-                {results.length > SEARCH_LIMIT && (
-                  <div className="border-t border-border px-5 py-3">
-                    <button type="button" className={TEXT_LINK} onClick={() => setShowAllResults((v) => !v)} aria-expanded={showAllResults}>
-                      {showAllResults ? "Show fewer" : `Show all ${results.length}`}
-                    </button>
-                  </div>
-                )}
-              </>
+              <ul className="divide-y divide-border">
+                {shownResults.map((c) => <ContractRow key={c.contractId} c={c} showValue />)}
+              </ul>
             )}
-          </section>
+          </ListPanel>
         )}
 
         {isLeader ? (
@@ -252,37 +217,30 @@ function Home() {
           <>
         <KpiStrip items={kpis} />
 
-        {/* Two independent columns: the work on the left, the figures on
-            the right. Every card is exactly as tall as its content, so sparse
-            data never leaves an empty box, and a busy list never stretches
-            its neighbour. */}
         {setupPending && (
-          <div role="status" className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-start gap-3">
-              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[var(--warning)]" aria-hidden />
-              <p className="text-sm">
-                <span className="font-semibold text-foreground">Your organization isn&apos;t fully set up.</span>{" "}
-                <span className="text-[var(--ink-600)]">Name, currency, governing law, targets and team, in six short steps.</span>
-              </p>
-            </div>
+          <div role="status" className="flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+              <AlertTriangle size={16} className="shrink-0 text-[var(--warning-fg)]" aria-hidden />
+              Organization setup isn&apos;t finished.
+            </p>
             <Link
               href="/settings/organization"
-              className="ml-7 inline-flex shrink-0 items-center gap-1.5 self-start rounded-md text-sm font-semibold text-[var(--brand-primary-700)] hover:underline sm:ml-0 sm:self-auto"
+              className="inline-flex min-h-10 shrink-0 items-center gap-1 self-start rounded-sm text-sm font-semibold text-[var(--brand-primary-700)] hover:underline underline-offset-4 sm:min-h-0 sm:self-auto"
             >
               Continue setup
-              <ArrowRight size={14} aria-hidden />
+              <ArrowRight size={12} aria-hidden />
             </Link>
           </div>
         )}
         {view.attention.length === 0 && <AllClear />}
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12 lg:gap-5">
-          <div className="flex min-w-0 flex-col gap-4 lg:col-span-8 lg:gap-5">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          <div className="flex min-w-0 flex-col gap-6 lg:col-span-8">
             {view.attention.length > 0 && <AttentionPanel contracts={view.attention} />}
             <OpportunitiesPanel items={opportunities} />
             <WaitingPanel waiting={view.waiting} contracts={contracts} />
             <StepsPanel stages={view.stages} targets={targets} redAfter={redAfter} />
           </div>
-          <div className="flex min-w-0 flex-col gap-4 lg:col-span-4 lg:gap-5">
+          <div className="flex min-w-0 flex-col gap-6 lg:col-span-4">
             <ViewsCard />
             <MoneyPanel
               summary={view.summary}
@@ -292,12 +250,9 @@ function Home() {
             />
             <LongestPanel longest={view.longest} />
             {/* Trends have their own page; home keeps to today's work. */}
-            <Link
-              href="/reports/trends"
-              className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-[var(--brand-primary-700)] transition-colors hover:border-[var(--ink-300)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
-            >
+            <Link href="/reports/trends" className={cn(TEXT_LINK, "w-fit")}>
               Throughput and cycle-time trends
-              <ArrowRight size={14} aria-hidden />
+              <ArrowRight size={12} aria-hidden />
             </Link>
           </div>
         </div>
@@ -308,27 +263,29 @@ function Home() {
   }
 
   return (
-    <div className="app-container flex flex-col gap-4 py-6 md:py-8 lg:gap-5">
-      {header}
+    <>
+      <PageHeader title="Home" actions={actions} />
+      <div className="app-container app-page">
       {/* Leaders see the plain overview; clause risk, the risk index and
           processing detail sit behind a Details link (Requirement 5.1). */}
       {isLeader ? (
         tab === "risk" && (
-          <button type="button" onClick={() => setView("overview")} className="w-fit text-sm font-medium text-[var(--brand-primary-700)] hover:underline">
+          <button type="button" onClick={() => setView("overview")} className={cn(TEXT_LINK, "w-fit")}>
             Back to the overview
           </button>
         )
       ) : (
         <ViewTabs id="home" label="Home views" views={VIEWS} value={tab} onChange={setView} />
       )}
-      <div role="tabpanel" id={`home-panel-${tab}`} aria-labelledby={`home-tab-${tab}`} className="flex flex-col gap-4 lg:gap-5">
+      <div role="tabpanel" id={`home-panel-${tab}`} aria-labelledby={`home-tab-${tab}`} className="-mt-2 flex flex-col gap-6">
         {tab === "risk" ? <RiskView /> : body}
       </div>
       {isLeader && tab === "overview" && (
-        <button type="button" onClick={() => setView("risk")} className="w-fit text-sm font-medium text-[var(--brand-primary-700)] hover:underline">
+        <button type="button" onClick={() => setView("risk")} className={cn(TEXT_LINK, "w-fit")}>
           Details: clause risk, risk scores and document processing
         </button>
       )}
-    </div>
+      </div>
+    </>
   );
 }

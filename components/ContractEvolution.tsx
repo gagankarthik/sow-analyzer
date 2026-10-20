@@ -55,7 +55,7 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
   );
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+    <section className="rounded-xl border border-border bg-card p-4">
       <div className="mb-4 flex items-center gap-2">
         <Clock size={16} className="shrink-0 text-[var(--brand-primary-600)]" />
         <h3 className="text-base font-semibold tracking-tight text-foreground">Contract evolution</h3>
@@ -98,7 +98,7 @@ export function ContractEvolution({ timeline }: { timeline: ApiTimeline }) {
       {/* Amendment chain */}
       {amendments.length > 0 && (
         <div className="mb-4 flex items-center gap-2 flex-wrap">
-          <GitBranch size={14} className="shrink-0 text-muted-foreground" />
+          <GitBranch size={16} aria-hidden className="shrink-0 text-muted-foreground" />
           {amendments.map((a) => (
             <span key={a.docId} className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-sm text-foreground">
               {a.title || a.docType || "Amendment"}
@@ -161,7 +161,7 @@ function Tag({ tone, children }: { tone: "add" | "remove" | "mod"; children: Rea
     remove: "bg-[var(--ink-100)] text-[var(--ink-700)]",
     mod:    "bg-[var(--ink-100)] text-[var(--ink-700)]",
   }[tone];
-  const icon = tone === "add" ? <Plus size={11} /> : tone === "remove" ? <Minus size={11} /> : null;
+  const icon = tone === "add" ? <Plus size={12} /> : tone === "remove" ? <Minus size={12} /> : null;
   return (
     <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>
       {icon}{children}

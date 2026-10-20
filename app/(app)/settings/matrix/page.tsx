@@ -28,6 +28,7 @@ import { diffSummary, useMatrixDraft } from "@/components/govern/matrix/use-matr
 import { useMatrix, useSaveMatrix } from "@/lib/govern/queries";
 import { AGREEMENT_TYPE_LABEL, personName, plural } from "@/lib/govern/labels";
 import type { AgreementType, MatrixClause } from "@/lib/govern/types";
+import { Panel } from "@/components/ds/Panel";
 
 export default function MatrixPage() {
   const { data, isLoading, error, isFetching, refetch } = useMatrix();
@@ -80,19 +81,17 @@ export default function MatrixPage() {
     <>
       <PageHeader
         title="Review matrix"
-        subtitle="Your accepted positions, clause by clause. Sonar checks every agreement against them, so reviewers only touch what deviates."
         back={{ href: "/settings", label: "Settings" }}
         actions={
           <>
             {canEdit && (
               <Button
                 variant="outline"
-                size="lg"
                 onClick={() => setImportOpen(true)}
                 disabled={draft.isDirty}
                 title={draft.isDirty ? "Save or discard your changes first" : undefined}
               >
-                <FileSpreadsheet size={15} />Import from Excel
+                <FileSpreadsheet size={16} aria-hidden />Import from Excel
               </Button>
             )}
           </>
@@ -106,20 +105,18 @@ export default function MatrixPage() {
           <LoadError what="the review matrix" error={error} onRetry={() => refetch()} retrying={isFetching} />
         ) : (
           <>
-            {/* Focal block: which version is in force, and what that means for contracts. */}
-            <div className="grid grid-cols-1 gap-5 rounded-xl border border-border bg-card p-5 text-foreground shadow-xs md:grid-cols-12 md:gap-8">
+            <Panel as="h2" title="Version in use" bodyClassName="grid grid-cols-1 gap-5 md:grid-cols-12 md:gap-8">
               <div className="min-w-0 md:col-span-4">
-                <div className="text-sm font-medium text-[var(--ink-600)]">Version in use</div>
-                <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
-                  <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">v{current.version}</span>
-                  <span className="text-base text-[var(--ink-600)]">effective {formatDay(current.effectiveDate)}</span>
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">v{current.version}</span>
+                  <span className="text-sm text-[var(--ink-600)]">effective {formatDay(current.effectiveDate)}</span>
                 </div>
-                <p className="mt-2 text-sm text-[var(--ink-600)]">
+                <p className="mt-1 text-xs text-[var(--ink-500)]">
                   {plural(totalClauses, "clause position")} · saved by {current.createdBy ? personName(current.createdBy) : "the system"}
                 </p>
               </div>
               <CoverageBars counts={counts} active={type} />
-            </div>
+            </Panel>
 
             {!roleLoading && !isAdmin && <ReadOnlyNote what="You can read every playbook and its history; an admin makes the changes." />}
 
@@ -133,28 +130,27 @@ export default function MatrixPage() {
                   : "No positions yet for this agreement type."
               }
               action={canEdit && (
-                <Button size="lg" className="w-full sm:w-auto md:h-9" onClick={() => setClauseTarget({ mode: "add", agreementType: type, taken: clauses.map((c) => c.clauseType) })}>
-                  <Plus size={15} />Add a clause
+                <Button className="w-full sm:w-auto" onClick={() => setClauseTarget({ mode: "add", agreementType: type, taken: clauses.map((c) => c.clauseType) })}>
+                  <Plus size={16} aria-hidden />Add a clause
                 </Button>
               )}
               flush
             >
-              <div className="border-b border-border px-4 py-3 sm:px-5">
+              <div className="border-b border-border px-4 py-2.5">
                 <TypeSwitcher value={type} onChange={setType} counts={counts} dirtyTypes={draft.dirtyTypes} />
               </div>
               {clauses.length === 0 ? (
-                <div className="flex flex-col items-center px-5 py-12 text-center">
-                  <p className="text-base font-semibold text-foreground">No clauses for {AGREEMENT_TYPE_LABEL[type]} yet</p>
+                <div className="flex flex-col items-center px-4 py-10 text-center">
+                  <p className="text-sm font-semibold text-foreground">No clauses for {AGREEMENT_TYPE_LABEL[type]} yet</p>
                   <p className="mt-1 max-w-md text-sm leading-relaxed text-[var(--ink-600)]">
                     {canEdit
-                      ? "Add a clause, or import your matrix from Excel. Until then, agreements of this type have nothing to be checked against."
+                      ? "Add a clause or import your matrix from Excel. Until then, agreements of this type have nothing to be checked against."
                       : "Until an admin adds positions, agreements of this type have nothing to be checked against."}
                   </p>
                   {canEdit && (
-                    <div className="mt-5 flex flex-wrap justify-center gap-2">
-                      <Button size="lg" onClick={() => setClauseTarget({ mode: "add", agreementType: type, taken: [] })}><Plus size={15} />Add a clause</Button>
-                      <Button size="lg" variant="outline" onClick={() => setImportOpen(true)} disabled={draft.isDirty}><FileSpreadsheet size={15} />Import from Excel</Button>
-                    </div>
+                    <Button variant="outline" className="mt-4" onClick={() => setImportOpen(true)} disabled={draft.isDirty}>
+                      <FileSpreadsheet size={16} aria-hidden />Import from Excel
+                    </Button>
                   )}
                 </div>
               ) : (
@@ -232,7 +228,7 @@ function CoverageBars({ counts, active }: { counts: Record<AgreementType, number
   const max = Math.max(1, ...Object.values(counts));
   return (
     <figure className="min-w-0 md:col-span-8">
-      <figcaption className="mb-3 text-sm font-medium text-[var(--ink-600)]">Clause positions by agreement type</figcaption>
+      <figcaption className="mb-2 text-xs font-medium text-[var(--ink-600)]">Clause positions by agreement type</figcaption>
       <ul className="flex flex-col gap-2">
         {agreementTypes.map((t) => {
           const on = t === active;
@@ -241,7 +237,7 @@ function CoverageBars({ counts, active }: { counts: Record<AgreementType, number
               <span className={on ? "truncate font-semibold text-foreground" : "truncate text-[var(--ink-700)]"}>{AGREEMENT_TYPE_LABEL[t]}</span>
               <span className="h-2 overflow-hidden rounded-full bg-[var(--ink-100)]">
                 <span
-                  className={on ? "block h-full rounded-full bg-[var(--brand-primary-600)]" : "block h-full rounded-full bg-[var(--brand-primary-300)]"}
+                  className={on ? "block h-full rounded-full bg-[var(--brand-primary-600)]" : "block h-full rounded-full bg-[var(--ink-400)]"}
                   style={{ width: `${(counts[t] / max) * 100}%` }}
                 />
               </span>

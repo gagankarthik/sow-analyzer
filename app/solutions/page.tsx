@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check } from "@/components/ui/icons";
 import { MarketingShell } from "@/components/landing/MarketingShell";
 import { BoardCard, BottleneckCard, CaptureCard, RedlineCard, ValueCard } from "@/components/landing/ProductCards";
 import { StartCta } from "@/components/landing/StartCta";
@@ -144,7 +144,7 @@ export default function SolutionsPage() {
               Govern Workforce reviews SOWs, MSAs and staffing agreements with the same workflow.
             </p>
             <Link href="/editions/workforce" className="lp-trust-link mt-0 shrink-0">
-              See Govern Workforce <ArrowRight size={14} aria-hidden="true" />
+              See Govern Workforce <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
         </div>

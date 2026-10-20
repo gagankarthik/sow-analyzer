@@ -8,7 +8,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertTriangle, RefreshCw } from "@/components/ui/icons";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ChartSkeleton } from "@/components/ds/skeletons";
 
 export type ChartState = "ready" | "loading" | "empty" | "error";
 
@@ -48,7 +48,7 @@ export function ChartCard({
       </header>
       <div className={cn("min-w-0 flex-1 p-4 md:p-5", bodyClassName)}>
         {state === "loading" ? (
-          <Skeleton className="h-full min-h-[200px] w-full rounded-lg" />
+          <ChartSkeleton height="h-full min-h-[200px]" label={`the ${title.toLowerCase()} chart`} />
         ) : state === "error" ? (
           <ChartFallback
             tone="error"

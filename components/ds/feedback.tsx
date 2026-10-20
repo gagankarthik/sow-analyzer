@@ -7,7 +7,8 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, CheckCircle2, Info, RefreshCw, Search, XCircle } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ChartSkeleton, PanelSkeleton, SkeletonLine, SkeletonRegion, SummaryTilesSkeleton, TableSkeleton } from "./skeletons";
+import { loadingSubject } from "@/lib/skeleton-geometry";
 
 /* ─── EmptyState ─────────────────────────────────────────────────── */
 
@@ -123,7 +124,7 @@ export function ErrorState({
 
 export type LoadingStateProps = {
   /** Skeleton shape that matches the content being loaded. */
-  variant?: "table" | "cards" | "chart" | "text" | "kpis";
+  variant?: "table" | "cards" | "chart" | "text" | "kpis" | "panel";
   /** Rows / cards to sketch. */
   count?: number;
   /** Spoken while loading: "Loading contracts". */
@@ -132,64 +133,51 @@ export type LoadingStateProps = {
 };
 
 /**
- * Skeletons shaped like the content they stand in for, plus a polite
- * status message for screen readers. Pulse stops under reduced motion.
+ * Skeletons shaped like the content they stand in for (built from the kit in
+ * ./skeletons), on a region marked aria-busy with one sr-only status. The
+ * pulse stops under reduced motion. Prefer the specific skeleton (a
+ * TableSkeleton with the real columns, a PanelSkeleton with the real title)
+ * when the shape is known; this is the generic fallback.
  */
 export function LoadingState({ variant = "text", count = 3, label = "Loading", className }: LoadingStateProps) {
   const items = Array.from({ length: count }, (_, i) => i);
+  const spoken = loadingSubject(label);
   return (
-    <div role="status" aria-live="polite" className={cn("min-w-0", className)}>
-      <span className="sr-only">{label}…</span>
-      <div aria-hidden className="motion-reduce:[&_*]:animate-none">
-        {variant === "table" && (
-          <div className="flex flex-col divide-y divide-border-subtle rounded-container border border-border-default bg-surface-raised">
-            <div className="flex gap-4 px-4 py-3">
-              <Skeleton className="h-3 w-1/4" />
-              <Skeleton className="h-3 w-1/6" />
-              <Skeleton className="ms-auto h-3 w-1/12" />
+    <SkeletonRegion label={spoken} className={className}>
+      {variant === "table" && (
+        <TableSkeleton columns={GENERIC_COLUMNS} rows={count} showHeaders={false} />
+      )}
+      {variant === "cards" && (
+        <div aria-hidden className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {items.map((i) => (
+            <div key={i} className="flex flex-col rounded-container border border-border-default bg-surface-raised p-4">
+              <SkeletonLine text="text-body font-semibold" width="w-3/5" />
+              <SkeletonLine text="text-caption" width="w-4/5" className="mt-2" />
+              <SkeletonLine text="text-caption" width="w-2/5" className="mt-1" />
             </div>
-            {items.map((i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-4">
-                <Skeleton className="h-4 w-2/5" />
-                <Skeleton className="h-5 w-20 rounded-pill" />
-                <Skeleton className="ms-auto h-4 w-16" />
-              </div>
-            ))}
-          </div>
-        )}
-        {variant === "cards" && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {items.map((i) => (
-              <div key={i} className="rounded-container border border-border-default bg-surface-raised p-4">
-                <Skeleton className="h-4 w-3/5" />
-                <Skeleton className="mt-3 h-3 w-4/5" />
-                <Skeleton className="mt-2 h-3 w-2/5" />
-              </div>
-            ))}
-          </div>
-        )}
-        {variant === "kpis" && (
-          <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4">
-            {items.map((i) => (
-              <div key={i} className="rounded-container border border-border-default bg-surface-raised p-4 md:p-5">
-                <Skeleton className="h-3 w-1/2" />
-                <Skeleton className="mt-3 h-8 w-2/5" />
-              </div>
-            ))}
-          </div>
-        )}
-        {variant === "chart" && <Skeleton className="h-60 w-full rounded-lg" />}
-        {variant === "text" && (
-          <div className="flex flex-col gap-2">
-            {items.map((i) => (
-              <Skeleton key={i} className={cn("h-3", i === count - 1 ? "w-3/5" : "w-full")} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+          ))}
+        </div>
+      )}
+      {variant === "kpis" && <SummaryTilesSkeleton count={Math.min(count, 4)} />}
+      {variant === "chart" && <ChartSkeleton />}
+      {variant === "panel" && <PanelSkeleton rows={count} />}
+      {variant === "text" && (
+        <div aria-hidden className="flex flex-col">
+          {items.map((i) => (
+            <SkeletonLine key={i} text="text-body" width={i === count - 1 ? "w-3/5" : "w-full"} />
+          ))}
+        </div>
+      )}
+    </SkeletonRegion>
   );
 }
+
+const GENERIC_COLUMNS = [
+  { id: "name", card: "title" as const },
+  { id: "status", className: "w-32" },
+  { id: "owner", priority: 2 as const, className: "w-40" },
+  { id: "value", numeric: true, className: "w-28" },
+];
 
 /* ─── Callout / Banner ───────────────────────────────────────────── */
 

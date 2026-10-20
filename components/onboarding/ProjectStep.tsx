@@ -4,7 +4,7 @@ import { byEdition } from "@/lib/edition-runtime";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, ArrowRight, CheckCircle2, ChevronLeft, Loader2 } from "@/components/ui/icons";
+import { AlertCircle, ArrowRight, ChevronLeft, Loader2 } from "@/components/ui/icons";
 import { createProject, type LocalProject } from "@/lib/projects-store";
 import { cn } from "@/lib/utils";
 import { StepCard } from "./StepCard";
@@ -80,7 +80,7 @@ export function ProjectStep({
         />
         {nameError ? (
           <p id="onboarding-project-name-error" role="alert" className="flex items-center gap-1.5 text-xs font-medium text-[var(--danger)]">
-            <AlertCircle size={13} className="shrink-0" />{byEdition("Enter a project name.", "Enter an engagement name.")}
+            <AlertCircle size={12} className="shrink-0" />{byEdition("Enter a project name.", "Enter an engagement name.")}
           </p>
         ) : (
           <p id="onboarding-project-name-hint" className="text-xs text-muted-foreground">
@@ -106,7 +106,7 @@ export function ProjectStep({
 
       {saveError && (
         <p role="alert" className="flex items-start gap-2 rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">
-          <AlertCircle size={15} className="mt-0.5 shrink-0" />
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <span className="min-w-0 break-words">{byEdition("The project was not created.", "The engagement was not created.")} {saveError}</span>
         </p>
       )}
@@ -124,13 +124,13 @@ export function ProjectStep({
         }
         footer={
           <>
-            <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto" onClick={onBack}>
-              <ChevronLeft size={15} />Back
+            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={onBack}>
+              <ChevronLeft size={16} />Back
             </Button>
-            <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={saving}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
               {saving
-                ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project…", "Creating engagement…")}</>
-                : <>{creating ? byEdition("Create project", "Create engagement") : byEdition("Continue with this project", "Continue with this engagement")} <ArrowRight size={15} /></>}
+                ? <><Loader2 size={16} className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project…", "Creating engagement…")}</>
+                : <>{creating ? byEdition("Create project", "Create engagement") : byEdition("Continue with this project", "Continue with this engagement")} <ArrowRight size={16} /></>}
             </Button>
           </>
         }
@@ -151,13 +151,13 @@ export function ProjectStep({
                       className="h-4 w-4 shrink-0 accent-[var(--brand-primary-600)] focus-visible:outline-none"
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-base font-semibold text-foreground">{p.name}</span>
+                      <span className="block truncate text-sm font-semibold text-foreground">{p.name}</span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {p.client ? `${p.client} · ` : ""}{p.docIds.length} document{p.docIds.length === 1 ? "" : "s"}
                       </span>
                     </span>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-[var(--success)]">
-                      <CheckCircle2 size={13} />{p.role === "owner" ? "Yours" : "Shared with you"}
+                    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-[var(--ink-600)]">
+                      {p.role === "owner" ? "Yours" : "Shared with you"}
                     </span>
                   </label>
                 );
@@ -170,7 +170,7 @@ export function ProjectStep({
                   onChange={() => setPicked(NEW)}
                   className="h-4 w-4 shrink-0 accent-[var(--brand-primary-600)] focus-visible:outline-none"
                 />
-                <span className="text-base font-semibold text-foreground">{byEdition("Create a new project", "Create a new engagement")}</span>
+                <span className="text-sm font-semibold text-foreground">{byEdition("Create a new project", "Create a new engagement")}</span>
               </label>
             </div>
             {creating && <div className="mt-5">{form}</div>}

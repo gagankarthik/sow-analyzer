@@ -9,22 +9,24 @@ import { Fragment, useMemo, useState, useSyncExternalStore, type ReactNode } fro
 import Link from "next/link";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PageHeader } from "@/components/PageHeader";
+import { RecordHeader } from "@/components/ds/Record";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
+import { ChartSkeleton, SkeletonLine, SkeletonRegion, SkeletonText } from "@/components/ds/skeletons";
 import { MotionReveal } from "@/components/MotionReveal";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelligence";
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
-const ContractValueChart = dynamic(() => import("@/components/charts/ContractValueChart").then((m) => m.ContractValueChart), { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
+const ContractValueChart = dynamic(() => import("@/components/charts/ContractValueChart").then((m) => m.ContractValueChart), { ssr: false, loading: () => <ChartSkeleton height="h-64" label="the value chart" /> });
 import { SowTimeline } from "@/components/SowTimeline";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ALL, ListFilters, NoResults, activeFilterCount, type FilterGroup } from "@/app/(app)/projects/[id]/_components/ListFilters";
 import {
-  FileText, CheckCircle2, Loader2, XCircle, ArrowRight, Layers, Building2, ShieldAlert, AlertTriangle, Info, Plus, GitBranch, Users, Sonar, Trash2, DollarSign, RefreshCw, Maximize2, Download, Clock, ExternalLink, CalendarClock, MoreHorizontal, Pencil, Minus, Eye,
+  FileText, CheckCircle2, Loader2, XCircle, ArrowRight, Layers, Building2, ShieldAlert, AlertTriangle, Info, Plus, GitBranch, Users, Sonar, Trash2, DollarSign, RefreshCw, Maximize2, Download, Clock, ExternalLink, CalendarClock, MoreHorizontal, Pencil, Minus, Eye, ChevronDown,
 } from "@/components/ui/icons";
 import { RISK_LABEL } from "@/lib/chart-theme";
 import { useNow } from "@/lib/use-now";
@@ -45,7 +47,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { InviteDialog } from "@/components/team/InviteDialog";
 import { ProjectMemberList } from "@/components/team/ProjectMemberList";
 import { ROLE_META, readOnlyReason } from "@/components/team/roles";
-import { formatRelativeDays, formatDate } from "@/lib/format";
+import { displayTitle, formatRelativeDays, formatDate, parseDate } from "@/lib/format";
+
+const NUMBER = new Intl.NumberFormat("en-US");
 import { categoryLabel } from "@/lib/clause-categories";
 import { computeContractValue, fmtMoney, docValueOrNull, persistedOf, type ValueSegment } from "@/lib/contract-value";
 import type { ApiClause, ApiClassification, ApiDocument, ProjectRole, RiskLevel, FindingSeverity } from "@/lib/types";
@@ -61,11 +65,11 @@ const RISK_META: Record<RiskLevel, { label: string; bg: string; text: string }> 
   low: { label: "Low", bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]" },
 };
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: ReactNode }> = {
-  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={13} /> },
-  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
-  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
-  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
-  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={12} /> },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={12} /> },
+  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={12} /> },
+  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={12} /> },
+  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={12} /> },
 };
 const RISK_DOT: Record<RiskLevel, string> = { critical: "bg-[var(--danger)]", high: "bg-[var(--warning)]", medium: "bg-[var(--ink-500)]", low: "bg-[var(--success)]" };
 /** Shown for a clause the analysis returned without a risk level. It is never styled or counted as "low". */
@@ -340,12 +344,12 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const projectsLoading = projectsSync.status === "idle" || projectsSync.status === "loading";
   // While a delete is on the wire the project is already out of the list; hold
   // the skeleton rather than flash "not found" before the redirect (or the rollback).
-  if (!mounted || (!project && (projectsLoading || deletingProject)) || (!!project && docsQuery.isLoading)) return <WorkspaceSkeleton />;
+  if (!mounted || (!project && (projectsLoading || deletingProject)) || (!!project && docsQuery.isLoading)) return <ProjectRecordSkeleton section="workspace" />;
   if (!project) {
     if (projectsSync.status === "error") {
       return <LoadFailed message={projectsSync.error ?? "The request for your projects failed."} onRetry={() => void refreshProjects()} />;
     }
-    if (missing && probe.isPending) return <WorkspaceSkeleton />;
+    if (missing && probe.isPending) return <ProjectRecordSkeleton section="workspace" />;
     if (probe.isError && !isNotFound(probe.error)) {
       return <LoadFailed message={probe.error instanceof Error ? probe.error.message : "The request for this project failed."} onRetry={() => void probe.refetch()} />;
     }
@@ -356,7 +360,6 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
     return <LoadFailed message={docsQuery.error instanceof Error ? docsQuery.error.message : "The request for your documents failed."} onRetry={() => void docsQuery.refetch()} />;
   }
 
-  const hasDocs = docs.length > 0;
   const hasAnalysis = allClauses.length > 0;
   const amendments = docs.filter((d) => d.docType === "AMENDMENT");
 
@@ -421,13 +424,20 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <PageHeader
-        back={{ href: "/projects", label: terms.projects }}
-        title={project.name}
-        subtitle={`${project.client ? `${project.client} · ` : ""}${hasDocs ? `${docs.length} document${docs.length === 1 ? "" : "s"}${processingCount > 0 ? ` · ${processingCount} analyzing` : ""}${totalClauses !== null ? ` · ${totalClauses.toLocaleString()} clause${totalClauses === 1 ? "" : "s"}` : ""}` : "No documents yet"}`}
+      <RecordHeader
+        breadcrumb={[{ label: terms.projects, href: "/projects" }, { label: displayTitle(project.name) }]}
+        title={displayTitle(project.name)}
+        objectTag="Project"
+        highlights={[
+          ...(project.client ? [{ label: "Client", value: project.client }] : []),
+          { label: "Documents", value: NUMBER.format(docs.length) },
+          ...(processingCount > 0 ? [{ label: "Analyzing", value: NUMBER.format(processingCount) }] : []),
+          { label: "Clauses", value: totalClauses !== null ? NUMBER.format(totalClauses) : "—" },
+          { label: "Your role", value: isOwner ? "Owner" : ROLE_META[role].label },
+        ]}
+        primaryAction={<Button variant="ai" className="max-md:flex-1" onClick={toggleCopilot}><Sonar size={16} aria-hidden />Ask Sonar</Button>}
         actions={
-          <div className="flex w-full items-center gap-2 sm:w-auto">
-            <Button variant="ai" size="lg" className="flex-1 sm:flex-none md:h-9" onClick={toggleCopilot}><Sonar size={14} />Ask Sonar</Button>
+          <>
             <ConfirmDialog
               open={confirmReanalyze}
               onOpenChange={setConfirmReanalyze}
@@ -438,36 +448,59 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="lg" className="md:h-9" aria-label="More actions">
-                  <MoreHorizontal size={16} /><span className="hidden sm:inline">More</span>
+                <Button variant="outline">
+                  Actions<ChevronDown size={12} aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 {reanalyzable.length > 0 && (
                   <DropdownMenuItem onClick={() => setConfirmReanalyze(true)} disabled={reanalyzing || reanalyzable.every((d) => isProcessing(d.status))}>
-                    <RefreshCw size={14} className={reanalyzing ? "animate-spin" : undefined} />
+                    <RefreshCw size={16} className={reanalyzing ? "animate-spin" : undefined} />
                     {reanalyzing ? "Re-analyzing…" : "Re-analyze all"}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => setTab("documents")}><FileText size={14} />Documents</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTab("team")}><Users size={14} />{isOwner ? <>Team &amp; invites</> : "Team"}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTab("documents")}><FileText size={16} />Documents</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTab("team")}><Users size={16} />{isOwner ? <>Team &amp; invites</> : "Team"}</DropdownMenuItem>
                 {isOwner && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={openRename}><Pencil size={14} />Rename project</DropdownMenuItem>
+                    <DropdownMenuItem onClick={openRename}><Pencil size={16} />Rename project</DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setConfirmDeleteProject(true)}
                       className="text-[var(--danger)] focus:text-[var(--danger)]"
                     >
-                      <Trash2 size={14} />Delete project
+                      <Trash2 size={16} />Delete project…
                     </DropdownMenuItem>
                   </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </>
         }
-      />
+      >
+        {/* Someone else's project: whose it is and what this role allows. */}
+        {!isOwner && (
+          <p className="flex min-w-0 items-center gap-1.5 text-xs text-[var(--ink-600)]">
+            <Eye size={12} aria-hidden className="shrink-0" />
+            <span className="min-w-0 truncate">
+              Shared with you{ownerEmail ? ` by ${ownerEmail}` : ""} · {ROLE_META[role].summary}
+            </span>
+          </p>
+        )}
+        {/* Section tabs: one row, sideways scroll, on the band's bottom border. */}
+        <nav className="scrollbar-none -mb-4 flex min-w-0 items-end gap-1 overflow-x-auto" aria-label="Project sections">
+          {TABS.map((t) => (
+            <button key={t.id} type="button" onClick={() => setTab(t.id)} aria-current={tab === t.id ? "page" : undefined}
+              className={cn(
+                "inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 text-sm outline-none transition-colors duration-150 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--brand-primary-600)] max-md:h-11",
+                tab === t.id ? "border-[var(--brand-primary-600)] font-medium text-foreground" : "border-transparent text-[var(--ink-600)] hover:text-foreground",
+              )}>
+              {t.label}
+              {typeof t.count === "number" && <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums text-[var(--ink-600)]">{NUMBER.format(t.count)}</span>}
+            </button>
+          ))}
+        </nav>
+      </RecordHeader>
 
       <Dialog open={confirmDeleteProject} onOpenChange={(o) => !deletingProject && setConfirmDeleteProject(o)}>
         <DialogContent className="sm:max-w-[420px]">
@@ -480,7 +513,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           <DialogFooter>
             <Button variant="outline" size="lg" className="md:h-9" onClick={() => setConfirmDeleteProject(false)} disabled={deletingProject}>Cancel</Button>
             <Button size="lg" className="bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90 md:h-9" onClick={handleDeleteProject} disabled={deletingProject}>
-              {deletingProject ? <><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Deleting…</> : "Delete project"}
+              {deletingProject ? <><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Deleting…</> : "Delete project"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -506,7 +539,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           <DialogFooter>
             <Button variant="outline" size="lg" className="md:h-9" onClick={() => setRenaming(false)} disabled={savingRename}>Cancel</Button>
             <Button type="submit" form="rename-project" size="lg" className="md:h-9" disabled={savingRename || !renameName.trim()}>
-              {savingRename ? <><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Saving…</> : "Save"}
+              {savingRename ? <><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Saving…</> : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -521,43 +554,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           <DialogFooter>
             <Button variant="outline" size="lg" className="md:h-9" onClick={() => setToRemove(null)} disabled={removing}>Cancel</Button>
             <Button variant="outline" size="lg" className="md:h-9" onClick={confirmRemove} disabled={removing}>
-              {removing ? <><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Removing…</> : <><Minus size={13} />Remove from project</>}
+              {removing ? <><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Removing…</> : <><Minus size={12} />Remove from project</>}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Someone else's project: say whose it is and what this role allows. */}
-      {!isOwner && (
-        <div className="border-b border-border bg-[var(--panel)]">
-          <p className="app-container flex items-start gap-2 py-2.5 text-sm leading-relaxed text-[var(--ink-700)]">
-            <Eye size={15} className="mt-0.5 shrink-0 text-[var(--ink-600)]" />
-            <span className="min-w-0 break-words">
-              <span className="font-semibold text-foreground">Shared with you{ownerEmail ? ` by ${ownerEmail}` : ""}.</span>{" "}
-              You are {role === "editor" ? "an editor" : "a viewer"}. {ROLE_META[role].summary}
-            </span>
-          </p>
-        </div>
-      )}
-
-      <div>
-        <div className="app-container">
-          <nav className="-mb-px flex items-center gap-5 overflow-x-auto pr-4 scrollbar-none md:gap-6" aria-label="Project sections">
-            {TABS.map((t) => (
-              <button key={t.id} type="button" onClick={() => setTab(t.id)} data-active={tab === t.id || undefined} aria-current={tab === t.id ? "page" : undefined}
-                className={cn(
-                  "-mb-px inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-1 text-base font-medium text-[var(--ink-600)] outline-none transition-colors hover:border-[var(--ink-300)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                  "data-[active=true]:border-[var(--brand-primary-600)] data-[active=true]:font-semibold data-[active=true]:text-[var(--brand-primary-700)]",
-                )}>
-                {t.label}
-                {typeof t.count === "number" && <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-[var(--ink-600)]">{t.count}</span>}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
+      <div className="app-container space-y-6 py-5 md:py-6">
         {tab === "overview" && <OverviewPanel v={v} />}
         {tab === "sow" && <SowPanel v={v} />}
         {tab === "amendments" && <AmendmentsPanel amendments={amendments} v={v} />}
@@ -575,7 +578,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           <DialogFooter>
             <Button variant="outline" size="lg" className="md:h-9" onClick={() => setToDelete(null)} disabled={del.isPending}>Cancel</Button>
             <Button variant="outline" size="lg" onClick={confirmDelete} disabled={del.isPending} className="border-[var(--danger)]/30 bg-[var(--danger-soft)] text-[var(--danger)] hover:border-[var(--danger)]/50 hover:bg-[var(--danger-soft)]">
-              {del.isPending ? <><Loader2 size={13} className="mr-1.5 animate-spin" />Deleting…</> : <><Trash2 size={13} className="mr-1.5" />Delete</>}
+              {del.isPending ? <><Loader2 size={12} className="mr-1.5 animate-spin" />Deleting…</> : <><Trash2 size={12} className="mr-1.5" />Delete</>}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -642,7 +645,7 @@ function OverviewPanel({ v }: { v: View }) {
       {v.hasAnalysis && (
         <MotionReveal delay={0.05}>
           <section>
-            <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+            <div className="min-w-0 rounded-xl border border-border bg-card p-4 md:p-6">
               <h3 className="text-base font-semibold mb-4 tracking-tight text-foreground">Risk by category</h3>
               <ClauseHeatmap clauses={v.allClauses} />
             </div>
@@ -651,10 +654,10 @@ function OverviewPanel({ v }: { v: View }) {
       )}
 
       {v.attention.length > 0 && (
-        <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2"><ShieldAlert size={16} className="shrink-0 text-[var(--danger)]" /><h3 className="text-base font-semibold tracking-tight text-foreground">Clauses that need attention</h3></div>
-            <button onClick={() => v.goTo("sow")} type="button" className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0">All clauses<ArrowRight size={13} strokeWidth={2.25} /></button>
+            <button onClick={() => v.goTo("sow")} type="button" className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0">All clauses<ArrowRight size={12} /></button>
           </div>
           <div className="space-y-2.5">{v.attention.slice(0, 5).map((c) => <AttentionRow key={`${c._docId}-${c.number}`} c={c} />)}</div>
           {v.attention.length > 5 && (
@@ -678,21 +681,21 @@ function ValueBar({ segments, total, currency, reconciled }: { segments: ValueSe
   // add up. null = no stated total to check the extracted amounts against.
   const authoritative = reconciled != null;
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 bg-[var(--navy)] p-5 text-white md:p-6">
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-border p-4">
         <div className="min-w-0">
-          <h3 className="text-base font-semibold">{authoritative ? "Total contract value" : "Extracted contract value"}</h3>
-          <div className="mt-1.5 break-words text-3xl font-bold leading-none tabular-nums tracking-tight md:text-4xl">{fmtMoney(total, currency)}</div>
+          <h3 className="text-xs font-medium text-[var(--ink-500)]">{authoritative ? "Total contract value" : "Extracted contract value"}</h3>
+          <div className="mt-1 break-words text-3xl font-semibold leading-tight tabular-nums tracking-tight text-foreground">{fmtMoney(total, currency)}</div>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {reconciled === true && <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--success-fg)]" title="The document's stated total and the component amounts reconcile."><CheckCircle2 size={12} />Reconciled</span>}
           {reconciled === false && <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2.5 py-0.5 text-xs font-semibold text-[var(--warning-fg)]" title="Showing the document's stated total. The amounts extracted per document do not add up to it."><AlertTriangle size={12} />Stated total, parts don&apos;t add up</span>}
-          {reconciled === null && <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white" title="Extracted from the documents. No stated total was available to reconcile it against.">Not reconciled</span>}
-          <span className="text-sm text-[var(--navy-foreground)]">{segments.length} amount{segments.length === 1 ? "" : "s"}{currency ? "" : " · currency not extracted"}</span>
+          {reconciled === null && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-[var(--ink-700)]" title="Extracted from the documents. No stated total was available to reconcile it against.">Not reconciled</span>}
+          <span className="text-xs text-[var(--ink-600)]">{segments.length} amount{segments.length === 1 ? "" : "s"}{currency ? "" : " · currency not extracted"}</span>
         </div>
       </div>
 
-      <div className="p-4 md:p-6">
+      <div className="p-4">
         <div className="flex h-3 overflow-hidden rounded-full bg-muted">
           {segments.map((s, i) => (
             <div key={`${s.docId}-${i}`} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
@@ -802,7 +805,7 @@ function CommercialTerms({ v }: { v: View }) {
 
   return (
     <MotionReveal delay={0.04}>
-      <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+      <section className="rounded-xl border border-border bg-card p-4 md:p-6">
         <h3 className="text-base font-semibold mb-1 flex items-center gap-2 tracking-tight text-foreground"><FileSignatureFallback />Commercial terms</h3>
         <p className="mb-4 text-sm text-[var(--ink-600)]">As extracted from the {v.readyDocs.length} analyzed document{v.readyDocs.length === 1 ? "" : "s"} in this project. Where a later document restates a term, the later one is shown.</p>
 
@@ -816,12 +819,12 @@ function CommercialTerms({ v }: { v: View }) {
           <div className="mb-5">
             <TermsBlock title="Deadlines & key dates" count={allDeadlines.length}>
               {allDeadlines.map((dl, i) => {
-                const t = new Date(dl.date).getTime();
+                const t = parseDate(dl.date).getTime();
                 const overdue = !isNaN(t) && t < now;
                 return (
                   <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2 text-sm">
                     <span className="flex min-w-0 flex-1 basis-[11rem] flex-wrap items-center gap-x-2 gap-y-1">
-                      <CalendarClock size={13} className={`shrink-0 ${overdue ? "text-[var(--danger)]" : "text-muted-foreground"}`} />
+                      <CalendarClock size={12} className={`shrink-0 ${overdue ? "text-[var(--danger)]" : "text-muted-foreground"}`} />
                       <span className="min-w-0 break-words text-foreground">{dl.label}</span>
                       <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-[var(--ink-600)]">{dl.kind}</span>
                       {dl.amend && <AmendTag />}
@@ -852,7 +855,7 @@ function CommercialTerms({ v }: { v: View }) {
             <TermsBlock title="Milestones" count={milestones.length}>
               {milestones.map((mst, i) => (
                 <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2 text-sm">
-                  <span className="flex min-w-0 flex-1 basis-[11rem] items-center gap-1.5"><Clock size={13} className="shrink-0 text-muted-foreground" /><span className="min-w-0 break-words text-foreground">{mst.name}</span>{mst._amend && <AmendTag />}</span>
+                  <span className="flex min-w-0 flex-1 basis-[11rem] items-center gap-1.5"><Clock size={12} className="shrink-0 text-muted-foreground" /><span className="min-w-0 break-words text-foreground">{mst.name}</span>{mst._amend && <AmendTag />}</span>
                   <span className="tabular-nums text-[var(--ink-600)]">{mst.date ? formatDate(mst.date) : ""}{mst.payment != null ? ` · ${fmtMoney(mst.payment, mst._cur)}` : ""}</span>
                 </li>
               ))}
@@ -912,7 +915,7 @@ function CommercialTerms({ v }: { v: View }) {
 function AmendTag() {
   return (
     <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--warning-soft)] px-1.5 py-0.5 text-xs font-semibold text-[var(--warning-fg)]" title="Added or changed by an amendment">
-      <GitBranch size={11} />Amended
+      <GitBranch size={12} />Amended
     </span>
   );
 }
@@ -975,7 +978,7 @@ function SowPanel({ v }: { v: View }) {
   return (
     <>
       <ListFilters
-        className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+        className="rounded-xl border border-border bg-card p-3 md:p-4"
         search={q}
         onSearch={setQ}
         placeholder="Search clauses, categories, documents"
@@ -991,7 +994,7 @@ function SowPanel({ v }: { v: View }) {
       {filtered.length === 0 ? (
         <NoResults noun="clauses" onClear={clearFilters} />
       ) : (
-        <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
           <ul className="divide-y divide-[var(--ink-100)] lg:max-h-[640px] lg:overflow-y-auto">
             {filtered.map((c) => {
               const m = clauseRiskMeta(c);
@@ -1004,11 +1007,11 @@ function SowPanel({ v }: { v: View }) {
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${m.bg} ${m.text}`}>{clauseRiskText(c)}</span>
                         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-[var(--ink-600)]">{categoryLabel(c.category)}</span>
                       </div>
-                      <div className="break-words text-base font-semibold text-foreground">{c.title || c.number}</div>
+                      <div className="break-words text-base font-semibold text-foreground">{displayTitle(c.title) || c.number}</div>
                       {c.summary && <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-[var(--ink-600)]">{c.summary}</p>}
                       <p className="mt-1 break-words text-xs text-muted-foreground">{c._docTitle}</p>
                     </div>
-                    <ArrowRight size={15} className="mt-1 shrink-0 text-muted-foreground" />
+                    <ArrowRight size={16} className="mt-1 shrink-0 text-muted-foreground" />
                   </button>
                 </li>
               );
@@ -1070,7 +1073,7 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-[var(--ink-600)]">{categoryLabel(clause.category)}</span>
                 <span className="font-mono text-xs text-muted-foreground">Clause {clause.number}</span>
               </div>
-              <SheetTitle className="mt-1 text-lg">{clause.title || `Clause ${clause.number}`}</SheetTitle>
+              <SheetTitle className="mt-1 text-lg">{displayTitle(clause.title) || `Clause ${clause.number}`}</SheetTitle>
               <SheetDescription>From <span className="font-medium text-foreground">{clause._docTitle}</span></SheetDescription>
             </SheetHeader>
 
@@ -1084,11 +1087,11 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
               {/* Suggested (real, generated by Sonar on request) */}
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-semibold inline-flex items-center gap-1.5"><Sonar size={13} />Suggested revision by Sonar</h4>
+                  <h4 className="text-sm font-semibold inline-flex items-center gap-1.5"><Sonar size={12} />Suggested revision by Sonar</h4>
                   {sug.text && !sug.loading && <button type="button" onClick={generate} className="inline-flex min-h-10 items-center rounded-md px-1 text-sm font-semibold text-[var(--ai-ink)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)] md:min-h-0">Regenerate</button>}
                 </div>
                 {sug.loading ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)] p-3 text-xs text-muted-foreground"><Loader2 size={13} className="animate-spin" />Sonar is drafting a revision from this contract&apos;s clauses…</div>
+                  <div className="flex items-center gap-2 rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)] p-3 text-xs text-muted-foreground"><Loader2 size={12} className="animate-spin" />Sonar is drafting a revision from this contract&apos;s clauses…</div>
                 ) : sug.text ? (
                   <p className="whitespace-pre-wrap rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)] p-3 text-sm leading-relaxed text-foreground">{sug.text}</p>
                 ) : sug.err ? (
@@ -1098,7 +1101,7 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
                   </div>
                 ) : (
                   <button type="button" onClick={generate} className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--ai-ink)] bg-[var(--ai-surface)] p-3 text-sm font-semibold text-[var(--ai-ink)] transition-colors hover:border-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)]">
-                    <Sonar size={13} />Ask Sonar to draft a more balanced version
+                    <Sonar size={12} />Ask Sonar to draft a more balanced version
                   </button>
                 )}
               </div>
@@ -1120,7 +1123,7 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
                         <li key={`${r._docId}-${r.number}-${i}`}>
                           <Link href={`/projects/${r._docId}/sow`} className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:border-[var(--brand-primary-300)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                             <span className="font-mono text-xs text-muted-foreground">{r.number}</span>
-                            <span className="min-w-0 flex-1 break-words text-sm font-medium text-foreground">{r.title || r.number}</span>
+                            <span className="min-w-0 flex-1 break-words text-sm font-medium text-foreground">{displayTitle(r.title) || r.number}</span>
                             <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-semibold ${rm.bg} ${rm.text}`}>{rm.label}</span>
                           </Link>
                         </li>
@@ -1138,9 +1141,18 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
                     <Layers size={12} />Similar clauses · across your documents
                   </h4>
                   {similar.isLoading ? (
-                    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
-                      <Loader2 size={13} className="animate-spin" />Finding the most similar clauses…
-                    </div>
+                    <SkeletonRegion label="similar clauses" className="flex flex-col gap-1.5">
+                      {[0, 1].map((i) => (
+                        <div key={i} aria-hidden className="flex flex-col gap-1 rounded-lg border border-border bg-card px-3 py-2.5">
+                          <span className="flex items-center gap-2">
+                            <SkeletonLine text="text-sm font-medium" width={i ? "w-1/2" : "w-2/3"} className="flex-1" />
+                            <Skeleton className="h-5 w-24 shrink-0 rounded-pill" />
+                          </span>
+                          <SkeletonLine text="text-sm leading-snug" width="w-full" />
+                          <SkeletonLine text="text-sm leading-snug" width="w-3/5" />
+                        </div>
+                      ))}
+                    </SkeletonRegion>
                   ) : similar.isError ? (
                     <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-[var(--ink-600)]">Similar clauses couldn&apos;t be loaded, so none are shown. That does not mean there are none.</p>
                   ) : (
@@ -1176,7 +1188,7 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
 
             <SheetFooter className="border-t border-border">
               <Button size="lg" asChild>
-                <Link href={`/projects/${clause._docId}`}><FileText size={14} />Open document</Link>
+                <Link href={`/projects/${clause._docId}`}><FileText size={16} />Open document</Link>
               </Button>
             </SheetFooter>
           </>
@@ -1199,7 +1211,7 @@ function AmendmentsPanel({ amendments, v }: { amendments: ApiDocument[]; v: View
   const [sort, setSort] = useState<"updated" | "title">("updated");
 
   if (!v.docs.length) return <UploadPrompt v={v} />;
-  if (amendments.length === 0) return <EmptyPanel icon={<GitBranch size={22} strokeWidth={1.5} />} title="No amendments yet" body="Upload an amendment to a contract in this project and it'll appear here, diffed against the original." />;
+  if (amendments.length === 0) return <EmptyPanel icon={<GitBranch size={24} />} title="No amendments yet" body="Upload an amendment to a contract in this project and it'll appear here, diffed against the original." />;
 
   const term = q.trim().toLowerCase();
   const shown = amendments
@@ -1211,7 +1223,7 @@ function AmendmentsPanel({ amendments, v }: { amendments: ApiDocument[]; v: View
   return (
     <>
       <ListFilters
-        className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+        className="rounded-xl border border-border bg-card p-3 md:p-4"
         search={q}
         onSearch={setQ}
         placeholder="Search amendments"
@@ -1227,13 +1239,13 @@ function AmendmentsPanel({ amendments, v }: { amendments: ApiDocument[]; v: View
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
           {shown.map((d) => (
-            <Link key={d.docId} href={`/projects/${d.docId}/amendments`} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-xs transition-[box-shadow,border-color] hover:border-[var(--brand-primary-300)] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--warning-soft)] text-[var(--warning-fg)]"><GitBranch size={18} /></span>
+            <Link key={d.docId} href={`/projects/${d.docId}/amendments`} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 transition-[box-shadow,border-color] hover:border-[var(--brand-primary-300)] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--warning-soft)] text-[var(--warning-fg)]"><GitBranch size={16} /></span>
               <div className="min-w-0 flex-1">
-                <div className="break-words text-base font-semibold text-foreground">{d.title || "Untitled amendment"}</div>
+                <div className="break-words text-base font-semibold text-foreground">{displayTitle(d.title) || "Untitled amendment"}</div>
                 <div className="mt-0.5 text-sm text-[var(--ink-600)]">v{d.latestVersion} · updated {formatRelativeDays(d.updatedAt, new Date(v.now))}{v.valueByDoc.get(d.docId) ? ` · ${fmtMoney(v.valueByDoc.get(d.docId)!, docCurrency(d, v.classByDoc.get(d.docId)))}` : ""}</div>
               </div>
-              <ArrowRight size={15} className="mt-1 shrink-0 text-muted-foreground" />
+              <ArrowRight size={16} className="mt-1 shrink-0 text-muted-foreground" />
             </Link>
           ))}
         </div>
@@ -1278,7 +1290,7 @@ function TimelinePanel({ v }: { v: View }) {
   return (
     <>
       <ListFilters
-        className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+        className="rounded-xl border border-border bg-card p-3 md:p-4"
         search={q}
         onSearch={setQ}
         placeholder="Search activity"
@@ -1292,14 +1304,14 @@ function TimelinePanel({ v }: { v: View }) {
       {items.length === 0 ? (
         <NoResults noun="documents" onClear={clearFilters} />
       ) : (
-        <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <h3 className="text-base font-semibold mb-5 tracking-tight text-foreground">Timeline &amp; activity</h3>
           <ol className="relative space-y-5 border-l border-[var(--ink-300)] pl-5 md:pl-6">
             {items.map((d) => (
               <li key={d.docId} className="relative">
                 <span className="absolute -left-[1.6rem] top-1 inline-flex h-3 w-3 items-center justify-center rounded-full border-2 border-card bg-[var(--brand-primary-600)] md:-left-[1.85rem]" aria-hidden />
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                  <Link href={`/projects/${d.docId}`} className="break-words rounded-sm text-base font-semibold text-foreground hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{d.title || "Untitled"}</Link>
+                  <Link href={`/projects/${d.docId}`} className="break-words rounded-sm text-base font-semibold text-foreground hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{displayTitle(d.title) || "Untitled"}</Link>
                   <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-[var(--ink-600)]">{docTypeLabel(d.docType)}</span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(d)}`}>{statusText(d)}</span>
                 </div>
@@ -1338,7 +1350,7 @@ function TeamPanel({ v }: { v: View }) {
   const clearFilters = () => { setQ(""); setRoleFilter(ALL); setStatusFilter(ALL); };
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h3 className="text-base font-semibold tracking-tight text-foreground">Team</h3>
@@ -1350,7 +1362,7 @@ function TeamPanel({ v }: { v: View }) {
         </div>
         {canManage && (
           <Button size="lg" className="w-full shrink-0 sm:w-auto" onClick={() => setInviting(true)}>
-            <Plus size={14} />Invite people
+            <Plus size={16} />Invite people
           </Button>
         )}
       </div>
@@ -1428,12 +1440,12 @@ function DocumentsPanel({ v }: { v: View }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-base font-semibold tracking-tight text-foreground">Documents</h3>
         {v.canUpload
-          ? v.docs.length > 0 && <Button size="lg" className="md:h-9" aria-expanded={showUpload} onClick={() => setShowUpload((s) => !s)}><Plus size={14} />Add document</Button>
+          ? v.docs.length > 0 && <Button size="lg" className="md:h-9" aria-expanded={showUpload} onClick={() => setShowUpload((s) => !s)}><Plus size={16} />Add document</Button>
           : <p className="text-sm text-[var(--ink-600)]">{readOnlyReason(v.role)}</p>}
       </div>
 
       {v.canUpload && (showUpload || !v.docs.length) && (
-        <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
+        <section className="rounded-xl border border-border bg-card p-4 md:p-5">
           <p className="mb-3 text-sm text-[var(--ink-600)]">Drop a contract or an amendment. It is filed in this project and shared with everyone on it. Amendments nest under the contract they amend.</p>
           <UploadDropzone projectId={v.project.id} defaultDocType="SOW" compact onDocReady={v.onDocReady} />
         </section>
@@ -1443,7 +1455,7 @@ function DocumentsPanel({ v }: { v: View }) {
 
       {v.docs.length > 0 && (
         <ListFilters
-          className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+          className="rounded-xl border border-border bg-card p-3 md:p-4"
           search={q}
           onSearch={setQ}
           placeholder="Search documents"
@@ -1459,7 +1471,7 @@ function DocumentsPanel({ v }: { v: View }) {
       {v.docs.length > 0 && (matches.length === 0 ? (
         <NoResults noun="documents" onClear={clearFilters} />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
           {filtering || sort !== "tree"
             ? flat.map((d) => <DocRow key={d.docId} doc={d} value={v.valueByDoc.get(d.docId)} currency={docCurrency(d, v.classByDoc.get(d.docId))} now={v.now} depth={0} canRemove={v.canManageDocs} onRemove={() => v.onRemove(d)} onDelete={() => v.onDelete(d)} onView={() => setReader(d)} />)
             : <DocTree nodes={roots} childrenByParent={childrenByParent} depth={0} v={v} onView={setReader} />}
@@ -1517,10 +1529,10 @@ function DocRow({ doc, value, currency, now, depth, canRemove, onRemove, onDelet
     <div className={cn("flex items-center gap-1 border-t border-[var(--ink-100)] pr-2 transition-colors first:border-t-0 hover:bg-[var(--panel)] md:pr-3", depth > 0 && "bg-[var(--panel)]")}>
       {/* Indent is computed from tree depth. */}
       <Link href={`/projects/${doc.docId}`} className="group flex min-w-0 flex-1 items-center gap-2.5 py-3.5 pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" style={{ paddingLeft: indent }}>
-        {depth > 0 && <GitBranch size={14} className="shrink-0 -scale-x-100 text-muted-foreground" />}
+        {depth > 0 && <GitBranch size={16} className="shrink-0 -scale-x-100 text-muted-foreground" />}
         <StatusDot doc={doc} />
         <div className="min-w-0 flex-1">
-          <div className="break-words text-base font-semibold text-foreground transition-colors group-hover:text-[var(--brand-primary-700)]">{doc.title || "Untitled document"}</div>
+          <div className="break-words text-base font-semibold text-foreground transition-colors group-hover:text-[var(--brand-primary-700)]">{displayTitle(doc.title) || "Untitled document"}</div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--ink-600)]">
             <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium">{docTypeLabel(doc.docType)}</span>
             {processing ? <span className="inline-flex items-center gap-1 font-medium text-[var(--warning)]"><Loader2 size={12} className="animate-spin" />Analyzing…</span>
@@ -1566,17 +1578,17 @@ function DocRow({ doc, value, currency, now, depth, canRemove, onRemove, onDelet
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button type="button" aria-label={`Actions for ${name}`} className={cn("inline-flex md:hidden hover:bg-muted hover:text-foreground", rowAction)}>
-            <MoreHorizontal size={18} />
+            <MoreHorizontal size={16} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
-          <DropdownMenuItem onClick={onView}><Maximize2 size={14} />Open with analysis</DropdownMenuItem>
-          {canReanalyze && <DropdownMenuItem onClick={onReanalyze} disabled={reprocess.isPending || processing}><RefreshCw size={14} />Re-analyze</DropdownMenuItem>}
-          {canRemove && <DropdownMenuItem onClick={onRemove}><Minus size={14} />Remove from project</DropdownMenuItem>}
+          <DropdownMenuItem onClick={onView}><Maximize2 size={16} />Open with analysis</DropdownMenuItem>
+          {canReanalyze && <DropdownMenuItem onClick={onReanalyze} disabled={reprocess.isPending || processing}><RefreshCw size={16} />Re-analyze</DropdownMenuItem>}
+          {canRemove && <DropdownMenuItem onClick={onRemove}><Minus size={16} />Remove from project</DropdownMenuItem>}
           {canDelete && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onDelete} className="text-[var(--danger)] focus:text-[var(--danger)]"><Trash2 size={14} />Delete</DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-[var(--danger)] focus:text-[var(--danger)]"><Trash2 size={16} />Delete</DropdownMenuItem>
             </>
           )}
         </DropdownMenuContent>
@@ -1648,12 +1660,12 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
       <DialogContent className="left-0 top-0 flex h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 ring-0 sm:max-w-none">
         <DialogHeader className="flex-row items-center justify-between gap-3 border-b border-border py-2 pl-4 pr-2 md:py-3">
           <DialogTitle className="flex min-w-0 items-center gap-2 text-base font-semibold md:text-lg">
-            <FileText size={15} className="shrink-0 text-muted-foreground" />
-            <span className="truncate">{doc?.title || "Document"}</span>
+            <FileText size={16} className="shrink-0 text-muted-foreground" />
+            <span className="truncate">{displayTitle(doc?.title) || "Document"}</span>
           </DialogTitle>
           <div className="mr-10 flex shrink-0 items-center gap-2">
-            <button onClick={exportJson} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-9" title="Export this document's data + analysis as JSON"><Download size={14} /><span className="hidden sm:inline">Export</span><span className="sr-only sm:hidden">Export</span></button>
-            {file && <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-9"><ExternalLink size={14} /><span className="hidden sm:inline">Original</span><span className="sr-only sm:hidden">Open original</span></a>}
+            <button onClick={exportJson} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-9" title="Export this document's data + analysis as JSON"><Download size={16} /><span className="hidden sm:inline">Export</span><span className="sr-only sm:hidden">Export</span></button>
+            {file && <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-9"><ExternalLink size={16} /><span className="hidden sm:inline">Original</span><span className="sr-only sm:hidden">Open original</span></a>}
           </div>
         </DialogHeader>
 
@@ -1664,7 +1676,13 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
               on the left and the analysis on the right, each scrolling on its own. */}
           <div id="reader-file" className="order-2 min-h-[70dvh] overflow-hidden border-t border-border bg-muted lg:order-1 lg:min-h-0 lg:border-r lg:border-t-0">
             {loading ? (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground"><Loader2 size={16} className="mr-2 animate-spin" />Loading document…</div>
+              <div className="h-full overflow-hidden px-4 py-6">
+                <div className="mx-auto max-w-[820px] rounded-lg border border-border bg-card p-5 md:p-12">
+                  <SkeletonLine text="text-xl font-semibold" width="w-1/2" className="mb-4" />
+                  <SkeletonText lines={6} label="the document" />
+                  <SkeletonText lines={5} className="mt-4" />
+                </div>
+              </div>
             ) : err ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground"><XCircle size={20} className="text-[var(--danger)]" />{err}</div>
             ) : isPdf && file ? (
@@ -1679,10 +1697,10 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
               </div>
             ) : file ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft text-structure-soft-fg"><FileText size={22} /></span>
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-structure-soft text-structure-soft-fg"><FileText size={24} /></span>
                 <p className="text-sm font-medium text-foreground">Preview unavailable for .{file.filename.split(".").pop()?.toUpperCase()} files</p>
                 <p className="max-w-xs text-sm text-[var(--ink-600)]">Open the original to view it alongside the analysis. (PDF, DOCX and TXT render here directly.)</p>
-                <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--brand-primary-600)] px-4 text-base font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"><ExternalLink size={14} />Open original</a>
+                <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--brand-primary-600)] px-4 text-base font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"><ExternalLink size={16} />Open original</a>
               </div>
             ) : null}
           </div>
@@ -1690,8 +1708,8 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
           {/* AI analysis with provenance — first on mobile and tablet */}
           <div className="order-1 bg-card p-4 md:p-5 lg:order-2 lg:min-h-0 lg:overflow-y-auto">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-base font-semibold flex items-center gap-2"><Sonar size={14} />Sonar extracted from this document</h3>
-              <button type="button" onClick={() => document.getElementById("reader-file")?.scrollIntoView()} className="inline-flex h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">Jump to document<ArrowRight size={13} className="rotate-90" /></button>
+              <h3 className="text-base font-semibold flex items-center gap-2"><Sonar size={16} />Sonar extracted from this document</h3>
+              <button type="button" onClick={() => document.getElementById("reader-file")?.scrollIntoView()} className="inline-flex h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">Jump to document<ArrowRight size={12} className="rotate-90" /></button>
             </div>
 
             {/* Value + reconciliation */}
@@ -1700,8 +1718,8 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-medium text-[var(--ink-600)]">Contract value{currency ? "" : " · currency not extracted"}</span>
                   {reconciled != null && (reconciled
-                    ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--success)]"><CheckCircle2 size={11} />Reconciled</span>
-                    : <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--warning)]"><AlertTriangle size={11} />Needs review</span>)}
+                    ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--success)]"><CheckCircle2 size={12} />Reconciled</span>
+                    : <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--warning)]"><AlertTriangle size={12} />Needs review</span>)}
                 </div>
                 <div className="mt-1 break-words text-3xl font-semibold leading-tight tabular-nums tracking-tight text-foreground">{fmtMoney(value, currency)}</div>
               </div>
@@ -1727,7 +1745,7 @@ function DocumentReader({ doc, classification, onClose }: { doc: ApiDocument | n
 
             {classification?.validation?.issues && classification.validation.issues.length > 0 && (
               <div className="mt-4 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] p-3">
-                <div className="mb-1 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--warning)]"><AlertTriangle size={14} />Review notes</div>
+                <div className="mb-1 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--warning)]"><AlertTriangle size={16} />Review notes</div>
                 <ul className="list-disc space-y-1 pl-4 text-sm text-foreground">{classification.validation.issues.map((iss, i) => <li key={i}>{iss}</li>)}</ul>
               </div>
             )}
@@ -1762,7 +1780,7 @@ function UploadPrompt({ v }: { v: View }) {
   // A viewer cannot upload: say that the project is empty instead of offering a dropzone.
   if (!v.canUpload) return <NoDocuments v={v} />;
   return (
-    <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 md:p-6">
       <h3 className="text-base font-semibold mb-1 tracking-tight text-foreground">Upload your SOW</h3>
       <p className="mb-4 text-sm text-[var(--ink-600)]">Drop the contract for {v.project.name}. Sonar extracts clauses, scores risk, and surfaces key findings.</p>
       <UploadDropzone projectId={v.project.id} defaultDocType="SOW" onDocReady={v.onDocReady} />
@@ -1775,7 +1793,7 @@ function NoDocuments({ v }: { v: View }) {
   const owner = projectOwnerEmail(v.project);
   return (
     <EmptyPanel
-      icon={<FileText size={22} strokeWidth={1.5} />}
+      icon={<FileText size={24} />}
       title="No documents in this project yet"
       body={`${readOnlyReason(v.role)} Documents appear here when the owner${owner ? ` (${owner})` : ""} or an editor adds them.`}
     />
@@ -1784,7 +1802,7 @@ function NoDocuments({ v }: { v: View }) {
 
 function AnalyzingOrEmpty({ v, label }: { v: View; label: string }) {
   if (!v.docs.length) return <UploadPrompt v={v} />;
-  return <EmptyPanel icon={v.processingCount > 0 || v.analyzingClauses ? <Loader2 size={22} className="animate-spin" /> : <FileText size={22} strokeWidth={1.5} />} title={v.processingCount > 0 || v.analyzingClauses ? "Analyzing…" : "Nothing here yet"} body={label} />;
+  return <EmptyPanel icon={v.processingCount > 0 || v.analyzingClauses ? <Loader2 size={24} className="animate-spin" /> : <FileText size={24} />} title={v.processingCount > 0 || v.analyzingClauses ? "Analyzing…" : "Nothing here yet"} body={label} />;
 }
 
 function EmptyPanel({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
@@ -1806,7 +1824,7 @@ function AttentionRow({ c }: { c: AggClause }) {
         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${m.bg} ${m.text}`}>{clauseRiskText(c)}</span>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-[var(--ink-600)]">{categoryLabel(c.category)}</span>
       </div>
-      <div className="break-words text-base font-semibold text-foreground">{c.title || c.number}</div>
+      <div className="break-words text-base font-semibold text-foreground">{displayTitle(c.title) || c.number}</div>
       {c.summary && <p className="mt-0.5 text-sm leading-relaxed text-[var(--ink-600)]">{c.summary}</p>}
       <p className="mt-1 break-words text-xs text-muted-foreground">{c._docTitle}</p>
     </Link>
@@ -1815,12 +1833,12 @@ function AttentionRow({ c }: { c: AggClause }) {
 
 function PartiesCard({ parties }: { parties: string[] }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+    <section className="rounded-xl border border-border bg-card p-4 md:p-6">
       <h3 className="text-base font-semibold mb-4 tracking-tight text-foreground">Contract parties <span className="ml-1 text-sm font-normal tabular-nums text-muted-foreground">{parties.length}</span></h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {parties.map((party, i) => (
           <div key={i} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3.5">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={16} strokeWidth={1.75} /></span>
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={16} /></span>
             <div className="min-w-0"><div className="break-words text-base font-semibold text-foreground">{party}</div><div className="text-xs text-muted-foreground">Party {i + 1}</div></div>
           </div>
         ))}
@@ -1830,17 +1848,17 @@ function PartiesCard({ parties }: { parties: string[] }) {
 }
 
 function StatusDot({ doc }: { doc: ApiDocument }) {
-  if (doc.status === "READY") return <CheckCircle2 size={17} className="shrink-0 text-[var(--success)]" />;
-  if (doc.status === "FAILED") return <XCircle size={17} className="shrink-0 text-[var(--danger)]" />;
-  if (isProcessing(doc.status)) return <Loader2 size={17} className="shrink-0 animate-spin text-[var(--warning)]" />;
-  return <FileText size={17} className="shrink-0 text-muted-foreground" />;
+  if (doc.status === "READY") return <CheckCircle2 size={16} className="shrink-0 text-[var(--success)]" />;
+  if (doc.status === "FAILED") return <XCircle size={16} className="shrink-0 text-[var(--danger)]" />;
+  if (isProcessing(doc.status)) return <Loader2 size={16} className="shrink-0 animate-spin text-[var(--warning)]" />;
+  return <FileText size={16} className="shrink-0 text-muted-foreground" />;
 }
 
 function NotFound() {
   return (
     <div className="app-container flex flex-col items-center py-20 text-center">
-      <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground"><Layers size={24} strokeWidth={1.5} /></span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project not found</h1>
+      <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground"><Layers size={24} /></span>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Project not found</h1>
       <p className="mt-2 max-w-sm text-base leading-relaxed text-[var(--ink-600)]">There is no project with this ID that you can open. It may have been deleted, it may no longer be shared with you, or the link is out of date.</p>
       <Link href="/projects" className="mt-6 inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--brand-primary-600)] px-4 text-sm font-semibold text-white transition-colors hover:bg-[var(--brand-primary-700)]">Back to projects</Link>
     </div>
@@ -1850,21 +1868,10 @@ function NotFound() {
 function LoadFailed({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div role="alert" className="app-container flex flex-col items-center py-20 text-center">
-      <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--danger-soft)] text-[var(--danger)]"><XCircle size={24} strokeWidth={1.5} /></span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Couldn&apos;t load this project</h1>
+      <span className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--danger-soft)] text-[var(--danger)]"><XCircle size={24} /></span>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Couldn&apos;t load this project</h1>
       <p className="mt-2 max-w-md break-words text-base leading-relaxed text-[var(--ink-600)]">{message}</p>
-      <Button variant="outline" size="lg" className="mt-6" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
+      <Button variant="outline" size="lg" className="mt-6" onClick={onRetry}><RefreshCw size={16} />Try again</Button>
     </div>
-  );
-}
-
-function WorkspaceSkeleton() {
-  return (
-    <>
-      <div>
-        <div className="app-container space-y-3 pb-5 pt-6 md:pb-7 md:pt-8"><Skeleton className="h-3.5 w-24" /><Skeleton className="h-8 w-2/3 sm:w-1/2" /><Skeleton className="h-4 w-1/2 sm:w-1/3" /></div>
-      </div>
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8"><Skeleton className="h-28 rounded-xl" /><Skeleton className="h-56 rounded-xl" /></div>
-    </>
   );
 }

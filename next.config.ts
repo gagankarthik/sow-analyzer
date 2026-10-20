@@ -21,6 +21,14 @@ const cognitoRegion =
   "us-east-2";
 const storageRegion = apiRegion || cognitoRegion;
 
+// Govern real-time updates (lib/govern/realtime.ts): the AppSync Events
+// WebSocket host, given explicitly or derived from the API's HTTP host.
+const realtimeHttpHost = process.env.NEXT_PUBLIC_GOVERN_REALTIME_HOST;
+const realtimeWsHost =
+  process.env.NEXT_PUBLIC_GOVERN_REALTIME_WS_HOST ||
+  (realtimeHttpHost?.includes(".appsync-api.") ? realtimeHttpHost.replace(".appsync-api.", ".appsync-realtime-api.") : "");
+const realtimeOrigin = realtimeWsHost ? ` wss://${realtimeWsHost}` : "";
+
 // Uploads and document previews use presigned S3 URLs whose bucket host is only
 // known to the backend. Set CSP_STORAGE_ORIGIN to that bucket's origin to pin
 // it; otherwise any S3 bucket in the region is allowed.
@@ -44,8 +52,9 @@ const csp = [
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "media-src 'self'",
-  // API Gateway, Cognito sign-in, and S3 (presigned upload and download).
-  `connect-src 'self' ${apiOrigin ?? `https://*.execute-api.${storageRegion}.amazonaws.com`} https://cognito-idp.${cognitoRegion}.amazonaws.com ${storageOrigins}`,
+  // API Gateway, Cognito sign-in, S3 (presigned upload and download) and the
+  // Govern real-time WebSocket.
+  `connect-src 'self' ${apiOrigin ?? `https://*.execute-api.${storageRegion}.amazonaws.com`} https://cognito-idp.${cognitoRegion}.amazonaws.com ${storageOrigins}${realtimeOrigin}`,
   // The document reader shows the original PDF from S3 in an iframe.
   `frame-src 'self' blob: ${storageOrigins}`,
   "frame-ancestors 'none'",

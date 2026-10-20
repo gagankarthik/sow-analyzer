@@ -9,7 +9,7 @@ import { BarMeter } from "@/components/ds";
 import { byEdition } from "@/lib/edition-runtime";
 import { useMemo } from "react";
 import Link from "next/link";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LeadershipSkeleton } from "./InsightsSkeletons";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/govern/labels";
 import { formatCompact, valueSummary } from "@/lib/govern/metrics";
@@ -61,17 +61,7 @@ export function LeadershipView() {
   }, [contracts, obligations]);
   const sp = useMemo(() => speed(trendsQ.data?.periods ?? []), [trendsQ.data]);
 
-  if (contractsQ.isLoading) {
-    return (
-      <div className="flex flex-col gap-4 lg:gap-5" aria-busy="true" aria-label="Loading leadership insights">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[104px] rounded-xl" />)}
-        </div>
-        <Skeleton className="h-72 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    );
-  }
+  if (contractsQ.isLoading) return <LeadershipSkeleton />;
   if (contractsQ.isError && !contractsQ.data) {
     return (
       <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-5 py-12 text-center">
@@ -102,23 +92,23 @@ export function LeadershipView() {
   ];
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-5">
+    <div className="flex flex-col gap-6">
       <KpiStrip items={kpis} />
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12 lg:gap-5">
-        <Panel id="value-by-type" className="lg:col-span-7" title="Value by agreement type" answer={`Signed and in the pipeline${v.currency ? `, in ${v.currency}` : ""}.`} action={{ href: "/reports/value", label: "Report" }}>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <Panel id="value-by-type" className="lg:col-span-7" title="Value by agreement type" meta={v.currency ?? undefined} action={{ href: "/reports/value", label: "Report" }}>
           <ValueBars rows={v.byType} currency={v.currency} empty="No contract has a value yet." />
         </Panel>
-        <Panel id="counterparties" className="lg:col-span-5" title="Largest counterparties" answer="By signed plus pipeline value." flush>
+        <Panel id="counterparties" className="lg:col-span-5" title="Largest counterparties" flush>
           {v.counterparties.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-[var(--ink-600)]">No valued contract names a counterparty yet.</p>
+            <p className="px-4 py-5 text-sm text-[var(--ink-600)]">No valued contract names a counterparty yet.</p>
           ) : (
             <ol className="divide-y divide-border">
               {v.counterparties.map((r, i) => (
-                <li key={r.key} className="flex items-center gap-3 px-5 py-3 text-sm">
+                <li key={r.key} className="flex min-w-0 items-center gap-3 px-4 py-2 text-sm">
                   <span className="w-5 shrink-0 tabular-nums text-[var(--ink-500)]">{i + 1}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold text-foreground">{r.label}</span>
+                    <span className="block truncate font-medium text-foreground">{r.label}</span>
                     <span className="text-xs text-[var(--ink-600)]">{plural(r.count, "contract")}</span>
                   </span>
                   <span className="shrink-0 text-right tabular-nums">
@@ -132,29 +122,29 @@ export function LeadershipView() {
         </Panel>
       </div>
 
-      <Panel id="team" title="Team workload" answer="Open contracts each reviewer holds, with what is overdue. Unassigned work is listed last." action={{ href: "/settings/team", label: "Team" }} flush>
+      <Panel id="team" title="Team workload" meta={v.team.length || undefined} action={{ href: "/settings/team", label: "Team" }} flush>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[40rem] text-sm">
-            <thead className="bg-[var(--ink-50)] text-left text-xs font-medium text-[var(--ink-600)]">
-              <tr>
-                <th scope="col" className="px-5 py-2.5">Reviewer</th>
-                <th scope="col" className="px-3 py-2.5 text-right">Open</th>
-                <th scope="col" className="px-3 py-2.5 text-right">Overdue</th>
-                <th scope="col" className="px-3 py-2.5 text-right">Running late</th>
-                <th scope="col" className="px-3 py-2.5 text-right">Longest wait</th>
-                <th scope="col" className="px-5 py-2.5 text-right">Value held</th>
+            <thead className="border-b border-border bg-[var(--panel)] text-left text-xs text-[var(--ink-600)]">
+              <tr className="h-[38px]">
+                <th scope="col" className="px-4 font-medium">Reviewer</th>
+                <th scope="col" className="px-3 text-right font-medium">Open</th>
+                <th scope="col" className="px-3 text-right font-medium">Overdue</th>
+                <th scope="col" className="px-3 text-right font-medium">Running late</th>
+                <th scope="col" className="px-3 text-right font-medium">Longest wait</th>
+                <th scope="col" className="px-4 text-right font-medium">Value held</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {v.team.length === 0 ? (
-                <tr><td colSpan={6} className="px-5 py-6 text-[var(--ink-600)]">No open contracts right now.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-5 text-[var(--ink-600)]">No open contracts right now.</td></tr>
               ) : v.team.map((r) => (
                 <tr key={r.key} className="hover:bg-[var(--ink-50)]">
-                  <th scope="row" className="px-5 py-3 text-left font-normal">
-                    <span className={cn("block font-semibold", r.key === "__unassigned" ? "text-[var(--warning-fg)]" : "text-foreground")}>{r.name}</span>
+                  <th scope="row" className="px-4 py-2 text-left font-normal">
+                    <span className={cn("block font-medium", r.key === "__unassigned" ? "text-[var(--warning-fg)]" : "text-foreground")}>{r.name}</span>
                     {r.email && r.email !== r.name && <span className="text-xs text-[var(--ink-600)]">{r.email}</span>}
                   </th>
-                  <td className="px-3 py-3 text-right font-semibold tabular-nums">
+                  <td className="px-3 py-2 text-right font-semibold tabular-nums">
                     {r.open}
                     {/* The mix at a glance: overdue, late and on time in one bar. */}
                     {r.open > 0 && (
@@ -166,10 +156,10 @@ export function LeadershipView() {
                         ]} />
                     )}
                   </td>
-                  <td className={cn("px-3 py-3 text-right tabular-nums", r.overdue > 0 ? "font-semibold text-[var(--danger-fg)]" : "text-[var(--ink-600)]")}>{r.overdue}</td>
-                  <td className={cn("px-3 py-3 text-right tabular-nums", r.late > 0 ? "font-semibold text-[var(--warning-fg)]" : "text-[var(--ink-600)]")}>{r.late}</td>
-                  <td className="px-3 py-3 text-right tabular-nums text-[var(--ink-700)]">{plural(r.longestDays, "day")}</td>
-                  <td className="px-5 py-3 text-right tabular-nums text-[var(--ink-700)]">{r.value === null ? "—" : formatCompact(r.value, v.currency)}</td>
+                  <td className={cn("px-3 py-2 text-right tabular-nums", r.overdue > 0 ? "font-semibold text-[var(--danger-fg)]" : "text-[var(--ink-600)]")}>{r.overdue}</td>
+                  <td className={cn("px-3 py-2 text-right tabular-nums", r.late > 0 ? "font-semibold text-[var(--warning-fg)]" : "text-[var(--ink-600)]")}>{r.late}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-[var(--ink-700)]">{plural(r.longestDays, "day")}</td>
+                  <td className="px-4 py-2 text-right tabular-nums text-[var(--ink-700)]">{r.value === null ? "—" : formatCompact(r.value, v.currency)}</td>
                 </tr>
               ))}
             </tbody>
@@ -177,10 +167,10 @@ export function LeadershipView() {
         </div>
       </Panel>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 lg:gap-5">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <Panel id="risk" title="Risk in open contracts" answer={v.risk.unacceptable + v.risk.withBlockers === 0
           ? "No open contract has an unacceptable term or an open blocker."
-          : `${plural(v.risk.unacceptable, "contract")} with a term the matrix never accepts, ${plural(v.risk.withBlockers, "contract")} with other open items.`}
+          : `${plural(v.risk.unacceptable, "contract")} with an unacceptable term, ${plural(v.risk.withBlockers, "contract")} with other open items.`}
           action={{ href: "/workflow", label: "Workflow" }}>
           {v.risk.rows.length === 0 ? (
             <p className="text-sm text-[var(--ink-600)]">Nothing to show.</p>
@@ -208,7 +198,7 @@ export function LeadershipView() {
           )}
         </Panel>
 
-        <Panel id="commitments" title="Commitments coming due" answer={obligationsQ.isError ? "Obligations couldn't be loaded." : `${plural(due90, "obligation")} due in the next three months.`} action={{ href: "/obligations", label: "Obligations" }}>
+        <Panel id="commitments" title="Commitments coming due" meta={obligationsQ.isError ? undefined : `${due90} in 3 months`} answer={obligationsQ.isError ? "Obligations couldn't be loaded." : undefined} action={{ href: "/obligations", label: "Obligations" }}>
           <ul className="flex flex-col gap-3">
             {v.months.map((m) => {
               const max = Math.max(1, ...v.months.map((x) => x.count));

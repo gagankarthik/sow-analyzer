@@ -61,7 +61,7 @@ export function AskPiDialog({ contract, open, onOpenChange }: { contract: Contra
       open={open}
       onOpenChange={onOpenChange}
       title={`Ask ${who}`}
-      description="The contract shows it is waiting on them until you mark their answer received. The question goes in the activity log."
+      description="The contract waits on them until you mark it answered."
       confirmLabel="Mark as waiting on them"
       onConfirm={confirm}
       pending={pending}

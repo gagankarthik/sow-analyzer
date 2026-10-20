@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
+import { CardListSkeleton, SkeletonText } from "@/components/ds/skeletons";
 import { DocLoadError } from "@/components/DocLoadError";
 import { ProcessingState } from "@/components/ProcessingState";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Files, XCircle, ChevronDown, ChevronUp, ShieldAlert, AlertTriangle, Info, Building2, CalendarClock, Sonar, FileText,
 } from "@/components/ui/icons";
@@ -18,7 +19,7 @@ import { useUIStore } from "@/lib/stores/ui";
 import { ALL, ListFilters, NoResults, type FilterGroup } from "../_components/ListFilters";
 import { docTypeShort } from "@/lib/doc-types";
 import { categoryLabel, clauseSpecificType } from "@/lib/clause-categories";
-import { formatDate } from "@/lib/format";
+import { displayTitle, formatDate } from "@/lib/format";
 import { ClausePlaybookPanel, OutcomeBadge, OUTCOME_DOT } from "@/components/playbook/Outcome";
 import { ReanalyseNotice } from "@/components/dates/ReanalyseNotice";
 import { OUTCOME_LABEL, PLAYBOOK_OUTCOMES, SOURCE_LABEL, type PlaybookOutcome } from "@/lib/playbook";
@@ -52,11 +53,11 @@ const isUnclassified = (c: ApiClause) => c.classificationStatus === "unclassifie
 const INDENT = ["", "ml-4 md:ml-8", "ml-8 md:ml-16"];
 
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode }> = {
-  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={13} /> },
-  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
-  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
-  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
-  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={12} /> },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={12} /> },
+  medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={12} /> },
+  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={12} /> },
+  info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={12} /> },
 };
 
 export default function SowPage() {
@@ -165,7 +166,7 @@ export default function SowPage() {
     el.focus({ preventScroll: true });
   }, [clauseTotal]);
 
-  if (isLoading) return <SowSkeleton />;
+  if (isLoading) return <ProjectRecordSkeleton section="sow" />;
   if (isError && errorStatus(error) === 404) return <NotFound />;
   // Only when there is nothing to show: a failed background refresh keeps the
   // last good data on screen instead of replacing the page with an error.
@@ -217,10 +218,10 @@ export default function SowPage() {
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
+      <div className="app-container space-y-6 py-5 md:py-6">
         {isFailed && (
           <div role="alert" className="flex items-start gap-3 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-4 md:px-5">
-            <XCircle size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--danger)]" />
+            <XCircle size={16} className="mt-0.5 shrink-0 text-[var(--danger)]" />
             <p className="text-base leading-relaxed text-[var(--ink-700)]"><span className="font-semibold text-[var(--danger)]">Processing failed.</span> Delete this document and try uploading again.</p>
           </div>
         )}
@@ -233,9 +234,9 @@ export default function SowPage() {
               <div className="flex items-start gap-3.5">
                 <SonarMark size="md" tile className="hidden sm:inline-flex" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-semibold mb-1.5">Sonar executive summary</h2>
+                  <h2 className="text-lg font-semibold mb-1.5">Sonar summary</h2>
                   {classLoading ? (
-                    <div className="space-y-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-4/5" /></div>
+                    <SkeletonText lines={2} label="the summary" />
                   ) : classification?.summary ? (
                     <p className="max-w-[60ch] text-base leading-relaxed text-foreground">{classification.summary}</p>
                   ) : classError ? (
@@ -246,9 +247,9 @@ export default function SowPage() {
                   {classification && (
                     <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-[var(--ink-600)]">
                       <span className="rounded-md bg-card px-2 py-0.5 text-xs font-semibold text-[var(--ink-700)] ring-1 ring-[var(--ai-border)]">{docTypeShort(classification.docType)}</span>
-                      {classification.effectiveDate && <span className="inline-flex items-center gap-1.5"><CalendarClock size={14} className="shrink-0" />Effective {formatDate(classification.effectiveDate)}</span>}
-                      {classification.parties.slice(0, 2).map((p) => <span key={p} className="inline-flex min-w-0 items-center gap-1.5"><Building2 size={14} className="shrink-0" /><span className="break-words">{p}</span></span>)}
-                      <span className="inline-flex items-center gap-1.5"><FileText size={14} className="shrink-0" />{allClauses.length} clause{allClauses.length === 1 ? "" : "s"}</span>
+                      {classification.effectiveDate && <span className="inline-flex items-center gap-1.5"><CalendarClock size={16} className="shrink-0" />Effective {formatDate(classification.effectiveDate)}</span>}
+                      {classification.parties.slice(0, 2).map((p) => <span key={p} className="inline-flex min-w-0 items-center gap-1.5"><Building2 size={16} className="shrink-0" /><span className="break-words">{p}</span></span>)}
+                      <span className="inline-flex items-center gap-1.5"><FileText size={16} className="shrink-0" />{allClauses.length} clause{allClauses.length === 1 ? "" : "s"}</span>
                     </div>
                   )}
                 </div>
@@ -259,7 +260,7 @@ export default function SowPage() {
             {classification && review.incomplete && (
               <section role="status" aria-labelledby="review-heading" className="rounded-xl border border-[var(--warning)]/30 bg-[var(--warning-soft)] p-4 md:px-5">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[var(--warning)]" />
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" />
                   <div className="min-w-0">
                     <h2 id="review-heading" className="text-lg font-semibold text-foreground">This analysis is incomplete. Check the document yourself.</h2>
                     {review.reasons.length > 0 ? (
@@ -294,14 +295,14 @@ export default function SowPage() {
             <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
               <main className="min-w-0 space-y-3 lg:col-span-8">
                 {/* Focal block: clause register header + filters */}
-                <section aria-labelledby="clauses-heading" className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 bg-[var(--navy)] px-4 py-4 text-white md:px-5">
+                <section aria-labelledby="clauses-heading" className="overflow-hidden rounded-xl border border-border bg-card">
+                  <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-border px-4 py-2">
                     <div>
-                      <h2 id="clauses-heading" className="text-lg font-semibold tracking-tight">Clauses</h2>
+                      <h2 id="clauses-heading" className="text-base font-semibold tracking-tight text-foreground">Clauses</h2>
                     </div>
                     {/* A number only once the clauses have loaded: "0" would read as "no risk". */}
-                    <p className="flex flex-wrap items-baseline gap-2 text-sm text-[var(--navy-foreground)]">
-                      <span className="text-3xl font-semibold leading-none tabular-nums text-white">{classification ? riskCounts.critical + riskCounts.high : "—"}</span>
+                    <p className="flex flex-wrap items-baseline gap-1.5 text-xs text-[var(--ink-600)]">
+                      <span className="text-sm font-semibold tabular-nums text-foreground">{classification ? riskCounts.critical + riskCounts.high : "—"}</span>
                       high or critical
                       {unratedCount > 0 && <span>· {unratedCount} not assessed</span>}
                     </p>
@@ -347,10 +348,10 @@ export default function SowPage() {
 
                 {/* Clauses */}
                 {classLoading ? (
-                  <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
+                  <CardListSkeleton count={6} minHeight="min-h-28" label="clauses" />
                 ) : classError && !classification ? (
                   <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-10 text-center">
-                    <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--warning-soft)] text-[var(--warning-fg)]"><AlertTriangle size={18} /></span>
+                    <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--warning-soft)] text-[var(--warning-fg)]"><AlertTriangle size={16} /></span>
                     <p className="mb-1 text-base font-semibold text-foreground">
                       {errorStatus(classErr) === 404 ? "No clause analysis for this document yet" : "Couldn't load clause analysis"}
                     </p>
@@ -400,7 +401,7 @@ export default function SowPage() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       {["Summarize", "Find risks"].map((q) => (
                         <button key={q} type="button" onClick={toggleCopilot} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--ai-border)] bg-card px-3 text-sm font-medium text-[var(--ai-ink)] transition-colors hover:border-[var(--ai-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)] md:h-8">
-                          <Sonar size={13} />{q}
+                          <Sonar size={12} />{q}
                         </button>
                       ))}
                     </div>
@@ -408,12 +409,12 @@ export default function SowPage() {
                   </div>
 
                   {classification && classification.parties.length > 0 && (
-                    <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5">
+                    <div className="rounded-xl border border-border bg-card p-4 md:p-5">
                       <h3 className="text-base font-semibold mb-3 text-foreground">Parties</h3>
                       <ul className="space-y-2.5">
                         {classification.parties.map((p) => (
                           <li key={p} className="flex items-center gap-2.5">
-                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={15} strokeWidth={1.75} /></span>
+                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-structure-soft text-structure-soft-fg"><Building2 size={16} /></span>
                             <span className="min-w-0 break-words text-sm font-medium text-foreground">{p}</span>
                           </li>
                         ))}
@@ -432,7 +433,7 @@ export default function SowPage() {
                   {[...classification.keyFindings].sort((a, b) => sevRank(b.severity) - sevRank(a.severity)).map((f, i) => {
                     const s = SEVERITY_META[f.severity] ?? SEVERITY_META.info;
                     return (
-                      <div key={i} className="rounded-xl border border-border bg-card p-4 shadow-xs">
+                      <div key={i} className="rounded-xl border border-border bg-card p-4">
                         <div className="mb-2 flex items-start gap-2.5">
                           <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${s.bg} ${s.text}`}>{s.icon}</span>
                           <span className="min-w-0 flex-1"><span className="block break-words text-base font-semibold leading-snug text-foreground">{f.label}</span><span className={`text-xs font-medium capitalize ${s.text}`}>{f.severity}</span></span>
@@ -464,7 +465,7 @@ function ClauseCard({ clause, isExpanded, onToggle, depth }: { clause: ApiClause
   const preview = longBody ? clause.body.slice(0, 240) + "…" : clause.body;
   const panelId = `clause-detail-${clause.id ?? clause.number}`;
   return (
-    <article id={`clause-${clause.number}`} tabIndex={-1} className={`scroll-mt-24 overflow-hidden rounded-xl border bg-card shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] target:border-[var(--brand-primary-600)] ${rated && clause.riskLevel === "critical" ? "border-[var(--danger)]/40" : "border-border"} ${INDENT[Math.min(depth, INDENT.length - 1)]}`}>
+    <article id={`clause-${clause.number}`} tabIndex={-1} className={`scroll-mt-24 overflow-hidden rounded-xl border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] target:border-[var(--brand-primary-600)] ${rated && clause.riskLevel === "critical" ? "border-[var(--danger)]/40" : "border-border"} ${INDENT[Math.min(depth, INDENT.length - 1)]}`}>
       <div className="p-4">
         {/* Where the clause sits: its parent clause, section heading and page. */}
         {(clause.parent || clause.section || clause.page) && (
@@ -489,10 +490,10 @@ function ClauseCard({ clause, isExpanded, onToggle, depth }: { clause: ApiClause
             <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--warning-fg)]"><AlertTriangle size={12} />Needs review</span>
           )}
         </div>
-        <h3 className="text-base font-semibold break-words leading-snug text-foreground">{clause.title || clause.number}</h3>
+        <h3 className="text-base font-semibold break-words leading-snug text-foreground">{displayTitle(clause.title) || clause.number}</h3>
         {unclassified && (
           <p role="note" className="mt-2 flex items-start gap-2 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-3 py-2 text-sm leading-relaxed text-foreground">
-            <AlertTriangle size={15} className="mt-0.5 shrink-0 text-[var(--warning)]" />
+            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" />
             <span>Sonar could not classify this clause: review it yourself. It has no type and was not checked against the playbook.</span>
           </p>
         )}
@@ -522,8 +523,8 @@ function ClauseCard({ clause, isExpanded, onToggle, depth }: { clause: ApiClause
 
       <button type="button" onClick={onToggle} aria-expanded={isExpanded} aria-controls={panelId} className="flex min-h-10 w-full items-center justify-center gap-1.5 border-t border-border py-2 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
         {isExpanded
-          ? <><ChevronUp size={14} />Show less</>
-          : <><ChevronDown size={14} />{longBody ? "Show full text and playbook result" : "Show playbook result"}{subclauses.length > 0 ? ` · ${subclauses.length} sub-clause${subclauses.length === 1 ? "" : "s"}` : ""}</>}
+          ? <><ChevronUp size={16} />Show less</>
+          : <><ChevronDown size={16} />{longBody ? "Show full text and playbook result" : "Show playbook result"}{subclauses.length > 0 ? ` · ${subclauses.length} sub-clause${subclauses.length === 1 ? "" : "s"}` : ""}</>}
       </button>
     </article>
   );
@@ -536,25 +537,10 @@ function sevRank(s: FindingSeverity): number {
 function NotFound() {
   return (
     <div className="app-container py-20 flex flex-col items-center text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project not found</h1>
-      <p className="mt-2 text-base text-muted-foreground max-w-sm">This engagement may have been archived or the link is out of date.</p>
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} /></span>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Document not found</h1>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">It may have been deleted, or the link is out of date.</p>
       <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-sm font-semibold transition-colors">Back to projects</Link>
     </div>
-  );
-}
-
-function SowSkeleton() {
-  return (
-    <>
-      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
-      <div className="app-container space-y-4 py-6 md:space-y-6 md:py-8">
-        <Skeleton className="h-28 rounded-xl" />
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          <div className="lg:col-span-8 space-y-3"><Skeleton className="h-40 rounded-xl" />{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
-          <div className="lg:col-span-4 space-y-4"><Skeleton className="h-44 rounded-xl" /><Skeleton className="h-32 rounded-xl" /></div>
-        </div>
-      </div>
-    </>
   );
 }

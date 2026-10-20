@@ -1,5 +1,6 @@
 "use client";
 
+import { displayTitle } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { PipelineStepper } from "@/components/ui/PipelineStepper";
 import { SonarMark } from "@/components/ui/SonarMark";
@@ -48,19 +49,19 @@ export function AnalysisStep({
           <Notice title="Progress could not be checked">
             <p>The document service did not respond. Your upload is not affected.</p>
             <Button className="mt-4 h-10" onClick={onRefetch} disabled={refetching}>
-              <RefreshCw size={14} className={refetching ? SPIN : undefined} />Check again
+              <RefreshCw size={16} className={refetching ? SPIN : undefined} />Check again
             </Button>
           </Notice>
         ) : (
           <p role="status" className="flex items-center gap-2 text-base text-[var(--ink-600)]">
-            <Loader2 size={15} className={SPIN} />Checking where the analysis is.
+            <Loader2 size={16} className={SPIN} />Checking where the analysis is.
           </p>
         )}
       </StepCard>
     );
   }
 
-  const name = doc.title || "your contract";
+  const name = displayTitle(doc.title) || "your contract";
 
   if (doc.status === "FAILED") {
     const reason = doc.errorMessage?.trim();
@@ -81,10 +82,10 @@ export function AnalysisStep({
           )}
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <Button className="h-10" onClick={() => reprocess.mutate(doc.docId)} disabled={reprocess.isPending}>
-              <RefreshCw size={14} className={reprocess.isPending ? SPIN : undefined} />Try again
+              <RefreshCw size={16} className={reprocess.isPending ? SPIN : undefined} />Try again
             </Button>
             <Button variant="outline" className="h-10" onClick={onUploadDifferent}>
-              <Upload size={14} />Upload a different file
+              <Upload size={16} />Upload a different file
             </Button>
           </div>
         </Notice>
@@ -106,7 +107,7 @@ export function AnalysisStep({
           <span className="min-w-0">
             {activeStage ? `Stage ${currentIdx} of ${STAGES.length}: ${activeStage.title}` : "Waiting for the analysis to start"}
           </span>
-          <Loader2 size={15} className={cn("shrink-0 text-[var(--ai-ink)]", SPIN)} />
+          <Loader2 size={16} className={cn("shrink-0 text-[var(--ai-ink)]", SPIN)} />
         </p>
         <PipelineStepper status={doc.status} showLabels={false} className="mt-4" />
       </div>
@@ -130,10 +131,10 @@ export function AnalysisStep({
                   !done && !active && "border border-[var(--ink-300)] text-muted-foreground",
                 )}
               >
-                {done ? <Check size={12} strokeWidth={3} aria-hidden /> : idx}
+                {done ? <Check size={12} aria-hidden /> : idx}
               </span>
               <div className="min-w-0">
-                <h3 className={cn("text-base font-semibold", done || active ? "text-foreground" : "text-[var(--ink-600)]")}>
+                <h3 className={cn("text-sm font-semibold", done || active ? "text-foreground" : "text-[var(--ink-600)]")}>
                   {stage.title}
                   <span className="sr-only">{done ? " (done)" : active ? " (in progress)" : " (not started)"}</span>
                 </h3>

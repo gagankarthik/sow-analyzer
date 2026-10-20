@@ -7,14 +7,14 @@ export default function AppNotFound() {
   return (
     <StatePanel
       art="missing"
-      title="We could not find that"
-      description="It may have been deleted, or you may not have access to it. Check the link, or start from one of these."
+      title="Page not found"
+      description="It was deleted, or you don't have access."
     >
-      <Button size="lg" asChild>
-        <Link href="/projects">View projects</Link>
+      <Button asChild>
+        <Link href="/contracts">Contracts</Link>
       </Button>
-      <Button size="lg" variant="outline" asChild>
-        <Link href="/library">Open library</Link>
+      <Button variant="outline" asChild>
+        <Link href="/home">Home</Link>
       </Button>
     </StatePanel>
   );

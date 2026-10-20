@@ -247,6 +247,7 @@ export type ActivityAction =
   | "blocker_reopened" | "rescored" | "signature_sent" | "signed" | "activated" | "closed" | "reopened"
   | "revision_received" | "field_updated" | "overdue" | "notification_sent" | "sync" | "conflict"
   | "obligation_added" | "obligation_done" | "obligation_verified" | "pi_requested" | "pi_answered"
+  | "automation_notify"
 
 export interface ActivityEntry {
   id: string
@@ -274,8 +275,22 @@ export interface ContractDetail extends Contract {
   obligations: Obligation[]
   licensingIncome: IncomeItem[]
   review: MatrixReview | null
+  /** The newest entries (20 on current APIs, up to 200 on older ones), newest first. */
   activity: ActivityEntry[]
+  /** Entries in the log, exact up to 200. Absent on older APIs: count `activity`. */
+  activityCount?: number
+  /** The log has more than `activityCount` entries. */
+  activityHasMore?: boolean
+  /** Continues the timeline after `activity` (GET /contracts/{id}/activity?before=). Null: nothing older. */
+  activityCursor?: string | null
   versions: ContractVersion[]
+}
+
+/** One page of GET /contracts/{id}/activity, newest first. */
+export interface ActivityPage {
+  entries: ActivityEntry[]
+  /** Pass as `before` for the next older page; null when this is the oldest. */
+  nextCursor: string | null
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────
@@ -515,6 +530,12 @@ export interface GovernMe {
   name: string | null
   role: GovernRole
   tenantId: string
+  /** Admin of THIS organization: its creator, or added by an admin. Absent on older APIs (use `role`). */
+  isAdmin?: boolean
+  /** Created this organization (always an admin of it). */
+  isCreator?: boolean
+  /** In the Cognito govern-leader group (read-only on contracts). */
+  isLeader?: boolean
   /** Which "Later" features this deploy has switched on (see lib/govern/features.ts). Absent on older APIs. */
   features?: Partial<Record<GovernFeature, boolean>>
   /** Requirement 7: the organization's edition (its own choice, else the deployment default). */
@@ -525,6 +546,45 @@ export interface GovernMe {
   deploymentFeatures?: Partial<Record<GovernFeature, boolean>>
   /** The agreement types this edition offers, in order, with their labels. */
   agreementTypes?: { id: AgreementType; label: string }[]
+}
+
+// ── The organization and its admins (GET /govern/org) ─────────────────────
+
+export interface OrgPerson {
+  sub: string
+  email: string | null
+  name: string | null
+}
+
+export interface OrgAdmin extends OrgPerson {
+  addedAt: string | null
+  /** Created the organization: always an admin, cannot be removed. */
+  isCreator: boolean
+  addedBy: { email: string | null; name: string | null } | null
+}
+
+export interface OrgActivity {
+  action: "org_created" | "admin_added" | "admin_removed"
+  at: string
+  actor: { email: string | null; name: string | null }
+  target: { email: string | null; name: string | null }
+}
+
+export interface GovernOrg {
+  tenantId: string
+  name: string | null
+  /** A personal workspace: its one user is the only admin. */
+  personal: boolean
+  createdBy: OrgPerson | null
+  createdAt: string | null
+  admins: OrgAdmin[]
+  /** Optimistic-lock revision; send it back with a change. */
+  rev: number
+  you: { isAdmin: boolean; isCreator: boolean }
+  /** Admins only: people who have signed in to this organization (who can be made admin). */
+  members?: OrgPerson[]
+  /** Admins only: the newest admin changes. */
+  activity?: OrgActivity[]
 }
 
 // ── Trends and capture (write-time aggregates) ─────────────────────────────
@@ -564,3 +624,171 @@ export interface CaptureReport {
   missedDocuments: { docId: string; title: string; status: string; reason: string }[]
   lastReconciledAt: string | null
 }
+
+// ── Saved views (GET/POST/PATCH/DELETE /views) ─────────────────────────────
+
+export type ViewModule = "contracts" | "obligations"
+export type ViewVisibility = "private" | "everyone" | "specific"
+export type FilterMatch = "all" | "any"
+
+export interface FilterRule {
+  field: string
+  op: string
+  value: unknown
+}
+
+export interface FilterGroup {
+  match: FilterMatch
+  rules: FilterRule[]
+}
+
+export interface ViewConfig {
+  /** The preset the view starts from ("in-progress", "signed"…); null = every record. */
+  base: string | null
+  filters: FilterGroup
+  columns: { order: string[]; hidden: string[] }
+  groupBy: string | null
+  sort: { key: string; dir: "asc" | "desc" } | null
+  density: "comfortable" | "compact" | null
+}
+
+export interface SavedView {
+  id: string
+  module: ViewModule
+  name: string
+  visibility: ViewVisibility
+  /** Emails, when visibility is "specific". */
+  sharedWith: string[]
+  createdBy: { email: string; name: string | null }
+  createdAt: string
+  updatedAt: string
+  /** The signed-in person may rename, update or delete it. */
+  canEdit: boolean
+  config: ViewConfig
+}
+
+export interface SavedViewInput {
+  module: ViewModule
+  name: string
+  visibility: ViewVisibility
+  sharedWith?: string[]
+  config: ViewConfig
+}
+
+export interface SavedViewPatch {
+  name?: string
+  visibility?: ViewVisibility
+  sharedWith?: string[]
+  config?: ViewConfig
+}
+
+/** Server limits on a saved view. */
+export const VIEW_LIMITS = { rules: 25, name: 80, sharedWith: 50 } as const
+
+// ── Bulk update (POST /contracts/bulk) ─────────────────────────────────────
+
+export interface BulkUpdateInput {
+  /** At most 200 per request. */
+  contractIds: string[]
+  fields?: Partial<ContractPatch>
+  owner?: Person
+}
+
+export type BulkResult =
+  | { contractId: string; ok: true }
+  | { contractId: string; ok: false; error: { code: string; message: string } }
+
+export interface BulkUpdateResponse {
+  results: BulkResult[]
+  updated: number
+}
+
+export const BULK_LIMIT = 200
+
+// ── People directory (GET /govern/people) ──────────────────────────────────
+
+export interface DirectoryPerson {
+  email: string
+  name: string | null
+  sources: ("project" | "reviewer" | "owner")[]
+}
+
+// ── Automations (GET/POST /automations, PATCH/DELETE /automations/{id}) ───
+
+export type TimeTrigger =
+  | { type: "in_stage_for"; stage: Stage; days: number }
+  | { type: "obligation_due_in"; days: number }
+  | { type: "term_ends_in"; days: number }
+
+export type EventTrigger =
+  | { type: "contract_received" }
+  | { type: "stage_changed"; to?: Stage | null }
+  | { type: "sent_back" }
+  | { type: "blocker_added"; tier?: "unacceptable" | "deviates" | null }
+  | { type: "signed" }
+
+export type AutomationTrigger = TimeTrigger | EventTrigger
+export type AutomationTriggerType = AutomationTrigger["type"]
+
+export type AutomationCondition =
+  | { field: "agreementType"; op: "in"; value: AgreementType[] }
+  | { field: "direction"; op: "is"; value: Direction }
+  | { field: "value"; op: "gte" | "lte"; value: number }
+  | { field: "department"; op: "is"; value: string }
+  | { field: "owner"; op: "set" | "unset" }
+  | { field: "counterparty"; op: "contains"; value: string }
+
+export type AutomationConditionField = AutomationCondition["field"]
+
+export type AutomationAction =
+  | { type: "notify"; to: "owner"; message?: string }
+  | { type: "notify"; to: "office"; office: Office; message?: string }
+  | { type: "notify"; to: "emails"; emails: string[]; message?: string }
+  | { type: "escalate"; office: Office }
+  | { type: "assign"; owner?: Person }
+  | { type: "comment"; text: string }
+
+export type AutomationActionType = AutomationAction["type"]
+
+export interface AutomationInput {
+  name: string
+  enabled: boolean
+  trigger: AutomationTrigger
+  conditions: AutomationCondition[]
+  actions: AutomationAction[]
+}
+
+export interface Automation extends AutomationInput {
+  id: string
+  createdBy: Person | null
+  createdAt: string | null
+  updatedBy: Person | null
+  updatedAt: string | null
+  lastRunAt: string | null
+  runCount: number
+  rev: number
+}
+
+export interface AutomationList {
+  automations: Automation[]
+  count: number
+  limit: number
+  /** The feature is on for this deployment and organization. */
+  enabled: boolean
+}
+
+export interface AutomationTest {
+  ruleId: string | null
+  contractId: string
+  contractTitle: string | null
+  wouldFire: boolean
+  enabled: boolean
+  featureEnabled: boolean
+  alreadyRan: boolean
+  trigger: { matched: boolean; detail: string }
+  conditions: (AutomationCondition & { matched: boolean; actual: unknown })[]
+  actions: { type: AutomationActionType; summary: string; wouldRun: boolean; reason: string | null; recipients?: string[] }[]
+}
+
+/** Server limits on automations. */
+export const AUTOMATION_LIMITS = { rules: 50, name: 120, conditions: 10, actions: 5, emails: 20, message: 500, comment: 2000, days: 3650 } as const

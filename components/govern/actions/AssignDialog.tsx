@@ -6,22 +6,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Check } from "@/components/ui/icons";
 import { PersonDot } from "@/components/govern/primitives";
 import { AGREEMENT_TYPE_LABEL, OFFICE_LABEL, personName } from "@/lib/govern/labels";
-import { useGovernMe, useWorkflowSettings } from "@/lib/govern/queries";
+import { useGovernMe, useGovernPeople, useWorkflowSettings } from "@/lib/govern/queries";
 import { projectMembers, useProjects } from "@/lib/projects-store";
 import type { Contract, Person } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 import { ActionDialog, Field } from "./ActionDialog";
 import { useRunContractAction } from "./useRunAction";
+import { SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Option = { email: string; name: string | null; note: string };
 
-/** You, then everyone who shares a project with you: people to assign when no
+/** You, everyone who shares a project with you, then everyone the workspace
+ *  already knows (owners of other contracts): people to assign when no
  *  reviewers are set up, so nobody has to type an email address. */
 function useTeamOptions(exclude: Set<string>): Option[] {
   const me = useGovernMe().data;
   const projects = useProjects();
+  const people = useGovernPeople().data;
   return useMemo(() => {
     const out = new Map<string, Option>();
     const myEmail = me?.email?.toLowerCase();
@@ -33,8 +36,18 @@ function useTeamOptions(exclude: Set<string>): Option[] {
         out.set(email, { email, name: null, note: m.status === "invited" ? `Invited to ${p.name}` : `On ${p.name}` });
       }
     }
+    for (const person of people ?? []) {
+      const email = person.email.toLowerCase();
+      const known = out.get(email);
+      if (known) {
+        if (!known.name && person.name) out.set(email, { ...known, name: person.name });
+        continue;
+      }
+      if (exclude.has(email)) continue;
+      out.set(email, { email, name: person.name, note: person.sources.includes("owner") ? "Owns other contracts" : "In your workspace" });
+    }
     return [...out.values()];
-  }, [me, projects, exclude]);
+  }, [me, projects, people, exclude]);
 }
 
 export function AssignDialog({ contract, open, onOpenChange }: { contract: Contract; open: boolean; onOpenChange: (o: boolean) => void }) {
@@ -92,9 +105,18 @@ export function AssignDialog({ contract, open, onOpenChange }: { contract: Contr
       disabled={!owner || owner.email === contract.owner?.email}
     >
       {settings.isLoading ? (
-        <div className="flex flex-col gap-1.5" aria-busy="true" aria-label="Loading reviewers">
-          {Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
-        </div>
+        <SkeletonRegion label="reviewers" className="flex flex-col gap-1.5">
+          <SkeletonLine text="text-sm font-semibold" width="w-20" className="mb-1.5" />
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} aria-hidden className="flex min-h-12 items-center gap-3 rounded-lg border border-border px-3 py-2">
+              <Skeleton className="size-4 shrink-0 rounded-full" />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <SkeletonLine text="text-sm font-medium" width={i % 2 ? "w-32" : "w-40"} />
+                <SkeletonLine text="text-xs" width="w-48" />
+              </span>
+            </div>
+          ))}
+        </SkeletonRegion>
       ) : reviewers.length > 0 ? (
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-sm font-semibold text-foreground">Reviewers</legend>

@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
-import { motion, useReducedMotion, useSpring, useTransform } from "framer-motion";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ArrowRight } from "@/components/ui/icons";
 
 /* Savings calculator. Every figure comes from the sliders, so nothing
@@ -16,19 +15,41 @@ const money = (n: number) =>
     ? `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
     : `$${Math.round(n).toLocaleString()}`;
 
+/** A number that eases to its new value (~400ms, ease-out). A few lines of
+ *  requestAnimationFrame instead of an animation library for one figure;
+ *  it jumps straight to the value under prefers-reduced-motion. */
+function useTweenedNumber(value: number, durationMs = 400): number {
+  const [shown, setShown] = useState(value);
+  const from = useRef(value);
+  useEffect(() => {
+    const start = from.current;
+    if (start === value || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      from.current = value;
+      setShown(value);
+      return;
+    }
+    let frame = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / durationMs);
+      const eased = 1 - (1 - p) ** 3;
+      const v = start + (value - start) * eased;
+      from.current = v;
+      setShown(v);
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, durationMs]);
+  return shown;
+}
+
 function AnimatedValue({
   value, format, className,
 }: {
   value: number; format: (n: number) => string; className?: string;
 }) {
-  const reduce = useReducedMotion();
-  const spring = useSpring(value, { stiffness: 110, damping: 22, mass: 0.5 });
-  const out = useTransform(spring, (v) => format(v));
-  useEffect(() => {
-    if (reduce) spring.jump(value);
-    else spring.set(value);
-  }, [value, reduce, spring]);
-  return <motion.span className={className}>{out}</motion.span>;
+  return <span className={className}>{format(useTweenedNumber(value))}</span>;
 }
 
 export function SavingsCalculator() {

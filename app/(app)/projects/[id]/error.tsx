@@ -28,7 +28,7 @@ export default function ProjectError({
   if (isAuthError) {
     return (
       <div className="app-container py-20 flex flex-col items-center text-center">
-        <p className="text-base text-muted-foreground">Redirecting to sign in…</p>
+        <p className="text-sm text-muted-foreground">Redirecting to sign in…</p>
       </div>
     );
   }
@@ -36,19 +36,19 @@ export default function ProjectError({
   return (
     <div className="app-container py-20 flex flex-col items-center text-center">
       <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--danger-soft)] text-[var(--danger)] mb-5">
-        <AlertCircle size={24} strokeWidth={1.5} />
+        <AlertCircle size={24} />
       </span>
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">
+      <h2 className="text-base font-semibold tracking-tight text-foreground">
         Something went wrong
       </h2>
-      <p className="mt-2 max-w-sm break-words text-base leading-relaxed text-[var(--ink-600)]">
+      <p className="mt-2 max-w-sm break-words text-sm leading-relaxed text-[var(--ink-600)]">
         {error.message || "An unexpected error occurred loading this page."}
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
-        <Button size="lg" onClick={reset}>
+        <Button onClick={reset}>
           Try again
         </Button>
-        <Button variant="outline" size="lg" onClick={() => router.back()}>
+        <Button variant="outline" onClick={() => router.back()}>
           Go back
         </Button>
       </div>

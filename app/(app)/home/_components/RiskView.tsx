@@ -21,11 +21,12 @@ import { RiskIntelligence, type CatDatum } from "@/components/charts/RiskIntelli
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { MotionReveal } from "@/components/MotionReveal";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ChartSkeleton } from "@/components/ds/skeletons";
+import { RiskViewSkeleton } from "./RiskViewSkeleton";
 import {
   Briefcase, ShieldAlert, ArrowRight, ArrowUp, ArrowDown, Plus, RefreshCw, Layers, FileText, DollarSign,
   AlertTriangle, CheckCircle2, CalendarClock, BarChart3, TrendingUp, ShieldCheck,
-  ChevronUp, ChevronDown, XCircle, Filter, Loader2, Info,
+  ChevronUp, ChevronDown, XCircle, Loader2, Info,
 } from "@/components/ui/icons";
 import { useDocuments, useClassifications, isProcessing } from "@/lib/queries/documents";
 import { useCompliancePacks } from "@/lib/queries/compliance";
@@ -33,7 +34,11 @@ import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/l
 import { docTypeShort } from "@/lib/doc-types";
 import { ACCENT, NEUTRAL_MARK, RISK_COLOR, RISK_LABEL, RISK_PILL } from "@/lib/chart-theme";
 import { HBarChart, type HBarDatum } from "@/components/charts/HBarChart";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ListPanel, Panel as DsPanel } from "@/components/ds/Panel";
+import { RadioFilterButton } from "@/components/ds/FilterButton";
+import { Toolbar } from "@/components/ds/Toolbar";
+import { displayTitle, parseDate } from "@/lib/format";
 import { useProjects, useProjectsSync, refreshProjects, withUngroupedDocs, type LocalProject } from "@/lib/projects-store";
 import { useNow } from "@/lib/use-now";
 import type { ApiClassification, ApiDocument, DocType, Lifecycle, RiskLevel } from "@/lib/types";
@@ -152,7 +157,7 @@ function aggregate(project: LocalProject, byId: Map<string, ApiDocument>, classB
     if (eff !== null && (effective === null || eff < effective)) effective = eff;
   }
   const valued: ValuedDoc[] = docs.filter((d) => d.status === "READY").map((d) => ({
-    docId: d.docId, title: d.title || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt,
+    docId: d.docId, title: displayTitle(d.title) || "Untitled", isAmendment: d.docType === "AMENDMENT", createdAt: d.createdAt,
     classification: classByDoc.get(d.docId), persisted: persistedOf(d),
   }));
   const cv = computeContractValue(valued);
@@ -166,7 +171,7 @@ function aggregate(project: LocalProject, byId: Map<string, ApiDocument>, classB
     readyCount, processing, failed,
     lifecycle: root?.lifecycle ?? null, expired,
     daysToDate: nearest !== null ? Math.round((nearest - now) / DAY) : null, dateKind, hasTermDates,
-    effectiveYear: effective !== null ? new Date(effective).getFullYear() : null,
+    effectiveYear: effective !== null ? parseDate(effective).getFullYear() : null,
   };
 }
 
@@ -365,7 +370,7 @@ export function RiskView() {
       .filter((d) => typeof d.complianceCoveragePct === "number")
       .map((d) => ({
         docId: d.docId,
-        title: d.title || "Untitled document",
+        title: displayTitle(d.title) || "Untitled document",
         pct: Math.round(d.complianceCoveragePct as number),
         gaps: typeof d.complianceGaps === "number" ? d.complianceGaps : null,
         frameworks: d.complianceFrameworks ?? [],
@@ -462,19 +467,17 @@ export function RiskView() {
       : "clause detail is still loading";
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-5">
-      {/* This view's own toolbar: freshness of the document data, and the
-          one action that adds to it. */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[var(--ink-600)]">Clause risk, value and compliance across every uploaded document.</p>
+    <div className="flex flex-col gap-6">
+      {/* This view's one action: add documents. */}
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-3">
           <Button variant={!loading && !loadFailed && projects.length === 0 ? "outline" : "default"} size="sm" asChild>
-            <Link href="/projects/new"><Plus size={15} strokeWidth={2.25} />New project</Link>
+            <Link href="/projects/new"><Plus size={16} aria-hidden />New project</Link>
           </Button>
         </div>
       </div>
         {loading ? (
-          <DashboardSkeleton />
+          <RiskViewSkeleton label="risk and documents" />
         ) : loadFailed ? (
           <ErrorState onRetry={refreshAll} detail={projectsSync.status === "error" ? projectsSync.error : null} />
         ) : projects.length === 0 ? (
@@ -506,8 +509,8 @@ export function RiskView() {
 
               {/* What the risk figures do not cover — always stated, never implied away. */}
               {(risk.notAssessed > 0 || risk.unrated > 0 || clausesPending || classFailed > 0) && (
-                <p className="flex items-start gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm leading-relaxed text-[var(--ink-600)]" aria-live="polite">
-                  <Info size={15} className="mt-0.5 shrink-0 text-[var(--ink-600)]" />
+                <p className="flex items-start gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm leading-relaxed text-[var(--ink-600)]" aria-live="polite">
+                  <Info size={16} className="mt-0.5 shrink-0 text-[var(--ink-600)]" />
                   <span className="min-w-0">
                     {[
                       risk.notAssessed > 0
@@ -525,7 +528,7 @@ export function RiskView() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <MetricCard
                   label="Contracts needing attention" value={attention.length}
-                  tone={attention.length > 0 ? "danger" : everythingAssessed ? "success" : "neutral"} icon={<ShieldAlert size={14} />}
+                  tone={attention.length > 0 ? "danger" : everythingAssessed ? "success" : "neutral"} icon={<ShieldAlert size={16} />}
                   hint={attention.length > 0
                     ? `A high or critical clause, or a failed document · ${risk.rc.critical} critical and ${risk.rc.high} high clauses`
                     : everythingAssessed
@@ -533,17 +536,17 @@ export function RiskView() {
                       : `None found so far · ${pendingNote}`}
                 />
                 <MetricCard
-                  label="Total contract value" tone="brand" icon={<DollarSign size={14} />}
+                  label="Total contract value" tone="brand" icon={<DollarSign size={16} />}
                   value={totals.length > 0 ? moneyList(totals) : "No value yet"}
                   hint={`${valuedContracts.length} of ${plural(aggregates.length, "contract")} valued${currencyUnknown ? " · currency not extracted for some" : ""}`}
                 />
                 <MetricCard
-                  label="Documents assessed for risk" icon={<CheckCircle2 size={14} />}
+                  label="Documents assessed for risk" icon={<CheckCircle2 size={16} />}
                   value={`${risk.assessed} of ${docs.length}`}
                   hint={risk.notAssessed > 0 ? notAssessedParts.join(" · ") : "Every document has rated clauses"}
                 />
                 <MetricCard
-                  label="Active or signed contracts" value={inForce} icon={<Briefcase size={14} />}
+                  label="Active or signed contracts" value={inForce} icon={<Briefcase size={16} />}
                   hint={[
                     `of ${plural(aggregates.length, "contract")}, by lifecycle stage`,
                     ...otherStages,
@@ -551,7 +554,7 @@ export function RiskView() {
                   ].filter(Boolean).join(" · ")}
                 />
                 <MetricCard
-                  label="Renewal or term end in the next 90 days" value={upcoming.length} icon={<CalendarClock size={14} />}
+                  label="Renewal or term end in the next 90 days" value={upcoming.length} icon={<CalendarClock size={16} />}
                   hint={[
                     upcoming.length > 0
                       ? (upcomingTotals.length > 0 ? `${moneyList(upcomingTotals)} · ${upcomingValued} of ${upcoming.length} valued` : "No value extracted for these")
@@ -560,7 +563,7 @@ export function RiskView() {
                   ].filter(Boolean).join(" · ") || "Every contract has a renewal or term-end date; none falls in this window"}
                 />
                 <MetricCard
-                  label="Clauses with a risk level" value={risk.rated.toLocaleString()} icon={<FileText size={14} />}
+                  label="Clauses with a risk level" value={risk.rated.toLocaleString()} icon={<FileText size={16} />}
                   hint={`In ${plural(risk.assessed, "document")}${risk.unrated > 0 ? ` · ${plural(risk.unrated, "clause")} more without a risk level` : ""}`}
                 />
               </div>
@@ -574,13 +577,13 @@ export function RiskView() {
             {/* Heatmap + value/exposure by year */}
             <MotionReveal delay={0.05}>
               <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-                <Card className="lg:col-span-7" title="Risk by category" icon={<BarChart3 size={15} />} sub="Clauses per category and risk level">
+                <Card className="lg:col-span-7" title="Risk by category" icon={<BarChart3 size={16} />}>
                   {allClauses.length === 0
-                    ? (clausesPending ? <Skeleton className="h-48 rounded-lg" /> : <Empty text="The clause heatmap appears once a document has been analyzed." />)
+                    ? (clausesPending ? <ChartSkeleton height="h-48" label="the clause heatmap" /> : <Empty text="The clause heatmap appears once a document has been analyzed." />)
                     : <ClauseHeatmap clauses={allClauses} />}
                 </Card>
                 <Card
-                  className="lg:col-span-5" title="Value and exposure by year" icon={<TrendingUp size={15} />}
+                  className="lg:col-span-5" title="Value and exposure by year" icon={<TrendingUp size={16} />}
                   sub={valuedContracts.length > 0 ? `${valuedContracts.length - valueByYear.undated} of ${valuedContracts.length} valued contracts dated` : undefined}
                 >
                   {valueByYear.rows.length === 0 ? (
@@ -611,10 +614,10 @@ export function RiskView() {
             {docsByType.length > 0 && (
               <MotionReveal delay={0.05}>
                 <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-                  <Card title="Documents by type" icon={<Layers size={15} />} sub={`All ${plural(docs.length, "document")} · select a bar to filter contracts`}>
+                  <Card title="Documents by type" icon={<Layers size={16} />} sub={`${plural(docs.length, "document")} · select a bar to filter`}>
                     <HBarChart data={docsByType} valueFormatter={(n) => n.toLocaleString()} onSelect={focusContractsByType} yAxisWidth={96} />
                   </Card>
-                  <Card title="High or critical clauses by document type" icon={<BarChart3 size={15} />} sub="Select a bar to filter contracts">
+                  <Card title="High or critical clauses by type" icon={<BarChart3 size={16} />} sub="Select a bar to filter">
                     {riskByType.length === 0
                       ? <Empty text="No document has rated clauses yet." />
                       : hasTypeRisk
@@ -630,7 +633,7 @@ export function RiskView() {
               <MotionReveal delay={0.05}>
                 <Card
                   title="Compliance coverage"
-                  icon={<ShieldCheck size={15} />}
+                  icon={<ShieldCheck size={16} />}
                   sub={coverage.mean !== null
                     ? `${coverage.scored.length} of ${plural(readyDocs.length, "analyzed document")} scored · mean ${coverage.mean}% · ${coverage.withGaps} with gaps`
                     : undefined}
@@ -644,7 +647,7 @@ export function RiskView() {
                           <li key={d.docId}>
                             <Link href={`/projects/${d.docId}`} className="-mx-2 block rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
                               <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-                                <span className="min-w-0 truncate font-medium text-foreground" title={d.title}>{d.title}</span>
+                                <span className="min-w-0 truncate font-medium text-foreground" title={displayTitle(d.title)}>{displayTitle(d.title)}</span>
                                 <span className="shrink-0 tabular-nums text-[var(--ink-600)]">
                                   <span className="font-semibold text-foreground">{d.pct}%</span>
                                   {d.gaps !== null ? ` · ${plural(d.gaps, "gap")}` : ""}
@@ -662,8 +665,8 @@ export function RiskView() {
                     </>
                   )}
                   <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs text-muted-foreground">
-                    <span className="min-w-0 flex-1 basis-64">Coverage and gap counts are the figures stored with each document when it was analyzed, lowest coverage first. The mean is the plain average of those percentages.</span>
-                    <Link href="/settings/compliance" className={TEXT_LINK}>Manage packs<ArrowRight size={14} strokeWidth={2} /></Link>
+                    <span className="min-w-0 flex-1 basis-64">Lowest coverage first. The mean is the plain average.</span>
+                    <Link href="/settings/compliance" className={TEXT_LINK}>Manage packs<ArrowRight size={12} aria-hidden /></Link>
                   </div>
                 </Card>
               </MotionReveal>
@@ -672,30 +675,29 @@ export function RiskView() {
             {/* Needs attention + value by contract */}
             <MotionReveal delay={0.05}>
               <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-                <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-xs lg:col-span-7">
-                  <div className="flex items-center gap-2 border-b border-border px-4 py-3.5 md:px-5">
-                    <ShieldAlert size={15} className={attention.length ? "text-[var(--danger)]" : "text-muted-foreground"} />
-                    <h3 className="text-base font-semibold tracking-tight text-foreground">Needs your attention</h3>
-                    {attention.length > 0 && <span className="ml-auto rounded-md bg-[var(--danger-soft)] px-1.5 py-0.5 text-xs font-semibold tabular-nums text-[var(--danger)]">{attention.length}</span>}
-                  </div>
+                <ListPanel
+                  className="lg:col-span-7"
+                  title="Needs you"
+                  meta={attention.length > 0 ? <span className="text-[var(--danger-fg)]">{attention.length}</span> : undefined}
+                >
                   {attention.length === 0 ? (
                     everythingAssessed ? (
-                      <div className="flex flex-col items-center px-5 py-10 text-center"><CheckCircle2 size={24} className="mb-2 text-[var(--success)]" /><p className="text-base font-semibold text-foreground">All clear</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">All {plural(docs.length, "document")} are analyzed and rated, and no clause is rated high or critical.</p></div>
+                      <div className="flex flex-col items-center px-4 py-8 text-center"><CheckCircle2 size={24} aria-hidden className="mb-2 text-[var(--ink-400)]" /><p className="text-base font-semibold text-foreground">All clear</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">All {plural(docs.length, "document")} are analyzed and rated, and no clause is rated high or critical.</p></div>
                     ) : (
-                      <div className="flex flex-col items-center px-5 py-10 text-center"><Info size={24} className="mb-2 text-muted-foreground" /><p className="text-base font-semibold text-foreground">Nothing flagged so far</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">No assessed document has a high or critical clause, but {pendingNote}.</p></div>
+                      <div className="flex flex-col items-center px-4 py-8 text-center"><Info size={24} aria-hidden className="mb-2 text-[var(--ink-400)]" /><p className="text-base font-semibold text-foreground">Nothing flagged so far</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">No assessed document has a high or critical clause, but {pendingNote}.</p></div>
                     )
                   ) : (
                     <>
                       <ul className="divide-y divide-border">
                         {shownAttention.map((a) => (
                           <li key={a.project.id}>
-                            <Link href={`/projects/${a.project.id}`} className="group flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--panel)] focus-visible:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)] md:px-5">
+                            <Link href={`/projects/${a.project.id}`} className="group flex min-h-11 min-w-0 items-center gap-3 px-4 py-2 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)]">
                               {isRisky(a.overallRisk)
                                 ? <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${RISK_PILL[a.overallRisk as RiskLevel]}`}>{RISK_LABEL[a.overallRisk as RiskLevel]}</span>
                                 : <span className="shrink-0 rounded-md bg-[var(--danger-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--danger)]">Failed</span>}
                               <div className="min-w-0 flex-1">
-                                <div className="truncate text-base font-semibold text-foreground">{a.project.name}</div>
-                                <div className="text-xs text-muted-foreground">
+                                <div className="truncate text-sm font-medium text-foreground">{displayTitle(a.project.name)}</div>
+                                <div className="truncate text-xs text-muted-foreground">
                                   {[
                                     a.highRisk > 0 ? plural(a.highRisk, "high or critical clause") : "",
                                     a.failed > 0 ? `${plural(a.failed, "document")} failed analysis` : "",
@@ -703,16 +705,16 @@ export function RiskView() {
                                   ].filter(Boolean).join(" · ")}
                                 </div>
                               </div>
-                              <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-[var(--brand-primary-600)] group-hover:text-[var(--brand-primary-700)]"><span className="hidden sm:inline">Review</span><ArrowRight size={14} strokeWidth={2} /></span>
+                              <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-[var(--brand-primary-700)]"><span className="hidden sm:inline">Review</span><ArrowRight size={16} aria-hidden className="rtl:rotate-180" /></span>
                             </Link>
                           </li>
                         ))}
                       </ul>
-                      <div className="px-4 md:px-5"><MoreToggle total={attention.length} first={6} open={showAllAttention} onToggle={() => setShowAllAttention((v) => !v)} noun="contracts" /></div>
+                      <div className="px-4"><MoreToggle total={attention.length} first={6} open={showAllAttention} onToggle={() => setShowAllAttention((v) => !v)} noun="contracts" /></div>
                     </>
                   )}
-                </section>
-                <Card className="lg:col-span-5" title="Value by contract" icon={<DollarSign size={15} />} sub={`${valuedContracts.length} of ${plural(aggregates.length, "contract")} valued`}>
+                </ListPanel>
+                <Card className="lg:col-span-5" title="Value by contract" icon={<DollarSign size={16} />} sub={`${valuedContracts.length} of ${plural(aggregates.length, "contract")} valued`}>
                   {valueRows.length === 0 ? <Empty text="No contract value has been extracted yet. Values appear when the analysis finds a stated amount in a document." /> : (
                     <>
                       <ValueByProject rows={shownValues} scaleRows={valueRows} />
@@ -724,60 +726,72 @@ export function RiskView() {
               </div>
             </MotionReveal>
 
-            <SectionLabel>Contracts</SectionLabel>
-            {/* Contracts table — sortable roll-up with dropdown options */}
-            <section ref={tableRef} className="scroll-mt-20 overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-              <div className="flex flex-col gap-3 border-b border-border px-4 py-3.5 md:px-5 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-semibold tracking-tight text-foreground">All contracts</h3>
-                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-[var(--ink-600)]">{visibleRows.length}{filtersActive ? ` of ${aggregates.length}` : ""}</span>
-                  <Link href="/projects" className={`ml-auto lg:hidden ${TEXT_LINK}`}>View all<ArrowRight size={14} strokeWidth={2} /></Link>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {availableDocTypes.length > 1 && (
-                    <Select value={docTypeFilter} onValueChange={(v) => setDocTypeFilter(v as DocType | "all")}>
-                      <SelectTrigger aria-label="Filter by document type" className="min-w-[132px] flex-1 sm:w-[148px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All types</SelectItem>
-                        {availableDocTypes.map((t) => (
-                          <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  <Select value={riskFilter} onValueChange={(v) => setRiskFilter(v as RiskFilter)}>
-                    <SelectTrigger aria-label="Filter by risk level" className="min-w-[132px] flex-1 sm:w-[156px] sm:flex-none"><Filter size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All risk</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="unrated">Not assessed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={sort.key} onValueChange={(v) => setSortKey(v as SortKey)}>
-                    <SelectTrigger aria-label="Sort contracts" className="min-w-[168px] flex-1 sm:w-[196px] sm:flex-none"><span className="text-muted-foreground">Sort</span><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="risk">Risk level</SelectItem>
-                      <SelectItem value="value">Contract value</SelectItem>
-                      <SelectItem value="highRisk">High-risk clauses</SelectItem>
-                      <SelectItem value="clauseCount">Clause count</SelectItem>
-                      <SelectItem value="docCount">Document count</SelectItem>
-                      <SelectItem value="name">{byEdition("Project name", "Engagement name")}</SelectItem>
-                      <SelectItem value="status">Status</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {filtersActive && (
-                    <Button variant="ghost" className="h-10 text-[var(--ink-600)] sm:h-9" onClick={resetFilters}>
-                      <XCircle size={14} />Clear filters ({(riskFilter !== "all" ? 1 : 0) + (docTypeFilter !== "all" ? 1 : 0)})
-                    </Button>
-                  )}
-                  <Link href="/projects" className={`hidden lg:inline-flex lg:pl-1 ${TEXT_LINK}`}>View all<ArrowRight size={14} strokeWidth={2} /></Link>
-                </div>
+            {/* Contracts: a flat table on the canvas (UI_SPEC section 3). */}
+            <section ref={tableRef} aria-labelledby="risk-contracts-title" className="flex scroll-mt-20 flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <h2 id="risk-contracts-title" className="text-lg font-semibold text-foreground">Contracts</h2>
+                <span className="text-sm tabular-nums text-muted-foreground">{visibleRows.length}{filtersActive ? ` of ${aggregates.length}` : ""}</span>
+                <Link href="/projects" className={`ml-auto ${TEXT_LINK}`}>View all<ArrowRight size={12} aria-hidden /></Link>
               </div>
+              {(() => {
+                const quick = (
+                  <>
+                    {availableDocTypes.length > 1 && (
+                      <RadioFilterButton<DocType | "all">
+                        label="Type"
+                        anyValue="all"
+                        value={docTypeFilter}
+                        onChange={setDocTypeFilter}
+                        options={[{ value: "all", label: "All types" }, ...availableDocTypes.map((t) => ({ value: t, label: docTypeShort(t) }))]}
+                      />
+                    )}
+                    <RadioFilterButton<RiskFilter>
+                      label="Risk"
+                      anyValue="all"
+                      value={riskFilter}
+                      onChange={setRiskFilter}
+                      options={[
+                        { value: "all", label: "All risk" },
+                        { value: "critical", label: "Critical" },
+                        { value: "high", label: "High" },
+                        { value: "medium", label: "Medium" },
+                        { value: "low", label: "Low" },
+                        { value: "unrated", label: "Not assessed" },
+                      ]}
+                    />
+                  </>
+                );
+                const sortMenu = (
+                  <SortMenu
+                    value={sort.key}
+                    onChange={setSortKey}
+                    options={[
+                      { value: "risk", label: "Risk level" },
+                      { value: "value", label: "Contract value" },
+                      { value: "highRisk", label: "High-risk clauses" },
+                      { value: "clauseCount", label: "Clause count" },
+                      { value: "docCount", label: "Document count" },
+                      { value: "name", label: byEdition("Project name", "Engagement name") },
+                      { value: "status", label: "Status" },
+                    ]}
+                  />
+                );
+                const count = (riskFilter !== "all" ? 1 : 0) + (docTypeFilter !== "all" ? 1 : 0);
+                return (
+                  <Toolbar
+                    label="Filter contracts"
+                    activeCount={count}
+                    mobileSheet={<div className="flex flex-col items-start gap-3">{quick}</div>}
+                    mobileActions={sortMenu}
+                  >
+                    <Toolbar.Filters always>{quick}</Toolbar.Filters>
+                    <Toolbar.Clear count={count} onClear={resetFilters} />
+                    <Toolbar.Actions>{sortMenu}</Toolbar.Actions>
+                  </Toolbar>
+                );
+              })()}
               {/* Below md the table keeps Project, High-risk, Value and Risk; the rest return as space allows. */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border-y border-border">
                 <table className="w-full min-w-[440px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border bg-[var(--panel)] text-left">
@@ -794,22 +808,22 @@ export function RiskView() {
                   </thead>
                   <tbody>
                     {visibleRows.length === 0 && (
-                      <tr><td colSpan={9} className="px-5 py-10 text-center">
+                      <tr><td colSpan={9} className="px-4 py-10 text-center">
                         <p className="text-base font-semibold text-foreground">No contracts match these filters</p>
                         <Button variant="outline" className="mt-4 h-10 sm:h-9" onClick={resetFilters}>Clear filters</Button>
                       </td></tr>
                     )}
                     {visibleRows.map((a) => (
                       <tr key={a.project.id} className="border-b border-border transition-colors last:border-0 hover:bg-[var(--panel)]">
-                        <td className="max-w-[220px] px-4 py-3 md:max-w-[320px] md:px-5"><Link href={`/projects/${a.project.id}`} className="block rounded-sm font-semibold text-foreground hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">{a.project.name}</Link>{a.project.client && <div className="truncate text-xs text-muted-foreground">{a.project.client}</div>}</td>
-                        <td className="hidden px-4 py-3 capitalize text-[var(--ink-600)] md:table-cell md:px-5">{a.lifecycle ? stageLabel(a.lifecycle) : <Dash />}</td>
-                        <td className="hidden px-4 py-3 text-right tabular-nums text-[var(--ink-600)] md:px-5 lg:table-cell">{a.docCount}</td>
-                        <td className="hidden px-4 py-3 text-right tabular-nums text-[var(--ink-600)] md:px-5 lg:table-cell">{a.clauseCount === null ? <Dash /> : a.clauseCount.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums md:px-5">{a.rated === 0 ? <Dash /> : a.highRisk > 0 ? <span className="font-semibold text-[var(--danger)]">{a.highRisk}</span> : <span className="text-[var(--ink-600)]">0</span>}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-foreground md:px-5">{a.value !== null ? fmtMoney(a.value, a.currency) : <Dash />}</td>
-                        <td className="hidden whitespace-nowrap px-4 py-3 text-right md:px-5 xl:table-cell"><ValueDelta delta={a.valueDelta} currency={a.currency} /></td>
-                        <td className="hidden whitespace-nowrap px-4 py-3 md:px-5 xl:table-cell"><ReconciledBadge reconciled={a.reconciled} hasValue={a.value !== null} /></td>
-                        <td className="whitespace-nowrap px-4 py-3 md:px-5"><RiskCell a={a} /></td>
+                        <td className="max-w-[220px] px-4 py-2 md:max-w-[320px]"><Link href={`/projects/${a.project.id}`} className="block truncate rounded-sm font-medium text-foreground hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">{displayTitle(a.project.name)}</Link>{a.project.client && <div className="truncate text-xs text-muted-foreground">{a.project.client}</div>}</td>
+                        <td className="hidden px-4 py-2 capitalize text-[var(--ink-600)] md:table-cell">{a.lifecycle ? stageLabel(a.lifecycle) : <Dash />}</td>
+                        <td className="hidden px-4 py-2 text-right tabular-nums text-[var(--ink-600)] lg:table-cell">{a.docCount}</td>
+                        <td className="hidden px-4 py-2 text-right tabular-nums text-[var(--ink-600)] lg:table-cell">{a.clauseCount === null ? <Dash /> : a.clauseCount.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{a.rated === 0 ? <Dash /> : a.highRisk > 0 ? <span className="font-semibold text-[var(--danger)]">{a.highRisk}</span> : <span className="text-[var(--ink-600)]">0</span>}</td>
+                        <td className="whitespace-nowrap px-4 py-2 text-right font-semibold tabular-nums text-foreground">{a.value !== null ? fmtMoney(a.value, a.currency) : <Dash />}</td>
+                        <td className="hidden whitespace-nowrap px-4 py-2 text-right xl:table-cell"><ValueDelta delta={a.valueDelta} currency={a.currency} /></td>
+                        <td className="hidden whitespace-nowrap px-4 py-2 xl:table-cell"><ReconciledBadge reconciled={a.reconciled} hasValue={a.value !== null} /></td>
+                        <td className="whitespace-nowrap px-4 py-2"><RiskCell a={a} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -823,12 +837,12 @@ export function RiskView() {
 }
 
 const TEXT_LINK = "inline-flex min-h-10 items-center gap-1 rounded-sm text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] sm:min-h-0";
-const TH = "px-4 py-2.5 text-xs font-medium text-muted-foreground md:px-5";
+const TH = "h-[38px] px-4 text-xs font-medium text-muted-foreground";
 
 type YearRow = { key: string; year: number; currency: string; value: number; atRisk: number };
 
 function SectionLabel({ children }: { children: ReactNode }) {
-  return <h2 className="text-lg font-semibold pt-2 tracking-tight text-foreground md:pt-4">{children}</h2>;
+  return <h2 className="text-lg font-semibold text-foreground">{children}</h2>;
 }
 
 function Dash() {
@@ -883,32 +897,32 @@ function FocalValueAtRisk({ totals, atRiskTotals, riskyCount, riskyUnvalued, una
     : "";
 
   return (
-    <div className="grid grid-cols-1 gap-6 rounded-xl bg-[var(--navy)] p-5 text-white md:p-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] lg:items-end lg:gap-10">
+    <div className="grid grid-cols-1 gap-6 rounded-xl border border-border bg-card p-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] lg:items-end lg:gap-10">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h2 className="text-lg font-semibold">Value at risk</h2>
+          <h2 className="text-base font-semibold text-foreground">Value at risk</h2>
           {hasRisky ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-[var(--danger-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--danger)]">
-              <AlertTriangle size={12} />{plural(riskyCount, "contract")} rated high or critical
+            <span className="inline-flex items-center gap-1 rounded-md bg-[var(--danger-soft)] px-2 py-0.5 text-xs font-medium text-[var(--danger-fg)]">
+              <AlertTriangle size={12} aria-hidden />{plural(riskyCount, "contract")} rated high or critical
             </span>
           ) : unassessedContracts === 0 ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-[var(--success-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--success-fg)]">
-              <CheckCircle2 size={12} />No high or critical contracts
+            <span className="inline-flex items-center gap-1 rounded-md bg-[var(--ink-100)] px-2 py-0.5 text-xs font-medium text-[var(--ink-700)]">
+              <CheckCircle2 size={12} aria-hidden />No high or critical contracts
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-xs font-semibold text-white">
-              <Info size={12} />Assessment incomplete
+            <span className="inline-flex items-center gap-1 rounded-md bg-[var(--ink-100)] px-2 py-0.5 text-xs font-medium text-[var(--ink-700)]">
+              <Info size={12} aria-hidden />Assessment incomplete
             </span>
           )}
         </div>
-        <div className="mt-3 text-3xl font-bold leading-none tracking-[-0.025em] tabular-nums [overflow-wrap:anywhere] md:text-4xl">
+        <div className="mt-2 text-4xl font-semibold tracking-tight tabular-nums text-foreground [overflow-wrap:anywhere]">
           {hasSum ? moneyList(atRiskTotals) : hasRisky ? "No value yet" : unassessedContracts === 0 ? "None" : "None found so far"}
         </div>
-        <p className="mt-3 max-w-[56ch] text-base leading-relaxed text-[var(--navy-foreground)]">
+        <p className="mt-2 max-w-[56ch] text-sm text-[var(--ink-600)]">
           {hasSum ? (
             <>
               {pct !== null && single
-                ? <><span className="font-semibold text-white">{pct}%</span> of the {fmtMoney(single[1], single[0] || null)} extracted portfolio value, in </>
+                ? <><span className="font-semibold text-foreground">{pct}%</span> of the {fmtMoney(single[1], single[0] || null)} extracted portfolio value, in </>
                 : "The extracted value of "}
               {plural(riskyCount - riskyUnvalued, "contract")} whose worst clause is rated high or critical.
               {riskyUnvalued > 0 ? ` ${plural(riskyUnvalued, "more high or critical contract")} ${riskyUnvalued === 1 ? "has" : "have"} no extracted value and ${riskyUnvalued === 1 ? "is" : "are"} not in this figure.` : ""}
@@ -927,10 +941,10 @@ function FocalValueAtRisk({ totals, atRiskTotals, riskyCount, riskyUnvalued, una
           {/* Proportion: at-risk vs total extracted value (one currency only) */}
           {single && single[1] > 0 && (
             <div>
-              <div className="flex h-2.5 overflow-hidden rounded-full bg-white/15" aria-hidden>
-                <div className="h-full rounded-full bg-white" style={{ width: `${singleAtRisk > 0 ? Math.max(3, pct ?? 0) : 0}%` }} />
+              <div className="flex h-2 overflow-hidden rounded-full bg-[var(--ink-100)]" aria-hidden>
+                <div className="h-full rounded-full bg-[var(--danger)]" style={{ width: `${singleAtRisk > 0 ? Math.max(3, pct ?? 0) : 0}%` }} />
               </div>
-              <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-0.5 text-xs tabular-nums text-[var(--navy-foreground)]">
+              <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-0.5 text-xs tabular-nums text-[var(--ink-600)]">
                 <span>At risk {fmtMoney(singleAtRisk, single[0] || null)}</span>
                 <span>Total extracted {fmtMoney(single[1], single[0] || null)}</span>
               </div>
@@ -938,15 +952,15 @@ function FocalValueAtRisk({ totals, atRiskTotals, riskyCount, riskyUnvalued, una
           )}
 
           {anomaly && (
-            <Link href="/projects?risk=attention" className="flex min-h-10 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sidebar-ring)]">
-              <ShieldAlert size={14} className="shrink-0" />
+            <Link href="/projects?risk=attention" className="flex min-h-10 items-center gap-2 border-t border-border pt-3 text-sm font-medium text-[var(--danger-fg)] hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
+              <ShieldAlert size={16} aria-hidden className="shrink-0" />
               <span className="min-w-0">
                 {[
                   criticalClauses > 0 ? plural(criticalClauses, "critical clause") : "",
                   failed > 0 ? `${plural(failed, "document")} failed analysis` : "",
                 ].filter(Boolean).join(" · ")}
               </span>
-              <ArrowRight size={14} strokeWidth={2} className="ml-auto shrink-0" />
+              <ArrowRight size={16} aria-hidden className="ml-auto shrink-0 rtl:rotate-180" />
             </Link>
           )}
         </div>
@@ -960,7 +974,7 @@ function ValueDelta({ delta, currency }: { delta: number; currency: string | nul
   const up = delta > 0;
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-medium tabular-nums text-[var(--ink-700)]`}>
-      {up ? <ArrowUp size={12} strokeWidth={2} /> : <ArrowDown size={12} strokeWidth={2} />}
+      {up ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
       <span className="sr-only">{up ? "Increased by" : "Decreased by"}</span>
       {fmtMoney(Math.abs(delta), currency)}
     </span>
@@ -969,8 +983,8 @@ function ValueDelta({ delta, currency }: { delta: number; currency: string | nul
 
 function ReconciledBadge({ reconciled, hasValue }: { reconciled: boolean | null; hasValue: boolean }) {
   if (!hasValue) return <Dash />;
-  if (reconciled === true) return <span title="Figures reconcile to the stated total" className="inline-flex items-center gap-1 text-xs font-medium text-[var(--success)]"><CheckCircle2 size={13} />Reconciled</span>;
-  if (reconciled === false) return <span title="Figures don't reconcile. Review them." className="inline-flex items-center gap-1 text-xs font-medium text-[var(--warning)]"><AlertTriangle size={13} />Check</span>;
+  if (reconciled === true) return <span title="Figures reconcile to the stated total" className="inline-flex items-center gap-1 text-xs font-medium text-[var(--success)]"><CheckCircle2 size={12} />Reconciled</span>;
+  if (reconciled === false) return <span title="Figures don't reconcile. Review them." className="inline-flex items-center gap-1 text-xs font-medium text-[var(--warning)]"><AlertTriangle size={12} />Check</span>;
   // The figure is the extracted one; the validation step just had nothing to reconcile it against.
   return <span title="Extracted from the document. No stated total was available to reconcile it against." className="text-xs text-muted-foreground">Not reconciled</span>;
 }
@@ -978,27 +992,52 @@ function ReconciledBadge({ reconciled, hasValue }: { reconciled: boolean | null;
 function SortableTh({ label, k, sort, onSort, align = "left", className = "" }: { label: string; k: SortKey; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void; align?: "left" | "right"; className?: string }) {
   const active = sort.key === k;
   return (
-    <th scope="col" aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"} className={`px-4 py-1 md:px-5 ${align === "right" ? "text-right" : ""} ${className}`}>
+    <th scope="col" aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"} className={`px-4 py-1 ${align === "right" ? "text-right" : ""} ${className}`}>
       <button
         type="button" onClick={() => onSort(k)}
         className={`inline-flex min-h-9 items-center gap-1 whitespace-nowrap rounded-sm text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] ${align === "right" ? "flex-row-reverse" : ""} ${active ? "text-foreground" : "text-muted-foreground"}`}
       >
         {label}
-        {active ? (sort.dir === "asc" ? <ChevronUp size={13} /> : <ChevronDown size={13} />) : <ChevronDown size={13} className="text-[var(--ink-300)]" />}
+        {active ? (sort.dir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : <ChevronDown size={12} className="text-[var(--ink-300)]" />}
       </button>
     </th>
   );
 }
 
-function Card({ title, icon, sub, children, className }: { title: string; icon: ReactNode; sub?: string; children: ReactNode; className?: string }) {
+/** A titled panel (UI_SPEC section 3). The icon prop is kept for callers but
+ *  not drawn: panels are labelled by words. `sub` is a figure, shown 12px. */
+function Card({ title, sub, children, className }: { title: string; icon?: ReactNode; sub?: string; children: ReactNode; className?: string }) {
   return (
-    <section className={`min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-6 ${className ?? ""}`}>
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <div className="flex min-w-0 items-center gap-2"><span className="shrink-0 text-muted-foreground">{icon}</span><h3 className="text-base font-semibold tracking-tight text-foreground">{title}</h3></div>
-        {sub && <span className="text-xs tabular-nums text-muted-foreground">{sub}</span>}
-      </div>
+    <DsPanel title={title} className={className}>
+      {sub && <p className="-mt-1 mb-3 text-xs tabular-nums text-muted-foreground">{sub}</p>}
       {children}
-    </section>
+    </DsPanel>
+  );
+}
+
+/** "Sort │ Risk level ▾": the same 32px segmented look as the quick filters. */
+function SortMenu<V extends string>({ value, onChange, options }: { value: V; onChange: (v: V) => void; options: { value: V; label: string }[] }) {
+  const current = options.find((o) => o.value === value)?.label ?? "";
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title={`Sort: ${current}`}
+          className="inline-flex h-8 min-w-24 max-w-[220px] shrink-0 items-center rounded-md border border-[var(--ink-300)] bg-card text-xs transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--brand-primary-600)] max-md:h-11"
+        >
+          <span className="px-2.5 text-muted-foreground">Sort</span>
+          <span aria-hidden className="h-4 w-px bg-border" />
+          <span className="min-w-0 flex-1 truncate ps-2.5 pe-1 text-start font-medium text-foreground">{current}</span>
+          <ChevronDown size={12} aria-hidden className="me-2 shrink-0 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-44">
+        <DropdownMenuRadioGroup value={value} onValueChange={(v) => onChange(v as V)}>
+          {options.map((o) => <DropdownMenuRadioItem key={o.value} value={o.value}>{o.label}</DropdownMenuRadioItem>)}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -1067,27 +1106,16 @@ function Empty({ text }: { text: string }) {
   return <p className="mx-auto max-w-[52ch] py-6 text-center text-sm leading-relaxed text-muted-foreground">{text}</p>;
 }
 
-function DashboardSkeleton() {
-  return (
-    <>
-      <Skeleton className="h-[188px] rounded-xl" />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[112px] rounded-xl" />)}</div>
-      <Skeleton className="h-56 rounded-xl" />
-      <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12"><Skeleton className="h-72 rounded-xl lg:col-span-7" /><Skeleton className="h-72 rounded-xl lg:col-span-5" /></div>
-    </>
-  );
-}
-
 function ErrorState({ onRetry, detail }: { onRetry: () => void; detail?: string | null }) {
   return (
     <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-14 text-center md:py-20">
-      <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={24} strokeWidth={1.5} /></span>
+      <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={24} /></span>
       <h2 className="text-lg font-semibold text-foreground">Couldn&apos;t load your portfolio</h2>
       <p className="mt-2 max-w-md break-words text-base leading-relaxed text-[var(--ink-600)]">
         The request for your documents or projects failed, so no figures are shown. Try again in a moment.
       </p>
       {detail && <p className="mt-1 max-w-md break-words text-sm text-[var(--ink-600)]">{detail}</p>}
-      <Button variant="outline" size="lg" className="mt-6" onClick={onRetry}><RefreshCw size={14} />Try again</Button>
+      <Button variant="outline" size="lg" className="mt-6" onClick={onRetry}><RefreshCw size={16} />Try again</Button>
     </div>
   );
 }

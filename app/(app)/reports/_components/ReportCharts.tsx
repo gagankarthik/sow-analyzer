@@ -156,7 +156,7 @@ export function WaitingBars({
           const body = (
             <>
               <span className="flex min-w-0 items-baseline justify-between gap-3">
-                <span className={cn("min-w-0 truncate font-semibold text-foreground", size === "lg" ? "text-lg" : "text-base")}>{q.label}</span>
+                <span className={cn("min-w-0 truncate font-semibold text-foreground", size === "lg" ? "text-base" : "text-sm")}>{q.label}</span>
                 <span className="shrink-0 text-sm tabular-nums text-[var(--ink-600)]">
                   <span className="font-semibold text-foreground">{q.count}</span>
                   {" · "}avg {q.averageDays === null ? "—" : daysLabel(Math.round(q.averageDays))}

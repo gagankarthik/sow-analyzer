@@ -203,7 +203,7 @@ export function UploadDropzone({
   return (
     <div className="space-y-4">
       {showTypeSelector && (
-        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
+        <div className="rounded-xl border border-border bg-card p-4">
           <label htmlFor={typeId} className="mb-1.5 block text-sm font-medium text-foreground">Document type</label>
           <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
             <SelectTrigger id={typeId} className="w-full sm:max-w-sm"><SelectValue /></SelectTrigger>
@@ -218,23 +218,21 @@ export function UploadDropzone({
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }}
-        className={`relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-4 transition-colors focus-within:border-[var(--brand-primary-600)] focus-within:ring-2 focus-within:ring-[var(--brand-primary-200)] ${compact ? "py-8 sm:py-10" : "py-12 sm:py-16"} ${
-          dragOver ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)]" : "border-[var(--ink-300)] bg-card hover:border-[var(--brand-primary-400)] hover:bg-[var(--brand-primary-50)]"
+        className={`relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 transition-colors duration-150 focus-within:border-[var(--brand-primary-600)] focus-within:ring-2 focus-within:ring-[var(--brand-primary-200)] ${compact ? "py-8" : "py-10 sm:py-12"} ${
+          dragOver ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)]" : "border-[var(--ink-300)] bg-card hover:border-[var(--ink-400)] hover:bg-[var(--ink-50)]"
         }`}
       >
         <input ref={inputRef} type="file" multiple accept={ACCEPTED} className="sr-only" onChange={(e) => addFiles(e.target.files)} />
-        <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary-600)] text-white">
-          <Upload size={22} strokeWidth={1.75} />
-        </span>
+        <Upload size={24} aria-hidden className="text-[var(--ink-500)]" />
         <div className="text-center">
-          <p className="text-lg font-semibold text-foreground">Drop {showTypeSelector ? "contracts" : showSow ? "your SOW" : "your agreement"} here, or <span className="text-[var(--brand-primary-600)] underline underline-offset-2">browse</span></p>
-          <p className="mx-auto mt-1 max-w-[42ch] text-sm leading-snug text-muted-foreground">PDF, DOCX, TXT · up to 50 MB · processed privately in your tenant</p>
+          <p className="text-sm font-semibold text-foreground">Drop {showTypeSelector ? "contracts" : showSow ? "your SOW" : "your agreement"} here, or <span className="text-[var(--brand-primary-600)] underline underline-offset-2">browse</span></p>
+          <p className="mx-auto mt-0.5 max-w-[42ch] text-xs leading-snug text-[var(--ink-600)]">PDF, DOCX, TXT · up to 50 MB · processed privately in your tenant</p>
         </div>
       </label>
 
       {reject && (
         <div role="alert" className="flex items-start gap-2.5 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-4 py-3">
-          <AlertCircle size={15} className="mt-0.5 shrink-0 text-[var(--warning)]" />
+          <AlertCircle size={16} aria-hidden className="mt-0.5 shrink-0 text-[var(--warning-fg)]" />
           <p className="text-sm text-[var(--warning-fg)]">{reject}</p>
         </div>
       )}
@@ -259,7 +257,7 @@ export function UploadDropzone({
       ))}
 
       {queue.length > 0 && (
-        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
           {queue.map((item) => (
             <UploadItem
               key={item.id}
@@ -503,7 +501,7 @@ function UploadItem({
 
           {phase === "ready" && docId && linkOnReady && (
             <Link href={`/projects/${docId}`} className="mt-1 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] md:min-h-8">
-              Open analysis <ArrowRight size={13} strokeWidth={2.25} />
+              Open analysis <ArrowRight size={12} />
             </Link>
           )}
 
@@ -558,7 +556,7 @@ function UploadItem({
           {phase === "failed" && (
             <div className="mt-2 space-y-2">
               {errorMsg && <p className="break-words text-sm leading-snug text-[var(--danger)]">{errorMsg.length > 160 ? errorMsg.slice(0, 160) + "…" : errorMsg}</p>}
-              <Button variant="outline" className="h-10 md:h-9" onClick={() => setAttempt((a) => a + 1)}><RefreshCw size={14} />Retry</Button>
+              <Button variant="outline" className="h-10 md:h-9" onClick={() => setAttempt((a) => a + 1)}><RefreshCw size={16} />Retry</Button>
             </div>
           )}
         </div>
@@ -606,7 +604,7 @@ function ContractLine({
           The file uploaded, but it isn&apos;t on the contract board yet{applied ? " and the details you entered weren’t saved" : ""}.
           It will still appear once Sonar has read it.
         </p>
-        <Button variant="outline" className="mt-2 h-10 md:h-8" onClick={onRetry}><RefreshCw size={13} />Try again</Button>
+        <Button variant="outline" className="mt-2 h-10 md:h-8" onClick={onRetry}><RefreshCw size={12} />Try again</Button>
       </div>
     );
   }
@@ -614,15 +612,15 @@ function ContractLine({
   return (
     <div className="mt-2">
       <p className="text-sm text-[var(--ink-700)]">
-        <CheckCircle2 size={13} className="mr-1 inline align-[-2px] text-[var(--success)]" />
+        <CheckCircle2 size={12} className="mr-1 inline align-[-2px] text-[var(--success-fg)]" />
         On the contract board as <span className="font-semibold text-foreground">New</span> while Sonar reads it{applied ? ` · ${applied}` : ""}.
       </p>
       <div className="mt-1 flex flex-wrap gap-x-4">
         <Link href={`/contracts/${encodeURIComponent(contract.contractId)}`} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] md:min-h-8">
-          Open contract <ArrowRight size={13} strokeWidth={2.25} />
+          Open contract <ArrowRight size={12} />
         </Link>
         <button type="button" onClick={onUploadAnother} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[var(--ink-700)] transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:min-h-8">
-          <Upload size={13} />Upload another
+          <Upload size={12} />Upload another
         </button>
       </div>
       <CaptureGapChecklist contract={contract} />
@@ -645,7 +643,7 @@ function BatchSummary({
   const failures = uploadFailed + contractFailed;
 
   return (
-    <div role="status" aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+    <div role="status" aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground">
           {isRunning ? `Uploading ${plural(total, "file")}…` : failures ? "Batch finished with problems" : "Batch finished"}
@@ -657,7 +655,7 @@ function BatchSummary({
         </p>
       </div>
       {!isRunning && failures > 0 && (
-        <Button variant="outline" className="h-10 shrink-0 md:h-9" onClick={onRetryFailed}><RefreshCw size={14} />Retry failed</Button>
+        <Button variant="outline" className="h-10 shrink-0 md:h-9" onClick={onRetryFailed}><RefreshCw size={16} />Retry failed</Button>
       )}
     </div>
   );

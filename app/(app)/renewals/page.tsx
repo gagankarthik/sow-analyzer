@@ -1,23 +1,44 @@
 "use client";
 
-import { useMemo, useState } from "react";
+// Renewals: every renewal, term end, notice deadline, payment, milestone and
+// deliverable date the analysed documents carry, soonest first. The list-page
+// pattern (UI_SPEC sections 3, 7, 9): title + count, status views as tabs
+// (URL ?view=), the shared toolbar, a flat table grouped by month.
+
+import { Suspense, useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
-import { MotionReveal } from "@/components/MotionReveal";
-import { DocTypeBadge } from "@/components/DocTypeBadge";
-import { MetricCard } from "@/components/dashboard/MetricCard";
-import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable, type DataTableColumn } from "@/components/ds/DataTable";
+import { SummaryTiles } from "@/components/ds/KpiTile";
+import { Toolbar } from "@/components/ds/Toolbar";
+import { ViewTabs, type ListView } from "@/components/ds/ViewTabs";
+import {
+  InViewFooter, MoreFilters, QuickFilters, SheetFilters, activeFilterCount, type IndexFilter,
+} from "@/components/govern/IndexFilters";
+import { RenewalsSkeleton } from "./_components/RenewalsSkeleton";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { docTypeShort } from "@/lib/doc-types";
 import { useDocuments, isProcessing } from "@/lib/queries/documents";
 import { useNow } from "@/lib/use-now";
 import { fmtMoney } from "@/lib/contract-value";
-import { DUE_SOON_DAYS, parseDate } from "@/lib/format";
+import { DUE_SOON_DAYS, displayTitle, parseDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { documentKeyDates, formatKeyDate, isoDayToMs, portfolioDates, type DerivedKeyDate, type KeyDateKind } from "@/lib/key-dates";
 import type { ApiDocument, DocType } from "@/lib/types";
-import { CalendarClock, Repeat, XCircle, CheckCircle2, ArrowRight, DollarSign, Layers, X, RefreshCw, Clock } from "@/components/ui/icons";
+import { CalendarClock, Repeat, XCircle, CheckCircle2, RefreshCw, Clock, Info } from "@/components/ui/icons";
+
+type ViewId = "all" | "renewal" | "upcoming" | "passed" | "expired";
+const VIEW_IDS: ViewId[] = ["all", "renewal", "upcoming", "passed", "expired"];
+const VIEW_LABEL: Record<ViewId, string> = {
+  all: "All dates",
+  renewal: "Up for renewal",
+  upcoming: "Upcoming",
+  passed: "Due date passed",
+  expired: "Expired",
+};
+const DATE = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" });
+const MONTH = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 
 const DAY = 86_400_000;
 
@@ -68,19 +89,8 @@ function kindOf(k: DerivedKeyDate): Item["kind"] | null {
   return days <= AHEAD_DAYS ? "upcoming" : null;
 }
 
-type WindowKey = "all" | "30" | "60" | "90";
-const STATUS_OPTIONS: { key: Item["kind"] | "all"; label: string }[] = [
-  { key: "all", label: "All statuses" },
-  { key: "expired", label: "Expired" },
-  { key: "passed", label: "Due date passed" },
-  { key: "renewal", label: "Up for renewal" },
-  { key: "upcoming", label: "Upcoming" },
-];
-const CHIP =
-  "h-10 shrink-0 rounded-lg border border-border bg-card px-3 text-sm font-medium text-[var(--ink-600)] transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] aria-[pressed=true]:border-structure-border aria-[pressed=true]:bg-structure-soft aria-[pressed=true]:text-structure-soft-fg sm:h-9";
-
 function monthLabel(ms: number): string {
-  return new Date(ms).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  return MONTH.format(new Date(ms));
 }
 
 function daysLabel(days: number | null): string {
@@ -92,6 +102,14 @@ function daysLabel(days: number | null): string {
 }
 
 export default function RenewalsPage() {
+  return (
+    <Suspense fallback={<RenewalsSkeleton />}>
+      <Renewals />
+    </Suspense>
+  );
+}
+
+function Renewals() {
   const { data, isLoading, isError, error, refetch } = useDocuments();
   const docs = useMemo(() => data ?? [], [data]);
   const now = useNow(); // real current time, re-read every minute
@@ -200,32 +218,84 @@ export default function RenewalsPage() {
     return { inRenewal, expired, next90: due.length, d30, d60, d90, byCurrency: [...byCurrency.entries()], valued, listedDocs: listedDocs.length };
   }, [items]);
 
-  // List filters — status, document type and time window, all over fields already on each item.
-  const [statusFilter, setStatusFilter] = useState<Item["kind"] | "all">("all");
-  const [typeFilter, setTypeFilter] = useState<DocType | "all">("all");
-  const [windowFilter, setWindowFilter] = useState<WindowKey>("all");
-  const availableTypes = useMemo(() => [...new Set(items.map((i) => i.doc.docType))].sort(), [items]);
+  const params = useSearchParams();
+  const pathname = usePathname();
+  const statusFilter = VIEW_IDS.includes(params.get("view") as ViewId) ? (params.get("view") as ViewId) : "all";
+
+  // List filters over fields already on each item: search, document type, time window.
+  const [q, setQ] = useState("");
+  const query = useDeferredValue(q.trim().toLowerCase());
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [windowFilter, setWindowFilter] = useState<string[]>([]);
+  const [columnOrder, setColumnOrder] = useState<string[] | undefined>(undefined);
+  const inStatus = useMemo(() => items.filter((i) => statusFilter === "all" || i.kind === statusFilter), [items, statusFilter]);
+  const availableTypes = useMemo(() => [...new Set(inStatus.map((i) => i.doc.docType))].sort(), [inStatus]);
   const visibleItems = useMemo(() => {
-    const maxDays = windowFilter === "all" ? null : Number(windowFilter);
-    return items.filter((i) =>
-      (statusFilter === "all" || i.kind === statusFilter) &&
-      (typeFilter === "all" || i.doc.docType === typeFilter) &&
-      (maxDays === null || (i.days !== null && i.days <= maxDays)),
+    const maxDays = windowFilter.length === 0 ? null : Number(windowFilter[0]);
+    return inStatus.filter((i) =>
+      (typeFilter.length === 0 || typeFilter.includes(i.doc.docType)) &&
+      (maxDays === null || (i.days !== null && i.days <= maxDays)) &&
+      (!query || [i.doc.title, i.detail].some((s) => s?.toLowerCase().includes(query))),
     );
-  }, [items, statusFilter, typeFilter, windowFilter]);
-  const activeFilters = (statusFilter !== "all" ? 1 : 0) + (typeFilter !== "all" ? 1 : 0) + (windowFilter !== "all" ? 1 : 0);
-  const clearFilters = () => { setStatusFilter("all"); setTypeFilter("all"); setWindowFilter("all"); };
+  }, [inStatus, typeFilter, windowFilter, query]);
 
-  const groups = useMemo(() => {
-    const map = new Map<string, Item[]>();
-    for (const i of visibleItems) {
-      const key = i.kind === "expired" ? "Overdue" : i.kind === "passed" ? "Passed" : i.date === null ? "No date extracted" : monthLabel(i.date);
-      (map.get(key) ?? map.set(key, []).get(key)!).push(i);
-    }
-    return [...map.entries()];
-  }, [visibleItems]);
+  const filters: IndexFilter[] = [
+    ...(availableTypes.length > 1 ? [{
+      id: "type", label: "Type", selected: typeFilter, onChange: setTypeFilter,
+      options: availableTypes.map((t) => ({ value: t, label: docTypeShort(t as DocType), count: inStatus.filter((i) => i.doc.docType === t).length })),
+    }] : []),
+    {
+      id: "window", label: "Date", single: true, selected: windowFilter, onChange: setWindowFilter,
+      options: [{ value: "30", label: "Within 30 days" }, { value: "60", label: "Within 60 days" }, { value: "90", label: "Within 90 days" }],
+    },
+  ];
+  const activeCount = activeFilterCount(filters);
+  const clearFilters = () => { setQ(""); setTypeFilter([]); setWindowFilter([]); };
 
-  const windowMax = Math.max(kpis.d30, kpis.d60, kpis.d90, 1);
+  const counts = useMemo(() => Object.fromEntries(VIEW_IDS.map((id) => [id, id === "all" ? items.length : items.filter((i) => i.kind === id).length])), [items]);
+  const tabs: ListView[] = VIEW_IDS.map((id) => ({
+    id, label: VIEW_LABEL[id], count: isLoading ? null : counts[id], href: id === "all" ? pathname : `${pathname}?view=${id}`,
+  }));
+
+  // Month groups, in date order: expired first, passed next, undated last.
+  const groupOf = (i: Item) => (i.kind === "expired" ? "Overdue" : i.kind === "passed" ? "Passed" : i.date === null ? "No date" : monthLabel(i.date));
+  const groupOrder = useMemo(() => ["Overdue", "Passed", ...new Set(items.filter((i) => i.date !== null && i.kind !== "expired" && i.kind !== "passed").map((i) => monthLabel(i.date as number))), "No date"], [items]);
+
+  const columns: DataTableColumn<Item>[] = [
+    {
+      id: "doc", header: "Document", card: "title", className: "min-w-[14rem]", sortValue: (i) => (i.doc.title || "").toLowerCase(),
+      cell: (i) => (
+        <span className="flex min-w-0 max-w-[min(28rem,42cqw)] flex-col">
+          <span className="truncate">{displayTitle(i.doc.title) || "Untitled"}</span>
+          <span className="flex min-w-0 items-center gap-2 text-xs font-normal text-[var(--ink-600)]">
+            <span className="truncate">{docTypeShort(i.doc.docType)}</span>
+            {i.autoRenews && <span className="inline-flex shrink-0 items-center gap-1 text-[var(--warning-fg)]"><Repeat size={12} aria-hidden />Auto-renews</span>}
+          </span>
+        </span>
+      ),
+    },
+    {
+      id: "date", header: "Date", sortValue: (i) => i.date, className: "w-56",
+      cell: (i) => (
+        <span className="flex min-w-0 flex-col">
+          <span className="tabular-nums">{i.date !== null ? `${i.dateLabel} ${i.dateText ?? DATE.format(new Date(i.date))}` : "No date extracted"}</span>
+          {i.detail && <span className="truncate text-xs text-[var(--ink-600)]">{i.detail}</span>}
+        </span>
+      ),
+    },
+    { id: "status", header: "Status", card: "status", sortValue: (i) => VIEW_LABEL[i.kind], cell: (i) => <KindMark kind={i.kind} /> },
+    {
+      id: "when", header: "When", sortValue: (i) => i.days, className: "w-32",
+      cell: (i) => (
+        <span className={cn("whitespace-nowrap text-xs font-medium tabular-nums", i.days !== null && i.days <= DUE_SOON_DAYS ? "text-[var(--warning-fg)]" : "text-[var(--ink-600)]")}>
+          {i.kind === "expired" && i.days === null ? "Marked expired" : i.kind !== "expired" && i.days !== null && i.days < 0 ? `${Math.abs(i.days)}d ago` : daysLabel(i.days)}
+        </span>
+      ),
+    },
+    { id: "value", header: "Value", numeric: true, priority: 2, sortFirst: "desc", sortValue: (i) => i.value, cell: (i) => (i.value !== null && i.value > 0 ? fmtMoney(i.value, i.doc.currency) : "—") },
+  ];
+
+  const valueLabel = kpis.byCurrency.length > 0 ? kpis.byCurrency.map(([cur, total]) => fmtMoney(total, cur || null)).join(" + ") : "No value yet";
 
   if (isLoading) return <RenewalsSkeleton />;
 
@@ -234,13 +304,13 @@ export default function RenewalsPage() {
   if (isError && !data) {
     return (
       <>
-        <PageHeader title="Obligations & renewals" subtitle="What's expiring, up for renewal, and coming due." />
+        <PageHeader title="Renewals" />
         <div className="app-container app-page">
-          <div role="alert" className="flex flex-col items-center rounded-xl border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-14 text-center">
-            <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-card text-[var(--danger)]"><XCircle size={24} strokeWidth={1.5} /></span>
+          <div role="alert" className="flex flex-col items-center border-y border-[var(--danger)]/30 bg-[var(--danger-soft)] px-5 py-14 text-center">
+            <XCircle size={24} aria-hidden className="mb-3 text-[var(--danger)]" />
             <h2 className="text-lg font-semibold text-foreground">Couldn&apos;t load your contracts</h2>
-            <p className="mt-2 max-w-md break-words text-base leading-relaxed text-[var(--ink-600)]">{error instanceof Error ? error.message : "The request failed."} Renewal and expiry dates are unknown until this loads.</p>
-            <Button variant="outline" size="lg" className="mt-6" onClick={() => refetch()}><RefreshCw size={14} />Try again</Button>
+            <p className="mt-2 max-w-md break-words text-sm leading-relaxed text-[var(--ink-600)]">{error instanceof Error ? error.message : "The request failed."} Renewal and expiry dates are unknown until this loads.</p>
+            <Button variant="outline" className="mt-5" onClick={() => refetch()}><RefreshCw size={16} aria-hidden />Try again</Button>
           </div>
         </div>
       </>
@@ -250,214 +320,113 @@ export default function RenewalsPage() {
   return (
     <>
       <PageHeader
-        title="Obligations & renewals"
-        subtitle="What's expiring, up for renewal, and coming due."
+        title="Renewals"
+        count={visibleItems.length}
+        meta={<ViewTabs label="Renewal views" views={tabs} activeId={statusFilter} />}
       />
 
-      <div className="app-container app-page">
-        {/* Summary — the 90-day window is the focal block; the other three figures sit beside it. */}
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          <section aria-labelledby="window-heading" className="rounded-xl bg-[var(--navy-800)] p-5 text-white md:p-6 lg:col-span-7">
-            <h2 id="window-heading" className="text-lg font-semibold">Due in the next 90 days</h2>
-            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-4xl font-bold leading-none tracking-[-0.025em] tabular-nums">{kpis.next90}</span>
-              <span className="text-base text-[var(--navy-100)]">date{kpis.next90 === 1 ? "" : "s"} in that window: renewals, term ends, notice deadlines, payments, milestones and deliverables</span>
-            </div>
-            <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-5">
-              {([["0–30 days", kpis.d30], ["31–60 days", kpis.d60], ["61–90 days", kpis.d90]] as const).map(([label, n], idx) => (
-                <div key={label} className="min-w-0">
-                  <div className="text-2xl font-semibold leading-none tabular-nums">{n}</div>
-                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/20" aria-hidden>
-                    <div
-                      className={cn("h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none",
-                        idx === 0 ? "bg-[var(--warning)]" : "bg-white/50")}
-                      style={{ width: `${(n / windowMax) * 100}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-xs text-[var(--navy-100)]">{label}</div>
-                </div>
-              ))}
-            </div>
-          </section>
+      <div className="app-container flex min-w-0 flex-col gap-3 pt-3 pb-8">
+        <SummaryTiles
+          items={[
+            { label: "Due in 90 days", value: kpis.next90, footnote: `${kpis.d30} · ${kpis.d60} · ${kpis.d90} by 30/60/90 days`, tone: kpis.d30 > 0 ? "warning" : undefined },
+            { label: "Up for renewal", value: kpis.inRenewal, footnote: kpis.inRenewal ? "Within 6 months" : "None", tone: kpis.inRenewal ? "warning" : undefined, href: `${pathname}?view=renewal` },
+            { label: "Expired", value: kpis.expired, footnote: kpis.expired > 0 ? "Past term end" : "None", tone: kpis.expired > 0 ? "danger" : undefined, href: `${pathname}?view=expired` },
+            { label: "Value listed", value: valueLabel, footnote: items.length === 0 ? "No documents listed" : `${kpis.valued} of ${kpis.listedDocs} documents have a value` },
+          ]}
+        />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-5 lg:grid-cols-2">
-            <MetricCard label="Up for renewal" value={kpis.inRenewal} icon={<Repeat size={14} />} tone={kpis.inRenewal ? "warning" : "neutral"} />
-            <MetricCard label="Expired" value={kpis.expired} icon={<XCircle size={14} />} tone={kpis.expired > 0 ? "danger" : "neutral"} hint={kpis.expired > 0 ? "Past term end" : undefined} />
-            <MetricCard
-              className="lg:col-span-2"
-              label="Value of the documents listed"
-              value={kpis.byCurrency.length > 0 ? kpis.byCurrency.map(([cur, total]) => fmtMoney(total, cur || null)).join(" + ") : "No value yet"}
-              icon={<DollarSign size={14} />}
-              hint={items.length === 0
-                ? "No documents listed"
-                : `Sum of each document's own extracted value, counted once per document · ${kpis.valued} of ${kpis.listedDocs} have one${kpis.byCurrency.some(([cur]) => !cur) ? " · currency not extracted for some" : ""}`}
+        {legacyCount > 0 && <LegacyNote count={legacyCount} />}
+
+        <DataTable
+          caption={statusFilter === "all" ? "Renewal and key dates" : VIEW_LABEL[statusFilter]}
+          noun="dates"
+          columns={columns}
+          rows={visibleItems}
+          getRowId={(i) => i.key}
+          getRowHref={(i) => i.href}
+          getRowLabel={(i) => `Open ${i.doc.title || "document"}`}
+          defaultSort={{ columnId: "date", direction: "asc" }}
+          groupBy={{ key: groupOf, label: groupLabel, order: groupOrder }}
+          pageSize={50}
+          columnsKey="renewals-table"
+          columnOrder={columnOrder}
+          onColumnOrderChange={setColumnOrder}
+          isFiltered={activeCount > 0 || !!query || (statusFilter !== "all" && items.length > 0)}
+          onClearFilters={clearFilters}
+          footer={visibleItems.length > 0 ? (
+            <InViewFooter
+              count={visibleItems.length}
+              noun={["date", "dates"]}
+              cells={[
+                { label: "Documents", value: new Set(visibleItems.map((i) => i.doc.docId)).size },
+                { label: "Expired", value: visibleItems.filter((i) => i.kind === "expired").length, tone: visibleItems.some((i) => i.kind === "expired") ? "danger" : undefined },
+              ]}
             />
-          </div>
-        </div>
-
-        {/* Timeline */}
-        {items.length === 0 ? (
-          <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
-            <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--success-soft)] text-[var(--success-fg)]">
-              <CheckCircle2 size={22} />
-            </span>
-            <p className="mb-1 text-lg font-semibold text-foreground">Nothing due right now</p>
-            <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
-              {docs.length === 0
-                ? "You have no documents yet."
-                : `None of your ${docs.length} document${docs.length === 1 ? " is" : "s are"} expired, in renewal, or has an extracted date in the next 6 months.`}
-              {processingCount > 0 ? ` ${processingCount} ${processingCount === 1 ? "is" : "are"} still being analyzed, so dates may yet appear.` : ""}
-            </p>
-            {legacyCount > 0 && <LegacyNote count={legacyCount} className="mt-3 max-w-sm" />}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Filter bar — status chips scroll sideways on narrow screens; selects wrap beneath */}
-            <div className="space-y-2.5">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-                <div className="-mx-4 overflow-x-auto px-4 scrollbar-none sm:mx-0 sm:px-0">
-                  <div role="group" aria-label="Filter by status" className="flex w-max items-center gap-1.5">
-                    {STATUS_OPTIONS.map((o) => (
-                      <button key={o.key} type="button" onClick={() => setStatusFilter(o.key)} aria-pressed={statusFilter === o.key} className={CHIP}>{o.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-                  {availableTypes.length > 1 && (
-                    <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as DocType | "all")}>
-                      <SelectTrigger aria-label="Filter by document type" className="min-w-[140px] flex-1 sm:w-[176px] sm:flex-none"><Layers size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All document types</SelectItem>
-                        {availableTypes.map((t) => <SelectItem key={t} value={t}>{docTypeShort(t)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  <Select value={windowFilter} onValueChange={(v) => setWindowFilter(v as WindowKey)}>
-                    <SelectTrigger aria-label="Filter by time window" className="min-w-[140px] flex-1 sm:w-[176px] sm:flex-none"><CalendarClock size={14} className="text-muted-foreground" /><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Any date</SelectItem>
-                      <SelectItem value="30">Within 30 days</SelectItem>
-                      <SelectItem value="60">Within 60 days</SelectItem>
-                      <SelectItem value="90">Within 90 days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1 sm:min-h-9">
-                <p className="text-sm text-[var(--ink-600)]" aria-live="polite">
-                  Showing <span className="font-semibold tabular-nums text-foreground">{visibleItems.length}</span> of <span className="tabular-nums">{items.length}</span> date{items.length === 1 ? "" : "s"} across {kpis.listedDocs} document{kpis.listedDocs === 1 ? "" : "s"}, soonest first
-                </p>
-                {activeFilters > 0 && (
-                  <Button variant="ghost" className="h-10 text-[var(--brand-primary-700)] sm:h-9" onClick={clearFilters}>
-                    <X size={14} />Clear filters ({activeFilters})
-                  </Button>
-                )}
-              </div>
+          ) : undefined}
+          toolbar={
+            <Toolbar label="Renewal filters" activeCount={activeCount} mobileSheet={<SheetFilters filters={filters} onClear={clearFilters} />}>
+              <Toolbar.Search label="Search renewals" placeholder="Search documents" value={q} onChange={setQ} />
+              <Toolbar.Filters><QuickFilters filters={filters} /></Toolbar.Filters>
+              <Toolbar.More><MoreFilters filters={filters} /></Toolbar.More>
+              <Toolbar.Clear count={activeCount} onClear={clearFilters} />
+            </Toolbar>
+          }
+          empty={
+            <div className="flex flex-col items-center border-y border-border-default px-5 py-14 text-center">
+              <CheckCircle2 size={24} aria-hidden className="mb-3 text-[var(--ink-500)]" />
+              <p className="mb-1 text-base font-semibold text-foreground">Nothing due right now</p>
+              <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
+                {docs.length === 0
+                  ? "You have no documents yet."
+                  : `None of your ${docs.length} document${docs.length === 1 ? " is" : "s are"} expired, in renewal, or has an extracted date in the next 6 months.`}
+                {processingCount > 0 ? ` ${processingCount} ${processingCount === 1 ? "is" : "are"} still being analyzed, so dates may yet appear.` : ""}
+              </p>
             </div>
-
-            {visibleItems.length === 0 && (
-              <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
-                <p className="mb-1 text-lg font-semibold text-foreground">No dates match these filters</p>
-                <p className="max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">Try a different status, document type, or time window.</p>
-                <Button variant="outline" className="mt-5 h-10 sm:h-9" onClick={clearFilters}>Clear filters</Button>
-              </div>
-            )}
-
-            {legacyCount > 0 && <LegacyNote count={legacyCount} />}
-
-            {groups.map(([label, group]) => (
-              <section key={label}>
-                <div className="mb-2.5 flex items-baseline gap-2">
-                  <h2 className={`text-lg font-semibold tracking-tight ${label === "Overdue" ? "text-[var(--danger)]" : "text-foreground"}`}>{label === "Overdue" ? "Expired or past term end" : label === "Passed" ? "Due date passed in the last 90 days" : label}</h2>
-                  <span className="text-sm tabular-nums text-muted-foreground">{group.length}</span>
-                </div>
-                {label === "Passed" && <p className="-mt-1 mb-2.5 text-sm text-[var(--ink-600)]">These dates are behind us. Blue-IQ does not record whether a payment, deliverable, milestone or notice was completed.</p>}
-                <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-                  {group.map((i, idx) => (
-                    <MotionReveal key={i.key} delay={Math.min(idx * 0.02, 0.12)}>
-                      <Link
-                        href={i.href}
-                        className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--panel)] focus-visible:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)] sm:items-center sm:gap-3.5 sm:px-5"
-                      >
-                        <KindMark kind={i.kind} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <span className="min-w-0 text-base font-semibold text-foreground [overflow-wrap:anywhere]">{i.doc.title || "Untitled"}</span>
-                            <DocTypeBadge type={i.doc.docType} />
-                            {i.autoRenews && (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--warning-soft)] px-1.5 py-0.5 text-xs font-medium text-[var(--warning-fg)]">
-                                <Repeat size={12} />Auto-renews
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-1 text-sm text-[var(--ink-600)]">
-                            {i.date !== null ? `${i.dateLabel} ${i.dateText ?? new Date(i.date).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : "No date extracted"}
-                            {i.detail ? <span className="[overflow-wrap:anywhere]"> · {i.detail}</span> : null}
-                            {i.value !== null && i.value > 0 ? <span className="tabular-nums"> · {fmtMoney(i.value, i.doc.currency)}</span> : null}
-                          </div>
-                        </div>
-                        <span className={`mt-0.5 shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums sm:mt-0 ${i.days === null ? "bg-muted text-[var(--ink-600)]" : i.days < 0 ? "bg-[var(--warning-soft)] text-[var(--warning-fg)]" : i.days <= DUE_SOON_DAYS ? "bg-[var(--warning-soft)] text-[var(--warning-fg)]" : "bg-muted text-[var(--ink-600)]"}`}>
-                          {i.kind === "expired" && i.days === null ? "Marked expired" : i.kind !== "expired" && i.days !== null && i.days < 0 ? `${Math.abs(i.days)}d ago` : daysLabel(i.days)}
-                        </span>
-                        <ArrowRight size={16} className="hidden shrink-0 text-[var(--ink-300)] transition-colors group-hover:text-[var(--brand-primary-600)] sm:block" />
-                      </Link>
-                    </MotionReveal>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
+          }
+        />
       </div>
     </>
   );
 }
 
+function groupLabel(key: string): string {
+  if (key === "Overdue") return "Expired or past term end";
+  if (key === "Passed") return "Due date passed in the last 90 days (completion not tracked)";
+  if (key === "No date") return "No date extracted";
+  return key;
+}
+
+const KIND_MARK = {
+  expired: { Icon: XCircle, cls: "text-[var(--danger-fg)]", label: "Expired" },
+  renewal: { Icon: Repeat, cls: "text-[var(--warning-fg)]", label: "Up for renewal" },
+  upcoming: { Icon: CalendarClock, cls: "text-[var(--ink-700)]", label: "Upcoming" },
+  passed: { Icon: Clock, cls: "text-[var(--warning-fg)]", label: "Due date passed" },
+} as const;
+
+/** Status as icon + word, coloured only when it needs attention. */
 function KindMark({ kind }: { kind: Item["kind"] }) {
-  const map = {
-    expired: { icon: <XCircle size={16} className="text-[var(--danger-fg)]" />, bg: "bg-[var(--danger-soft)]", label: "Expired" },
-    renewal: { icon: <Repeat size={16} className="text-[var(--warning-fg)]" />, bg: "bg-[var(--warning-soft)]", label: "Up for renewal" },
-    upcoming: { icon: <CalendarClock size={16} className="text-structure-soft-fg" />, bg: "bg-structure-soft", label: "Upcoming" },
-    passed: { icon: <Clock size={16} className="text-[var(--warning-fg)]" />, bg: "bg-[var(--warning-soft)]", label: "Due date passed" },
-  } as const;
-  const m = map[kind];
+  const m = KIND_MARK[kind];
   return (
-    <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${m.bg}`} title={m.label}>
-      {m.icon}
-      <span className="sr-only">{m.label}:</span>
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium", m.cls)}>
+      <m.Icon size={12} aria-hidden />
+      {m.label}
     </span>
   );
 }
 
-/** Documents analyzed before key-date extraction list fewer dates: say so. */
-function LegacyNote({ count, className = "" }: { count: number; className?: string }) {
+/** Documents analyzed before key-date extraction list fewer dates: say so,
+ *  in one line (the detail is in the tooltip). */
+function LegacyNote({ count }: { count: number }) {
   return (
-    <p className={`text-sm leading-relaxed text-[var(--ink-600)] ${className}`}>
-      {count} analyzed document{count === 1 ? " was" : "s were"} analyzed before full date extraction, so only {count === 1 ? "its" : "their"} renewal, term-end or effective date can be listed. Re-analyze {count === 1 ? "it" : "them"} to list notice deadlines, payments, milestones and deliverables.
+    <p
+      className="flex min-w-0 items-center gap-1.5 text-xs text-[var(--ink-600)]"
+      title="Older analysis lists only renewal, term-end and effective dates. Re-analyze for all dates."
+    >
+      <Info size={12} aria-hidden className="shrink-0" />
+      <span className="min-w-0 truncate">
+        {count} document{count === 1 ? " needs" : "s need"} re-analysis for full dates ·{" "}
+        <Link href="/library" className="font-medium text-[var(--brand-primary-700)] underline-offset-2 hover:underline">Re-analyze</Link>
+      </span>
     </p>
-  );
-}
-
-function RenewalsSkeleton() {
-  return (
-    <>
-      <div>
-        <div className="app-container space-y-3 pb-5 pt-6 md:pb-7 md:pt-8">
-          <Skeleton className="h-8 w-2/3 max-w-sm" />
-          <Skeleton className="h-4 w-1/2 max-w-xs" />
-        </div>
-      </div>
-      <div className="app-container app-page">
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          <Skeleton className="h-[208px] rounded-xl lg:col-span-7" />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-5 lg:grid-cols-2">
-            <Skeleton className="h-[96px] rounded-xl" />
-            <Skeleton className="h-[96px] rounded-xl" />
-            <Skeleton className="h-[96px] rounded-xl lg:col-span-2" />
-          </div>
-        </div>
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    </>
   );
 }

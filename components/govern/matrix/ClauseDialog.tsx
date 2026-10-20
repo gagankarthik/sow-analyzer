@@ -181,7 +181,7 @@ function ClauseForm({
             <Field label="Name shown to reviewers" htmlFor={id("label")} error={errors.label} required>
               <Input id={id("label")} value={label} maxLength={120} onChange={(e) => { setLabel(e.target.value); setLabelTouched(true); }} />
             </Field>
-            <label className="flex h-10 items-center gap-3 rounded-lg border border-border px-3 text-sm font-medium text-foreground md:h-9">
+            <label className="flex h-10 items-center gap-3 rounded-lg border border-border px-3 text-sm font-medium text-foreground">
               <Switch checked={required} onCheckedChange={setRequired} aria-label="Required clause" />
               Required
             </label>
@@ -240,7 +240,7 @@ function ClauseForm({
                           className="tabular-nums"
                         />
                         <Button type="button" variant="ghost" size="icon-lg" aria-label={`Remove ${meta.label}`} onClick={() => setThresholds((all) => all.filter((_, j) => j !== i))}>
-                          <Trash2 size={15} />
+                          <Trash2 size={16} />
                         </Button>
                       </div>
                     </li>
@@ -257,8 +257,8 @@ function ClauseForm({
                 placeholder="e.g. Max review days"
                 className="min-w-0 flex-1"
               />
-              <Button type="button" variant="outline" className="h-10 md:h-9" onClick={addThreshold} disabled={!thresholdKey(newName)}>
-                <Plus size={14} />Add number
+              <Button type="button" variant="outline" className="h-10" onClick={addThreshold} disabled={!thresholdKey(newName)}>
+                <Plus size={16} />Add number
               </Button>
             </div>
             {errors.thresholds && <ErrorText>{errors.thresholds}</ErrorText>}
@@ -267,8 +267,8 @@ function ClauseForm({
       )}
 
       <DialogFooter>
-        <Button type="button" variant="outline" size="lg" className="md:h-9" onClick={onClose}>Cancel</Button>
-        {!noTypesLeft && <Button type="submit" size="lg" className="md:h-9">{existing ? "Keep this change" : "Add clause"}</Button>}
+        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+        {!noTypesLeft && <Button type="submit">{existing ? "Keep this change" : "Add clause"}</Button>}
       </DialogFooter>
     </form>
   );

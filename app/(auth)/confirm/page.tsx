@@ -18,6 +18,7 @@ import {
   secondaryPillClass,
   useCooldown,
 } from "@/components/auth/fields";
+import { AuthFormSkeleton } from "@/components/auth/AuthFormSkeleton";
 
 const RESEND_WAIT_SECONDS = 30;
 
@@ -182,7 +183,7 @@ function ConfirmForm() {
 
 export default function ConfirmPage() {
   return (
-    <Suspense fallback={<div className="h-96" />}>
+    <Suspense fallback={<AuthFormSkeleton title="Verify your email" fields={1} />}>
       <ConfirmForm />
     </Suspense>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { ComponentGallery } from "./ComponentGallery";
 import { ChartGallery } from "./ChartGallery";
@@ -36,7 +37,7 @@ export function DesignSystemReference() {
     <div className="min-w-0">
       <PageHeader
         title="Design system"
-        subtitle="Tokens, components and patterns for Blue-IQ, rendered live from the code. Use it to pick the right component and to check contrast in either theme."
+        subtitle="Tokens, components and patterns, rendered live from the code."
       />
       <div className="app-container py-6 md:py-8">
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[13rem_minmax(0,1fr)]">
@@ -52,6 +53,14 @@ export function DesignSystemReference() {
                   </a>
                 </li>
               ))}
+              <li className="shrink-0">
+                <Link
+                  href="/design-system/icons"
+                  className="flex h-10 items-center rounded-control px-3 text-body font-medium whitespace-nowrap text-fg-secondary transition-colors duration-(--duration-instant) hover:bg-surface-hover hover:text-fg-primary xl:h-9"
+                >
+                  Icons
+                </Link>
+              </li>
             </ul>
           </nav>
 

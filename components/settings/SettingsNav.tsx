@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { InfoTip } from "@/components/ui/info-tip";
+import { ListPanel, Panel } from "@/components/ds/Panel";
 import { FeatureComingSoonBadge } from "@/components/govern/ComingSoon";
 import type { GovernFeature } from "@/lib/govern/features";
 import { editionHas, type EditionFeature } from "@/lib/edition";
@@ -20,6 +21,7 @@ import {
   Route,
   Plug,
   Database,
+  Zap,
 } from "@/components/ui/icons";
 
 /** Every settings section, in order. Shared with the app sidebar, which shows
@@ -30,6 +32,7 @@ export const SETTINGS_ITEMS: { label: string; href: string; icon: typeof Setting
   { label: "Review matrix", href: "/settings/matrix", icon: Grid3x3 },
   { label: "Data manager", href: "/settings/data", icon: Database },
   { label: "Workflow & routing", href: "/settings/workflow", icon: Route },
+  { label: "Automations", href: "/settings/automations", icon: Zap, feature: "automations" },
   { label: "Integrations", href: "/settings/integrations", icon: Plug, feature: "integrations" },
   { label: "Playbook", href: "/settings/playbook", icon: BookMarked, edition: "commercialPlaybook" },
   { label: "Clause library", href: "/settings/clauses", icon: Briefcase },
@@ -58,13 +61,13 @@ export function SettingsNav() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-10 items-center gap-2.5 whitespace-nowrap px-3 text-sm transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  "flex h-10 items-center gap-2 whitespace-nowrap px-2.5 text-sm transition-colors duration-150 max-md:h-11",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)]",
                   // tab row: underline marks the active tab
                   "-mb-px border-b-2",
                   active
-                    ? "border-[var(--brand-primary-600)] font-semibold text-[var(--brand-primary-700)]"
-                    : "border-transparent font-medium text-[var(--ink-600)] hover:text-foreground",
+                    ? "border-[var(--brand-primary-600)] font-medium text-foreground"
+                    : "border-transparent text-[var(--ink-600)] hover:text-foreground",
                 )}
               >
                 {item.label}
@@ -81,16 +84,16 @@ export function SettingsNav() {
 /** Page body shared by every settings page: sub-nav + content column. */
 export function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="app-container py-6 md:py-8">
-      <div className="flex flex-col gap-4 md:gap-6">
+    <div className="app-container pt-5 pb-8">
+      <div className="flex flex-col gap-6">
         <SettingsNav />
-        <div className="flex min-w-0 flex-col gap-4 md:gap-6">{children}</div>
+        <div className="flex min-w-0 flex-col gap-6">{children}</div>
       </div>
     </div>
   );
 }
 
-/** Labelled search field for a settings list. Full width on mobile. */
+/** Labelled search field for a settings list: 32px, 240px wide, full width on mobile. */
 export function SettingsSearch({
   id,
   label,
@@ -105,26 +108,25 @@ export function SettingsSearch({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="w-full md:max-w-[360px]">
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-[var(--ink-600)]">
+    <div className="relative w-full min-w-0 md:w-60 md:shrink-0">
+      <label htmlFor={id} className="sr-only">
         {label}
       </label>
-      <div className="relative">
-        <Search
-          size={16}
-          aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
-          id={id}
-          type="search"
-          autoComplete="off"
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-9 rounded-lg border-[var(--ink-300)] pl-9 text-base md:text-sm"
-        />
-      </div>
+      <Search
+        size={16}
+        aria-hidden
+        className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--ink-500)]"
+      />
+      <input
+        id={id}
+        type="search"
+        autoComplete="off"
+        spellCheck={false}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 w-full rounded-md border border-[var(--ink-300)] bg-card pl-8 pr-2.5 text-xs text-foreground placeholder:text-[var(--ink-500)] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--brand-primary-600)] max-md:h-11 max-md:text-sm"
+      />
     </div>
   );
 }
@@ -142,9 +144,9 @@ export function FilterChips<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div role="group" aria-label={label} className="min-w-0">
-      <div className="mb-1.5 text-sm font-medium text-[var(--ink-600)]">{label}</div>
-      <div className="scrollbar-none flex gap-2 overflow-x-auto">
+    <div role="group" aria-label={label} className="flex min-w-0 items-center gap-2">
+      <span className="shrink-0 text-xs text-[var(--ink-500)]">{label}</span>
+      <div className="scrollbar-none flex min-w-0 gap-1 overflow-x-auto">
         {options.map((o) => {
           const active = o.value === value;
           return (
@@ -154,11 +156,11 @@ export function FilterChips<T extends string>({
               aria-pressed={active}
               onClick={() => onChange(o.value)}
               className={cn(
-                "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-lg border px-3.5 text-sm font-medium transition-colors sm:h-8",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                "inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-md border px-2.5 text-xs font-medium transition-colors duration-150 max-md:h-11",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]",
                 active
-                  ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-600)] text-white"
-                  : "border-[var(--ink-300)] bg-card text-[var(--ink-600)] hover:border-[var(--ink-400)] hover:text-foreground",
+                  ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]"
+                  : "border-[var(--ink-300)] bg-card text-[var(--ink-600)] hover:bg-[var(--ink-50)] hover:text-foreground",
               )}
             >
               {o.label}
@@ -186,18 +188,18 @@ export function FilterSummary({
   onClear: () => void;
 }) {
   return (
-    <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-1">
-      <p className="text-sm text-[var(--ink-600)]" aria-live="polite">
-        Showing <span className="font-semibold text-foreground tabular-nums">{shown}</span> of{" "}
+    <div className="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1">
+      <p className="text-xs text-[var(--ink-500)]" aria-live="polite">
+        <span className="font-medium text-foreground tabular-nums">{shown}</span> of{" "}
         <span className="tabular-nums">{total}</span> {noun}
       </p>
       {active && (
         <button
           type="button"
           onClick={onClear}
-          className="inline-flex h-10 items-center rounded-lg px-2 text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="inline-flex items-center rounded-sm text-xs font-medium text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-md:min-h-11"
         >
-          Clear filters
+          Clear
         </button>
       )}
     </div>
@@ -207,14 +209,14 @@ export function FilterSummary({
 /** Empty state for "filters matched nothing" — distinct from "nothing here yet". */
 export function NoResults({ noun, onClear }: { noun: string; onClear: () => void }) {
   return (
-    <div className="flex flex-col items-center rounded-lg border border-dashed border-[var(--ink-300)] bg-[var(--panel)] px-4 py-8 text-center">
-      <Search size={20} aria-hidden className="mb-3 text-muted-foreground" />
-      <p className="text-base font-semibold text-foreground">No {noun} match your filters</p>
+    <div className="flex flex-col items-center px-4 py-10 text-center">
+      <Search size={24} aria-hidden className="mb-3 text-[var(--ink-400)]" />
+      <p className="text-sm font-semibold text-foreground">No {noun} match your filters</p>
       <p className="mt-1 text-sm text-[var(--ink-600)]">Try a different search term or clear the filters.</p>
       <button
         type="button"
         onClick={onClear}
-        className="mt-4 inline-flex h-10 items-center rounded-lg border border-[var(--ink-300)] bg-card px-4 text-sm font-semibold text-foreground shadow-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="mt-4 inline-flex h-8 items-center rounded-md border border-[var(--ink-300)] bg-card px-3 text-sm font-semibold text-foreground transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-md:h-11"
       >
         Clear filters
       </button>
@@ -222,8 +224,9 @@ export function NoResults({ noun, onClear }: { noun: string; onClear: () => void
   );
 }
 
-/** A bordered settings card: title, one-line description, optional action,
- *  then the controls. The header stacks on mobile. */
+/** A settings panel (UI_SPEC section 3): the ds Panel with a 44px header
+ *  (title + actions) and a 16px body. The one-line description is context,
+ *  not a heading sentence, so it sits behind an info button in the header. */
 export function SettingsSection({
   id,
   title,
@@ -242,26 +245,22 @@ export function SettingsSection({
   flush?: boolean;
   className?: string;
 }) {
+  const Frame = flush ? ListPanel : Panel;
+  const label = typeof title === "string" ? `About ${title.toLowerCase()}` : "About this section";
+  const actions =
+    description || action ? (
+      <>
+        {description && (
+          <InfoTip label={label} align="end">
+            {description}
+          </InfoTip>
+        )}
+        {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
+      </>
+    ) : undefined;
   return (
-    <section
-      id={id}
-      className={cn(
-        "scroll-mt-24 overflow-hidden rounded-xl border border-border bg-card shadow-xs",
-        className,
-      )}
-    >
-      <div className="flex flex-col gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold leading-snug tracking-tight text-foreground">
-            {title}
-          </h2>
-          {description && (
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
-          )}
-        </div>
-        {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
-      </div>
-      {children && <div className={cn(!flush && "p-4 sm:p-5")}>{children}</div>}
-    </section>
+    <Frame id={id} as="h2" title={title} actions={actions} className={cn("scroll-mt-24", className)}>
+      {children}
+    </Frame>
   );
 }

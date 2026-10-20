@@ -17,6 +17,7 @@ import {
   Route,
   ShieldCheck,
   Users,
+  Zap,
 } from "@/components/ui/icons";
 
 export const metadata = { title: "Settings · Blue-IQ" };
@@ -35,31 +36,28 @@ type NavItem = {
 
 type NavGroup = {
   label: string;
-  desc: string;
   items: NavItem[];
 };
 
 const groups: NavGroup[] = [
   {
     label: "Organization",
-    desc: "Who you are and how Govern should fit your organization.",
     items: [
       { icon: Building2, title: "Organization setup", desc: "Name, reporting currency, financial year, governing law, targets and team, as a six-step checklist.", href: "/settings/organization" },
     ],
   },
   {
     label: "Contract workflow",
-    desc: "How agreements are checked, routed and connected to the systems of record.",
     items: [
       { icon: Grid3x3, title: "Review matrix", desc: "Your accepted positions per agreement type. Edit, import from Excel, and keep dated versions.", href: "/settings/matrix" },
       { icon: Database, title: "Data manager", desc: "The agreement types and properties every contract carries, and how fully each is captured.", href: "/settings/data" },
       { icon: Route, title: "Workflow & routing", desc: "Stage targets, reviewers, auto-assignment, approval routing and alerts.", href: "/settings/workflow" },
+      { icon: Zap, title: "Automations", desc: "Rules that notify, escalate, assign or comment when a contract waits, changes or needs attention.", href: "/settings/automations", feature: "automations" },
       { icon: Plug, title: "Integrations", desc: "Huron, Workday, Microsoft 365 and DocuSign: status, field mapping and the sync log.", href: "/settings/integrations", feature: "integrations" },
     ],
   },
   {
     label: "Contract intelligence",
-    desc: "Standards, libraries, and rules Sonar uses to evaluate every clause.",
     items: [
       { icon: BookMarked, title: "Playbook", desc: "Your firm's clause standards, section by section. Not editable yet.", href: "/settings/playbook", edition: "commercialPlaybook" },
       { icon: Briefcase, title: "Clause library", desc: "Every clause extracted from your documents, by category.", href: "/settings/clauses" },
@@ -68,7 +66,6 @@ const groups: NavGroup[] = [
   },
   {
     label: "People",
-    desc: "Who can see and change your contracts.",
     items: [
       { icon: Users, title: "Team & roles", desc: "Invite people to your projects, set their role and remove them.", href: "/settings/team" },
     ],
@@ -78,15 +75,12 @@ const groups: NavGroup[] = [
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader
-        title="Settings"
-        subtitle="How contracts are checked, routed and who works on them, for your whole workspace."
-      />
+      <PageHeader title="Settings" />
 
       <SettingsLayout>
         {groups.map((g) => (
-          <SettingsSection key={g.label} title={g.label} description={g.desc} flush>
-            <ul className="divide-y divide-border">
+          <SettingsSection key={g.label} title={g.label} flush>
+            <ul className="divide-y divide-[var(--ink-100)]">
               {g.items.map((it) => (
                 it.edition ? (
                   <EditionOnly key={it.title} feature={it.edition}>
@@ -111,15 +105,13 @@ function SettingsRow({ item }: { item: NavItem }) {
 
   const body = (
     <>
-      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--panel)]">
-        <Icon size={16} className={item.soon ? "text-muted-foreground" : "text-[var(--ink-700)]"} />
-      </span>
+      <Icon size={16} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
+        <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
           {item.title}
           {item.feature && <FeatureComingSoonBadge feature={item.feature} />}
         </span>
-        <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground">
+        <span className="mt-0.5 block truncate text-xs text-[var(--ink-500)]">
           {item.desc}
         </span>
       </span>
@@ -128,7 +120,7 @@ function SettingsRow({ item }: { item: NavItem }) {
 
   if (item.soon) {
     return (
-      <div className="flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5">
+      <div className="flex items-center gap-3 px-4 py-2.5">
         {body}
         <Badge variant="neutral" size="md" className="shrink-0 text-xs">
           Coming soon
@@ -140,10 +132,10 @@ function SettingsRow({ item }: { item: NavItem }) {
   return (
     <Link
       href={item.href}
-      className="group flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--panel)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50 sm:gap-4 sm:px-5"
+      className="group flex min-h-11 items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)]"
     >
       {body}
-      <ChevronRight size={16} aria-hidden className="shrink-0 text-[var(--ink-400)] transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-[var(--ink-700)] motion-reduce:transition-none" />
+      <ChevronRight size={16} aria-hidden className="shrink-0 text-[var(--ink-400)] transition-colors duration-150 group-hover:text-[var(--ink-700)] rtl:rotate-180" />
     </Link>
   );
 }

@@ -37,7 +37,7 @@ export function StageTargets({
     <SettingsSection
       id="targets"
       title="Stage targets"
-      description="How many days a contract may sit in a stage. Past the target its card turns amber; past the target times the multiple below, red."
+      description="Days a contract may sit in each stage before it turns late, then overdue."
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-8">
         <div className="min-w-0 space-y-6">

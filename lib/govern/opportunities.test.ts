@@ -28,8 +28,8 @@ describe("findOpportunities", () => {
       makeContract({ stage: "review", slaStatus: "amber", daysInStage: 6, targetDays: 5, value: 1 }),
     ], [], TODAY)
     const past = list.find((o) => o.id === "past-target")!
-    expect(past.figure).toBe("15 days")
-    expect(past.title).toBe("2 contracts are past the step target")
+    expect(past.figure).toBe("15 days over")
+    expect(past.title).toBe("2 contracts past the step target")
   })
 
   it("separates overdue obligations, term ends within 90 days and payments within 30", () => {

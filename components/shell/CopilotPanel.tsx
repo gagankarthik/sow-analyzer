@@ -12,13 +12,15 @@ import { toast } from "sonner";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowUp, Check, Copy, FileText, Plus, Sonar, X } from "@/components/ui/icons";
+import { AlertTriangle, ArrowUp, Check, Copy, FileText, Plus, Sonar, X } from "@/components/ui/icons";
 import { categoryLabel } from "@/lib/clause-categories";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { askSonar } from "@/lib/api";
 import { useDocuments } from "@/lib/queries/documents";
 import { isProjectId, useProject } from "@/lib/projects-store";
 import type { ChatCitation } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonLine } from "@/components/ds/skeletons";
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -26,6 +28,8 @@ type Msg = {
   role: "user" | "assistant";
   content: string;
   citations?: ChatCitation[];
+  /** Figures Sonar stated that the cited clauses don't contain. */
+  unverified?: string[];
   error?: boolean;
   /** On an error: the question that failed, so it can be asked again. */
   question?: string;
@@ -107,7 +111,7 @@ export function CopilotPanel({ open, onClose }: Props) {
       // Sources are the clauses the answer cites, not every clause Sonar was shown.
       const used = res.usedCitations;
       const sources = used ? res.citations.filter((c) => used.includes(c.clauseNumber)) : res.citations;
-      append({ role: "assistant", content: res.answer, citations: sources });
+      append({ role: "assistant", content: res.answer, citations: sources, unverified: res.unverified });
     } catch (e) {
       append({ role: "assistant", content: e instanceof Error ? e.message : "Sonar couldn't answer. Try again.", error: true, question: q });
     } finally {
@@ -124,6 +128,7 @@ export function CopilotPanel({ open, onClose }: Props) {
       <SheetContent
         side="right"
         showCloseButton={false}
+        data-hotkey-scope="sonar"
         className="flex flex-col gap-0 border-l border-border p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[480px]"
       >
         {/* Header: who, what it's answering from, new chat, close. */}
@@ -139,21 +144,28 @@ export function CopilotPanel({ open, onClose }: Props) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" aria-label="New chat" disabled={messages.length === 0 || busy} onClick={() => docId && setThreads((t) => ({ ...t, [docId]: [] }))}>
-                  <Plus size={18} />
+                  <Plus size={16} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>New chat</TooltipContent>
             </Tooltip>
             <SheetClose asChild>
-              <Button variant="ghost" size="icon" aria-label="Close Sonar"><X size={18} /></Button>
+              <Button variant="ghost" size="icon" aria-label="Close Sonar"><X size={16} /></Button>
             </SheetClose>
           </div>
+          {docsLoading && (
+            // The contract picker's place, so the header does not grow when it appears.
+            <div aria-hidden className="flex h-10 items-center gap-2 rounded-lg border border-input bg-card px-3">
+              <Skeleton className="size-4 shrink-0 rounded-[4px]" />
+              <Skeleton className="h-2.5 w-48" />
+            </div>
+          )}
           {ready.length > 0 && (
             <div className="flex items-center gap-2">
               <label htmlFor="sonar-contract" className="sr-only">Contract</label>
               <Select value={docId ?? undefined} onValueChange={setPicked}>
                 <SelectTrigger id="sonar-contract" className="min-w-0 flex-1 justify-start [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:justify-start [&_[data-slot=select-value]]:text-left">
-                  <FileText size={14} className="shrink-0 text-[var(--ink-500)]" aria-hidden />
+                  <FileText size={16} className="shrink-0 text-[var(--ink-500)]" aria-hidden />
                   <SelectValue placeholder="Choose a contract" />
                 </SelectTrigger>
                 <SelectContent className="max-h-80">
@@ -169,7 +181,7 @@ export function CopilotPanel({ open, onClose }: Props) {
         {/* Thread: the only scrolling region. */}
         <div ref={threadRef} role="log" aria-live="polite" aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
           {docsLoading ? (
-            <div className="flex justify-center py-10"><TypingDots /></div>
+            <IntroSkeleton />
           ) : ready.length === 0 ? (
             <Intro
               title={routeDoc && routeDoc.status !== "FAILED" ? "Still analyzing" : "No analyzed contract yet"}
@@ -253,7 +265,7 @@ export function CopilotPanel({ open, onClose }: Props) {
 function SonarMark() {
   return (
     <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)] text-[var(--brand-primary-600)]" aria-hidden>
-      <Sonar size={15} />
+      <Sonar size={16} />
     </span>
   );
 }
@@ -386,6 +398,13 @@ function Message({ msg, onRetry, onOpenSource }: { msg: Msg; onRetry?: () => voi
         ) : (
           <Answer text={msg.content} />
         )}
+        {!msg.error && msg.unverified && msg.unverified.length > 0 && (
+          // A quiet check, not an alarm: the figures may be right, the cited clause just doesn't show them.
+          <p className="mt-2 flex items-start gap-1.5 text-xs text-[var(--warning-fg)]">
+            <AlertTriangle size={12} aria-hidden className="mt-0.5 shrink-0" />
+            <span>Check against the clause: {msg.unverified.join(", ")}</span>
+          </p>
+        )}
         {citations.length > 0 && (
           <div className="mt-3">
             <p className="mb-1.5 text-xs font-medium text-[var(--ink-600)]">Sources</p>
@@ -413,7 +432,7 @@ function Message({ msg, onRetry, onOpenSource }: { msg: Msg; onRetry?: () => voi
             onClick={copy}
             className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-[var(--ink-600)] transition-colors hover:bg-[var(--ink-100)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
           >
-            {copied ? <Check size={14} className="text-[var(--success)]" /> : <Copy size={14} />}
+            {copied ? <Check size={16} className="text-[var(--success)]" /> : <Copy size={16} />}
             {copied ? "Copied" : "Copy"}
           </button>
         )}
@@ -425,6 +444,28 @@ function Message({ msg, onRetry, onOpenSource }: { msg: Msg; onRetry?: () => voi
 function dedupeCitations(cs: ChatCitation[]): ChatCitation[] {
   const seen = new Set<string>();
   return cs.filter((c) => { const k = `${c.docId}:${c.clauseNumber}`; if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
+/** The intro (mark, title, two lines, four suggestions) while the contracts load. */
+function IntroSkeleton() {
+  return (
+    <div aria-busy="true" className="flex flex-col items-center px-2 pt-6 text-center">
+      <span role="status" className="sr-only">Loading your contracts</span>
+      <Skeleton className="mb-4 size-14 rounded-2xl" />
+      <SkeletonLine text="text-lg font-semibold" width="w-56" />
+      <span aria-hidden className="mt-1 flex w-full max-w-[42ch] flex-col items-center">
+        <SkeletonLine text="text-sm leading-relaxed" width="w-full" />
+        <SkeletonLine text="text-sm leading-relaxed" width="w-3/4" />
+      </span>
+      <div aria-hidden className="mt-5 grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex min-h-11 items-center rounded-lg border border-border bg-card px-3 py-2">
+            <Skeleton className={i % 2 ? "h-2.5 w-3/5" : "h-2.5 w-4/5"} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Intro({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {

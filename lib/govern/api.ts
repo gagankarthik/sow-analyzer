@@ -3,9 +3,11 @@
 
 import { request } from "@/lib/api"
 import type {
-  BlockerInput, CaptureReport, Connector, Trends, ConnectorId, ConnectorInput, Contract, ContractAction, ContractDetail,
-  ContractPatch, GovernMe, WaitingOn, WaitingOnKind, IncomeItem, Matrix, MatrixImportResult, MatrixImportRow, MatrixPlaybook,
+  ActivityPage, BlockerInput, CaptureReport, Connector, Trends, ConnectorId, ConnectorInput, Contract, ContractAction, ContractDetail,
+  ContractPatch, GovernMe, GovernOrg, WaitingOn, WaitingOnKind, IncomeItem, Matrix, MatrixImportResult, MatrixImportRow, MatrixPlaybook,
   MatrixVersionInfo, AgreementType, ObligationInput, PortfolioObligation, SyncRun, WorkflowSettings, WorkflowSettingsInput,
+  BulkUpdateInput, BulkUpdateResponse, DirectoryPerson, SavedView, SavedViewInput, SavedViewPatch, ViewModule,
+  Automation, AutomationInput, AutomationList, AutomationTest,
 } from "./types"
 
 const contractPath = (id: string) => `/contracts/${encodeURIComponent(id)}`
@@ -41,6 +43,14 @@ export async function listContracts(includeClosed = false): Promise<{ contracts:
 
 export async function getContract(id: string): Promise<ContractDetail> {
   return normaliseContract((await request<DetailResponse>(contractPath(id))).contract)
+}
+
+/** One page of the contract's activity, newest first, older than `before`. */
+export async function getContractActivity(id: string, before: string | null, limit = 50): Promise<ActivityPage> {
+  const qs = new URLSearchParams({ limit: String(Math.min(Math.max(limit, 1), 100)) })
+  if (before) qs.set("before", before)
+  const data = await request<Partial<ActivityPage>>(`${contractPath(id)}/activity?${qs}`)
+  return { entries: data.entries ?? [], nextCursor: data.nextCursor ?? null }
 }
 
 export async function patchContract(id: string, patch: ContractPatch): Promise<ContractDetail> {
@@ -187,6 +197,22 @@ export async function getGovernMe(): Promise<GovernMe> {
   return request<GovernMe>("/govern/me")
 }
 
+// ── The organization's admins ──────────────────────────────────────────────
+
+export async function getGovernOrg(): Promise<GovernOrg> {
+  return request<GovernOrg>("/govern/org")
+}
+
+/** Make someone who has signed in to this organization an admin (admins only). */
+export async function addOrgAdmin(email: string, rev: number): Promise<GovernOrg> {
+  return request<GovernOrg>("/govern/org/admins", { method: "POST", body: JSON.stringify({ email, rev }) })
+}
+
+/** Remove an admin (admins only; never the creator or the last admin). */
+export async function removeOrgAdmin(sub: string, rev: number): Promise<GovernOrg> {
+  return request<GovernOrg>(`/govern/org/admins/${encodeURIComponent(sub)}?rev=${rev}`, { method: "DELETE" })
+}
+
 /** Intake right after upload: the contract appears on the board at once (as
  *  "New") with the details the uploader gave; Sonar fills the rest. */
 export async function createContract(input: ContractPatch & { docId: string }): Promise<ContractDetail> {
@@ -203,4 +229,66 @@ export async function getTrends(granularity: "month" | "week" = "month", periods
 
 export async function getCaptureReport(): Promise<CaptureReport> {
   return request<CaptureReport>("/reports/capture")
+}
+
+// ── Saved views ────────────────────────────────────────────────────────────
+
+const viewPath = (id: string) => `/views/${encodeURIComponent(id)}`
+
+export async function listViews(module: ViewModule): Promise<SavedView[]> {
+  const qs = new URLSearchParams({ module })
+  return (await request<{ views?: SavedView[] }>(`/views?${qs}`)).views ?? []
+}
+
+export async function createView(input: SavedViewInput): Promise<SavedView> {
+  return (await request<{ view: SavedView }>("/views", { method: "POST", body: JSON.stringify(input) })).view
+}
+
+export async function updateView(id: string, patch: SavedViewPatch): Promise<SavedView> {
+  return (await request<{ view: SavedView }>(viewPath(id), { method: "PATCH", body: JSON.stringify(patch) })).view
+}
+
+export async function deleteView(id: string): Promise<{ deleted: true; id: string }> {
+  return request<{ deleted: true; id: string }>(viewPath(id), { method: "DELETE" })
+}
+
+// ── Bulk update and people ─────────────────────────────────────────────────
+
+/** One request: at most 200 contracts (see BULK_LIMIT; useBulkUpdateContracts chunks). */
+export async function bulkUpdateContracts(input: BulkUpdateInput): Promise<BulkUpdateResponse> {
+  const data = await request<Partial<BulkUpdateResponse>>("/contracts/bulk", { method: "POST", body: JSON.stringify(input) })
+  return { results: data.results ?? [], updated: data.updated ?? 0 }
+}
+
+/** Everyone who can be picked: project people, reviewers and owners. */
+export async function listGovernPeople(): Promise<DirectoryPerson[]> {
+  return (await request<{ people?: DirectoryPerson[] }>("/govern/people")).people ?? []
+}
+
+// ── Automations ────────────────────────────────────────────────────────────
+
+const automationPath = (id: string) => `/automations/${encodeURIComponent(id)}`
+
+export async function listAutomations(): Promise<AutomationList> {
+  const data = await request<Partial<AutomationList>>("/automations")
+  const automations = data.automations ?? []
+  return { automations, count: data.count ?? automations.length, limit: data.limit ?? 50, enabled: data.enabled ?? true }
+}
+
+export async function createAutomation(input: AutomationInput): Promise<Automation> {
+  return (await request<{ automation: Automation }>("/automations", { method: "POST", body: JSON.stringify(input) })).automation
+}
+
+export async function updateAutomation(id: string, patch: Partial<AutomationInput> & { rev?: number }): Promise<Automation> {
+  return (await request<{ automation: Automation }>(automationPath(id), { method: "PATCH", body: JSON.stringify(patch) })).automation
+}
+
+export async function deleteAutomation(id: string): Promise<{ deleted: true; id: string }> {
+  return request<{ deleted: true; id: string }>(automationPath(id), { method: "DELETE" })
+}
+
+/** Dry run on a contract: nothing is written. `rule` tests unsaved edits; id "new" a rule not saved yet. */
+export async function testAutomation(id: string | null, contractId: string, rule?: AutomationInput): Promise<AutomationTest> {
+  const body = rule ? { contractId, rule } : { contractId }
+  return (await request<{ result: AutomationTest }>(`${automationPath(id ?? "new")}/test`, { method: "POST", body: JSON.stringify(body) })).result
 }

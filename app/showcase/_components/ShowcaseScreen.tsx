@@ -98,8 +98,7 @@ function seededClient(): QueryClient {
     },
   });
   const list = { contracts: SHOWCASE_CONTRACTS, generatedAt: SHOWCASE_NOW };
-  client.setQueryData(governKeys.contracts(false), list);
-  client.setQueryData(governKeys.contracts(true), list);
+  client.setQueryData(governKeys.contracts(), list);
   for (const detail of SHOWCASE_DETAILS) client.setQueryData(governKeys.contract(detail.contractId), detail);
   // ?edition=workforce and ?role=admin preview the other edition or role.
   const params = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search);

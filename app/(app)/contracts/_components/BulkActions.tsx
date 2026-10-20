@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Download, UserRound } from "lucide-react";
+import { ChevronDown, Download, PenLine, UserRound, X } from "@/components/ui/icons";
 import { plural } from "@/lib/govern/labels";
 import { contractsTable, downloadExcel } from "@/lib/govern/export";
 import { isUnsigned } from "@/lib/govern/metrics";
@@ -14,14 +14,25 @@ import { useAnyContractAction, useCanEditContracts, useGovernFeature, useWorkflo
 import type { Contract } from "@/lib/govern/types";
 
 /* What you can do to several contracts at once, shown in the floating bar
-   when rows are selected: assign a reviewer, export to Excel. */
+   when rows are selected: edit fields, assign a reviewer, export to Excel,
+   clear the selection. */
 
-export function BulkActions({ contracts, viewLabel, onDone }: { contracts: Contract[]; viewLabel: string; onDone: () => void }) {
+export function BulkActions({ contracts, viewLabel, onDone, onEditFields }: {
+  contracts: Contract[]; viewLabel: string; onDone: () => void; onEditFields?: () => void;
+}) {
   const canEdit = useCanEditContracts();
   return (
     <>
+      {canEdit && onEditFields && (
+        <button type="button" onClick={onEditFields} className="inline-flex items-center gap-1.5 text-sm">
+          <PenLine size={16} aria-hidden />Edit fields
+        </button>
+      )}
       {canEdit && <BulkAssign contracts={contracts} onDone={onDone} />}
       <BulkExport contracts={contracts} viewLabel={viewLabel} />
+      <button type="button" onClick={onDone} className="inline-flex items-center gap-1.5 text-sm">
+        <X size={16} aria-hidden />Clear
+      </button>
     </>
   );
 }
@@ -64,7 +75,7 @@ function BulkAssign({ contracts, onDone }: { contracts: Contract[]; onDone: () =
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" disabled={busy || open.length === 0} className="inline-flex items-center gap-1.5 text-sm">
-          <UserRound size={14} aria-hidden />{busy ? "Assigning…" : "Assign"}<ChevronDown size={14} aria-hidden />
+          <UserRound size={16} aria-hidden />{busy ? "Assigning…" : "Assign"}<ChevronDown size={16} aria-hidden />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" side="top" className="w-64">
@@ -105,7 +116,7 @@ function BulkExport({ contracts, viewLabel }: { contracts: Contract[]; viewLabel
 
   return (
     <button type="button" onClick={() => void run()} disabled={busy} className="inline-flex items-center gap-1.5 text-sm">
-      <Download size={14} aria-hidden />{busy ? "Exporting…" : "Export"}
+      <Download size={16} aria-hidden />{busy ? "Exporting…" : "Export"}
     </button>
   );
 }

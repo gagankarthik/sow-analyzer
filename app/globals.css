@@ -7,12 +7,12 @@
 
 /* ═══════════════════════════════════════════════════════════════
    Blue-IQ app: design tokens, base styles, app utilities.
-   Navy & Teal, 60-30-10 (product-owner decision):
-     60% dominant  warm white canvas (#F8F7F4), white cards, warm neutrals
-     30% secondary deep navy #14213D (+ --navy-* ramp): sidebar, header
-                   bands, section headings, dark panels, primary chart series
-     10% accent    teal #0F766E (the --brand-primary-* ramp): primary
-                   buttons, links, focus, active nav, selected tab. Sparingly.
+   Govern UI spec v2 (docs/UI_SPEC.md section 1), "trust and authority":
+     canvas   slate-50 #F8FAFC, white surfaces, cool slate neutrals (--ink-*)
+     borders  #E2E8F0 hairlines, #CBD5E1 strong
+     accent   logo blue #2F5FE0 (--brand-primary-600): primary buttons,
+              links, focus ring, selection. Nothing decorative.
+     navy     (--navy-*) stays for structure marks and the primary chart series.
    Status colours carry MEANING only. The public site has its own tokens in
    landing.css (mirrored by the landing work).
    ═══════════════════════════════════════════════════════════════ */
@@ -21,20 +21,23 @@
 :root {
   color-scheme: light;
 
-  /* Accent (10%): BLUE-IQ BLUE, from the logo (#297AFF). The variable names
-     stay "brand-primary" because every component references them.
-     White on 600 = 5.4:1 · 600 on white = 5.4:1 · 700 on 50 = 7.4:1. */
-  --brand-primary-50:  #EEF4FF;
-  --brand-primary-100: #D9E6FF;
-  --brand-primary-200: #BCD3FF;
-  --brand-primary-300: #8EB6FF;
-  --brand-primary-400: #5994FF;
-  --brand-primary-500: #297AFF;  /* the logo blue: marks, charts */
-  --brand-primary-600: #1F63E0;  /* buttons, links, focus */
-  --brand-primary-700: #174EB5;  /* hover, text on tint */
-  --brand-primary-800: #153F8F;
-  --brand-primary-900: #142F68;
-  --brand-primary-950: #0D1E44;
+  /* Accent: the logo blue #2F5FE0 at 600. The variable names stay
+     "brand-primary" because every component references them.
+     Text roles: white on 600 = 5.47:1 · 600 on white = 5.47:1, on canvas
+     5.24:1 · 700 on white = 7.73:1, on 50 = 7.05:1 · 800/900 for text on 100.
+     50–400 are fills, borders and tints only (never text on white); 500 is
+     marks and large text only (4.07:1 on white). */
+  --brand-primary-50:  #EFF4FE;  /* selection tint */
+  --brand-primary-100: #E0E9FC;  /* hover on tint */
+  --brand-primary-200: #C9D7FA;  /* borders on tint */
+  --brand-primary-300: #A2BCF6;  /* hover borders, focus halo */
+  --brand-primary-400: #7096F0;  /* decorative marks */
+  --brand-primary-500: #4A78EA;  /* chart marks, large text only */
+  --brand-primary-600: #2F5FE0;  /* the logo blue: buttons, links, focus */
+  --brand-primary-700: #2449B8;  /* hover, text on tint */
+  --brand-primary-800: #1E3B91;
+  --brand-primary-900: #1A3170;
+  --brand-primary-950: #111F47;
 
   /* Secondary (30%): NAVY. White on 800 = 15.97:1 · 600 on 50 = 9.6:1. */
   --navy-50:  #EEF1F7;
@@ -51,23 +54,25 @@
   --brand-accent:  var(--brand-primary-600);
   --brand-subtle:  var(--brand-primary-50);
 
-  /* Dominant (60%): warm white surfaces and the warm neutral ramp.
-     Ratios on #F8F7F4: ink-900 16.06 · ink-600 7.12 · ink-500 5.09. */
-  --paper:       #F8F7F4;    /* canvas */
-  --paper-elev:  #FFFFFF;    /* cards */
-  --panel:       #F1EFEA;    /* nested panel */
-  --ink-0:   #FFFFFF;
-  --ink-25:  #FBFAF8;
-  --ink-50:  #F8F7F4;        /* hover background */
-  --ink-100: #F1EFEA;        /* dividers */
-  --ink-200: #E7E5DF;        /* borders */
-  --ink-300: #D6D3CB;        /* strong borders, disabled */
-  --ink-400: #A8A49A;        /* decorative marks only (2.49:1 on white: never text) */
-  --ink-500: #6E695F;        /* tertiary text: 5.09:1 on canvas (palette #78736A is 4.40, darkened for AA) */
-  --ink-600: #57534E;        /* secondary text: 7.12:1 */
-  --ink-700: #3A3733;        /* strong body text */
-  --ink-800: #2A2825;        /* headings */
-  --ink-900: #1C1B19;        /* highest emphasis, body */
+  /* Neutrals: the slate ramp (UI_SPEC section 1). Ratios are on white /
+     canvas #F8FAFC. Steps 0–400 are SURFACES, BORDERS and DECORATIVE marks:
+     never text. Steps 500–900 are TEXT, each >= 4.5:1 on white and canvas.
+     (On the panel tint #F1F5F9 use 600 or darker for small text: 500 is 4.34.) */
+  --paper:       #F8FAFC;    /* canvas */
+  --paper-elev:  #FFFFFF;    /* surface: panels, popovers, inputs */
+  --panel:       #F1F5F9;    /* panel tint: table header, selected row, inset */
+  --ink-0:   #FFFFFF;        /* surface */
+  --ink-25:  #FBFCFE;        /* faint hover on white (decorative) */
+  --ink-50:  #F8FAFC;        /* canvas, hover background (decorative) */
+  --ink-100: #F1F5F9;        /* panel tint, dividers inside a surface (decorative) */
+  --ink-200: #E2E8F0;        /* border: hairlines everywhere (decorative) */
+  --ink-300: #CBD5E1;        /* border strong, disabled fills (decorative) */
+  --ink-400: #94A3B8;        /* decorative marks only (2.56:1 on white: never text) */
+  --ink-500: #64748B;        /* text muted: captions, table headers · 4.76 / 4.55 */
+  --ink-600: #475569;        /* text secondary: labels, meta · 7.58 / 7.24 */
+  --ink-700: #334155;        /* strong body text · 10.35 / 9.89 */
+  --ink-800: #1E293B;        /* headings · 14.63 / 13.98 */
+  --ink-900: #0F172A;        /* text primary: titles, body · 17.85 / 17.06 */
 
   /* Status: meaning only, never decoration. Info is an indigo-blue, kept
      distinct from the teal accent. Text on soft fills: success uses
@@ -83,7 +88,7 @@
   --info-soft: #EDF1FA;
 
   /* Risk tiers */
-  --risk-1: #D6D3CB;
+  --risk-1: #CBD5E1;
   --risk-2: #B45309;
   --risk-3: #C2410C;
   --risk-4: #B91C1C;
@@ -105,53 +110,58 @@
   --font-display: var(--font-plex), ui-sans-serif, sans-serif;
   --font-mono:    var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Type scale, defined once, in rem so browser text zoom works. It
-     re-points Tailwind's text-* names: never write text-[NNpx]. 12px is the
-     minimum.
+  /* Type scale (UI_SPEC section 2), defined once, in rem so browser text
+     zoom works. It re-points Tailwind's text-* names: never write
+     text-[NNpx]. 12px is the minimum. Six levels:
 
-       text-xs   12  captions, meta, table headers, badges
-       text-sm   14  labels, nav, secondary UI text, tables
-       text-base 14  body text, inputs, buttons, panel titles (h3)
-       text-lg   16  section headings (h2), lead paragraphs
-       text-xl   20  dialog titles, sub-page titles
-       text-2xl  24  page titles (h1)
-       text-3xl  28  KPI numbers
-       text-4xl  32  the single focal number on a page
-     One scale: 12 / 14 / 16 / 20 / 24 / 28 / 32. Matches the named scale
-     (caption, body, body-lg, title-sm, title, headline). No step under 2px,
-     so every step reads as a level.                                     */
+       text-xs   12  meta: captions, table headers, badges, helper text (400–500)
+       text-sm   14  body: labels, nav, table cells (400)
+       text-base 14  body: text, inputs, buttons; panel titles h3 (600)
+       text-lg   16  section headings h2 (600)
+       text-xl   20  page title h1 (600), dialog titles
+       text-2xl  20  page title h1 (600): same step as text-xl
+       text-3xl  24  KPI values (600, tabular)
+       text-4xl  32  the one hero KPI on a page
+     One scale: 12 / 14 / 16 / 20 / 24 / 32.                            */
   --text-xs:   0.75rem;    --text-xs--line-height:   1.5;
   --text-sm:   0.875rem;   --text-sm--line-height:   1.5;
   --text-base: 0.875rem;   --text-base--line-height: 1.55;
   --text-lg:   1rem;       --text-lg--line-height:   1.5;
   --text-xl:   1.25rem;    --text-xl--line-height:   1.4;
-  --text-2xl:  1.5rem;     --text-2xl--line-height:  1.25;
-  --text-3xl:  1.75rem;    --text-3xl--line-height:  1.15;
-  --text-4xl:  2rem;       --text-4xl--line-height:  1.1;
+  --text-2xl:  1.25rem;    --text-2xl--line-height:  1.4;
+  --text-3xl:  1.5rem;     --text-3xl--line-height:  1.25;
+  --text-4xl:  2rem;       --text-4xl--line-height:  1.15;
   --tracking-tight:  -0.02em;
   --tracking-normal: 0;
   --tracking-wide:   0.02em;
   --tracking-wider:  0.04em;
 
-  /* Elevation: neutral and faint. Borders do most of the separating. */
-  --shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
-  --shadow-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.06), 0 1px 2px 0 rgba(16, 24, 40, 0.04);
-  --shadow-md: 0 4px 8px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
-  --shadow-lg: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
-  --shadow-xl: 0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03);
-  --shadow-2xl: 0 24px 48px -12px rgba(16, 24, 40, 0.18);
+  /* Elevation (UI_SPEC section 1): panels and cards are FLAT (1px border,
+     no shadow), so the xs/sm steps are `none` and every legacy `shadow-xs`
+     on a card goes quiet. Only overlays (menus, popovers, dialogs, sheets)
+     lift, and they all use the one md shadow: lg/xl/2xl collapse to it. */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.10), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: var(--shadow-md);
+  --shadow-xl: var(--shadow-md);
+  --shadow-2xl: var(--shadow-md);
 
   /* Motion */
   --ease-out:    cubic-bezier(0, 0, 0.2, 1);
   --ease-in:     cubic-bezier(0.4, 0, 1, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Radii */
-  --radius:    0.625rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.625rem;
-  --radius-xl: 0.875rem;
+  /* Radii (UI_SPEC section 1): controls 6px, panels and dialogs 8px. Fully
+     round only for avatars and status dots (rounded-full / --radius-pill).
+     The Tailwind steps are re-pointed so existing classes follow:
+     rounded-md and rounded-lg (buttons, inputs) = 6px; rounded-xl and up
+     (cards, dialogs) = 8px. */
+  --radius:    0.375rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
 
   /* Component tokens (shadcn names) */
   --background:           var(--paper);
@@ -172,7 +182,7 @@
   --destructive-foreground: #FFFFFF;
   --border:               var(--ink-200);
   --border-soft:          var(--ink-100);
-  --input:                #8A857B;   /* control border: 3.67:1 on white (WCAG 1.4.11) */
+  --input:                #8592A6;   /* form-field border: 3.16:1 on white, 3.02 on canvas (WCAG 1.4.11) */
   --ring:                 var(--brand-accent);
 
   /* Charts: primary series navy, comparison navy-300, status for meaning. */
@@ -183,12 +193,11 @@
   --chart-5: var(--danger);
 
   /* Sidebar: light. White rail with an ink-200 edge; items ink-700
-     (10.9:1 on white), hover ink-100; the active item is blue-50 with
-     blue-700 text (7.4:1), the selection role of the accent. Each item's
-     icon carries its area colour (--area-*). */
+     (10.35:1 on white), hover ink-50; the active item is the panel tint
+     with accent-700 text (6.6:1 on #F1F5F9): subtle, not a big highlight. */
   --sidebar: var(--paper-elev);
   --sidebar-foreground: var(--ink-700);
-  --sidebar-primary: var(--brand-primary-50);
+  --sidebar-primary: var(--panel);
   --sidebar-primary-foreground: var(--brand-primary-700);
   --sidebar-accent: var(--ink-100);
   --sidebar-accent-foreground: var(--ink-900);
@@ -239,17 +248,19 @@
   --font-mono: var(--font-mono);
 
   --radius-xs: 0.25rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.625rem;
-  --radius-xl: 0.875rem;
-  --radius-2xl: 1rem;
-  --radius-3xl: 1.25rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.5rem;
 
   --shadow-xs: var(--shadow-xs);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
 }
 
 /* ─── 1b. Design-system tokens (components/ds) ────────────────────
@@ -270,8 +281,8 @@
   --surface-selected: var(--brand-primary-50);
   --surface-inverse: var(--ink-900);
 
-  /* Foreground (text + icons). Contrast on --surface-raised (light):
-     primary 17.21:1 · secondary 7.63:1 · tertiary 5.46:1 · disabled is
+  /* Foreground (text + icons). Contrast on --surface-raised (white):
+     primary 17.85:1 · secondary 7.58:1 · tertiary 4.76:1 · disabled is
      decorative only (never for information). */
   --fg-primary:   var(--ink-900);
   --fg-secondary: var(--ink-600);
@@ -286,10 +297,10 @@
   --border-subtle:  var(--ink-100);
   --border-default: var(--ink-200);
   --border-strong:  var(--ink-300);
-  --border-control: #8A857B;   /* 3.67:1 on white, 3.43:1 on canvas (WCAG 1.4.11) */
+  --border-control: var(--input);   /* form fields: 3.16:1 on white, 3.02:1 on canvas (WCAG 1.4.11) */
 
-  /* Interactive = the 10% teal accent. focus is used by every focus ring
-     (#0F766E: 5.47:1 on white, 5.11:1 on canvas). */
+  /* Interactive = the logo-blue accent. focus is used by every focus ring
+     (#2F5FE0: 5.47:1 on white, 5.24:1 on canvas). */
   --interactive:          var(--brand-primary-600);
   --interactive-hover:    var(--brand-primary-700);
   --interactive-pressed:  var(--brand-primary-800);
@@ -396,8 +407,8 @@
   --control-height-md: 2.25rem; /* 36 */
   --control-height-lg: 2.5rem;  /* 40 */
   --pill-height:       1.5rem;  /* 24 */
-  --table-header-height: 2.5rem;       /* 40 */
-  --table-row-comfortable: 3.25rem;    /* 52 */
+  --table-header-height: 2.375rem;     /* 38 (UI_SPEC section 3) */
+  --table-row-comfortable: 2.625rem;   /* 42 (UI_SPEC section 3) */
   --table-row-compact: 2.25rem;        /* 36 */
   --chart-height-sm: 10rem;     /* 160 */
   --chart-height-md: 15rem;     /* 240 */
@@ -451,7 +462,7 @@
   --viz-div-neg-3: #9A3412;
   --viz-div-neg-2: #D9581F;
   --viz-div-neg-1: #F2A57A;
-  --viz-div-mid:   #F1EFEA;
+  --viz-div-mid:   #F1F5F9;
   --viz-div-pos-1: #8293B9;
   --viz-div-pos-2: #3D5490;
   --viz-div-pos-3: #14213D;
@@ -480,15 +491,15 @@
   --space-24: 6rem;     /* 96 */
 
   /* Radius roles over the existing --radius-* steps. */
-  --radius-control:   var(--radius-lg);  /* buttons, inputs, chips (10px) */
-  --radius-container: var(--radius-xl);  /* cards, sections, dialogs (14px) */
+  --radius-control:   var(--radius-lg);  /* buttons, inputs, chips (6px) */
+  --radius-container: var(--radius-xl);  /* panels, cards, dialogs (8px) */
   --radius-pill:      9999px;            /* status pills, avatars */
 
-  /* Elevation: border-first. Two shadow levels only.
-     0 = flat (border only) · 1 = raised card · 2 = overlay (menu, popover, dialog). */
+  /* Elevation: border-first. Panels are flat; overlays get shadow-md.
+     0 = flat (border only) · 1 = raised card (also flat now) · 2 = overlay (menu, popover, dialog). */
   --elevation-0: none;
-  --elevation-1: var(--shadow-xs);
-  --elevation-2: var(--shadow-lg);
+  --elevation-1: none;
+  --elevation-2: var(--shadow-md);
 
   /* Motion. Fast and purposeful; reduced motion collapses every duration to 0. */
   --duration-instant: 75ms;    /* colour/opacity on hover and press */
@@ -552,6 +563,14 @@
   /* Content widths: max-w-page (the app container) and max-w-prose-ds. */
   --container-page: 1480px;
   --container-prose-ds: 68ch;
+
+  /* Skeleton blocks: a calm opacity pulse (never a shimmer sweep). Turned
+     off under prefers-reduced-motion by motion-reduce:animate-none. */
+  --animate-skeleton: skeleton-pulse 1.8s ease-in-out infinite;
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
 }
 
 /* Tailwind bridge for the semantic roles: bg-surface-raised, text-fg-secondary,
@@ -811,26 +830,24 @@ html { scroll-behavior: smooth; }
 .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--ink-300); border: 0; border-radius: 3px; }
 .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-400); }
 
-/* Page container: one max-width and gutter for every app page. */
+/* Page container: one max-width and gutter for every app page
+   (UI_SPEC section 3.6: 16px on mobile, 24px from md). */
 .app-container {
   width: 100%;
   max-width: 1480px;
   margin-inline: auto;
   padding-inline: 16px;
 }
-@media (min-width: 640px)  { .app-container { padding-inline: 20px; } }
 @media (min-width: 768px)  { .app-container { padding-inline: 24px; } }
-@media (min-width: 1024px) { .app-container { padding-inline: 32px; } }
 
 /* Page body under the PageHeader: the container plus one vertical rhythm
-   (24px on phones, 32px from md) shared by every main page. */
+   (24px between sections) shared by every main page. */
 .app-page {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding-block: 24px;
+  padding-block: 20px 32px;
 }
-@media (min-width: 768px) { .app-page { gap: 32px; padding-block: 32px; } }
 
 /* Figures */
 .font-mono { font-feature-settings: "calt", "ss01"; }
@@ -915,13 +932,27 @@ html { scroll-behavior: smooth; }
   .sonar-wave, .sonar-spark { animation: none; opacity: 1; }
 }
 
-/* Sonar's button and mark: a 1px border on the card surface like every other
-   control. The brand icon is what makes it Sonar; the accent shows on hover. */
-.sonar-button { position: relative; border-radius: 8px; }
-.sonar-button, .sonar-rainbow {
+/* Ask Sonar (top bar): the one place with a turning rainbow edge, so the AI
+   entry point is recognisable at a glance. Kept to this single button; the
+   Sonar panel and other marks use the plain bordered surface below. */
+@property --sonar-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes sonar-ring { to { --sonar-angle: 360deg; } }
+.sonar-button {
+  position: relative; border-radius: 8px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--sonar-fill, var(--card)), var(--sonar-fill, var(--card))) padding-box,
+    conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;
+  animation: sonar-ring 6s linear infinite;
+}
+.sonar-button:hover {
+  background:
+    linear-gradient(var(--ink-50), var(--ink-50)) padding-box,
+    conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;
+}
+/* Reduced motion: the edge stays, it just doesn't turn. */
+@media (prefers-reduced-motion: reduce) { .sonar-button { animation: none; } }
+.sonar-rainbow {
   border: 1px solid var(--border);
   background: var(--sonar-fill, var(--card));
 }
-.sonar-button { transition: border-color 150ms ease-out, background-color 150ms ease-out; }
-.sonar-button:hover { border-color: var(--brand-primary-300); background: var(--brand-primary-50); }
-@media (prefers-reduced-motion: reduce) { .sonar-button { transition: none; } }

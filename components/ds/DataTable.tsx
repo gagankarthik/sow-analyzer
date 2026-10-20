@@ -12,18 +12,24 @@
 //  • pagination ("Showing 1–50 of 2,431") for large sets
 //  • group-by with count + subtotal per group
 //  • loading / empty / no results / error are four distinct states
-//  • optional row selection with a sticky bulk-action bar, and a "Columns"
-//    menu to hide columns (remembered per table)
+//  • optional row selection (shift+click selects a range) with a sticky
+//    bulk-action bar, and a "Columns" menu to hide columns (remembered per
+//    table) and, with onColumnOrderChange, reorder them
+//  • hidden columns, column order and density can be controlled by the
+//    caller (a saved view) instead of remembered locally
+//  • groups collapse from their header
+//  • variant "flush" (default): flat on the page, 38px header, 42px rows,
+//    hairline dividers; "card" keeps the framed look; optional footer bar
 
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "@/components/ui/icons";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Columns3 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Columns3 } from "lucide-react";
+import { ColumnSettings } from "./ColumnSettings";
 import {
   nextSort,
   useHiddenColumns,
@@ -36,12 +42,14 @@ import {
   type SortState,
   type SortValue,
 } from "./data-table-hooks";
-import { EmptyState, ErrorState, LoadingState, NoResults } from "./feedback";
+import { EmptyState, ErrorState, NoResults } from "./feedback";
+import { PRIORITY_CELL, skeletonRowCount, type ColumnPriority as SkeletonPriority } from "@/lib/skeleton-geometry";
+import { TableSkeleton } from "./skeletons";
 import { formatDate, formatRelative, formatValue } from "./format";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 
-export type ColumnPriority = 1 | 2 | 3 | 4;
+export type ColumnPriority = SkeletonPriority;
 
 export type DataTableColumn<T> = {
   id: string;
@@ -67,6 +75,10 @@ export type DataTableColumn<T> = {
   card?: "title" | "status" | "field" | "hidden";
   /** Can the user hide this column from the Columns menu? Default true (never the title column). */
   hideable?: boolean;
+  /** Plain value for CSV export (defaults to the sortable value). */
+  exportValue?: (row: T) => string | number | null;
+  /** Clicks inside this cell do not open the row (a person link, a menu). */
+  stopRowClick?: boolean;
 };
 
 export type DataTableGroupBy<T> = {
@@ -135,17 +147,37 @@ export type DataTableProps<T> = {
   /** Toolbar content shown left of the density toggle (filters summary, export). */
   toolbar?: React.ReactNode;
   className?: string;
+
+  /** Column ids in display order (controlled). Unlisted columns follow in their given order. */
+  columnOrder?: string[];
+  /** With it, the built-in Columns control can also reorder columns. */
+  onColumnOrderChange?: (order: string[]) => void;
+  /** Hidden column ids (controlled); otherwise remembered under `columnsKey`. */
+  hiddenColumns?: string[];
+  onHiddenColumnsChange?: (hidden: string[]) => void;
+  /** Row density (controlled); otherwise remembered under `densityKey`. */
+  density?: Density;
+  onDensityChange?: (d: Density) => void;
+  /** "flush" (default): the table sits flat on the page, hairline dividers only. "card": the older framed table. */
+  variant?: "card" | "flush";
+  /** A bar under the table (counts, calculations), shown when there are rows. */
+  footer?: React.ReactNode;
+  /** Shown under the skeleton while loading, in the footer's place (a TableFooterSkeleton). */
+  loadingFooter?: React.ReactNode;
+  /** A control at the right edge of the header row (column settings). */
+  headerEnd?: React.ReactNode;
 };
 
-// Columns give way by the width the table actually has (a container query),
-// not the window: with the sidebar open a 1024px laptop leaves the table
-// about 730px, and lower-priority columns move into the row's expand panel.
-const PRIORITY_CELL: Record<ColumnPriority, string> = {
-  1: "",
-  2: "hidden @4xl/table:table-cell",
-  3: "hidden @5xl/table:table-cell",
-  4: "hidden @7xl/table:table-cell",
-};
+type Unit<T> = { kind: "row"; row: T; group: string | null } | { kind: "collapsed"; group: string };
+
+/** Columns in `order` first, the rest after in their given order. */
+export function orderColumns<C extends { id: string }>(columns: C[], order: string[] | undefined): C[] {
+  if (!order || order.length === 0) return columns;
+  const byId = new Map(columns.map((c) => [c.id, c]));
+  const first = order.map((id) => byId.get(id)).filter((c): c is C => !!c);
+  const seen = new Set(first.map((c) => c.id));
+  return [...first, ...columns.filter((c) => !seen.has(c.id))];
+}
 
 /* ─── Component ──────────────────────────────────────────────────── */
 
@@ -182,20 +214,44 @@ export function DataTable<T>(props: DataTableProps<T>) {
     selection,
     bulkActions,
     columnsKey,
+    columnOrder,
+    onColumnOrderChange,
+    hiddenColumns: controlledHidden,
+    onHiddenColumnsChange,
+    density: controlledDensity,
+    onDensityChange,
+    variant = "flush",
+    footer,
+    loadingFooter,
+    headerEnd,
   } = props;
+  const flush = variant === "flush";
 
-  const [hiddenIds, setColumnHidden] = useHiddenColumns(columnsKey);
+  const [storedHidden, setStoredHidden] = useHiddenColumns(columnsKey);
+  const hiddenIds = React.useMemo(() => (controlledHidden ? new Set(controlledHidden) : storedHidden), [controlledHidden, storedHidden]);
+  const setColumnHidden = (id: string, hide: boolean) => {
+    if (!onHiddenColumnsChange) return setStoredHidden(id, hide);
+    const next = new Set(hiddenIds);
+    if (hide) next.add(id);
+    else next.delete(id);
+    onHiddenColumnsChange([...next]);
+  };
+  const orderedColumns = React.useMemo(() => orderColumns(allColumns, columnOrder), [allColumns, columnOrder]);
   const firstColumnId = (allColumns.find((c) => c.card === "title") ?? allColumns[0])?.id;
   const columns = React.useMemo(
-    () => allColumns.filter((c) => c.id === firstColumnId || c.hideable === false || !hiddenIds.has(c.id)),
-    [allColumns, hiddenIds, firstColumnId],
+    () => orderedColumns.filter((c) => c.id === firstColumnId || c.hideable === false || !hiddenIds.has(c.id)),
+    [orderedColumns, hiddenIds, firstColumnId],
   );
 
   const [innerSort, setInnerSort] = React.useState<SortState>(defaultSort);
   const isControlled = controlledSort !== undefined;
   const sort = isControlled ? controlledSort : innerSort;
-  const [density, setDensity] = useDensity(densityKey ?? "ds-table-density", defaultDensity);
+  const [storedDensity, setStoredDensity] = useDensity(densityKey ?? "ds-table-density", defaultDensity);
+  const density = controlledDensity ?? storedDensity;
+  const setDensity = onDensityChange ?? setStoredDensity;
   const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set());
+  const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set());
+  const anchorRef = React.useRef<string | null>(null);
 
   const titleColumn = columns.find((c) => c.card === "title") ?? columns[0];
   // Rows expand to show P2/P3 columns hidden on smaller screens; P4 columns
@@ -230,8 +286,27 @@ export function DataTable<T>(props: DataTableProps<T>) {
   }, [sorted, groupBy]);
 
   const ordered = React.useMemo(() => (groups ? groups.flatMap((g) => g.rows) : sorted), [groups, sorted]);
-  const pagination = usePagination(ordered.length, pageSize ?? Math.max(ordered.length, 1), `${sort?.columnId}:${sort?.direction}:${rows.length}`);
-  const pageRows = pageSize ? ordered.slice(pagination.from - 1, pagination.to) : ordered;
+  // What the pages count: rows, plus one slot for each collapsed group so its
+  // header keeps its place.
+  const units = React.useMemo<Unit<T>[]>(() => {
+    if (!groups) return sorted.map((row) => ({ kind: "row", row, group: null }));
+    return groups.flatMap((g): Unit<T>[] =>
+      collapsed.has(g.key) ? [{ kind: "collapsed", group: g.key }] : g.rows.map((row) => ({ kind: "row", row, group: g.key })),
+    );
+  }, [groups, sorted, collapsed]);
+  const pagination = usePagination(units.length, pageSize ?? Math.max(units.length, 1), `${sort?.columnId}:${sort?.direction}:${rows.length}:${groupBy ? "g" : ""}`);
+  const pageUnits = pageSize ? units.slice(pagination.from - 1, pagination.to) : units;
+  const pageRows = pageUnits.flatMap((u) => (u.kind === "row" ? [u.row] : []));
+  const groupByKey = new Map((groups ?? []).map((g) => [g.key, g]));
+
+  function toggleGroup(key: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   function handleSort(col: DataTableColumn<T>) {
     const next = nextSort(sort, col.id, col.sortFirst ?? (col.numeric ? "desc" : "asc"));
@@ -250,7 +325,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
 
   /* ── Non-ready states ── */
   let body: React.ReactNode = null;
-  if (state === "loading") body = <LoadingState variant="table" count={5} label={`Loading ${noun}`} />;
+  if (state === "loading") body = null;
   else if (state === "error") body = <ErrorState onRetry={onRetry} detail={errorDetail} title={`We couldn’t load the ${noun}`} />;
   else if (rows.length === 0)
     body = isFiltered ? (
@@ -259,9 +334,14 @@ export function DataTable<T>(props: DataTableProps<T>) {
       empty ?? <EmptyState title={`No ${noun} yet`} description={`When there are ${noun}, they appear here.`} />
     );
 
-  const rowHeight = density === "compact" ? "h-(--table-row-compact)" : "h-(--table-row-comfortable)";
-  const cellPad = density === "compact" ? "px-3 py-1.5" : "px-4 py-2.5";
+  const rowHeight = flush
+    ? density === "compact" ? "h-[34px]" : "h-[42px]"
+    : density === "compact" ? "h-(--table-row-compact)" : "h-(--table-row-comfortable)";
+  const cellPad = flush
+    ? density === "compact" ? "px-3 py-1" : "px-3 py-1.5"
+    : density === "compact" ? "px-3 py-1.5" : "px-4 py-2.5";
   const hasExpand = hiddenColumns.length > 0;
+  const headCellBg = flush ? "h-[38px] border-t bg-surface-canvas" : "bg-surface-sunken";
   // The expand toggle stays until the widest hidden column is on screen.
   const expandHide = hiddenColumns.some((c) => c.priority === 4) ? "@7xl/table:hidden"
     : hiddenColumns.some((c) => c.priority === 3) ? "@5xl/table:hidden" : "@4xl/table:hidden";
@@ -277,6 +357,19 @@ export function DataTable<T>(props: DataTableProps<T>) {
     const next = new Set([...selection.selected].filter((x) => rowIds.has(x)));
     if (on) next.add(id);
     else next.delete(id);
+    selection.onChange(next);
+  }
+  /** Shift+click selects (or clears) every row between the last one clicked and this one. */
+  function toggleRow(id: string, on: boolean, shift: boolean) {
+    const anchor = anchorRef.current;
+    anchorRef.current = id;
+    if (!selection || !shift || !anchor || anchor === id || !pageIds.includes(anchor)) return setRowSelected(id, on);
+    const [a, b] = [pageIds.indexOf(anchor), pageIds.indexOf(id)].sort((x, y) => x - y);
+    const next = new Set([...selection.selected].filter((x) => rowIds.has(x)));
+    for (const rid of pageIds.slice(a, b + 1)) {
+      if (on) next.add(rid);
+      else next.delete(rid);
+    }
     selection.onChange(next);
   }
   function setPageSelected(on: boolean) {
@@ -298,17 +391,25 @@ export function DataTable<T>(props: DataTableProps<T>) {
         <div className="flex flex-wrap items-center gap-2">
           <div className="min-w-0 grow basis-[34rem]">{toolbar}</div>
           <div className="ms-auto hidden items-center gap-2 md:flex">
-            {columnsKey && (
+            {columnsKey && onColumnOrderChange && (
+              <ColumnSettings
+                columns={orderedColumns.map((c) => ({ id: c.id, label: c.header, locked: c.id === firstColumnId || c.hideable === false }))}
+                hidden={hiddenIds}
+                onHiddenChange={setColumnHidden}
+                onOrderChange={onColumnOrderChange}
+              />
+            )}
+            {columnsKey && !onColumnOrderChange && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-9 gap-1.5">
-                    <Columns3 size={14} aria-hidden />Columns
+                    <Columns3 size={12} aria-hidden />Columns
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Show columns</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {allColumns.map((c) => {
+                  {orderedColumns.map((c) => {
                     const locked = c.id === firstColumnId || c.hideable === false;
                     return (
                       <DropdownMenuCheckboxItem
@@ -352,12 +453,28 @@ export function DataTable<T>(props: DataTableProps<T>) {
         </div>
       )}
 
-      {body ?? (
+      {state === "loading" ? (
+        // First load only: the skeleton has this table's columns, row height
+        // and priority breakpoints, so nothing moves when the rows arrive.
+        <>
+          <TableSkeleton
+            label={noun}
+            columns={columns}
+            rows={skeletonRowCount(pageSize)}
+            density={density}
+            variant={variant}
+            leading={[...(selection ? ["w-10"] : []), ...(hasExpand ? [cn("w-10", expandHide)] : [])]}
+            trailing={[...(rowActions ? ["w-12"] : []), ...(headerEnd ? ["w-10"] : [])]}
+          />
+          {loadingFooter}
+        </>
+      ) : body ?? (
         <>
           {/* ── Table (when the table has at least 42rem) ── */}
           <div
             className={cn(
-              "relative hidden min-w-0 overflow-auto rounded-container border border-border-default bg-surface-raised shadow-raised @2xl/table:block",
+              "relative hidden min-w-0 overflow-auto @2xl/table:block",
+              flush ? "" : "rounded-container border border-border-default bg-surface-raised shadow-raised",
               maxHeightClass,
             )}
             // Scroll containers must be focusable so keyboard users can scroll (WCAG 2.1.1).
@@ -366,7 +483,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
             aria-label={`${caption} (scrollable)`}
           >
             <table
-              className="w-full border-separate border-spacing-0 text-body"
+              className={cn("w-full border-separate border-spacing-0", flush ? "text-[14px]" : "text-body")}
               aria-rowcount={pageSize ? ordered.length + 1 : undefined}
             >
               <caption className={cn(showCaption ? "px-4 py-3 text-start text-body-lg font-semibold text-fg-primary" : "sr-only")}>
@@ -376,7 +493,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
               <thead>
                 <tr>
                   {selection && (
-                    <th scope="col" className="sticky top-0 z-(--z-sticky) w-10 border-b border-border-default bg-surface-sunken ps-3">
+                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default ps-3", headCellBg)}>
                       <Checkbox
                         checked={allOnPage}
                         indeterminate={pageSelected > 0 && !allOnPage}
@@ -386,7 +503,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                     </th>
                   )}
                   {hasExpand && (
-                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default bg-surface-sunken", expandHide)}>
+                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default", headCellBg, expandHide)}>
                       <span className="sr-only">Details</span>
                     </th>
                   )}
@@ -400,7 +517,10 @@ export function DataTable<T>(props: DataTableProps<T>) {
                         scope="col"
                         aria-sort={ariaSort}
                         className={cn(
-                          "sticky top-0 z-(--z-sticky) h-(--table-header-height) border-b border-border-default bg-surface-sunken text-caption font-semibold whitespace-nowrap text-fg-secondary",
+                          "sticky top-0 z-(--z-sticky) border-b border-border-default whitespace-nowrap",
+                          flush
+                            ? "h-[38px] border-t bg-surface-canvas text-[12px] font-normal text-[var(--ink-600)]"
+                            : "h-(--table-header-height) bg-surface-sunken text-caption font-semibold text-fg-secondary",
                           col.numeric ? "text-end" : "text-start",
                           sortable ? "px-1.5" : cellPad,
                           PRIORITY_CELL[col.priority ?? 1],
@@ -412,7 +532,8 @@ export function DataTable<T>(props: DataTableProps<T>) {
                             type="button"
                             onClick={() => handleSort(col)}
                             className={cn(
-                              "inline-flex min-h-(--target-min) items-center gap-1 rounded-md px-2.5 py-1 transition-colors duration-(--duration-instant) hover:bg-surface-hover hover:text-fg-primary",
+                              "inline-flex items-center gap-1 rounded-md px-2.5 transition-colors duration-(--duration-instant) hover:bg-surface-hover hover:text-fg-primary",
+                              flush ? "h-7" : "min-h-(--target-min) py-1",
                               col.numeric && "flex-row-reverse",
                               active && "text-fg-primary",
                             )}
@@ -427,8 +548,13 @@ export function DataTable<T>(props: DataTableProps<T>) {
                     );
                   })}
                   {rowActions && (
-                    <th scope="col" className="sticky top-0 z-(--z-sticky) w-12 border-b border-border-default bg-surface-sunken">
+                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-12 border-b border-border-default", headCellBg)}>
                       <span className="sr-only">Actions</span>
+                    </th>
+                  )}
+                  {headerEnd && (
+                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default pe-2 text-end", headCellBg)}>
+                      {headerEnd}
                     </th>
                   )}
                 </tr>
@@ -444,10 +570,12 @@ export function DataTable<T>(props: DataTableProps<T>) {
             {renderCards()}
           </ul>
 
-          {pageSize && ordered.length > pageSize && (
+          {footer}
+
+          {pageSize && units.length > pageSize && (
             <Pagination state={pagination} noun={noun} />
           )}
-          {pageSize && ordered.length <= pageSize && (
+          {pageSize && units.length <= pageSize && !footer && (
             <p className="text-caption text-fg-tertiary" aria-live="polite">
               Showing {formatValue(ordered.length)} {noun}
             </p>
@@ -459,58 +587,87 @@ export function DataTable<T>(props: DataTableProps<T>) {
 
   /* ── Row rendering ── */
 
-  function groupHeaderFor(row: T, index: number): { key: string; rows: T[] } | null {
+  /** The group header to draw before page unit `i`, if any. */
+  function headerAt(i: number): { key: string; rows: T[]; collapsed: boolean } | null {
     if (!groups || !groupBy) return null;
-    const k = groupBy.key(row);
-    const prev = index > 0 ? groupBy.key(pageRows[index - 1]) : null;
-    if (prev === k) return null;
-    return groups.find((g) => g.key === k) ?? null;
+    const u = pageUnits[i];
+    const g = u.group === null ? undefined : groupByKey.get(u.group);
+    if (!g) return null;
+    if (u.kind === "collapsed") return { ...g, collapsed: true };
+    const prev = i > 0 ? pageUnits[i - 1] : null;
+    if (prev && prev.kind === "row" && prev.group === u.group) return null;
+    return { ...g, collapsed: false };
+  }
+
+  function groupToggle(group: { key: string; rows: T[]; collapsed: boolean }) {
+    const name = groupBy!.label(group.key);
+    return (
+      <button
+        type="button"
+        aria-expanded={!group.collapsed}
+        onClick={() => toggleGroup(group.key)}
+        className="-ms-1.5 inline-flex min-h-8 items-center gap-1.5 rounded-md px-1.5 text-start hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus max-md:min-h-(--target-min)"
+      >
+        <ChevronDown size={12} aria-hidden className={cn("shrink-0 text-fg-tertiary transition-transform duration-(--duration-fast)", group.collapsed && "-rotate-90 rtl:rotate-90")} />
+        <span>{name}</span>
+        <span className="font-normal text-fg-tertiary tabular-nums">
+          {formatValue(group.rows.length)}
+          <span className="sr-only"> {group.rows.length === 1 ? singular(noun) : noun}{group.collapsed ? ", collapsed" : ""}</span>
+        </span>
+      </button>
+    );
   }
 
   function renderRows() {
-    const colCount = columns.length + (hasExpand ? 1 : 0) + (rowActions ? 1 : 0) + (selection ? 1 : 0);
-    return pageRows.map((row, i) => {
+    const colCount = columns.length + (hasExpand ? 1 : 0) + (rowActions ? 1 : 0) + (selection ? 1 : 0) + (headerEnd ? 1 : 0);
+    return pageUnits.map((unit, i) => {
+      const group = headerAt(i);
+      const header = group && groupBy && (
+        <tr key={`group:${group.key}`}>
+          <th
+            scope="colgroup"
+            colSpan={colCount}
+            className={cn(
+              "sticky z-[19] border-b border-border-default bg-surface-canvas px-3 py-1 text-start text-caption font-semibold text-fg-primary",
+              flush ? "top-[38px]" : "top-(--table-header-height)",
+            )}
+          >
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+              {groupToggle(group)}
+              {groupBy.subtotal && <span className="ms-auto font-medium tabular-nums text-fg-secondary">{groupBy.subtotal(group.rows)}</span>}
+            </span>
+          </th>
+        </tr>
+      );
+      if (unit.kind === "collapsed") return header;
+      const row = unit.row;
       const id = getRowId(row);
       const href = getRowHref?.(row);
       const isOpen = expanded.has(id);
-      const group = groupHeaderFor(row, i);
       const label = getRowLabel?.(row) ?? cellText(titleColumn, row);
       const clickable = Boolean(href || onRowClick);
+      const isSelected = selection ? selection.selected.has(id) : false;
       return (
         <React.Fragment key={id}>
-          {group && groupBy && (
-            <tr>
-              <th
-                scope="colgroup"
-                colSpan={colCount}
-                className="sticky top-(--table-header-height) z-[19] border-b border-border-default bg-surface-canvas px-4 py-2 text-start text-caption font-semibold text-fg-primary"
-              >
-                <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                  <span>{groupBy.label(group.key)}</span>
-                  <span className="font-normal text-fg-tertiary tabular-nums">
-                    {formatValue(group.rows.length)} {group.rows.length === 1 ? singular(noun) : noun}
-                  </span>
-                  {groupBy.subtotal && <span className="ms-auto font-medium tabular-nums text-fg-secondary">{groupBy.subtotal(group.rows)}</span>}
-                </span>
-              </th>
-            </tr>
-          )}
+          {header}
           <tr
             aria-rowindex={pageSize ? pagination.from + i + 1 : undefined}
+            data-active={activeRowId === id || undefined}
             className={cn(
               "group/row relative transition-colors duration-(--duration-instant)",
               clickable && "cursor-pointer hover:bg-surface-hover focus-within:bg-surface-hover",
-              activeRowId === id && "bg-[var(--brand-primary-50)] hover:bg-[var(--brand-primary-50)]",
+              activeRowId === id && "bg-surface-selected hover:bg-surface-selected",
+              flush && isSelected && "bg-surface-selected",
             )}
             onClick={!href && onRowClick ? () => onRowClick(row) : undefined}
-            aria-selected={selection ? selection.selected.has(id) : undefined}
+            aria-selected={selection ? isSelected : undefined}
           >
             {selection && (
               <td
-                className={cn("relative z-(--z-raised) w-10 border-b border-border-subtle ps-3 align-middle", rowHeight, selection.selected.has(id) && "bg-[var(--brand-primary-50)]")}
+                className={cn("relative z-(--z-raised) w-10 border-b border-border-subtle ps-3 align-middle", rowHeight, isSelected && "bg-surface-selected")}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Checkbox checked={selection.selected.has(id)} onChange={(on) => setRowSelected(id, on)} label={`Select ${label}`} />
+                <Checkbox checked={isSelected} onChange={(on, shift) => toggleRow(id, on, shift)} label={`Select ${label}`} />
               </td>
             )}
             {hasExpand && (
@@ -535,11 +692,13 @@ export function DataTable<T>(props: DataTableProps<T>) {
               return (
                 <td
                   key={col.id}
+                  onClick={col.stopRowClick ? (e) => e.stopPropagation() : undefined}
                   className={cn(
                     "border-b border-border-subtle align-middle text-fg-primary",
                     rowHeight,
                     cellPad,
                     col.numeric ? "text-end tabular-nums whitespace-nowrap" : "text-start",
+                    col.stopRowClick && "relative z-(--z-raised) cursor-default",
                     PRIORITY_CELL[col.priority ?? 1],
                     col.className,
                   )}
@@ -576,6 +735,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                 {rowActions(row)}
               </td>
             )}
+            {headerEnd && <td aria-hidden className={cn("border-b border-border-subtle", rowHeight)} />}
           </tr>
           {hasExpand && isOpen && (
             <tr className={expandHide}>
@@ -601,20 +761,25 @@ export function DataTable<T>(props: DataTableProps<T>) {
     const fieldCols = columns.filter(
       (c) => c.id !== titleColumn.id && c.card !== "status" && c.card !== "hidden" && (c.card === "field" || (c.priority ?? 1) === 1),
     );
-    return pageRows.map((row, i) => {
+    return pageUnits.map((unit, i) => {
+      const group = headerAt(i);
+      const header = group && groupBy && (
+        <li key={`group:${group.key}`} className="mt-2 flex items-center gap-2 px-1 text-caption font-semibold text-fg-primary first:mt-0">
+          {groupToggle(group)}
+          {groupBy.subtotal && <span className="ms-auto font-medium text-fg-secondary">{groupBy.subtotal(group.rows)}</span>}
+        </li>
+      );
+      if (unit.kind === "collapsed") return header;
+      const row = unit.row;
       const id = getRowId(row);
       const href = getRowHref?.(row);
-      const group = groupHeaderFor(row, i);
       return (
         <React.Fragment key={id}>
-          {group && groupBy && (
-            <li className="mt-2 flex items-baseline gap-2 px-1 text-caption font-semibold text-fg-primary first:mt-0">
-              {groupBy.label(group.key)}
-              <span className="font-normal text-fg-tertiary">{formatValue(group.rows.length)}</span>
-              {groupBy.subtotal && <span className="ms-auto font-medium text-fg-secondary">{groupBy.subtotal(group.rows)}</span>}
-            </li>
-          )}
-          <li className="relative flex flex-col gap-2 rounded-container border border-border-default bg-surface-raised p-4 shadow-raised">
+          {header}
+          <li className={cn(
+            "relative flex flex-col gap-2 rounded-container border border-border-default bg-surface-raised p-4 shadow-raised",
+            activeRowId === id && "border-[var(--brand-primary-300)] bg-surface-selected",
+          )}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 text-body-lg font-semibold text-fg-primary">
                 {href ? (
@@ -636,6 +801,15 @@ export function DataTable<T>(props: DataTableProps<T>) {
                   renderCell(titleColumn, row)
                 )}
               </div>
+              {selection && (
+                <div className="relative z-(--z-raised) -me-1 inline-flex size-11 shrink-0 items-center justify-center -mt-2.5">
+                  <Checkbox
+                    checked={selection.selected.has(id)}
+                    onChange={(on, shift) => toggleRow(id, on, shift)}
+                    label={`Select ${getRowLabel?.(row) ?? cellText(titleColumn, row)}`}
+                  />
+                </div>
+              )}
               {rowActions && <div className="relative z-(--z-raised) -me-2 -mt-1 shrink-0">{rowActions(row)}</div>}
             </div>
             {statusCols.length > 0 && (
@@ -782,8 +956,10 @@ export function DateCell({ value, now }: { value: string | number | Date | null 
 
 /** Native checkbox (keyboard, screen readers and forms for free), styled to the system. */
 function Checkbox({ checked, indeterminate = false, onChange, label }: {
-  checked: boolean; indeterminate?: boolean; onChange: (on: boolean) => void; label: string;
+  checked: boolean; indeterminate?: boolean; onChange: (on: boolean, shift: boolean) => void; label: string;
 }) {
+  // A checkbox's change event is its click: shiftKey says "select the range".
+  const shiftOf = (e: React.ChangeEvent<HTMLInputElement>) => "shiftKey" in e.nativeEvent && (e.nativeEvent as MouseEvent).shiftKey;
   const ref = React.useRef<HTMLInputElement>(null);
   React.useEffect(() => {
     if (ref.current) ref.current.indeterminate = indeterminate;
@@ -793,7 +969,7 @@ function Checkbox({ checked, indeterminate = false, onChange, label }: {
       ref={ref}
       type="checkbox"
       checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
+      onChange={(e) => onChange(e.target.checked, shiftOf(e))}
       aria-label={label}
       className="size-4 cursor-pointer rounded-sm accent-[var(--brand-primary-600)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
     />

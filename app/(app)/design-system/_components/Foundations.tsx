@@ -218,9 +218,9 @@ export function Foundations() {
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {(
               [
-                ["60% dominant", "Warm white canvas #F8F7F4, white cards, warm neutrals", "Page, cards, tables. Body text 16.06:1 on canvas."],
-                ["30% secondary", "Navy #14213D and its ramp", "Sidebar, header bands, section headings, dark panels, primary chart series. White on navy 15.97:1."],
-                ["10% accent", "Teal #0F766E and its ramp", "Primary buttons, links, focus, active nav, selected tab. White on teal 5.47:1; teal on white 5.47:1."],
+                ["Neutrals", "Slate canvas #F8FAFC, white panels, slate ramp", "Page, panels, tables. Body text 17.06:1 on canvas."],
+                ["Structure", "Navy #14213D and its ramp", "Structure marks and the primary chart series. White on navy 15.97:1."],
+                ["Accent", "Logo blue #2F5FE0 and its ramp", "Primary buttons, links, focus ring, selection. White on blue 5.47:1; blue on white 5.47:1."],
               ] as const
             ).map(([role, colour, use]) => (
               <div key={role} className="flex flex-col gap-1 border-t border-border-default pt-3">

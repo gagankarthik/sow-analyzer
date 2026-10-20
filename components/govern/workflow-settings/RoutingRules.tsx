@@ -59,11 +59,10 @@ export function RoutingRules({
       description={`Rules that send a contract to an internal office before signature. ${enabledCount} of ${rules.length} on. A contract that matches several rules needs every office named.`}
       action={!readOnly && (
         <Button
-          size="lg"
-          className="w-full sm:w-auto md:h-9"
+          className="w-full sm:w-auto"
           onClick={() => setEditing({ isNew: true, rule: { id: newId("route"), name: "", enabled: true, when: {}, route: ["legal_affairs"] } })}
         >
-          <Plus size={15} />Add a routing rule
+          <Plus size={16} />Add a routing rule
         </Button>
       )}
       flush
@@ -107,11 +106,11 @@ export function RoutingRules({
                   </label>
                   {!readOnly && (
                     <>
-                      <Button variant="outline" className="h-10 md:h-9" onClick={() => setEditing({ rule: r, isNew: false })} aria-label={`Edit ${r.name || "rule"}`}>
-                        <Pencil size={14} />Edit
+                      <Button variant="outline" className="h-10" onClick={() => setEditing({ rule: r, isNew: false })} aria-label={`Edit ${r.name || "rule"}`}>
+                        <Pencil size={16} />Edit
                       </Button>
-                      <Button variant="ghost" className="h-10 text-[var(--danger)] md:h-9" onClick={() => setRemoving(r)} aria-label={`Delete ${r.name || "rule"}`}>
-                        <Trash2 size={14} /><span className="md:sr-only">Delete</span>
+                      <Button variant="ghost" className="h-10 text-[var(--danger)]" onClick={() => setRemoving(r)} aria-label={`Delete ${r.name || "rule"}`}>
+                        <Trash2 size={16} /><span className="md:sr-only">Delete</span>
                       </Button>
                     </>
                   )}
@@ -280,8 +279,8 @@ function RoutingRuleForm({
       </label>
 
       <DialogFooter>
-        <Button type="button" variant="outline" size="lg" className="md:h-9" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" size="lg" className="md:h-9">{isNew ? "Add rule" : "Done"}</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button type="submit">{isNew ? "Add rule" : "Done"}</Button>
       </DialogFooter>
     </form>
   );

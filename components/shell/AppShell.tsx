@@ -1,15 +1,33 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
-import { CopilotPanel } from "./CopilotPanel";
+import { CommandPalette } from "./CommandPalette";
+import { useRouter } from "next/navigation";
+import { useGlobalHotkeys, type HotkeyAction } from "@/lib/hotkeys";
 import { useUIStore } from "@/lib/stores/ui";
 import { EditionScope } from "./EditionScope";
 import { hydrateProjects, startProjectsSync } from "@/lib/projects-store";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { clearSessionCookie } from "@/lib/auth/session";
 import { useIdleSignOut } from "@/lib/auth/use-idle-sign-out";
+import { useGovernRealtime } from "@/lib/govern/realtime";
+
+// Overlays that most visits never open load on first open only, then stay
+// mounted so their close animation (and Sonar's thread) survives.
+const CopilotPanel = dynamic(() => import("./CopilotPanel").then((m) => m.CopilotPanel), { ssr: false });
+const ShortcutsDialog = dynamic(() => import("./ShortcutsDialog").then((m) => m.ShortcutsDialog), { ssr: false });
+
+/** True from the first time `open` is true, for good. */
+function useOpenedOnce(open: boolean): boolean {
+  const [opened, setOpened] = useState(open);
+  // Adjusting state during render (not in an effect) so the overlay mounts in
+  // the same pass that opens it.
+  if (open && !opened) setOpened(true);
+  return opened || open;
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -23,7 +41,21 @@ function Shell({ children }: { children: React.ReactNode }) {
   const copilotOpen = useUIStore((s) => s.copilotOpen);
   const toggleCopilot = useUIStore((s) => s.toggleCopilot);
   const setCopilotOpen = useUIStore((s) => s.setCopilotOpen);
+  const shortcutsOpen = useUIStore((s) => s.shortcutsOpen);
+  const copilotMounted = useOpenedOnce(copilotOpen);
+  const shortcutsMounted = useOpenedOnce(shortcutsOpen);
   const [mobileNav, setMobileNav] = useState(false);
+  const router = useRouter();
+
+  // Global keyboard shortcuts (H, W, C, O, R, U, S, /, ?, Ctrl/Cmd+K), bound once.
+  const onHotkey = useCallback((action: HotkeyAction) => {
+    const ui = useUIStore.getState();
+    if (action.type === "navigate") router.push(action.href);
+    else if (action.type === "palette") ui.setPaletteOpen(!ui.paletteOpen);
+    else if (action.type === "sonar") ui.toggleCopilot();
+    else ui.setShortcutsOpen(true);
+  }, [router]);
+  useGlobalHotkeys(onHotkey);
 
   // Load the projects the signed-in user can see (their own and the ones shared
   // with them), then keep them fresh: re-read on window focus, on reconnect and
@@ -37,6 +69,8 @@ function Shell({ children }: { children: React.ReactNode }) {
   // at 28). Other devices keep their own sessions.
   const idleSignOut = useCallback(() => signOut(), [signOut]);
   useIdleSignOut({ enabled: status === "authenticated", onTimeout: idleSignOut });
+  // Other people's contract changes reach open boards and records within a second or two.
+  useGovernRealtime();
   useEffect(() => {
     if (status !== "authenticated") return;
     void hydrateProjects(userId);
@@ -81,7 +115,9 @@ function Shell({ children }: { children: React.ReactNode }) {
         />
         <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">{children}</main>
       </div>
-      <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />
+      {copilotMounted && <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />}
+      <CommandPalette />
+      {shortcutsMounted && <ShortcutsDialog />}
     </div>
   );
 }

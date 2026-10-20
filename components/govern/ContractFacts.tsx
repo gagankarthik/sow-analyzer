@@ -3,12 +3,13 @@
 import { EDITION_TERMS, type EditionTerms } from "@/lib/edition";
 import { useEditionTerms } from "@/lib/govern/queries";
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AGREEMENT_TYPE_LABEL, DIRECTION_LABEL } from "@/lib/govern/labels";
 import { contractValueText } from "@/lib/govern/metrics";
 import type { Contract, ContractVersion } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
+import { SkeletonLine } from "@/components/ds/skeletons";
 
 /* The two fact blocks every view of a contract shares (the dashboard preview
    and the contract page): its documents, newest first, and its properties,
@@ -30,7 +31,16 @@ export function ContractDocuments({ contract: c, versions, loading = false, clas
         Documents{versions.length > 0 && <span className="text-sm font-medium text-[var(--ink-500)]">{versions.length}</span>}
       </h3>
       <ul className="mt-3 flex flex-col gap-2">
-        {loading && <li><Skeleton className="h-14 rounded-lg" /></li>}
+        {loading && (
+          <li aria-busy="true" className="flex min-h-14 items-center gap-3 rounded-lg border border-border px-3 py-2">
+            <span role="status" className="sr-only">Loading documents</span>
+            <Skeleton className="size-8 shrink-0 rounded-md" />
+            <span aria-hidden className="flex min-w-0 flex-1 flex-col">
+              <SkeletonLine text="text-sm font-medium" width="w-2/3" />
+              <SkeletonLine text="text-xs" width="w-1/3" />
+            </span>
+          </li>
+        )}
         {!loading && ordered.length === 0 && (
           <li>
             <DocLink href={`/projects/${encodeURIComponent(c.currentDocId)}`} title="Current version" sub={null} />

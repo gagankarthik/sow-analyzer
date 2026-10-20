@@ -31,15 +31,15 @@ export function TypeSwitcher({
             aria-pressed={isActive}
             onClick={() => onChange(t)}
             className={cn(
-              "inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors md:h-9",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              "inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-md border px-2.5 text-xs font-medium transition-colors duration-150 max-md:h-11",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]",
               isActive
-                ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-600)] text-white"
-                : "border-[var(--ink-300)] bg-card text-[var(--ink-700)] hover:border-[var(--ink-400)] hover:text-foreground",
+                ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]"
+                : "border-[var(--ink-300)] bg-card text-[var(--ink-700)] hover:bg-[var(--ink-50)] hover:text-foreground",
             )}
           >
             {AGREEMENT_TYPE_LABEL[t]}
-            <span className={cn("tabular-nums text-xs", isActive ? "text-[var(--brand-primary-100)]" : "text-muted-foreground")}>{counts[t]}</span>
+            <span className={cn("tabular-nums text-xs", isActive ? "text-[var(--brand-primary-700)]" : "text-[var(--ink-500)]")}>{counts[t]}</span>
             {isDirty && <span className="h-1.5 w-1.5 rounded-full bg-[var(--warning)]" aria-label="has unsaved changes" />}
           </button>
         );

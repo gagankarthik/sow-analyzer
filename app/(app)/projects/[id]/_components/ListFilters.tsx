@@ -1,11 +1,18 @@
 "use client";
 
-// One filter bar for every list inside a project (clauses, versions, changes,
-// timeline events, parties, members, documents). It only renders controls and
-// counts; each page owns its filter state and does the actual filtering.
+// One filter toolbar for every list inside a project (clauses, versions,
+// changes, timeline events, parties, members, documents), on the shared ds
+// Toolbar (UI_SPEC section 9): one 32px row (search 240px, [Label │ Value ▾]
+// quick filters, count + Clear, sort on the right); below md a search row and
+// a "Filters (n)" sheet. It only renders controls and counts; each page owns
+// its filter state and does the actual filtering.
 
 import { Search, X } from "@/components/ui/icons";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FilterButtonTrigger, RadioFilterButton } from "@/components/ds/FilterButton";
+import { Toolbar } from "@/components/ds/Toolbar";
 import { cn } from "@/lib/utils";
 
 /** Value every filter group uses for "no filter applied". */
@@ -19,9 +26,9 @@ export type FilterGroup = {
   value: string;
   onChange: (value: string) => void;
   options: FilterOption[];
-  /** Chips for short option sets, a select for long ones. */
+  /** Kept for compatibility: every group now renders as one quick filter. */
   as?: "chips" | "select";
-  /** Label of the select's "no filter" entry, e.g. "All categories". */
+  /** Kept for compatibility: the "no filter" entry always reads "Any". */
   allLabel?: string;
 };
 
@@ -41,8 +48,7 @@ type Props = {
   className?: string;
 };
 
-const CONTROL_H = "h-10 md:h-9";
-const TRIGGER = "w-full shrink-0 bg-card text-sm md:data-[size=default]:h-9";
+const NUMBER = new Intl.NumberFormat("en-US");
 
 export function activeFilterCount(search: string, groups: FilterGroup[] = []): number {
   return (search.trim() ? 1 : 0) + groups.filter((g) => g.value !== ALL).length;
@@ -51,106 +57,81 @@ export function activeFilterCount(search: string, groups: FilterGroup[] = []): n
 export function ListFilters({ search, onSearch, placeholder, groups = [], sort, shown, total, noun, onClear, className }: Props) {
   const active = activeFilterCount(search, groups);
   const visibleGroups = groups.filter((g) => g.options.length > 1 || g.value !== ALL);
+  const filtersSet = groups.filter((g) => g.value !== ALL).length;
+  const quick = visibleGroups.map((g) => (
+    <RadioFilterButton
+      key={g.id}
+      label={g.label}
+      value={g.value}
+      anyValue={ALL}
+      onChange={g.onChange}
+      options={[
+        { value: ALL, label: "Any" },
+        ...g.options.map((o) => ({
+          value: o.value,
+          label: typeof o.count === "number" ? `${o.label} (${NUMBER.format(o.count)})` : o.label,
+        })),
+      ]}
+    />
+  ));
+  const sortButton = sort ? <SortButton sort={sort} /> : null;
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <label className={cn("flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[var(--ink-300)] bg-card px-3 transition-shadow focus-within:border-[var(--brand-primary-600)] focus-within:ring-2 focus-within:ring-[var(--brand-primary-100)]", CONTROL_H)}>
-          <Search size={15} className="shrink-0 text-muted-foreground" />
-          <span className="sr-only">{placeholder}</span>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-            placeholder={placeholder}
-            className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-[var(--ink-500)]"
-          />
-        </label>
-        {sort && (
-          <Select value={sort.value} onValueChange={sort.onChange}>
-            <SelectTrigger aria-label="Sort" className={cn(TRIGGER, "sm:w-[190px]")}><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {sort.options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
-
-      {/* Filters: a single sideways-scrolling row on narrow screens, wrapping from md up. */}
-      {visibleGroups.length > 0 && (
-        <div className="-mx-1 flex items-center gap-x-4 gap-y-2 overflow-x-auto px-1 py-0.5 scrollbar-none md:flex-wrap md:overflow-visible">
-          {visibleGroups.map((g) =>
-            g.as === "select" ? (
-              <Select key={g.id} value={g.value} onValueChange={g.onChange}>
-                <SelectTrigger aria-label={g.label} className={cn(TRIGGER, "w-auto min-w-[160px]", g.value !== ALL && "border-[var(--brand-primary-600)] text-[var(--brand-primary-700)]")}><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>{g.allLabel ?? `All ${g.label.toLowerCase()}`}</SelectItem>
-                  {g.options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div key={g.id} role="group" aria-label={g.label} className="flex shrink-0 items-center gap-1.5">
-                <span className="mr-0.5 text-xs font-medium text-muted-foreground">{g.label}</span>
-                {g.options.map((o) => {
-                  const on = g.value === o.value;
-                  return (
-                    <button
-                      key={o.value}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => g.onChange(on ? ALL : o.value)}
-                      className={cn(
-                        "inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-8",
-                        "h-10",
-                        on
-                          ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]"
-                          : "border-[var(--ink-300)] bg-card text-[var(--ink-600)] hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      {o.dot && <span className={cn("h-2 w-2 rounded-full", o.dot)} aria-hidden />}
-                      {o.label}
-                      {typeof o.count === "number" && <span className="font-semibold tabular-nums">{o.count}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            ),
-          )}
-        </div>
-      )}
-
-      <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
-        <p className="text-[var(--ink-600)]" aria-live="polite">
-          <span className="font-semibold tabular-nums text-foreground">{shown}</span> of <span className="tabular-nums">{total}</span> {noun}
-          {active > 0 && <span className="ml-2 rounded-md bg-structure-soft px-1.5 py-0.5 text-xs font-semibold text-structure-soft-fg">{active} filter{active === 1 ? "" : "s"} active</span>}
-        </p>
-        {active > 0 && (
-          <button
-            type="button"
-            onClick={onClear}
-            className="inline-flex h-10 items-center gap-1 rounded-md px-1 text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:h-8"
-          >
-            <X size={14} />Clear filters
+    <div className={cn("flex min-w-0 flex-col gap-2", className)}>
+      <Toolbar
+        label={`Filter ${noun}`}
+        activeCount={filtersSet}
+        mobileSheet={quick.length > 0 || sortButton ? <div className="flex flex-col items-start gap-3">{quick.length > 0 ? quick : sortButton}</div> : undefined}
+        mobileActions={quick.length > 0 ? sortButton : undefined}
+      >
+        <Toolbar.Search label={placeholder} placeholder={placeholder} value={search} onChange={onSearch} />
+        {quick.length > 0 && <Toolbar.Filters always>{quick}</Toolbar.Filters>}
+        <Toolbar.Clear count={filtersSet} onClear={onClear} />
+        {sortButton && <Toolbar.Actions>{sortButton}</Toolbar.Actions>}
+      </Toolbar>
+      <p className="text-xs text-[var(--ink-600)]" aria-live="polite">
+        <span className="tabular-nums text-foreground">{NUMBER.format(shown)}</span> of{" "}
+        <span className="tabular-nums">{NUMBER.format(total)}</span> {noun}
+        {active > 0 && filtersSet === 0 && (
+          <button type="button" onClick={onClear} className="ml-2 rounded-sm font-medium text-[var(--brand-primary-600)] hover:underline underline-offset-2 max-md:min-h-11">
+            Clear search
           </button>
         )}
-      </div>
+      </p>
     </div>
   );
 }
 
-/** "Nothing matches these filters" — distinct from a list that is genuinely empty. */
+/** The sort choice in the toolbar's right group: [Sort │ Newest ▾], 32px. */
+function SortButton({ sort }: { sort: SortControl }) {
+  const current = sort.options.find((o) => o.value === sort.value)?.label ?? sort.options[0]?.label ?? "";
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <FilterButtonTrigger label="Sort" value={current} className="max-md:h-11" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-44">
+        <DropdownMenuRadioGroup value={sort.value} onValueChange={sort.onChange}>
+          {sort.options.map((o) => <DropdownMenuRadioItem key={o.value} value={o.value}>{o.label}</DropdownMenuRadioItem>)}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** "Nothing matches these filters": distinct from a list that is genuinely empty. */
 export function NoResults({ noun, onClear }: { noun: string; onClear: () => void }) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-10 text-center">
-      <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]"><Search size={18} /></span>
-      <p className="text-base font-semibold text-foreground">No {noun} match these filters</p>
+      <Search size={24} aria-hidden className="mb-3 text-[var(--ink-500)]" />
+      <p className="text-sm font-semibold text-foreground">No {noun} match these filters</p>
       <p className="mt-1 text-sm text-[var(--ink-600)]">Try a different search or remove a filter.</p>
       <button
         type="button"
         onClick={onClear}
-        className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--ink-300)] bg-card px-4 text-base font-semibold text-foreground shadow-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--ink-300)] bg-card px-3 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-muted max-md:h-11"
       >
-        <X size={14} />Clear filters
+        <X size={16} aria-hidden />Clear filters
       </button>
     </div>
   );

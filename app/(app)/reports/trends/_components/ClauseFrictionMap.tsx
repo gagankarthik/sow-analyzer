@@ -90,8 +90,8 @@ export function ClauseFrictionMap({
         {deviations.map((d) => (
           <li key={d.clauseType} className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-3 py-3">
             <span className="min-w-0">
-              <span className="block truncate text-base font-medium text-foreground">{d.label}</span>
-              <span className="text-sm text-[var(--ink-600)]">{d.total} in this window</span>
+              <span className="block truncate text-sm font-medium text-foreground">{d.label}</span>
+              <span className="text-xs tabular-nums text-[var(--ink-600)]">{d.total} in this window</span>
             </span>
             <Sparkline
               periods={labels}

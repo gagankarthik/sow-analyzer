@@ -4,7 +4,7 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+import { ChevronDown, Check, ChevronUp } from "@/components/ui/icons"
 
 function Select({
   ...props
@@ -51,7 +51,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="pointer-events-none size-4 text-[var(--ink-500)] transition-transform duration-150 group-data-[state=open]/select:rotate-180" />
+        <ChevronDown size={16} className="pointer-events-none size-4 text-[var(--ink-500)] transition-transform duration-150 group-data-[state=open]/select:rotate-180" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -70,7 +70,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         data-align-trigger={position === "item-aligned"}
-        className={cn("relative z-50 max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-(--radix-select-trigger-width) origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-[0_4px_6px_-1px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.05)] duration-100 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0", position ==="popper"&&"data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className )}
+        className={cn("relative z-50 max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-(--radix-select-trigger-width) origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-[0_4px_6px_-1px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.05)] duration-100 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0", position ==="popper"&&"data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className )}
         position={position}
         align={align}
         sideOffset={sideOffset}
@@ -122,7 +122,7 @@ function SelectItem({
     >
       <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="pointer-events-none text-[var(--brand-primary-600)]" />
+          <Check size={16} className="pointer-events-none text-[var(--brand-primary-600)]" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -156,8 +156,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon
-      />
+      <ChevronUp size={16} />
     </SelectPrimitive.ScrollUpButton>
   )
 }
@@ -175,8 +174,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <ChevronDownIcon
-      />
+      <ChevronDown size={16} />
     </SelectPrimitive.ScrollDownButton>
   )
 }

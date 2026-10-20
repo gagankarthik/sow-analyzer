@@ -17,15 +17,15 @@ export function KeyDatesCard({ docId, source, timeline }: { docId: string; sourc
   const href = `/projects/${docId}/timeline`;
 
   return (
-    <section aria-labelledby="key-dates-heading" className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-6">
+    <section aria-labelledby="key-dates-heading" className="rounded-xl border border-border bg-card p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <div className="flex items-center gap-2">
-          <CalendarClock size={16} className="shrink-0 text-[var(--brand-primary-600)]" />
+          <CalendarClock size={16} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
           <h3 id="key-dates-heading" className="text-base font-semibold tracking-tight text-foreground">Key dates</h3>
-          <span className="text-sm tabular-nums text-muted-foreground">{counts.total}</span>
+          <span className="text-xs tabular-nums text-muted-foreground">{counts.total}</span>
         </div>
         <Link href={href} className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-0">
-          All dates<ArrowRight size={13} strokeWidth={2.25} />
+          All dates<ArrowRight size={12} aria-hidden />
         </Link>
       </div>
 
@@ -93,7 +93,7 @@ function DateLine({ item: k }: { item: DerivedKeyDate }) {
   const relative = relativeLabel(k);
   return (
     <div className="flex min-w-0 items-start gap-2">
-      <span className="mt-0.5 shrink-0 text-[var(--ink-600)]"><KindIcon kind={k.kind} size={14} /></span>
+      <span className="mt-0.5 shrink-0 text-[var(--ink-600)]"><KindIcon kind={k.kind} size={16} /></span>
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground [overflow-wrap:anywhere]">{k.label}</p>
         <p className="text-sm text-[var(--ink-600)]">

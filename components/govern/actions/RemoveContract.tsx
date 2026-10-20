@@ -35,7 +35,7 @@ export function RemoveContractDialog({ contract, open, onOpenChange }: { contrac
       open={open}
       onOpenChange={onOpenChange}
       title="Remove this contract?"
-      description="It leaves the board and the dashboard counts, and its documents and analysis are deleted. The activity log keeps its record. This can't be undone."
+      description="Its documents and analysis are deleted. The activity log is kept. This can't be undone."
       confirmLabel="Remove contract"
       tone="danger"
       onConfirm={confirm}

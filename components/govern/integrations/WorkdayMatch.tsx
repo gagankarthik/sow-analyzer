@@ -9,22 +9,22 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, Link2, Loader2 } from "@/components/ui/icons";
 import { patchContract } from "@/lib/govern/api";
 import { governKeys, useUnmatchedContracts } from "@/lib/govern/queries";
 import { AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
 import type { Contract } from "@/lib/govern/types";
 import { ErrorText, LoadError } from "@/components/govern/admin/shared";
+import { PanelRowsSkeleton, SkeletonRegion } from "@/components/ds/skeletons";
 
 export function WorkdayMatch({ canEdit }: { canEdit: boolean }) {
   const unmatched = useUnmatchedContracts();
 
   if (unmatched.isLoading) {
     return (
-      <div className="space-y-2 p-4 sm:p-5" aria-busy="true" aria-label="Loading unmatched contracts">
-        <Skeleton className="h-14 rounded-lg" /><Skeleton className="h-14 rounded-lg" />
-      </div>
+      <SkeletonRegion label="unmatched contracts">
+        <PanelRowsSkeleton rows={2} />
+      </SkeletonRegion>
     );
   }
   if (unmatched.isError || !unmatched.data) {

@@ -51,10 +51,10 @@ export function ClauseCard({
         </div>
         {(onEdit || onRemove) && (
           <div className="flex shrink-0 gap-2">
-            {onEdit && <Button variant="outline" className="h-10 md:h-8" onClick={onEdit}><Pencil size={14} />Edit</Button>}
+            {onEdit && <Button variant="outline" className="h-10 md:h-8" onClick={onEdit}><Pencil size={16} />Edit</Button>}
             {onRemove && (
               <Button variant="ghost" className="h-10 text-[var(--danger)] hover:text-[var(--danger)] md:h-8" onClick={onRemove} aria-label={`Remove ${clause.label}`}>
-                <Trash2 size={14} /><span className="sm:sr-only">Remove</span>
+                <Trash2 size={16} /><span className="sm:sr-only">Remove</span>
               </Button>
             )}
           </div>
@@ -91,7 +91,7 @@ export function ClauseCard({
 
       <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <div className="flex items-center gap-1.5">
-          <Building2 size={14} aria-hidden className="text-[var(--ink-500)]" />
+          <Building2 size={16} aria-hidden className="text-[var(--ink-500)]" />
           <dt className="text-muted-foreground">Escalates to</dt>
           <dd className="font-medium text-foreground">{clause.escalationOffice ? OFFICE_LABEL[clause.escalationOffice] : "Reviewer decides"}</dd>
         </div>

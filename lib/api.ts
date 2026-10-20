@@ -81,6 +81,9 @@ function endSession(): void {
   clearSessionCookie()
   if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
     const back = encodeURIComponent(window.location.pathname + window.location.search)
+    // A full load on purpose, not router.push: it drops every in-memory copy of
+    // the expired session's data (query cache, stores) before sign-in.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/login?redirect=${back}`
   }
 }

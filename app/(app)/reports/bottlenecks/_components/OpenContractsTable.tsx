@@ -15,6 +15,7 @@ import { SLA_LABEL, STAGE_LABEL, STAGES, WAITING_ON_SHORT, daysLabel, personName
 import { contractValueText } from "@/lib/govern/metrics";
 import type { Contract, SlaStatus } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
+import { displayTitle } from "@/lib/format";
 
 export type SortKey = "title" | "stage" | "waitingOn" | "owner" | "daysInStage" | "totalDays" | "sla" | "value";
 type SortDir = "asc" | "desc";
@@ -112,7 +113,7 @@ export function OpenContractsTable({
   const rows = sorted.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
   const from = sorted.length ? current * PAGE_SIZE + 1 : 0;
   const to = current * PAGE_SIZE + rows.length;
-  const pad = "py-3";
+  const pad = "py-2.5";
   const href = (c: Contract) => `/contracts/${encodeURIComponent(c.contractId)}`;
 
   const groupHeader = (c: Contract) => {
@@ -124,11 +125,11 @@ export function OpenContractsTable({
   return (
     <div className="min-w-0">
       {/* Controls */}
-      <div className="mb-4 flex flex-wrap items-end gap-x-4 gap-y-3">
-        <div className="flex flex-col gap-1">
-          <span id="group-by-label" className="text-xs font-medium text-[var(--ink-600)]">Group by</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-4 py-2">
+        <div className="flex items-center gap-2">
+          <span id="group-by-label" className="text-xs text-[var(--ink-600)]">Group by</span>
           <Select value={groupBy} onValueChange={(v) => { setGroupBy(v as GroupBy); setPage(0); }}>
-            <SelectTrigger aria-labelledby="group-by-label" className="w-48"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-labelledby="group-by-label" className="h-8 w-44 text-xs max-md:h-11"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Nothing</SelectItem>
               <SelectItem value="stage">Step</SelectItem>
@@ -136,47 +137,44 @@ export function OpenContractsTable({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-col gap-1 md:hidden">
-          <span id="sort-by-label" className="text-xs font-medium text-[var(--ink-600)]">Sort by</span>
+        <div className="flex items-center gap-2 md:hidden">
+          <span id="sort-by-label" className="text-xs text-[var(--ink-600)]">Sort by</span>
           <Select value={sort.key} onValueChange={(v) => onSort(v as SortKey)}>
-            <SelectTrigger aria-labelledby="sort-by-label" className="w-48"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-labelledby="sort-by-label" className="h-11 w-44 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               {COLUMNS.filter((c) => c.key).map((c) => <SelectItem key={c.key} value={c.key!}>{c.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <p className="ml-auto text-sm text-[var(--ink-600)] tabular-nums" aria-live="polite">
-          Showing {from.toLocaleString()}–{to.toLocaleString()} of {sorted.length.toLocaleString()}
-        </p>
       </div>
 
       {/* Phones: stacked cards with the essentials. */}
-      <ul className="space-y-3 md:hidden">
+      <ul className="md:hidden">
         {rows.map((c, i) => {
           const g = groupBy !== "none" && (i === 0 || groupOf(rows[i - 1], groupBy).key !== groupOf(c, groupBy).key) ? groupHeader(c) : null;
           return (
             <Fragment key={c.contractId}>
               {g && (
-                <li className="pt-2 first:pt-0">
+                <li className="border-b border-border bg-[var(--panel)] px-4 py-2">
                   <p className="text-sm font-semibold text-foreground">{g.label}</p>
                   <p className="text-xs text-[var(--ink-600)]">{g.note}</p>
                 </li>
               )}
               <li>
-                <Link href={href(c)} className="block border-b border-border py-4 transition-colors hover:bg-[var(--ink-25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
+                <Link href={href(c)} className="block border-b border-border px-4 py-3 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)]">
                   <span className="flex items-start justify-between gap-3">
                     <span className="min-w-0">
-                      <span className="line-clamp-2 break-words text-base font-semibold text-foreground">{c.title}</span>
+                      <span className="line-clamp-2 break-words text-sm font-medium text-foreground">{displayTitle(c.title)}</span>
                       <span className="block truncate text-sm text-[var(--ink-600)]">{STAGE_LABEL[c.stage]} · {personName(c.owner)}</span>
                     </span>
                     <ChevronRight size={16} aria-hidden className="mt-1 shrink-0 text-[var(--ink-400)]" />
                   </span>
-                  <span className="mt-3 flex flex-wrap gap-2">
+                  <span className="mt-2 flex flex-wrap gap-2">
                     <WaitingOnChip waitingOn={c.waitingOn} />
                     <DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} />
                   </span>
-                  <span className="mt-3 line-clamp-2 text-sm leading-relaxed text-foreground">
-                    <span className="font-semibold text-[var(--brand-primary-700)]">Next: </span>{c.nextStep.headline}
+                  <span className="mt-2 line-clamp-2 text-sm text-[var(--ink-700)]">
+                    <span className="text-[var(--ink-600)]">Next: </span>{c.nextStep.headline}
                   </span>
                 </Link>
               </li>
@@ -186,7 +184,7 @@ export function OpenContractsTable({
       </ul>
 
       {/* md and up: the table. */}
-      <div className="hidden md:block">
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full table-fixed border-collapse text-sm">
           <caption className="sr-only">Open contracts, sortable. Select a contract to open it.</caption>
           <colgroup>
@@ -202,7 +200,7 @@ export function OpenContractsTable({
                     scope="col"
                     aria-sort={col.key === null ? undefined : active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
                     className={cn(
-                      "sticky top-0 z-10 border-b border-border bg-card px-3 py-2.5 text-xs font-medium text-[var(--ink-600)]",
+                      "sticky top-0 z-10 h-[38px] border-b border-border bg-[var(--panel)] px-3 text-xs font-medium text-[var(--ink-600)]",
                       col.numeric ? "text-right" : "text-left",
                       HIDE[col.priority],
                     )}
@@ -212,8 +210,8 @@ export function OpenContractsTable({
                         type="button"
                         onClick={() => onSort(col.key!)}
                         className={cn(
-                          "inline-flex min-h-8 items-center gap-1 rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]",
-                          active && "font-semibold text-foreground",
+                          "inline-flex min-h-6 items-center gap-1 rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]",
+                          active && "text-foreground",
                         )}
                       >
                         {col.label}
@@ -241,14 +239,14 @@ export function OpenContractsTable({
                     </tr>
                   )}
                   {/* The title link stretches over the whole row: one click target, real <a>. */}
-                  <tr className="relative border-b border-border align-top transition-colors hover:bg-[var(--ink-25)] focus-within:bg-[var(--ink-25)]">
+                  <tr className="relative border-b border-border align-top transition-colors duration-150 hover:bg-[var(--ink-50)] focus-within:bg-[var(--ink-50)]">
                     <td className={cn("px-3", pad)}>
                       <Link
                         href={href(c)}
                         title={c.title}
-                        className="block truncate font-semibold text-foreground after:absolute after:inset-0 after:content-[''] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[var(--brand-primary-300)]"
+                        className="block truncate font-medium text-foreground after:absolute after:inset-0 after:content-[''] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[var(--brand-primary-600)]"
                       >
-                        {c.title}
+                        {displayTitle(c.title)}
                       </Link>
                       {(c.sponsor || c.counterparty) && (
                         <span className="block truncate text-xs text-[var(--ink-600)]" title={c.sponsor || c.counterparty || undefined}>{c.sponsor || c.counterparty}</span>
@@ -276,27 +274,34 @@ export function OpenContractsTable({
         </table>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+        <p className="text-xs tabular-nums text-[var(--ink-600)]" aria-live="polite">
+          {sorted.length > PAGE_SIZE
+            ? `${from.toLocaleString("en-US")}–${to.toLocaleString("en-US")} of ${sorted.length.toLocaleString("en-US")} in view`
+            : `${sorted.length.toLocaleString("en-US")} in view`}
+        </p>
       {pages > 1 && (
-        <nav aria-label="Pages" className="mt-4 flex items-center justify-end gap-2">
+        <nav aria-label="Pages" className="flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={() => setPage(current - 1)}
             disabled={current === 0}
-            className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:h-9"
+            className="inline-flex h-11 items-center gap-1 rounded-md border border-[var(--ink-300)] bg-card px-2.5 text-xs font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] md:h-8"
           >
-            <ChevronLeft size={14} aria-hidden />Previous
+            <ChevronLeft size={16} aria-hidden />Previous
           </button>
-          <span className="text-sm tabular-nums text-[var(--ink-600)]">Page {current + 1} of {pages}</span>
+          <span className="text-xs tabular-nums text-[var(--ink-600)]">Page {current + 1} of {pages}</span>
           <button
             type="button"
             onClick={() => setPage(current + 1)}
             disabled={current >= pages - 1}
-            className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--ink-300)] bg-card px-3 text-sm font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:h-9"
+            className="inline-flex h-11 items-center gap-1 rounded-md border border-[var(--ink-300)] bg-card px-2.5 text-xs font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] md:h-8"
           >
-            Next<ChevronRight size={14} aria-hidden />
+            Next<ChevronRight size={16} aria-hidden />
           </button>
         </nav>
       )}
+      </div>
     </div>
   );
 }

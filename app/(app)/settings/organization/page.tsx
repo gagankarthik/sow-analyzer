@@ -26,6 +26,7 @@ import { EditionChoice } from "@/components/govern/EditionChoice";
 import { ModulesChoice } from "@/components/govern/ModulesChoice";
 import type { OrganizationSettings, Stage } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
+import { SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
 
 const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "INR", "JPY", "CHF", "SGD"];
 const MONTHS = Array.from({ length: 12 }, (_, i) => new Date(2026, i, 1).toLocaleDateString(undefined, { month: "long" }));
@@ -86,38 +87,53 @@ export default function OrganizationSetupPage() {
     <>
       <PageHeader
         title="Organization setup"
-        subtitle="Six steps so reviews, targets and reports fit your organization. Most take a minute."
         back={{ href: "/settings", label: "Settings" }}
       />
       <SettingsLayout>
         {loading ? (
-          <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading setup">
-            <Skeleton className="h-20 rounded-xl" />
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
-          </div>
+          <SkeletonRegion label="setup" className="flex flex-col gap-3">
+            <div aria-hidden className="rounded-xl border border-border bg-card p-4">
+              <SkeletonLine text="text-sm font-semibold" width="w-36" />
+              <Skeleton className="mt-2 h-1.5 w-full rounded-full" />
+            </div>
+            <ol aria-hidden className="flex flex-col gap-3">
+              {Array.from({ length: 6 }, (_, i) => (
+                <li key={i} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+                  <Skeleton className="size-7 shrink-0 rounded-full" />
+                  <div className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <SkeletonLine text="text-base font-semibold" width={i % 2 ? "w-32" : "w-44"} />
+                      <Skeleton className="h-5 w-12 rounded-pill" />
+                    </span>
+                    <SkeletonLine text="text-xs" width="w-3/5" className="mt-0.5" />
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </SkeletonRegion>
         ) : settingsQ.isError || !org ? (
-          <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-5 py-12 text-center">
+          <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card px-5 py-12 text-center">
             <p className="font-semibold text-foreground">Couldn&apos;t load your organization settings</p>
             <Button variant="outline" onClick={() => void settingsQ.refetch()}>Try again</Button>
           </div>
         ) : (
           <>
             {/* Progress */}
-            <section aria-label="Progress" className="rounded-xl border border-border bg-card p-5 shadow-xs">
+            <section aria-label="Progress" className="rounded-xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="text-base font-semibold text-foreground">
+                <p className="text-sm font-semibold text-foreground tabular-nums">
                   {org.setupCompletedAt ? "Setup complete" : `${complete} of ${total} steps done`}
                 </p>
                 {!canEdit && !roleLoading && <p className="text-sm text-[var(--ink-600)]">Only an admin can change these settings.</p>}
               </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--ink-100)]" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={complete} aria-label="Setup progress">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--ink-100)]" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={complete} aria-label="Setup progress">
                 <div className="h-full rounded-full bg-[var(--brand-primary-600)] transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(complete / total) * 100}%` }} />
               </div>
             </section>
 
             <ol className="flex flex-col gap-3">
               <Step n={1} title="Organization details" done={done.details}
-                body="Your organization's name, the currency values are reported in, when your financial year starts, and the kind of agreements you review.">
+                body="Name, reporting currency, financial year and agreement types.">
                 <DetailsForm org={org} canEdit={canEdit} saving={isBusy("details")} disabled={save.isPending} variant={stepVariant("details")}
                   onSave={(o) => saveOrg(o, "Organization details saved", "details")} />
                 <EditionChoice
@@ -153,10 +169,10 @@ export default function OrganizationSetupPage() {
               <Step n={3} title="Review matrix" done={done.matrix}
                 body={`Your accepted positions, clause by clause: ${plural(Object.values(matrix?.playbooks ?? {}).reduce((s, p) => s + (p?.clauses?.length ?? 0), 0), "position")} across every agreement type. Edit any, or import your own from Excel.`}>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild variant="outline"><Link href="/settings/matrix">Open the matrix <ArrowRight size={14} /></Link></Button>
+                  <Button asChild variant="outline"><Link href="/settings/matrix">Open the matrix <ArrowRight size={16} aria-hidden /></Link></Button>
                   {!done.matrix && canEdit && (
                     <Button variant={stepVariant("matrix")} onClick={() => confirm("matrix", "Matrix confirmed")} disabled={save.isPending} pending={isBusy("matrix")}>
-                      <Check size={14} />These positions are right
+                      <Check size={16} aria-hidden />These positions are right
                     </Button>
                   )}
                 </div>
@@ -164,21 +180,21 @@ export default function OrganizationSetupPage() {
 
               <Step n={4} title="Stage targets" done={done.workflow}
                 body="How many days a contract may sit in each step before it counts as running late.">
-                <dl className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <dl className="mb-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
                   {TARGET_STAGES.map((s) => (
-                    <div key={s} className="rounded-lg border border-border px-3 py-2">
+                    <div key={s} className="min-w-0">
                       <dt className="truncate text-xs text-[var(--ink-600)]">{STAGE_LABEL[s]}</dt>
-                      <dd className="text-lg font-semibold tabular-nums text-foreground">
+                      <dd className="text-sm font-semibold tabular-nums text-foreground">
                         {settingsQ.data?.stageTargetDays[s] == null ? "—" : plural(settingsQ.data.stageTargetDays[s] as number, "day")}
                       </dd>
                     </div>
                   ))}
                 </dl>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild variant="outline"><Link href="/settings/workflow">Change targets <ArrowRight size={14} /></Link></Button>
+                  <Button asChild variant="outline"><Link href="/settings/workflow">Change targets <ArrowRight size={16} aria-hidden /></Link></Button>
                   {!done.workflow && canEdit && (
                     <Button variant={stepVariant("workflow")} onClick={() => confirm("workflow", "Stage targets confirmed")} disabled={save.isPending} pending={isBusy("workflow")}>
-                      <Check size={14} />Keep these targets
+                      <Check size={16} aria-hidden />Keep these targets
                     </Button>
                   )}
                 </div>
@@ -189,7 +205,7 @@ export default function OrganizationSetupPage() {
                   ? `${plural(settingsQ.data?.reviewers.length ?? 0, "reviewer")} in the directory. Add more, or invite people to projects.`
                   : "Add the people who review agreements, and the offices and agreement types each handles, so new contracts are assigned automatically."}>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild variant={stepVariant("team")}><Link href="/settings/workflow#reviewers">Add reviewers <ArrowRight size={14} /></Link></Button>
+                  <Button asChild variant={stepVariant("team")}><Link href="/settings/workflow#reviewers">Add reviewers <ArrowRight size={16} aria-hidden /></Link></Button>
                   <Button asChild variant="outline"><Link href="/settings/team">Invite people</Link></Button>
                 </div>
               </Step>
@@ -199,13 +215,13 @@ export default function OrganizationSetupPage() {
                   ? `${plural(contractsQ.data?.contracts.length ?? 0, "contract")} in the workspace.`
                   : "Upload an agreement. Sonar reads it, checks it against your matrix and puts it on the board with its next step."}>
                 <Button asChild variant={stepVariant("contract")}>
-                  <Link href={done.contract ? "/workflow" : "/projects/upload"}>{done.contract ? "Open the workflow" : "Upload an agreement"} <ArrowRight size={14} /></Link>
+                  <Link href={done.contract ? "/workflow" : "/projects/upload"}>{done.contract ? "Open the workflow" : "Upload an agreement"} <ArrowRight size={16} aria-hidden /></Link>
                 </Button>
               </Step>
             </ol>
 
             {canEdit && !org.setupCompletedAt && (
-              <div className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-[var(--ink-700)]">
                   {complete === total ? "Everything is in place." : `${plural(total - complete, "step")} still to do. You can finish later; this page keeps your progress.`}
                 </p>
@@ -224,26 +240,26 @@ export default function OrganizationSetupPage() {
 
 function Step({ n, title, body, done, children }: { n: number; title: string; body: string; done: boolean; children: React.ReactNode }) {
   return (
-    <li className="rounded-xl border border-border bg-card shadow-xs">
-      <div className="flex items-start gap-4 p-5">
+    <li className="rounded-xl border border-border bg-card">
+      <div className="flex items-start gap-3 p-4">
         <span
           className={cn(
-            "inline-flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-            done ? "bg-[var(--success-soft)] text-[var(--success)]" : "bg-[var(--ink-100)] text-[var(--ink-700)]",
+            "inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
+            done ? "bg-[var(--success-soft)] text-[var(--success-fg)]" : "bg-[var(--ink-100)] text-[var(--ink-700)]",
           )}
           aria-hidden
         >
-          {done ? <CheckCircle2 size={18} /> : n}
+          {done ? <CheckCircle2 size={16} aria-hidden /> : n}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+            <h2 className="text-base font-semibold text-foreground">{title}</h2>
             <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", done ? "bg-[var(--success-soft)] text-[var(--success-fg)]" : "bg-[var(--ink-100)] text-[var(--ink-700)]")}>
               {done ? "Done" : "To do"}
             </span>
           </div>
-          <p className="mt-1 text-sm text-[var(--ink-600)]">{body}</p>
-          <div className="mt-4">{children}</div>
+          <p className="mt-0.5 text-xs text-[var(--ink-600)]">{body}</p>
+          <div className="mt-3">{children}</div>
         </div>
       </div>
     </li>
@@ -300,7 +316,7 @@ function DetailsForm({ org, canEdit, saving, disabled, variant, onSave }: {
       {canEdit && (
         <div className="flex items-end">
           <Button type="submit" variant={variant} disabled={!dirty || !name.trim() || !!nameError || disabled}>
-            {saving && <Loader2 size={14} className="animate-spin motion-reduce:animate-none" />}Save details
+            {saving && <Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />}Save details
           </Button>
         </div>
       )}

@@ -51,14 +51,14 @@ export function BreakdownSection({
         <LegendDot color={VALUE_FILL.potential} label="Potential" />
       </div>
       {rows.length === 0 ? (
-        <p className="text-base text-[var(--ink-600)]">No contracts to group.</p>
+        <p className="text-sm text-[var(--ink-600)]">No contracts to group.</p>
       ) : (
         <ul aria-label={`Value by ${BREAKDOWN_LABEL[key].toLowerCase()}`}>
             {shown.map((r) => (
               <li key={r.key} className="border-b border-border py-3 last:border-0">
                   <span className="flex flex-wrap items-baseline justify-between gap-x-3">
-                    <span className="min-w-0 truncate text-base font-semibold text-foreground" title={breakdownName(key, r.key)}>{breakdownName(key, r.key)}</span>
-                    <span className="text-sm text-[var(--ink-600)]">
+                    <span className="min-w-0 truncate text-sm font-medium text-foreground" title={breakdownName(key, r.key)}>{breakdownName(key, r.key)}</span>
+                    <span className="text-xs tabular-nums text-[var(--ink-600)]">
                       {r.count} {r.count === 1 ? "contract" : "contracts"}
                     </span>
                   </span>
@@ -71,7 +71,7 @@ export function BreakdownSection({
                       { key: "potential", value: amountIn(r.potential, currency), color: VALUE_FILL.potential, label: "Potential" },
                     ]}
                   />
-                  <span className="mt-1.5 grid grid-cols-1 gap-x-4 text-sm text-[var(--ink-600)] sm:grid-cols-2">
+                  <span className="mt-1.5 grid grid-cols-1 gap-x-4 text-xs text-[var(--ink-600)] sm:grid-cols-2">
                     <span><span className="font-medium text-foreground tabular-nums">{formatMoney(r.current)}</span> current</span>
                     <span><span className="font-medium text-foreground tabular-nums">{formatMoney(r.potential)}</span> potential</span>
                   </span>

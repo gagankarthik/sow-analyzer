@@ -24,7 +24,7 @@ export const GOVERN_ROLE_LABEL: Record<GovernRole, string> = {
 }
 
 export const GOVERN_ROLE_SUMMARY: Record<GovernRole, string> = {
-  admin: "Runs the workspace: settings, matrix, integrations and everything a reviewer does.",
+  admin: "Runs the organization: settings, matrix, integrations, its admins, and everything a reviewer does. Whoever creates the organization is its admin.",
   reviewer: "Reviews and moves contracts to signature in the workspaces they edit.",
   leader: "Sees every contract, report and trend, without changing contracts.",
 }
@@ -39,6 +39,7 @@ export const GOVERN_PERMISSIONS: PermissionRow[] = [
   { label: "Edit the review matrix", detail: "Positions, fallbacks, offices, Excel import, versions.", roles: { admin: true, reviewer: false, leader: false } },
   { label: "Workflow, routing and organization settings", detail: "Targets, reviewers, routing rules, home state, currency.", roles: { admin: true, reviewer: false, leader: false } },
   { label: "Integrations", detail: "Connect, sync and review Huron, Workday and DocuSign.", roles: { admin: true, reviewer: false, leader: false } },
+  { label: "Add and remove admins", detail: "People who signed in to the organization. The creator stays an admin.", roles: { admin: true, reviewer: false, leader: false } },
 ]
 
 export type WorkspaceRole = "owner" | "editor" | "viewer"

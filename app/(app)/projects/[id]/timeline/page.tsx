@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProjectHeader } from "@/components/ProjectHeader";
+import { ProjectRecordSkeleton } from "@/components/ProjectRecordSkeleton";
+import { CardListSkeleton } from "@/components/ds/skeletons";
 import { DocLoadError } from "@/components/DocLoadError";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +18,7 @@ import {
 import { apiDocToProject, errorStatus } from "@/lib/api";
 import { useClassification, useDocument, useTimeline } from "@/lib/queries/documents";
 import { useNow } from "@/lib/use-now";
-import { formatDate, formatRelativeDays } from "@/lib/format";
+import { displayTitle, formatDate, formatRelativeDays } from "@/lib/format";
 import { fmtMoney } from "@/lib/contract-value";
 import {
   buildKeyDateTimeline, documentKeyDates, formatIsoDay, hasIssue, kindLabel, relativeDays, ruleText, stateLabel,
@@ -107,7 +109,7 @@ export default function TimelinePage() {
 
     out.push({
       id: "created", date: d.createdAt, state: "done",
-      icon: <Upload size={14} />, badge: BADGE.created,
+      icon: <Upload size={16} />, badge: BADGE.created,
       title: "Document created", meta: docTypeLabel(d.docType),
     });
 
@@ -118,7 +120,7 @@ export default function TimelinePage() {
       if (v.timelineKey) tags.push("timeline");
       out.push({
         id: `v-${v.versionNumber}`, date: v.createdAt, state: "done",
-        icon: <Layers size={14} />, badge: BADGE.version,
+        icon: <Layers size={16} />, badge: BADGE.version,
         title: `Version ${v.versionNumber} recorded`,
         body: `Extraction: ${v.extractionMethod || "not recorded"}${tags.length ? ` · ${tags.join(" · ")}` : ""}`,
       });
@@ -133,8 +135,8 @@ export default function TimelinePage() {
       out.push({
         id: `amd-${amd.docId}`, date: amd.effectiveDate ?? undefined,
         state: inForce ? "done" : "pending",
-        icon: <GitBranch size={14} />, badge: BADGE.amendment,
-        title: amd.title || `${amd.docType ?? "Amendment"}`,
+        icon: <GitBranch size={16} />, badge: BADGE.amendment,
+        title: displayTitle(amd.title) || `${amd.docType ?? "Amendment"}`,
         meta: amd.lifecycle ?? undefined,
         valueDelta: amd.valueDelta,
         inForce: typeof amd.inForce === "boolean" ? amd.inForce : undefined,
@@ -144,13 +146,13 @@ export default function TimelinePage() {
     if (timeline) {
       const currentCount = Object.keys(timeline.currentState ?? {}).length;
       out.push({
-        id: "current", state: "active", icon: <CheckCircle2 size={14} />, badge: BADGE.current,
+        id: "current", state: "active", icon: <CheckCircle2 size={16} />, badge: BADGE.current,
         title: "Current state", body: `${currentCount} clause${currentCount === 1 ? "" : "s"} in force`,
       });
       if (timeline.futureState && Object.keys(timeline.futureState).length > 0) {
         const futureCount = Object.keys(timeline.futureState).length;
         out.push({
-          id: "forecast", state: "forecast", icon: <CalendarClock size={14} />, badge: BADGE.forecast,
+          id: "forecast", state: "forecast", icon: <CalendarClock size={16} />, badge: BADGE.forecast,
           title: "Expected after pending amendments", body: `${futureCount} clause${futureCount === 1 ? "" : "s"} projected`,
         });
       }
@@ -158,7 +160,7 @@ export default function TimelinePage() {
     return out;
   }, [detail, timeline]);
 
-  if (isLoading) return <TimelineSkeleton />;
+  if (isLoading) return <ProjectRecordSkeleton section="timeline" />;
   if (isError && errorStatus(error) === 404) return <NotFound />;
   // Only when there is nothing to show: a failed background refresh keeps the
   // last good data on screen instead of replacing the page with an error.
@@ -198,10 +200,10 @@ export default function TimelinePage() {
     <>
       <ProjectHeader project={project as Parameters<typeof ProjectHeader>[0]["project"]} />
 
-      <div className="app-container py-6 md:py-8">
+      <div className="app-container py-5 md:py-6">
         {isProcessing && (
           <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-[var(--warning)]/30 bg-[var(--warning-soft)] p-4 md:mb-6 md:px-5">
-            <Clock size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-[var(--warning)]" />
+            <Clock size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" />
             <p className="text-base leading-relaxed text-foreground"><span className="font-semibold">This document is still being analyzed.</span> Its dates and history appear here when the analysis finishes.</p>
           </div>
         )}
@@ -237,11 +239,11 @@ export default function TimelinePage() {
             {dates.term && <TermStrip term={dates.term} />}
 
             {datesPending ? (
-              <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+              <CardListSkeleton count={4} minHeight="min-h-20" label="timeline events" />
             ) : counts.total === 0 ? (
               isReady && source.extracted && (
                 <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-10 text-center">
-                  <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]"><CalendarClock size={18} /></span>
+                  <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]"><CalendarClock size={16} /></span>
                   <p className="text-base font-semibold text-foreground">No dates were found in this document</p>
                   <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">The analysis looked for effective, term, renewal, notice, milestone, deliverable and payment dates and found none stated.</p>
                 </div>
@@ -249,7 +251,7 @@ export default function TimelinePage() {
             ) : (
               <>
                 <ListFilters
-                  className="rounded-xl border border-border bg-card p-3 shadow-xs md:p-4"
+                  className="mb-3"
                   search={query}
                   onSearch={setQuery}
                   placeholder="Search dates, wording or clause"
@@ -268,7 +270,7 @@ export default function TimelinePage() {
             {/* ── How this contract changed ─────────────────────── */}
             <section aria-labelledby="history-heading" className="pt-4">
               <div className="mb-3">
-                <h2 id="history-heading" className="text-lg font-semibold tracking-tight text-foreground">How this contract changed</h2>
+                <h2 id="history-heading" className="text-lg font-semibold tracking-tight text-foreground">Change history</h2>
                 <p className="mt-0.5 text-sm text-[var(--ink-600)]">Versions of this document and the amendments in its chain, in order.</p>
               </div>
               {/* A document with no amendment chain has no timeline artifact (404):
@@ -286,10 +288,10 @@ export default function TimelinePage() {
                     <li key={e.id} className="relative flex gap-3 pb-4 last:pb-0 md:gap-4">
                       {i < events.length - 1 && <span className="absolute bottom-0 left-4 top-8 w-px -translate-x-1/2 bg-[var(--ink-300)]" aria-hidden />}
                       <Node state={e.state} icon={e.icon} />
-                      <div className={`min-w-0 flex-1 rounded-xl px-4 py-3 ${focal ? "bg-[var(--navy-800)] text-white" : "border border-border bg-card shadow-xs"}`}>
+                      <div className={`min-w-0 flex-1 rounded-xl px-4 py-3 ${focal ? "border border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)]" : "border border-border bg-card"}`}>
                         <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${focal ? "bg-white text-[var(--brand-primary-700)]" : `${e.badge.bg} ${e.badge.text}`}`}>{e.badge.label}</span>
-                          {e.meta && <span className={`text-xs capitalize ${focal ? "text-white" : "text-[var(--ink-600)]"}`}>{e.meta}</span>}
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${focal ? "bg-card text-[var(--brand-primary-700)]" : `${e.badge.bg} ${e.badge.text}`}`}>{e.badge.label}</span>
+                          {e.meta && <span className={`text-xs capitalize text-[var(--ink-600)]`}>{e.meta}</span>}
                           {e.inForce !== undefined && (
                             <Badge variant={e.inForce ? "success" : "neutral"} size="sm">{e.inForce ? "In force" : "Not in force"}</Badge>
                           )}
@@ -298,7 +300,7 @@ export default function TimelinePage() {
                           </span>
                         </div>
                         <p className={`break-words font-semibold ${focal ? "text-lg text-white" : "text-base text-foreground"}`}>{e.title}</p>
-                        {e.body && <p className={`mt-0.5 text-sm leading-snug ${focal ? "text-white" : "text-[var(--ink-600)]"}`}>{e.body}</p>}
+                        {e.body && <p className={`mt-0.5 text-sm leading-snug text-[var(--ink-600)]`}>{e.body}</p>}
                         {/* Signed: an amendment can lower the contract value as well as raise it. */}
                         {e.valueDelta !== undefined && (
                           <p className="mt-1 text-sm text-[var(--ink-600)]">
@@ -320,7 +322,7 @@ export default function TimelinePage() {
           </main>
 
           <aside className="min-w-0 lg:col-span-4">
-            <div className="rounded-xl border border-border bg-card p-4 shadow-xs md:p-5 lg:sticky lg:top-[76px]">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-5 lg:sticky lg:top-[76px]">
               <h3 className="text-base font-semibold mb-3 text-foreground">At a glance</h3>
               <ul className="divide-y divide-[var(--ink-100)] text-sm">
                 {datesPending ? (
@@ -337,7 +339,7 @@ export default function TimelinePage() {
                     {counts.overdue > 0 && <Row label="Due date passed"><span className="font-semibold tabular-nums text-[var(--danger)]">{counts.overdue}</span></Row>}
                     {counts.withIssues > 0 && (
                       <Row label="To check">
-                        <span className="inline-flex items-center gap-1.5 font-semibold tabular-nums text-[var(--warning)]"><AlertTriangle size={13} />{counts.withIssues}</span>
+                        <span className="inline-flex items-center gap-1.5 font-semibold tabular-nums text-[var(--warning)]"><AlertTriangle size={12} />{counts.withIssues}</span>
                       </Row>
                     )}
                   </>
@@ -371,13 +373,13 @@ function TermStrip({ term }: { term: TermPeriod }) {
       ? `Starts ${relativeDays(term.remainingDays - term.totalDays)}`
       : `Ended ${relativeDays(term.remainingDays)}`;
   return (
-    <section aria-label="Contract term" className="rounded-xl bg-[var(--navy)] p-4 text-white md:p-5">
+    <section aria-label="Contract term" className="rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className="text-base font-semibold tracking-tight">{headline}</h3>
-        <p className="text-sm tabular-nums text-[var(--navy-foreground)]">{detail}</p>
+        <h3 className="text-base font-semibold tracking-tight text-foreground">{headline}</h3>
+        <p className="text-xs tabular-nums text-[var(--ink-600)]">{detail}</p>
       </div>
       <div
-        className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--navy-border)]"
+        className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
         role="progressbar"
         aria-label="Share of the contract term that has passed"
         aria-valuemin={0}
@@ -385,11 +387,11 @@ function TermStrip({ term }: { term: TermPeriod }) {
         aria-valuenow={pct}
       >
         {/* Width is data (share of the term elapsed), so it is set inline. */}
-        <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-[var(--brand-primary-600)]" style={{ width: `${pct}%` }} />
       </div>
-      <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-0.5 text-xs text-[var(--navy-foreground)]">
-        <span>{term.startKind === "start" ? "Started" : "Effective"} <time dateTime={term.start} className="tabular-nums text-white">{formatIsoDay(term.start)}</time></span>
-        <span>Term ends <time dateTime={term.end} className="tabular-nums text-white">{formatIsoDay(term.end)}</time></span>
+      <div className="mt-2 flex flex-wrap justify-between gap-x-4 gap-y-0.5 text-xs text-[var(--ink-600)]">
+        <span>{term.startKind === "start" ? "Started" : "Effective"} <time dateTime={term.start} className="tabular-nums text-foreground">{formatIsoDay(term.start)}</time></span>
+        <span>Term ends <time dateTime={term.end} className="tabular-nums text-foreground">{formatIsoDay(term.end)}</time></span>
       </div>
     </section>
   );
@@ -416,19 +418,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 function NotFound() {
   return (
     <div className="app-container py-20 flex flex-col items-center text-center">
-      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} strokeWidth={1.5} /></span>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project not found</h1>
-      <p className="mt-2 text-base text-muted-foreground max-w-sm">This engagement may have been archived, or the link is out of date.</p>
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground mb-5"><Files size={24} /></span>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">Document not found</h1>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">It may have been deleted, or the link is out of date.</p>
       <Link href="/projects" className="mt-6 inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-[var(--brand-primary-600)] hover:bg-[var(--brand-primary-700)] text-white text-sm font-semibold transition-colors">Back to projects</Link>
     </div>
-  );
-}
-
-function TimelineSkeleton() {
-  return (
-    <>
-      <div><div className="app-container pt-5 md:pt-6 pb-4 space-y-3"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-7 w-1/2" /><Skeleton className="h-4 w-1/3" /></div></div>
-      <div className="app-container py-6 md:py-8"><div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12"><div className="space-y-4 lg:col-span-8">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div><div className="space-y-4 lg:col-span-4"><Skeleton className="h-32 rounded-xl" /><Skeleton className="h-40 rounded-xl" /></div></div></div>
-    </>
   );
 }
