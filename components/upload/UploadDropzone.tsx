@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PipelineStepper } from "@/components/ui/PipelineStepper";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import {
   Upload, FileText, X, CheckCircle2, AlertCircle, Loader2, ArrowRight, RefreshCw,
 } from "@/components/ui/icons";
@@ -234,7 +235,7 @@ export function UploadDropzone({
       {reject && (
         <div role="alert" className="flex items-start gap-2.5 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-4 py-3">
           <AlertCircle size={15} className="mt-0.5 shrink-0 text-[var(--warning)]" />
-          <p className="text-sm text-[var(--warning)]">{reject}</p>
+          <p className="text-sm text-[var(--warning-fg)]">{reject}</p>
         </div>
       )}
 
@@ -312,6 +313,9 @@ function UploadItem({
   const [attempt, setAttempt] = useState(0);
   const [contractPhase, setContractPhase] = useState<ContractPhase>("none");
   const [contract, setContract] = useState<ContractDetail | null>(null);
+  // The "not an agreement" choices, while their request runs.
+  const [deleting, setDeleting] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const createContract = useCreateContract();
 
   // Every upload refreshes the shared document list — when the row is created
@@ -487,7 +491,8 @@ function UploadItem({
 
           {phase === "uploading" && (
             <div className="mt-2.5">
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <div role="progressbar" aria-label={`Uploading ${item.file.name}`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}
+                className="h-1.5 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-[var(--brand-primary-600)] transition-[width] duration-200" style={{ width: `${progress}%` }} />
               </div>
               <p className="mt-1 text-xs tabular-nums text-muted-foreground">Uploading… {progress}%</p>
@@ -516,14 +521,35 @@ function UploadItem({
             <div className="mt-2 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2.5">
               <p className="text-sm leading-snug text-foreground">{errorMsg}</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => {
-                  void deleteDocument(docId).then(() => { cbRef.current.invalidateDocuments(); onRemove(); }).catch(() => toast.error("Couldn't delete the file", { description: "Try again." }));
-                }}>Delete this file</Button>
-                <Button size="sm" onClick={() => {
-                  setPhase("processing"); setDocStatus("PENDING");
+                <ConfirmDialog
+                  title={`Delete “${item.file.name}”?`}
+                  description="The file and its document record are removed. This can't be undone."
+                  confirmLabel="Delete file"
+                  tone="danger"
+                  onConfirm={async () => {
+                    setDeleting(true);
+                    try {
+                      await deleteDocument(docId);
+                      cbRef.current.invalidateDocuments();
+                      onRemove();
+                    } catch (e) {
+                      setDeleting(false);
+                      toast.error("Couldn't delete the file", { description: "Try again." });
+                      throw e; // keeps the dialog open to retry
+                    }
+                  }}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="text-[var(--danger)] hover:text-[var(--danger)]" pending={deleting} disabled={analyzing}>
+                      Delete this file
+                    </Button>
+                  }
+                />
+                <Button size="sm" pending={analyzing} disabled={deleting} onClick={() => {
+                  setAnalyzing(true);
                   void reprocessDocument(docId, { force: true })
-                    .then(() => setAttempt((a) => a + 1))
-                    .catch((e: unknown) => { setPhase("not_agreement"); toast.error("Couldn't start the analysis", { description: e instanceof Error ? e.message : "Try again." }); });
+                    .then(() => { setPhase("processing"); setDocStatus("PENDING"); setAttempt((a) => a + 1); })
+                    .catch((e: unknown) => toast.error("Couldn't start the analysis", { description: e instanceof Error ? e.message : "Try again." }))
+                    .finally(() => setAnalyzing(false));
                 }}>Analyze anyway</Button>
               </div>
             </div>

@@ -61,13 +61,24 @@ export default function OrganizationSetupPage() {
   const canEdit = isAdmin && !roleLoading;
   const edition = useEdition();
 
-  const saveOrg = (organization: Partial<OrganizationSettings>, success: string) =>
+  // One filled button at a time: the next step's call to action. The rest are outlined.
+  const nextStep = (Object.keys(done) as StepId[]).find((s) => !done[s]);
+  const stepVariant = (s: StepId) => (s === nextStep ? "default" : "outline");
+
+  // Which button started the save, so only that one spins.
+  const [busy, setBusy] = useState<"details" | "matrix" | "workflow" | "finish" | null>(null);
+  const isBusy = (b: NonNullable<typeof busy>) => save.isPending && busy === b;
+
+  const saveOrg = (organization: Partial<OrganizationSettings>, success: string, from: NonNullable<typeof busy>) => {
+    setBusy(from);
     save.mutate({ organization }, {
       onSuccess: () => toast.success(success),
       onError: (e) => toast.error("Couldn't save the organization settings", { description: e instanceof Error ? e.message : "Try again." }),
+      onSettled: () => setBusy(null),
     });
+  };
   const confirm = (step: "matrix" | "workflow", success: string) =>
-    saveOrg({ confirmedSteps: [...new Set([...(org?.confirmedSteps ?? []), step])] }, success);
+    saveOrg({ confirmedSteps: [...new Set([...(org?.confirmedSteps ?? []), step])] }, success, step);
 
   const loading = settingsQ.isLoading || matrixQ.isLoading || contractsQ.isLoading;
 
@@ -107,7 +118,8 @@ export default function OrganizationSetupPage() {
             <ol className="flex flex-col gap-3">
               <Step n={1} title="Organization details" done={done.details}
                 body="Your organization's name, the currency values are reported in, when your financial year starts, and the kind of agreements you review.">
-                <DetailsForm org={org} canEdit={canEdit} saving={save.isPending} onSave={(o) => saveOrg(o, "Organization details saved")} />
+                <DetailsForm org={org} canEdit={canEdit} saving={isBusy("details")} disabled={save.isPending} variant={stepVariant("details")}
+                  onSave={(o) => saveOrg(o, "Organization details saved", "details")} />
                 <EditionChoice
                   current={edition}
                   chosen={org.edition ?? null}
@@ -143,7 +155,7 @@ export default function OrganizationSetupPage() {
                 <div className="flex flex-wrap gap-2">
                   <Button asChild variant="outline"><Link href="/settings/matrix">Open the matrix <ArrowRight size={14} /></Link></Button>
                   {!done.matrix && canEdit && (
-                    <Button onClick={() => confirm("matrix", "Matrix confirmed")} disabled={save.isPending}>
+                    <Button variant={stepVariant("matrix")} onClick={() => confirm("matrix", "Matrix confirmed")} disabled={save.isPending} pending={isBusy("matrix")}>
                       <Check size={14} />These positions are right
                     </Button>
                   )}
@@ -165,7 +177,7 @@ export default function OrganizationSetupPage() {
                 <div className="flex flex-wrap gap-2">
                   <Button asChild variant="outline"><Link href="/settings/workflow">Change targets <ArrowRight size={14} /></Link></Button>
                   {!done.workflow && canEdit && (
-                    <Button onClick={() => confirm("workflow", "Stage targets confirmed")} disabled={save.isPending}>
+                    <Button variant={stepVariant("workflow")} onClick={() => confirm("workflow", "Stage targets confirmed")} disabled={save.isPending} pending={isBusy("workflow")}>
                       <Check size={14} />Keep these targets
                     </Button>
                   )}
@@ -177,7 +189,7 @@ export default function OrganizationSetupPage() {
                   ? `${plural(settingsQ.data?.reviewers.length ?? 0, "reviewer")} in the directory. Add more, or invite people to projects.`
                   : "Add the people who review agreements, and the offices and agreement types each handles, so new contracts are assigned automatically."}>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild variant={done.team ? "outline" : "default"}><Link href="/settings/workflow#reviewers">Add reviewers <ArrowRight size={14} /></Link></Button>
+                  <Button asChild variant={stepVariant("team")}><Link href="/settings/workflow#reviewers">Add reviewers <ArrowRight size={14} /></Link></Button>
                   <Button asChild variant="outline"><Link href="/settings/team">Invite people</Link></Button>
                 </div>
               </Step>
@@ -186,7 +198,7 @@ export default function OrganizationSetupPage() {
                 body={done.contract
                   ? `${plural(contractsQ.data?.contracts.length ?? 0, "contract")} in the workspace.`
                   : "Upload an agreement. Sonar reads it, checks it against your matrix and puts it on the board with its next step."}>
-                <Button asChild variant={done.contract ? "outline" : "default"}>
+                <Button asChild variant={stepVariant("contract")}>
                   <Link href={done.contract ? "/workflow" : "/projects/upload"}>{done.contract ? "Open the workflow" : "Upload an agreement"} <ArrowRight size={14} /></Link>
                 </Button>
               </Step>
@@ -197,7 +209,8 @@ export default function OrganizationSetupPage() {
                 <p className="text-sm text-[var(--ink-700)]">
                   {complete === total ? "Everything is in place." : `${plural(total - complete, "step")} still to do. You can finish later; this page keeps your progress.`}
                 </p>
-                <Button disabled={complete < total || save.isPending} onClick={() => saveOrg({ setupCompletedAt: new Date().toISOString() }, "Organization setup complete")}>
+                <Button disabled={complete < total || save.isPending} pending={isBusy("finish")}
+                  onClick={() => saveOrg({ setupCompletedAt: new Date().toISOString() }, "Organization setup complete", "finish")}>
                   Finish setup
                 </Button>
               </div>
@@ -237,8 +250,13 @@ function Step({ n, title, body, done, children }: { n: number; title: string; bo
   );
 }
 
-function DetailsForm({ org, canEdit, saving, onSave }: {
-  org: OrganizationSettings; canEdit: boolean; saving: boolean; onSave: (o: Partial<OrganizationSettings>) => void;
+function DetailsForm({ org, canEdit, saving, disabled, variant, onSave }: {
+  org: OrganizationSettings; canEdit: boolean; onSave: (o: Partial<OrganizationSettings>) => void;
+  /** This form's save is running. */
+  saving: boolean;
+  /** Some other save on the page is running. */
+  disabled: boolean;
+  variant: "default" | "outline";
 }) {
   const [name, setName] = useState(org.name ?? "");
   const [currency, setCurrency] = useState(org.defaultCurrency);
@@ -281,7 +299,7 @@ function DetailsForm({ org, canEdit, saving, onSave }: {
       </label>
       {canEdit && (
         <div className="flex items-end">
-          <Button type="submit" disabled={!dirty || !name.trim() || !!nameError || saving}>
+          <Button type="submit" variant={variant} disabled={!dirty || !name.trim() || !!nameError || disabled}>
             {saving && <Loader2 size={14} className="animate-spin motion-reduce:animate-none" />}Save details
           </Button>
         </div>

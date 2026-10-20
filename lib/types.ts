@@ -376,11 +376,18 @@ export interface ChatCitation {
   clauseNumber: string
   docId: string
   category: string
+  title?: string | null
+  /** The start of the clause text, for a preview. */
+  snippet?: string
 }
 
 export interface ChatResponse {
   answer: string
+  /** Every clause Sonar was given. */
   citations: ChatCitation[]
+  /** The clause numbers the answer actually cites (absent on older APIs). */
+  usedCitations?: string[]
+  grounded?: boolean
 }
 
 export interface ApiDiffChange {

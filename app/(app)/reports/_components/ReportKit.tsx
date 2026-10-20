@@ -146,7 +146,7 @@ export function ViewAsTable({ table }: { table: ChartTable }) {
           <thead className="bg-[var(--panel)]">
             <tr>
               {table.columns.map((c, i) => (
-                <th key={c} scope="col" className={cn("px-3 py-2 text-xs font-medium text-[var(--ink-600)]", i === 0 ? "text-left" : "text-right")}>{c}</th>
+                <th key={c} scope="col" className={cn("px-3 py-2 text-xs font-medium text-[var(--ink-600)]", i === 0 ? "sticky left-0 z-10 bg-[var(--panel)] text-left" : "text-right")}>{c}</th>
               ))}
             </tr>
           </thead>
@@ -154,7 +154,7 @@ export function ViewAsTable({ table }: { table: ChartTable }) {
             {table.rows.map((r, i) => (
               <tr key={i} className="border-t border-border">
                 {r.map((cell, j) => (j === 0
-                  ? <th key={j} scope="row" className="px-3 py-2 text-left font-medium text-foreground">{cell}</th>
+                  ? <th key={j} scope="row" className="sticky left-0 z-10 bg-card px-3 py-2 text-left font-medium text-foreground">{cell}</th>
                   : <td key={j} className="px-3 py-2 text-right tabular-nums text-[var(--ink-700)]">{cell}</td>))}
               </tr>
             ))}

@@ -17,7 +17,7 @@ export function TrustCards() {
 
         <ul className="lp-trust">
           <li className="lp-trust-card">
-            <div className="lp-trust-head lp-trust-blue" aria-hidden="true">
+            <div className="lp-trust-head lp-trust-navy" aria-hidden="true">
               <div className="lp-trust-snip">
                 <p className="lp-trust-snip-title">Royalties · your standard: 4%</p>
                 <p className="lp-trust-snip-row"><span>Contract says 3.5%</span><b className="lp-trust-fallback">Acceptable fallback</b></p>
@@ -30,7 +30,7 @@ export function TrustCards() {
             </div>
           </li>
           <li className="lp-trust-card">
-            <div className="lp-trust-head lp-trust-violet" aria-hidden="true">
+            <div className="lp-trust-head lp-trust-navy" aria-hidden="true">
               <div className="lp-trust-snip">
                 <p className="lp-trust-snip-title">§9.2 Indemnification</p>
                 <p className="lp-trust-snip-quote">“Licensee shall indemnify Licensor without limitation…”</p>

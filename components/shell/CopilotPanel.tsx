@@ -6,6 +6,7 @@
 // analyzed contract.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -26,6 +27,8 @@ type Msg = {
   content: string;
   citations?: ChatCitation[];
   error?: boolean;
+  /** On an error: the question that failed, so it can be asked again. */
+  question?: string;
 };
 
 // The questions reviewers and leaders ask most, worded the way Sonar answers best.
@@ -68,14 +71,12 @@ export function CopilotPanel({ open, onClose }: Props) {
   const docId = (picked && ready.some((d) => d.docId === picked) ? picked : null) ?? pageDocId ?? null;
   const doc = ready.find((d) => d.docId === docId);
 
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [threads, setThreads] = useState<Record<string, Msg[]>>({});
+  const messages = useMemo(() => (docId ? threads[docId] ?? [] : []), [threads, docId]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-
-  // A new contract starts a new conversation.
-  useEffect(() => { setMessages([]); }, [docId]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
@@ -89,20 +90,29 @@ export function CopilotPanel({ open, onClose }: Props) {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
-  async function send(question: string) {
+  async function send(question: string, retryOf?: number) {
     const q = question.trim();
     if (!q || busy || !docId) return;
-    setInput("");
-    setMessages((m) => [...m, { role: "user", content: q }]);
+    const id = docId;
+    const append = (msg: Msg) => setThreads((t) => ({ ...t, [id]: [...(t[id] ?? []), msg] }));
+    // A retry replaces the failed question and its error.
+    const before = retryOf === undefined ? messages : messages.slice(0, retryOf - 1);
+    if (retryOf !== undefined) setThreads((t) => ({ ...t, [id]: before }));
+    if (retryOf === undefined) setInput("");
+    append({ role: "user", content: q });
     setBusy(true);
     try {
-      const history = messages.filter((m) => !m.error).slice(-6).map((m) => ({ role: m.role, content: m.content }));
-      const res = await askSonar(docId, q, { history });
-      setMessages((m) => [...m, { role: "assistant", content: res.answer, citations: res.citations }]);
+      const history = before.filter((m) => !m.error).slice(-6).map((m) => ({ role: m.role, content: m.content }));
+      const res = await askSonar(id, q, { history });
+      // Sources are the clauses the answer cites, not every clause Sonar was shown.
+      const used = res.usedCitations;
+      const sources = used ? res.citations.filter((c) => used.includes(c.clauseNumber)) : res.citations;
+      append({ role: "assistant", content: res.answer, citations: sources });
     } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", content: e instanceof Error ? e.message : "Sonar couldn't answer. Try again.", error: true }]);
+      append({ role: "assistant", content: e instanceof Error ? e.message : "Sonar couldn't answer. Try again.", error: true, question: q });
     } finally {
       setBusy(false);
+      inputRef.current?.focus();
     }
   }
 
@@ -128,7 +138,7 @@ export function CopilotPanel({ open, onClose }: Props) {
             </div>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="New chat" disabled={messages.length === 0 || busy} onClick={() => setMessages([])}>
+                <Button variant="ghost" size="icon" aria-label="New chat" disabled={messages.length === 0 || busy} onClick={() => docId && setThreads((t) => ({ ...t, [docId]: [] }))}>
                   <Plus size={18} />
                 </Button>
               </TooltipTrigger>
@@ -186,21 +196,26 @@ export function CopilotPanel({ open, onClose }: Props) {
             </Intro>
           ) : (
             <div className="flex flex-col gap-5">
-              {messages.map((m, i) => <Message key={i} msg={m} />)}
+              {messages.map((m, i) => (
+                <Message key={i} msg={m} onOpenSource={onClose} onRetry={m.error && m.question && !busy ? () => send(m.question as string, i) : undefined} />
+              ))}
               {!busy && messages.length > 0 && messages[messages.length - 1].role === "assistant" && !messages[messages.length - 1].error && (
                 <div className="flex flex-wrap gap-1.5 pl-10" aria-label="Follow-up questions">
                   {FOLLOW_UPS.map((f) => (
                     <button key={f} type="button" onClick={() => send(f)}
-                      className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-[var(--ink-700)] transition-colors hover:border-[var(--brand-primary-300)] hover:bg-[var(--brand-primary-50)] hover:text-foreground">
+                      className="min-h-11 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-[var(--ink-700)] transition-colors hover:border-[var(--brand-primary-300)] hover:bg-[var(--brand-primary-50)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] md:min-h-8">
                       {f}
                     </button>
                   ))}
                 </div>
               )}
               {busy && (
-                <div className="flex items-start gap-3" role="status" aria-label="Sonar is answering">
+                <div className="flex items-start gap-3" role="status">
                   <SonarMark />
-                  <div className="rounded-lg bg-[var(--ink-50)] px-3 py-2.5"><TypingDots /></div>
+                  <div className="flex items-center gap-2.5 rounded-lg bg-[var(--ink-50)] px-3 py-2.5">
+                    <TypingDots />
+                    <AnsweringLabel />
+                  </div>
                 </div>
               )}
             </div>
@@ -221,7 +236,7 @@ export function CopilotPanel({ open, onClose }: Props) {
               placeholder={docId ? "Ask about this contract" : "Choose a contract first"}
               aria-label="Ask Sonar"
               rows={1}
-              disabled={!docId || busy}
+              disabled={!docId}
               className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-foreground outline-none placeholder:text-[var(--ink-500)] disabled:opacity-60"
             />
             <Button type="submit" size="icon" aria-label="Send" disabled={!docId || busy || !input.trim()} className="shrink-0 rounded-lg">
@@ -319,7 +334,19 @@ function TypingDots() {
   );
 }
 
-function Message({ msg }: { msg: Msg }) {
+/** What Sonar is doing while it answers, so a 5-second wait reads as work, not a hang. */
+const ANSWER_STAGES = ["Finding the clauses that answer this…", "Checking them against your matrix…", "Writing the answer…"];
+
+function AnsweringLabel() {
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    const timers = [1200, 2800].map((ms, i) => window.setTimeout(() => setStage(i + 1), ms));
+    return () => timers.forEach(window.clearTimeout);
+  }, []);
+  return <span className="text-xs text-[var(--ink-600)]">{ANSWER_STAGES[stage]}</span>;
+}
+
+function Message({ msg, onRetry, onOpenSource }: { msg: Msg; onRetry?: () => void; onOpenSource?: () => void }) {
   const [copied, setCopied] = useState(false);
   if (msg.role === "user") {
     return (
@@ -347,7 +374,15 @@ function Message({ msg }: { msg: Msg }) {
       <SonarMark />
       <div className="min-w-0 flex-1">
         {msg.error ? (
-          <p role="alert" className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">{msg.content}</p>
+          <div role="alert" className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2.5 text-sm text-[var(--danger)]">
+            <p>{msg.content}</p>
+            {onRetry && (
+              <button type="button" onClick={onRetry}
+                className="mt-1.5 inline-flex min-h-10 items-center gap-1.5 rounded-md text-sm font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)] md:min-h-8">
+                Try again
+              </button>
+            )}
+          </div>
         ) : (
           <Answer text={msg.content} />
         )}
@@ -356,9 +391,17 @@ function Message({ msg }: { msg: Msg }) {
             <p className="mb-1.5 text-xs font-medium text-[var(--ink-600)]">Sources</p>
             <ul className="flex flex-wrap gap-1.5">
               {citations.map((c, i) => (
-                <li key={i} className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs">
-                  <span className="font-mono font-semibold text-[var(--brand-primary-700)]">§{c.clauseNumber || "—"}</span>
-                  {c.category && <span className="truncate text-[var(--ink-700)]">{categoryLabel(c.category)}</span>}
+                <li key={i} className="max-w-full">
+                  {/* Opens the clause in the document, so the answer can be checked against it. */}
+                  <Link
+                    href={`/projects/${encodeURIComponent(c.docId)}/sow#clause-${encodeURIComponent(c.clauseNumber)}`}
+                    onClick={onOpenSource}
+                    title={c.snippet || undefined}
+                    className="inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs transition-colors hover:border-[var(--brand-primary-300)] hover:bg-[var(--brand-primary-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+                  >
+                    <span className="font-mono font-semibold text-[var(--brand-primary-700)]">§{c.clauseNumber || "—"}</span>
+                    {(c.title || c.category) && <span className="truncate text-[var(--ink-700)]">{c.title || categoryLabel(c.category)}</span>}
+                  </Link>
                 </li>
               ))}
             </ul>

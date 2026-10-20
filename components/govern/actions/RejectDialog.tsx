@@ -13,6 +13,10 @@ export function RejectDialog({ contract, open, onOpenChange }: { contract: Contr
   const [reason, setReason] = useState<RejectReason | "">(contract.nextStep.action === "reject" ? "unacceptable_terms" : "");
   const [note, setNote] = useState("");
   const needsNote = reason === "other";
+  // Confirm was pressed with something missing: say what, under the field.
+  const [attempted, setAttempted] = useState(false);
+  const reasonError = attempted && !reason ? "Pick a reason, so the record shows why." : undefined;
+  const noteError = attempted && needsNote && !note.trim() ? "Say why, so the other side can respond." : undefined;
 
   async function confirm() {
     if (!reason) return;
@@ -35,10 +39,12 @@ export function RejectDialog({ contract, open, onOpenChange }: { contract: Contr
       onConfirm={confirm}
       pending={pending}
       disabled={!reason || (needsNote && !note.trim())}
+      onInvalidSubmit={() => setAttempted(true)}
     >
-      <Field label="Why?" htmlFor="reject-reason">
+      <Field label="Why?" htmlFor="reject-reason" error={reasonError}>
         <Select value={reason} onValueChange={(v) => setReason(v as RejectReason)}>
-          <SelectTrigger id="reject-reason" className="w-full">
+          <SelectTrigger id="reject-reason" className="w-full"
+            aria-invalid={reasonError ? true : undefined} aria-describedby={reasonError ? "reject-reason-error" : undefined}>
             <SelectValue placeholder="Choose a reason" />
           </SelectTrigger>
           <SelectContent>
@@ -51,6 +57,7 @@ export function RejectDialog({ contract, open, onOpenChange }: { contract: Contr
         value={note}
         onChange={setNote}
         label={needsNote ? "Explain the reason" : "Note (optional)"}
+        error={noteError}
         placeholder={byEdition("e.g. Sponsor will not accept your publication rights.", "e.g. Vendor will not accept the hourly rate cap.")}
       />
     </ActionDialog>

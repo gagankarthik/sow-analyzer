@@ -1,33 +1,38 @@
 import Link from "next/link";
 import { ArrowRight, Play } from "lucide-react";
-import { HeroBackdrop, HeroBackdropLow } from "@/components/landing/HeroBackdrop";
 
-/* Hero: one benefit headline (the second line in the serif accent), a
-   two-line promise, two actions, and the product itself as the key visual:
-   the All contracts table, as a person sees it on their first morning. */
+/* Hero: the promise on the left, and on the right the moment it is about —
+   one agreement checked against the matrix: how much of it is fine, the
+   clauses that are not, and the one next step. Example data, drawn with the
+   same tiers, words and colours the product uses. */
 
-type Row = {
+type Finding = {
+  clause: string;
   title: string;
-  party: string;
-  status: { label: string; tone: "review" | "other" | "approve" | "sign" | "signed" };
-  wait: string;
-  owner: { initials: string; tone: string };
+  says: string;
+  tier: { label: string; tone: "unacceptable" | "deviates" | "missing" };
 };
 
-const ROWS: Row[] = [
-  { title: "Exclusive license", party: "Northwind Diagnostics", status: { label: "Review", tone: "review" }, wait: "Sonar · 2 min", owner: { initials: "AK", tone: "lp-av-1" } },
-  { title: "Sponsored research agreement", party: "Allegheny Aero", status: { label: "With the other side", tone: "other" }, wait: "Counterparty · 3d", owner: { initials: "SW", tone: "lp-av-2" } },
-  { title: "Data use agreement", party: "Riverbend Health", status: { label: "Approval", tone: "approve" }, wait: "Legal · 6h", owner: { initials: "JE", tone: "lp-av-3" } },
-  { title: "Mutual NDA", party: "Prairie AgriTech", status: { label: "Signature", tone: "sign" }, wait: "Signatory · 1d", owner: { initials: "MB", tone: "lp-av-4" } },
-  { title: "Material transfer agreement", party: "Lakeshore Labs", status: { label: "Signed", tone: "signed" }, wait: "Completed", owner: { initials: "AK", tone: "lp-av-1" } },
+const FINDINGS: Finding[] = [
+  { clause: "§8.2", title: "Publication", says: "135-day delay; your matrix allows 30", tier: { label: "Not acceptable", tone: "unacceptable" } },
+  { clause: "§11", title: "Indemnification", says: "The university indemnifies without limit", tier: { label: "Needs changes", tone: "deviates" } },
+  { clause: "—", title: "IP ownership", says: "No clause found in the agreement", tier: { label: "Missing", tone: "missing" } },
 ];
+
+/* Matrix result for the example: 14 clauses. */
+const TIERS = [
+  { key: "within", label: "Within", n: 9 },
+  { key: "fallback", label: "Fallback", n: 2 },
+  { key: "deviates", label: "Needs changes", n: 1 },
+  { key: "unacceptable", label: "Not acceptable", n: 1 },
+  { key: "missing", label: "Missing", n: 1 },
+] as const;
+const TOTAL = TIERS.reduce((s, t) => s + t.n, 0);
 
 export function Hero() {
   return (
     <section className="lp-hero3" aria-labelledby="hero-title">
-      <HeroBackdrop />
-      <HeroBackdropLow />
-      <div className="lp-wrap relative">
+      <div className="lp-wrap lp-hero3-grid">
         <div className="lp-hero3-copy">
           <h1 id="hero-title" className="lp-hero3-title">
             Keep every contract moving,
@@ -49,34 +54,53 @@ export function Hero() {
           </div>
         </div>
 
-        <figure className="lp-hero3-visual" aria-label="The All contracts list in Govern: each agreement with its stage, who it is waiting on and for how long, and its owner. Example data.">
+        <figure
+          className="lp-hero3-visual"
+          aria-label="A sponsored research agreement in Govern, checked against the review matrix: 11 of 14 clauses are within what the organization accepts; publication, indemnification and IP ownership need work, and the next step is to send it back. Example data."
+        >
           <div className="lp-hero3-card" aria-hidden="true">
             <div className="lp-hero3-cardhead">
-              <p className="lp-hero3-cardtitle">All contracts</p>
-              <span className="lp-hero3-new">New agreement</span>
+              <div className="min-w-0">
+                <p className="lp-hero3-cardtitle">Sponsored research agreement</p>
+                <p className="lp-hero3-cardmeta">Allegheny Aero · version 2 · checked against matrix v3</p>
+              </div>
+              <span className="lp-hero3-stage">In review</span>
             </div>
-            <div className="lp-hero3-filters">
-              <span>Stage</span>
-              <span>Type</span>
-              <span>Owner</span>
-              <span className="lp-hero3-filter-on">Waiting on: anyone</span>
+
+            <div className="lp-hero3-result">
+              <p className="lp-hero3-score"><strong>11</strong> of {TOTAL} clauses within what you accept</p>
+              <div className="lp-hero3-bar">
+                {TIERS.map((t) => (
+                  <span key={t.key} className={`lp-tier-${t.key}`} style={{ flexGrow: t.n }} />
+                ))}
+              </div>
+              <ul className="lp-hero3-legend">
+                {TIERS.map((t) => (
+                  <li key={t.key}><i className={`lp-tier-${t.key}`} />{t.n} {t.label.toLowerCase()}</li>
+                ))}
+              </ul>
             </div>
-            <ul className="lp-hero3-rows">
-              {ROWS.map((r) => (
-                <li key={r.title}>
-                  <span className="lp-hero3-name">
-                    <strong>{r.title}</strong>
-                    <span>{r.party}</span>
+
+            <ul className="lp-hero3-findings">
+              {FINDINGS.map((f) => (
+                <li key={f.title}>
+                  <span className="lp-hero3-clause">{f.clause}</span>
+                  <span className="lp-hero3-finding">
+                    <strong>{f.title}</strong>
+                    <span>{f.says}</span>
                   </span>
-                  <span className={`lp-hero3-status lp-st-${r.status.tone}`}>
-                    <i aria-hidden="true" />
-                    {r.status.label}
-                  </span>
-                  <span className="lp-hero3-wait">{r.wait}</span>
-                  <span className={`lp-hero3-avatar ${r.owner.tone}`}>{r.owner.initials}</span>
+                  <span className={`lp-hero3-tier lp-tierbadge-${f.tier.tone}`}>{f.tier.label}</span>
                 </li>
               ))}
             </ul>
+
+            <div className="lp-hero3-next">
+              <span className="lp-hero3-next-copy">
+                <span className="lp-hero3-next-label">Next step</span>
+                Send back to Allegheny Aero with suggested language for 3 clauses.
+              </span>
+              <span className="lp-hero3-next-btn">Send back</span>
+            </div>
           </div>
           <figcaption className="sr-only">Example data</figcaption>
         </figure>

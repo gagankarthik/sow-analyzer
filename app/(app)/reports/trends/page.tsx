@@ -6,9 +6,13 @@
 // without reading the charts.
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { HBarChart } from "@/components/charts/HBarChart";
 import { FilterChips } from "@/components/settings/SettingsNav";
+import { EmptyState } from "@/components/ds/feedback";
+import { Button } from "@/components/ui/button";
+import { FileText } from "@/components/ui/icons";
 import { ACCENT } from "@/lib/chart-theme";
 import type { ExportReport } from "@/lib/govern/export";
 import {
@@ -275,7 +279,12 @@ function TrendsBody({ trends }: { trends: Trends }) {
         </Panel>
         <Panel id="types" className="lg:col-span-6" title="By agreement type" sub="Over the whole window.">
           {typeRows.length === 0 ? (
-            <p className="text-base text-[var(--ink-600)]">Nothing arrived or was signed in this window.</p>
+            <EmptyState
+              icon={<FileText />}
+              title="Nothing arrived or was signed in this window"
+              description="Each agreement type gets a row once a contract of that type is received or signed. Pick a longer window above, or see what is moving now."
+              action={<Button asChild variant="outline"><Link href="/workflow">Open the workflow</Link></Button>}
+            />
           ) : (
             <table className="w-full table-fixed text-sm">
               <caption className="sr-only">Contracts by agreement type</caption>

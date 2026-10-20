@@ -37,7 +37,6 @@ import {
 } from "./_components/HomeSections";
 // Loaded when the Risk view opens: it carries the charts.
 const RiskView = dynamic(() => import("./_components/RiskView").then((m) => m.RiskView), { loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
-import { TrendGlance } from "./_components/TrendGlance";
 import { buildHomeReport } from "./_components/home-export";
 
 const SEARCH_LIMIT = 8;
@@ -292,8 +291,14 @@ function Home() {
               captureGaps={view.captureGaps}
             />
             <LongestPanel longest={view.longest} />
-            <TrendGlance kind="throughput" />
-            <TrendGlance kind="cycle" />
+            {/* Trends have their own page; home keeps to today's work. */}
+            <Link
+              href="/reports/trends"
+              className="inline-flex min-h-11 items-center justify-between gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-[var(--brand-primary-700)] transition-colors hover:border-[var(--ink-300)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+            >
+              Throughput and cycle-time trends
+              <ArrowRight size={14} aria-hidden />
+            </Link>
           </div>
         </div>
           </>

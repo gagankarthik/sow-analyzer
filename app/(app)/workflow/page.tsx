@@ -35,7 +35,7 @@ import { PreviewContext } from "./_components/preview-context";
 import type { Stage } from "@/lib/govern/types";
 import { BoardFilters } from "./_components/BoardFilters";
 import { ContractCard } from "./_components/ContractCard";
-import { PipelineStrip, StageLane, summariseStage, type StageSummary } from "./_components/StageLane";
+import { PhaseSwitch, PipelineStrip, StageLane, summariseStage, type StageSummary } from "./_components/StageLane";
 
 const POST_SIGNATURE_STAGES = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
 
@@ -113,6 +113,9 @@ function Workflow() {
   const failed = isError && !data;
   const filtering = isFiltering(filters);
   const noMatches = !isLoading && all.length > 0 && visible.length === 0;
+  const isEmpty = !isLoading && all.length === 0 && !filtering;
+  // The error and empty panels carry their own filled call to action; the header's steps back.
+  const stateHasCta = (failed && !isForbidden(error)) || (!failed && isEmpty);
 
   const header = (
     <PageHeader
@@ -124,7 +127,7 @@ function Workflow() {
           <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9">
             <Link href="/draft"><FileSignature size={15} />Draft a SOW</Link>
           </Button></EditionOnly>
-          <Button asChild size="lg" className="md:h-9">
+          <Button asChild variant={stateHasCta ? "outline" : "default"} size="lg" className="md:h-9">
             <Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />Upload a contract</Link>
           </Button>
         </>
@@ -148,7 +151,7 @@ function Workflow() {
     );
   }
 
-  if (!isLoading && all.length === 0 && !filtering) {
+  if (isEmpty) {
     return (
       <>
         {header}
@@ -213,7 +216,12 @@ function Workflow() {
           <WorkflowList contracts={visible} loading={isLoading} previewId={previewId} onPreview={setPreviewId} />
         ) : (
           <>
-            <PipelineStrip summaries={summaries} selected={selectedStage} onSelect={setPickedStage} loading={isLoading} />
+            {/* iPad and phone: the stages, to pick which one to show. Wide screens
+                show every lane of a phase, so a phase switch is all they need. */}
+            <div className="xl:hidden">
+              <PipelineStrip summaries={summaries} selected={selectedStage} onSelect={setPickedStage} loading={isLoading} />
+            </div>
+            <PhaseSwitch summaries={summaries} selected={selectedStage} onSelect={setPickedStage} loading={isLoading} />
 
             {/* Wide screens: the four lanes of the selected stage's phase. */}
             <div className="hidden grid-cols-4 items-stretch gap-3 xl:grid">

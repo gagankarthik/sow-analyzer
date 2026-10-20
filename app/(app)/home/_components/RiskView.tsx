@@ -31,7 +31,7 @@ import { useDocuments, useClassifications, isProcessing } from "@/lib/queries/do
 import { useCompliancePacks } from "@/lib/queries/compliance";
 import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
 import { docTypeShort } from "@/lib/doc-types";
-import { ACCENT, NEUTRAL_MARK, RISK_COLOR, RISK_LABEL } from "@/lib/chart-theme";
+import { ACCENT, NEUTRAL_MARK, RISK_COLOR, RISK_LABEL, RISK_PILL } from "@/lib/chart-theme";
 import { HBarChart, type HBarDatum } from "@/components/charts/HBarChart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProjects, useProjectsSync, refreshProjects, withUngroupedDocs, type LocalProject } from "@/lib/projects-store";
@@ -40,12 +40,6 @@ import type { ApiClassification, ApiDocument, DocType, Lifecycle, RiskLevel } fr
 
 const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const UNRATED_RANK = 4; // contracts with no risk data sort after every rated one
-const RISK_PILL: Record<RiskLevel, string> = {
-  critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
-  medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
-  low: "bg-[var(--success-soft)] text-[var(--success-fg)]",
-};
 const DAY = 86_400_000;
 const LIFECYCLE_ORDER: Lifecycle[] = ["draft", "review", "negotiation", "approval", "signed", "active", "renewal", "expired"];
 
@@ -861,10 +855,10 @@ function RiskCell({ a }: { a: Agg }) {
     return <span title="Highest clause risk level found in this contract" className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${RISK_PILL[a.overallRisk]}`}>{RISK_LABEL[a.overallRisk]}</span>;
   }
   if (a.processing > 0) {
-    return <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--warning)]"><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Analyzing</span>;
+    return <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--ai-ink)]"><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Analyzing</span>;
   }
   if (a.failed > 0 && a.readyCount === 0) {
-    return <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--danger)]"><XCircle size={12} />Failed</span>;
+    return <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--danger-fg)]"><XCircle size={12} />Failed</span>;
   }
   return <span className="text-xs text-muted-foreground">Not assessed</span>;
 }

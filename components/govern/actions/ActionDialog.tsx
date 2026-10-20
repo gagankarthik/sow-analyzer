@@ -12,7 +12,7 @@ import { Loader2 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 export function ActionDialog({
-  open, onOpenChange, title, description, confirmLabel, onConfirm, pending, disabled,
+  open, onOpenChange, title, description, confirmLabel, onConfirm, pending, disabled, onInvalidSubmit,
   tone = "primary", wide = false, children,
 }: {
   open: boolean;
@@ -23,6 +23,9 @@ export function ActionDialog({
   onConfirm: () => void;
   pending?: boolean;
   disabled?: boolean;
+  /** Called when confirm is pressed while disabled, so the dialog can show why.
+   *  With it, the confirm stays focusable (aria-disabled) instead of going dead. */
+  onInvalidSubmit?: () => void;
   tone?: "primary" | "danger";
   wide?: boolean;
   children?: React.ReactNode;
@@ -34,7 +37,9 @@ export function ActionDialog({
           className="contents"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!pending && !disabled) onConfirm();
+            if (pending) return;
+            if (disabled) onInvalidSubmit?.();
+            else onConfirm();
           }}
         >
           <DialogHeader className="pr-8">
@@ -49,8 +54,12 @@ export function ActionDialog({
             <Button
               type="submit"
               size="lg"
-              disabled={pending || disabled}
-              className={tone === "danger" ? "bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90" : undefined}
+              disabled={pending || (disabled && !onInvalidSubmit)}
+              aria-disabled={disabled && onInvalidSubmit ? true : undefined}
+              className={cn(
+                tone === "danger" && "bg-[var(--danger)] text-white hover:bg-[var(--danger)]/90",
+                "aria-disabled:opacity-50",
+              )}
             >
               {pending && <Loader2 size={14} className="animate-spin" />}
               {confirmLabel}
@@ -63,29 +72,38 @@ export function ActionDialog({
 }
 
 /** A labelled field inside an action dialog. */
-export function Field({ label, hint, htmlFor, children }: { label: string; hint?: string; htmlFor?: string; children: React.ReactNode }) {
+export function Field({ label, hint, error, htmlFor, children }: {
+  label: string; hint?: string; htmlFor?: string; children: React.ReactNode;
+  /** Why the value can't be used; shown instead of the hint (the input's id + "-error"). */
+  error?: string;
+}) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={htmlFor} className="text-sm font-semibold text-foreground">{label}</label>
       {children}
-      {hint && <p className="text-xs leading-relaxed text-[var(--ink-600)]">{hint}</p>}
+      {error
+        ? <p id={htmlFor ? `${htmlFor}-error` : undefined} role="alert" className="text-xs leading-relaxed text-[var(--danger)]">{error}</p>
+        : hint && <p className="text-xs leading-relaxed text-[var(--ink-600)]">{hint}</p>}
     </div>
   );
 }
 
 /** Optional note, the same on every action. */
-export function NoteField({ id, value, onChange, label = "Note (optional)", placeholder }: {
+export function NoteField({ id, value, onChange, label = "Note (optional)", placeholder, error }: {
   id: string; value: string; onChange: (v: string) => void; label?: string; placeholder?: string;
+  error?: string;
 }) {
   return (
-    <Field label={label} htmlFor={id}>
+    <Field label={label} htmlFor={id} error={error}>
       <textarea
         id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "Anything the next person should know"}
         rows={3}
-        className="min-h-20 w-full rounded-lg border border-input bg-card px-3 py-2 text-base leading-relaxed outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+        className="min-h-20 w-full rounded-lg border border-input bg-card px-3 py-2 text-base leading-relaxed outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-[var(--danger)] md:text-sm"
       />
     </Field>
   );

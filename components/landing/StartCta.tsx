@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "@/components/ui/icons";
 
 /* Closing call to action, shared by the public pages: the offer and one
-   action on a blue-to-violet wash, with a campus skyline (a clock tower,
+   action on a flat blue tint, with a campus skyline (a clock tower,
    halls, a domed library, chapel spires and trees) in the open space to the
    right of the copy, on wide screens. */
 
@@ -13,7 +13,7 @@ export function StartCta() {
         <div className="lp-cta2">
           <svg className="lp-cta2-shapes" viewBox="0 0 320 320" aria-hidden="true" focusable="false">
             <path d="M320 0 V200 A200 200 0 0 1 120 0 Z" fill="#CDDCFD" />
-            <rect x="200" y="200" width="120" height="120" fill="#DDD4FB" />
+            <rect x="200" y="200" width="120" height="120" fill="#DCE8FE" />
             <circle cx="150" cy="250" r="16" fill="#B9CFF9" />
           </svg>
 
@@ -47,15 +47,8 @@ export function StartCta() {
 function CampusSkyline() {
   return (
     <svg className="lp-cta2-skyline" viewBox="470 0 730 170" preserveAspectRatio="xMaxYMax meet" aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="lp-skyline-ink" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#B4C8F6" />
-          <stop offset="1" stopColor="#C8B9F3" />
-        </linearGradient>
-      </defs>
-
       {/* Far row: plain blocks that give the skyline depth */}
-      <g fill="url(#lp-skyline-ink)" opacity="0.45">
+      <g fill="#C9D7F7" opacity="0.45">
         <rect x="0" y="104" width="70" height="66" />
         <rect x="150" y="78" width="54" height="92" />
         <rect x="330" y="70" width="48" height="100" />
@@ -66,7 +59,7 @@ function CampusSkyline() {
       </g>
 
       {/* Near row: the campus */}
-      <g fill="url(#lp-skyline-ink)">
+      <g fill="#C9D7F7">
         {/* Hall with a pediment */}
         <path d="M30 118 L120 88 L210 118 Z" />
         <rect x="40" y="118" width="160" height="52" />

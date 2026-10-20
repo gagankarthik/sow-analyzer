@@ -68,6 +68,7 @@ export function StatusBanner({
               <span>{current.label}: {current.summary}</span>
             </div>
           )}
+          {!compact && <StepMeter steps={steps} />}
         </div>
         {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
       </div>
@@ -81,12 +82,33 @@ export function StatusBanner({
         aria-expanded={open}
         aria-controls={detailsId}
         onClick={() => setOpen((v) => !v)}
-        className="absolute -bottom-4 left-1/2 inline-flex size-8 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card text-[var(--ink-600)] shadow-xs hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary-600)]"
+        className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-[var(--brand-primary-700)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary-600)] md:min-h-8"
       >
         {open ? <ChevronsUp size={16} aria-hidden /> : <ChevronsDown size={16} aria-hidden />}
-        <span className="sr-only">{open ? "Hide the steps" : "Show every step and who holds it"}</span>
+        {open ? "Hide the steps" : "Show every step and who holds it"}
       </button>
     </section>
+  );
+}
+
+/** "Step 3 of 5" with one segment per step: how far along the contract is. */
+function StepMeter({ steps }: { steps: ContractStep[] }) {
+  const at = steps.findIndex((s) => s.status === "current" || s.status === "waiting" || s.status === "stopped");
+  const done = steps.filter((s) => s.status === "done").length;
+  if (steps.length < 2) return null;
+  const label = at >= 0 ? `Step ${at + 1} of ${steps.length}` : done === steps.length ? "Every step done" : `${done} of ${steps.length} steps done`;
+  return (
+    <div className="mt-4 flex max-w-sm items-center gap-3">
+      <ol className="flex flex-1 gap-1" aria-label={label}>
+        {steps.map((s, i) => (
+          <li key={i} aria-hidden className={cn("h-1.5 flex-1 rounded-full",
+            s.status === "done" ? "bg-[var(--success)]"
+              : s.status === "stopped" ? "bg-[var(--danger)]"
+              : i === at ? "bg-[var(--brand-primary-600)]" : "bg-[var(--ink-200)]")} />
+        ))}
+      </ol>
+      <span className="shrink-0 text-xs font-medium tabular-nums text-[var(--ink-600)]">{label}</span>
+    </div>
   );
 }
 

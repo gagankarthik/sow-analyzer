@@ -11,6 +11,7 @@ import { useGovernMe } from "@/lib/govern/queries";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import { AlertTriangle, Loader2, Lock, Plus, RefreshCw, X } from "@/components/ui/icons";
 
 /** Edit rights on admin pages. While `/govern/me` loads (or fails) nobody
@@ -227,9 +228,18 @@ export function UnsavedBar({
         {summary}
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="lg" className="flex-1 sm:flex-none md:h-9" onClick={onDiscard} disabled={saving}>Discard</Button>
-        <Button size="lg" className="flex-1 sm:flex-none md:h-9" onClick={onSave} disabled={saving || disabled}>
-          {saving ? <><Loader2 size={13} className="animate-spin motion-reduce:animate-none" />Saving…</> : saveLabel}
+        <ConfirmDialog
+          title="Discard your changes?"
+          description="Everything you changed since the last save goes back to how it was."
+          confirmLabel="Discard changes"
+          cancelLabel="Keep editing"
+          tone="danger"
+          onConfirm={onDiscard}
+          trigger={<Button variant="outline" size="lg" className="flex-1 sm:flex-none md:h-9" disabled={saving}>Discard</Button>}
+        />
+        <Button size="lg" className="flex-1 sm:flex-none md:h-9" onClick={onSave} disabled={saving || disabled} aria-busy={saving || undefined}>
+          {saving && <Loader2 size={13} className="animate-spin motion-reduce:animate-none" />}
+          {saveLabel}
         </Button>
       </div>
     </div>

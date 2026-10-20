@@ -127,10 +127,8 @@ function ReportCard({
       className="group flex min-w-0 flex-col rounded-xl border border-border bg-card p-5 shadow-xs transition-colors duration-150 hover:border-[var(--brand-primary-300)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
     >
       <span className="flex items-center gap-3">
-        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]">
-          <Icon size={18} aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1 text-lg font-semibold text-foreground">{title}</span>
+        <Icon size={18} aria-hidden className="shrink-0 text-[var(--ink-600)]" />
+        <span className="min-w-0 flex-1 text-base font-semibold text-foreground">{title}</span>
         <ArrowRight size={16} aria-hidden className="shrink-0 text-[var(--ink-400)] transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-[var(--brand-primary-600)] motion-reduce:transition-none" />
       </span>
       <span className="mt-4 flex items-baseline gap-2">
@@ -168,7 +166,7 @@ function BottlenecksCard({ facts }: { facts: Facts }) {
             <span key={q.kind} className="grid grid-cols-[8rem_minmax(0,1fr)_2rem] items-center gap-3 text-sm">
               <span className="truncate text-[var(--ink-700)]">{q.label}</span>
               <span className="h-2 overflow-hidden rounded-full bg-[var(--ink-100)]">
-                <span className="block h-full rounded-full bg-[var(--brand-primary-500)]" style={{ width: `${(q.count / max) * 100}%` }} />
+                <span className="block h-full rounded-full bg-[var(--viz-primary)]" style={{ width: `${(q.count / max) * 100}%` }} />
               </span>
               <span className="text-right font-semibold tabular-nums text-foreground">{q.count}</span>
             </span>

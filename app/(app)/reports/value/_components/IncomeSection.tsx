@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ACCENT } from "@/lib/chart-theme";
 import { fmtMoney } from "@/lib/contract-value";
 import { INCOME_KIND_LABEL, plural } from "@/lib/govern/labels";
+import { parseDate } from "@/lib/format";
 import { formatCompact } from "@/lib/govern/metrics";
 const ColumnChart = dynamic(() => import("../../_components/TrendCharts").then((m) => m.ColumnChart), { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-xl bg-[var(--ink-100)]" aria-busy="true" aria-label="Loading" /> });
 import { INCOME_DETAIL_CAP, LICENSING_KINDS, quarterOf, type IncomeRow } from "./licensing-income";
@@ -124,7 +125,7 @@ export function IncomeSection({
                 <span className="shrink-0 text-sm tabular-nums text-foreground sm:text-right">
                   {r.amount !== null ? fmtMoney(r.amount, r.currency) : r.pct !== null ? `${r.pct}%` : "No amount yet"}
                   <span className="block text-xs text-[var(--ink-600)]">
-                    {r.expectedDate ? new Date(r.expectedDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "No date"}
+                    {r.expectedDate ? parseDate(r.expectedDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "No date"}
                   </span>
                 </span>
               </li>

@@ -23,7 +23,7 @@ import { CompositionBar, type CompositionSegment } from "@/components/charts/Com
 import { ClauseHeatmap } from "@/components/charts/ClauseHeatmap";
 import { riskIndex } from "@/components/charts/RiskGauge";
 import {
-  ACCENT, HIGH_RISK_THRESHOLD, NEUTRAL_MARK, RISK_COLOR, RISK_LABEL, RISK_ORDER_DESC,
+  ACCENT, HIGH_RISK_THRESHOLD, NEUTRAL_MARK, RISK_COLOR, RISK_LABEL, RISK_ORDER_DESC, RISK_PILL,
   SEVERITY_COLOR, SEVERITY_ORDER_DESC, categoricalColor,
 } from "@/lib/chart-theme";
 import {
@@ -38,22 +38,17 @@ import { documentKeyDates, formatKeyDate, isoDayToMs, portfolioDates, ruleText, 
 import { computeContractValue, docValueOrNull, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
 import { clauseTypeLabel } from "@/lib/clause-categories";
 import { DOC_TYPE_META, docTypeShort } from "@/lib/doc-types";
+import { DUE_SOON_DAYS } from "@/lib/format";
 import type { ApiDocument, DocType, RiskLevel, FindingSeverity, PricingModel } from "@/lib/types";
 
 const DAY = 86_400_000;
 const SEV_RANK: Record<FindingSeverity, number> = { info: 0, low: 1, medium: 2, high: 3, critical: 4 };
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode }> = {
-  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger)]", icon: <ShieldAlert size={13} /> },
-  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning)]", icon: <AlertTriangle size={13} /> },
+  critical: { bg: "bg-[var(--danger-soft)]", text: "text-[var(--danger-fg)]", icon: <ShieldAlert size={13} /> },
+  high: { bg: "bg-[var(--warning-soft)]", text: "text-[var(--warning-fg)]", icon: <AlertTriangle size={13} /> },
   medium: { bg: "bg-[var(--ink-100)]", text: "text-[var(--ink-700)]", icon: <AlertTriangle size={13} /> },
-  low: { bg: "bg-[var(--success-soft)]", text: "text-[var(--success)]", icon: <Info size={13} /> },
+  low: { bg: "bg-[var(--ink-50)]", text: "text-[var(--ink-600)]", icon: <Info size={13} /> },
   info: { bg: "bg-[var(--info-soft)]", text: "text-[var(--info)]", icon: <Info size={13} /> },
-};
-const RISK_PILL: Record<RiskLevel, string> = {
-  critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
-  medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
-  low: "bg-[var(--success-soft)] text-[var(--success-fg)]",
 };
 // Fixed orders, so a group keeps its colour whatever the filters leave on screen.
 const DOC_TYPE_KEYS = Object.keys(DOC_TYPE_META) as DocType[];
@@ -678,7 +673,7 @@ export function DocumentInsights() {
                                     </span>
                                     <span className="shrink-0 text-right">
                                       <span className="block text-sm tabular-nums text-foreground">{shortDate(r.t)}</span>
-                                      <span className={`block text-xs tabular-nums ${r.days < 0 ? "font-medium text-[var(--danger)]" : r.days <= 30 ? "font-medium text-[var(--warning)]" : "text-muted-foreground"}`}>{inDays(r.days)}</span>
+                                      <span className={`block text-xs tabular-nums ${r.days < 0 ? "font-medium text-[var(--danger-fg)]" : r.days <= DUE_SOON_DAYS ? "font-medium text-[var(--warning-fg)]" : "text-muted-foreground"}`}>{inDays(r.days)}</span>
                                     </span>
                                   </Link>
                                 </li>

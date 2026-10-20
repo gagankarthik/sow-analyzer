@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
 import { MarketingShell } from "@/components/landing/MarketingShell";
-import { IconBadge } from "@/components/landing/IconBadge";
 import { BoardCard, BottleneckCard, CaptureCard, RedlineCard, ValueCard } from "@/components/landing/ProductCards";
 import { StartCta } from "@/components/landing/StartCta";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -54,7 +53,7 @@ const TEAM_VISUAL: Record<SolutionSectionId, { tint: string; card: React.ReactNo
   "finance-leadership": { tint: "lp-tint-teal", card: <ValueCard /> },
 };
 
-/* Industry cards borrow a product area's tint so the grid has colour without noise. */
+/* Each industry card's small inline icon takes a product area's ink. */
 const INDUSTRY_AREA: Record<IndustrySectionId, string> = {
   "research-universities": "matrix",
   "academic-medical-centers": "trends",
@@ -123,14 +122,21 @@ export default function SolutionsPage() {
             <p className="lp-lede mt-4">The same review and workflow, tuned to the agreements each kind of institution signs most.</p>
           </div>
           <ul className="lp-sol-grid">
-            {INDUSTRY_SECTIONS.map((industry) => (
-              <li key={industry.id} id={industry.id} className="lp-sol-card scroll-mt-32">
-                <IconBadge icon={industry.icon} area={INDUSTRY_AREA[industry.id]} />
-                <h3 className="lp-sol-card-title">{industry.label}</h3>
-                <p className="lp-sol-card-sub">{industry.description}</p>
-                <p className="lp-sol-card-body">{INDUSTRY_COPY[industry.id]}</p>
-              </li>
-            ))}
+            {INDUSTRY_SECTIONS.map((industry) => {
+              const Glyph = industry.icon;
+              return (
+                <li key={industry.id} id={industry.id} className="lp-sol-card scroll-mt-32">
+                  <h3 className="lp-sol-card-title">
+                    <span className={`lp-sol-card-icon lp-area-${INDUSTRY_AREA[industry.id]}`} aria-hidden="true">
+                      <Glyph size={16} />
+                    </span>
+                    {industry.label}
+                  </h3>
+                  <p className="lp-sol-card-sub">{industry.description}</p>
+                  <p className="lp-sol-card-body">{INDUSTRY_COPY[industry.id]}</p>
+                </li>
+              );
+            })}
           </ul>
           <div className="lp-sol-workforce">
             <p>

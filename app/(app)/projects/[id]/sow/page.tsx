@@ -404,7 +404,7 @@ export default function SowPage() {
                         </button>
                       ))}
                     </div>
-                    <Button variant="ai" size="lg" className="mt-3 w-full md:h-9" onClick={toggleCopilot}>Ask a question</Button>
+                    <Button variant="ai" size="lg" className="mt-3 w-full md:h-9 lg:w-auto lg:self-start" onClick={toggleCopilot}>Ask a question</Button>
                   </div>
 
                   {classification && classification.parties.length > 0 && (

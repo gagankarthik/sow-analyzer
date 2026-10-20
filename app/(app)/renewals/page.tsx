@@ -13,6 +13,8 @@ import { docTypeShort } from "@/lib/doc-types";
 import { useDocuments, isProcessing } from "@/lib/queries/documents";
 import { useNow } from "@/lib/use-now";
 import { fmtMoney } from "@/lib/contract-value";
+import { DUE_SOON_DAYS, parseDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { documentKeyDates, formatKeyDate, isoDayToMs, portfolioDates, type DerivedKeyDate, type KeyDateKind } from "@/lib/key-dates";
 import type { ApiDocument, DocType } from "@/lib/types";
 import { CalendarClock, Repeat, XCircle, CheckCircle2, ArrowRight, DollarSign, Layers, X, RefreshCw, Clock } from "@/components/ui/icons";
@@ -155,7 +157,7 @@ export default function RenewalsPage() {
       const t = keyIso ? new Date(keyIso).getTime() : NaN;
       const date = Number.isFinite(t) ? t : null;
       const days = date !== null ? Math.round((date - now) / DAY) : null;
-      const termEnd = d.termEndDate ? new Date(d.termEndDate).getTime() : NaN;
+      const termEnd = d.termEndDate ? parseDate(d.termEndDate).getTime() : NaN;
 
       const base = { ...shared, key: d.docId, dateLabel, date, days, href: `/projects/${d.docId}` } as const;
 
@@ -262,12 +264,13 @@ export default function RenewalsPage() {
               <span className="text-base text-[var(--navy-100)]">date{kpis.next90 === 1 ? "" : "s"} in that window: renewals, term ends, notice deadlines, payments, milestones and deliverables</span>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-5">
-              {([["0–30 days", kpis.d30], ["31–60 days", kpis.d60], ["61–90 days", kpis.d90]] as const).map(([label, n]) => (
+              {([["0–30 days", kpis.d30], ["31–60 days", kpis.d60], ["61–90 days", kpis.d90]] as const).map(([label, n], idx) => (
                 <div key={label} className="min-w-0">
                   <div className="text-2xl font-semibold leading-none tabular-nums">{n}</div>
                   <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/20" aria-hidden>
                     <div
-                      className="h-full rounded-full bg-white transition-[width] duration-700 ease-out motion-reduce:transition-none"
+                      className={cn("h-full rounded-full transition-[width] duration-700 ease-out motion-reduce:transition-none",
+                        idx === 0 ? "bg-[var(--warning)]" : "bg-white/50")}
                       style={{ width: `${(n / windowMax) * 100}%` }}
                     />
                   </div>
@@ -278,7 +281,7 @@ export default function RenewalsPage() {
           </section>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:col-span-5 lg:grid-cols-2">
-            <MetricCard label="Up for renewal" value={kpis.inRenewal} icon={<Repeat size={14} />} tone="warning" />
+            <MetricCard label="Up for renewal" value={kpis.inRenewal} icon={<Repeat size={14} />} tone={kpis.inRenewal ? "warning" : "neutral"} />
             <MetricCard label="Expired" value={kpis.expired} icon={<XCircle size={14} />} tone={kpis.expired > 0 ? "danger" : "neutral"} hint={kpis.expired > 0 ? "Past term end" : undefined} />
             <MetricCard
               className="lg:col-span-2"
@@ -393,7 +396,7 @@ export default function RenewalsPage() {
                             {i.value !== null && i.value > 0 ? <span className="tabular-nums"> · {fmtMoney(i.value, i.doc.currency)}</span> : null}
                           </div>
                         </div>
-                        <span className={`mt-0.5 shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums sm:mt-0 ${i.days === null ? "bg-muted text-[var(--ink-600)]" : i.days < 0 ? "bg-[var(--danger-soft)] text-[var(--danger)]" : i.days <= 30 ? "bg-[var(--warning-soft)] text-[var(--warning-fg)]" : "bg-muted text-[var(--ink-600)]"}`}>
+                        <span className={`mt-0.5 shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums sm:mt-0 ${i.days === null ? "bg-muted text-[var(--ink-600)]" : i.days < 0 ? "bg-[var(--warning-soft)] text-[var(--warning-fg)]" : i.days <= DUE_SOON_DAYS ? "bg-[var(--warning-soft)] text-[var(--warning-fg)]" : "bg-muted text-[var(--ink-600)]"}`}>
                           {i.kind === "expired" && i.days === null ? "Marked expired" : i.kind !== "expired" && i.days !== null && i.days < 0 ? `${Math.abs(i.days)}d ago` : daysLabel(i.days)}
                         </span>
                         <ArrowRight size={16} className="hidden shrink-0 text-[var(--ink-300)] transition-colors group-hover:text-[var(--brand-primary-600)] sm:block" />
@@ -412,10 +415,10 @@ export default function RenewalsPage() {
 
 function KindMark({ kind }: { kind: Item["kind"] }) {
   const map = {
-    expired: { icon: <XCircle size={16} className="text-[var(--danger)]" />, bg: "bg-[var(--danger-soft)]", label: "Expired" },
-    renewal: { icon: <Repeat size={16} className="text-[var(--warning)]" />, bg: "bg-[var(--warning-soft)]", label: "Up for renewal" },
+    expired: { icon: <XCircle size={16} className="text-[var(--danger-fg)]" />, bg: "bg-[var(--danger-soft)]", label: "Expired" },
+    renewal: { icon: <Repeat size={16} className="text-[var(--warning-fg)]" />, bg: "bg-[var(--warning-soft)]", label: "Up for renewal" },
     upcoming: { icon: <CalendarClock size={16} className="text-structure-soft-fg" />, bg: "bg-structure-soft", label: "Upcoming" },
-    passed: { icon: <Clock size={16} className="text-[var(--danger)]" />, bg: "bg-[var(--danger-soft)]", label: "Due date passed" },
+    passed: { icon: <Clock size={16} className="text-[var(--warning-fg)]" />, bg: "bg-[var(--warning-soft)]", label: "Due date passed" },
   } as const;
   const m = map[kind];
   return (

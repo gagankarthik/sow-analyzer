@@ -62,14 +62,14 @@ export function ValueTiles() {
     <section aria-label="Contract value" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       <StatTile
         href="/reports/value"
-        tone="success"
+        tone="brand"
         label="Current value"
         value={<span title={formatMoney(summary.current)}>{tileValue(summary.current)}</span>}
         hint={countHint(summary.current, "Signed and active")}
       />
       <StatTile
         href="/reports/value"
-        tone="brand"
+        tone="neutral"
         label="Potential value"
         value={<span title={formatMoney(summary.potential)}>{tileValue(summary.potential)}</span>}
         hint={countHint(summary.potential, "Still in the pipeline")}

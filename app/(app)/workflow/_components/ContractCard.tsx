@@ -41,8 +41,8 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
   return (
     <article
       className={cn(
-        "group relative flex flex-col gap-3 rounded-xl border bg-card p-3.5 transition-[border-color,box-shadow] duration-150 hover:border-[var(--brand-primary-300)] hover:shadow-sm focus-within:border-[var(--brand-primary-300)] motion-reduce:transition-none",
-        c.slaStatus === "red" && !closed ? "border-[color-mix(in_srgb,var(--danger)_35%,var(--border))]" : "border-border",
+        "group relative flex flex-col gap-3 rounded-xl border bg-card p-3.5 transition-colors duration-150 hover:border-[var(--brand-primary-300)] focus-within:border-[var(--brand-primary-300)] motion-reduce:transition-none",
+        c.slaStatus === "red" && !closed ? "border-border border-l-[3px] border-l-[var(--status-blocked)]" : "border-border",
         closed && "bg-[var(--panel)]",
       )}
     >
@@ -109,7 +109,7 @@ function ContractCardImpl({ contract: c }: { contract: Contract }) {
         {!closed && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <dt className="sr-only">Open items</dt>
-            <dd className={cn("inline-flex items-center gap-1.5 text-xs font-medium", c.openBlockers > 0 ? "text-[var(--warning)]" : "text-[var(--success)]")}>
+            <dd className={cn("inline-flex items-center gap-1.5 text-xs font-medium", c.openBlockers > 0 ? "text-[var(--warning-fg)]" : "text-[var(--ink-600)]")}>
               {c.openBlockers > 0 ? <ShieldAlert size={13} /> : <CheckCircle2 size={13} />}
               {c.openBlockers > 0 ? `${plural(c.openBlockers, "open item")}` : "Nothing blocking"}
             </dd>

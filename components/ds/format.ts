@@ -4,7 +4,7 @@
 // ($1,250,000), and UNKNOWN IS NEVER ZERO: null / undefined / NaN print as
 // an em dash with a spoken "Not known" alternative.
 
-import { currencySymbol } from "@/lib/format";
+import { currencySymbol, parseDate } from "@/lib/format";
 
 /** How a value is shaped. */
 export type ValueKind = "number" | "currency" | "percent" | "days" | "count";
@@ -92,7 +92,7 @@ export function formatter(opts: FormatOptions): (n: number | null | undefined) =
 /** "Mar 5, 2026". Invalid or empty input returns the em dash. */
 export function formatDate(input: string | number | Date | null | undefined): string {
   if (input === null || input === undefined || input === "") return UNKNOWN_GLYPH;
-  const d = input instanceof Date ? input : new Date(input);
+  const d = parseDate(input);
   if (isNaN(d.getTime())) return UNKNOWN_GLYPH;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
@@ -100,7 +100,7 @@ export function formatDate(input: string | number | Date | null | undefined): st
 /** "Mar 5, 2026, 3:04 PM": the absolute form shown on hover. */
 export function formatDateTime(input: string | number | Date | null | undefined): string {
   if (input === null || input === undefined || input === "") return UNKNOWN_GLYPH;
-  const d = input instanceof Date ? input : new Date(input);
+  const d = parseDate(input);
   if (isNaN(d.getTime())) return UNKNOWN_GLYPH;
   return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
@@ -108,7 +108,7 @@ export function formatDateTime(input: string | number | Date | null | undefined)
 /** "today", "in 3 days", "12 days ago". `now` is injectable for tests and SSR. */
 export function formatRelative(input: string | number | Date | null | undefined, now: Date = new Date()): string {
   if (input === null || input === undefined || input === "") return UNKNOWN_GLYPH;
-  const d = input instanceof Date ? input : new Date(input);
+  const d = parseDate(input);
   if (isNaN(d.getTime())) return UNKNOWN_GLYPH;
   const days = Math.round((d.getTime() - now.getTime()) / 86_400_000);
   if (days === 0) return "today";

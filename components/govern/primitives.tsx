@@ -4,8 +4,9 @@
 
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ds/Avatar";
-import { AlertTriangle, Clock, Building2, Users, UserRound, PenLine, CircleDashed } from "@/components/ui/icons";
-import { SLA_LABEL, TIER_HINT, TIER_LABEL, WAITING_ON_LABEL, WAITING_ON_SHORT, daysLabel } from "@/lib/govern/labels";
+import { OutcomeBadge } from "@/components/ds/OutcomeBadge";
+import { Clock, Building2, Users, UserRound, PenLine, CircleDashed } from "@/components/ui/icons";
+import { SLA_LABEL, WAITING_ON_LABEL, WAITING_ON_SHORT, daysLabel } from "@/lib/govern/labels";
 import type { SlaStatus, Tier, WaitingOn, WaitingOnKind } from "@/lib/govern/types";
 
 export const TIER_TONE: Record<Tier, string> = {
@@ -24,25 +25,15 @@ export const TIER_COLOR: Record<Tier, string> = {
   deviates: "var(--warning)",
   unacceptable: "var(--danger)",
   review: "var(--viz-other)",
-  missing: "var(--ink-300)",
+  // Missing blocks signature, so it is a dark slate, clearly apart from the
+  // light grey of "check by hand".
+  missing: "var(--ink-700)",
 };
 
+/** A matrix tier: the design system's outcome badge, whose icon shape differs
+ *  per tier, so within / fallback / deviates never differ by colour alone. */
 export function TierBadge({ tier, className }: { tier: Tier; className?: string }) {
-  return (
-    <span
-      title={TIER_HINT[tier]}
-      className={cn(
-        "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md border px-2 text-xs font-semibold whitespace-nowrap",
-        TIER_TONE[tier],
-        className,
-      )}
-    >
-      {tier === "unacceptable"
-        ? <AlertTriangle size={12} aria-hidden />
-        : <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />}
-      {TIER_LABEL[tier]}
-    </span>
-  );
+  return <OutcomeBadge outcome={tier} className={className} />;
 }
 
 export function BeneficialBadge({ className }: { className?: string }) {

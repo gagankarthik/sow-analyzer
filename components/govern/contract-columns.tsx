@@ -2,7 +2,7 @@ import type { DataTableColumn } from "@/components/ds/DataTable";
 import { AvatarStack } from "@/components/ds/Avatar";
 import { TurnPill } from "@/components/govern/primitives";
 import { StageDots } from "@/components/govern/StageDots";
-import { RISK_LABEL } from "@/lib/chart-theme";
+import { RISK_LABEL, RISK_PILL } from "@/lib/chart-theme";
 import { AGREEMENT_TYPE_LABEL, STAGES } from "@/lib/govern/labels";
 import { contractValueText } from "@/lib/govern/metrics";
 import { contractPeople } from "@/lib/govern/people";
@@ -45,10 +45,10 @@ export const CONTRACT_COLUMNS: DataTableColumn<Contract>[] = [
   },
   { id: "type", header: "Type", priority: 4, sortValue: (c) => AGREEMENT_TYPE_LABEL[c.agreementType], cell: (c) => AGREEMENT_TYPE_LABEL[c.agreementType] },
   {
-    id: "risk", header: "Risk", priority: 4,
+    id: "risk", header: "Risk", priority: 2,
     sortValue: (c) => (c.overallRisk ? RISK_ORDER[c.overallRisk] : null),
     cell: (c) => c.overallRisk ? (
-      <span className={cn("text-sm font-medium", c.overallRisk === "critical" ? "text-[var(--danger)]" : c.overallRisk === "high" ? "text-[var(--warning-fg)]" : "text-[var(--ink-700)]")}>
+      <span className={cn("inline-flex rounded-md px-2 py-0.5 text-xs font-semibold", RISK_PILL[c.overallRisk])}>
         {RISK_LABEL[c.overallRisk]}
       </span>
     ) : <span className="text-[var(--ink-500)]">Not assessed</span>,

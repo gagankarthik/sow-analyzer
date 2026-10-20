@@ -32,6 +32,18 @@ export const RISK_COLOR: Record<RiskLevel, string> = {
   critical: "var(--danger)",
 };
 
+/**
+ * Risk level → pill classes, louder as the risk rises: low is an outline,
+ * medium a grey fill, high amber, critical red. (Low used to be a green pill,
+ * which read louder than medium.)
+ */
+export const RISK_PILL: Record<RiskLevel, string> = {
+  critical: "bg-[var(--danger-soft)] text-[var(--danger-fg)]",
+  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
+  medium: "bg-[var(--ink-100)] text-[var(--ink-700)]",
+  low: "border border-[var(--neutral-border)] text-[var(--ink-600)]",
+};
+
 /** Severity → low order to high (for stable stacking + legends). */
 export const RISK_ORDER: RiskLevel[] = ["low", "medium", "high", "critical"];
 /** Severity → high to low (for "highest risk first" lists/bars). */

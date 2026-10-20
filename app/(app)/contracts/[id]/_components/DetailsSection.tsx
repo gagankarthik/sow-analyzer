@@ -23,7 +23,7 @@ import { contractValueText } from "@/lib/govern/metrics";
 import { useGovernFeature, usePatchContract } from "@/lib/govern/queries";
 import { ComingSoonBadge } from "@/components/govern/ComingSoon";
 import type { ActivityEntry, AgreementType, CaptureGap, ContractDetail, ContractPatch, Direction, Person, PricingModel } from "@/lib/govern/types";
-import { formatDate } from "@/lib/format";
+import { formatDate, parseAmount } from "@/lib/format";
 import { fmtMoney } from "@/lib/contract-value";
 import { cn } from "@/lib/utils";
 import { Fact, ProvenanceMark, Section } from "./SectionParts";
@@ -89,6 +89,9 @@ const GAP_FIELD: Record<CaptureGap, string | null> = {
 
 const fieldId = (key: string) => `contract-field-${key}`;
 
+const NUMBER_KEYS = ["expectedValue", "manualValue", "poAmount"] as const;
+const AMOUNT_ERROR = "Enter an amount, e.g. 250,000 or $250k";
+
 /** A text field as the form shows it: dates as yyyy-mm-dd, so an untouched
  *  date never looks changed. */
 function storedText(c: ContractDetail, key: TextKey): string | null {
@@ -115,13 +118,6 @@ function toDraft(c: ContractDetail): Draft {
   };
 }
 
-function parseAmount(s: string): number | null | "invalid" {
-  const t = s.replace(/[,\s]/g, "");
-  if (!t) return null;
-  const n = Number(t);
-  return Number.isFinite(n) && n >= 0 ? n : "invalid";
-}
-
 /** Only the fields that changed, so a save never overwrites someone else's edit to another field. */
 function diff(c: ContractDetail, d: Draft): ContractPatch | "invalid" {
   const patch: ContractPatch = {};
@@ -134,7 +130,7 @@ function diff(c: ContractDetail, d: Draft): ContractPatch | "invalid" {
     const next = key === "currency" ? raw.toUpperCase() || null : raw || null;
     if (next !== storedText(c, key)) patch[key] = next;
   }
-  for (const key of ["expectedValue", "manualValue", "poAmount"] as const) {
+  for (const key of NUMBER_KEYS) {
     const n = parseAmount(d.numbers[key]);
     if (n === "invalid") return "invalid";
     if (n !== (c[key] ?? null)) patch[key] = n;
@@ -149,11 +145,15 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
   const onError = useGovernErrorToast();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [valueDialog, setValueDialog] = useState(false);
+  // A save was tried with a bad amount: show every amount error, not just blurred ones.
+  const [attempted, setAttempted] = useState(false);
+  const [confirmingType, setConfirmingType] = useState(false);
   const pendingFocus = useRef<string | null>(null);
   const editing = draft !== null;
 
   function startEditing(focusField?: string) {
     pendingFocus.current = focusField ?? null;
+    if (!editing) setAttempted(false);
     setDraft((d) => d ?? toDraft(c));
     if (editing && focusField) document.getElementById(fieldId(focusField))?.focus();
   }
@@ -171,7 +171,9 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
     if (!draft) return;
     const changes = diff(c, draft);
     if (changes === "invalid") {
-      toast.error("Check the amounts", { description: "Values must be numbers, for example 250000." });
+      setAttempted(true);
+      const bad = NUMBER_KEYS.find((k) => parseAmount(draft.numbers[k]) === "invalid");
+      if (bad) document.getElementById(fieldId(bad))?.focus();
       return;
     }
     if (Object.keys(changes).length === 0) { setDraft(null); return; }
@@ -185,11 +187,14 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
   }
 
   async function confirmType() {
+    setConfirmingType(true);
     try {
       await patch.mutateAsync({ agreementType: c.agreementType });
       toast.success(`Confirmed as ${AGREEMENT_TYPE_LABEL[c.agreementType].toLowerCase()}`);
     } catch (e) {
       onError(e, "confirm the agreement type", c.contractId);
+    } finally {
+      setConfirmingType(false);
     }
   }
 
@@ -211,7 +216,7 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
             <p className="text-base font-semibold text-foreground">Add the contract value so totals are never incomplete</p>
             <p className="text-sm text-[var(--ink-700)]">Sonar could not find a value in this agreement. Until someone adds it, it is counted apart in every report.</p>
           </div>
-          <Button type="button" onClick={() => setValueDialog(true)}><Coins size={14} />Add the value</Button>
+          <Button type="button" variant="outline" onClick={() => setValueDialog(true)}><Coins size={14} />Add the value</Button>
         </div>
       )}
 
@@ -221,7 +226,8 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
           gaps={gaps}
           onFill={(gap) => startEditing(GAP_FIELD[gap] ?? undefined)}
           onConfirmType={confirmType}
-          confirming={patch.isPending}
+          confirming={confirmingType}
+          disabled={patch.isPending}
         />
       )}
 
@@ -230,15 +236,22 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
         description="What was entered at intake and what Sonar found. Edits are logged in the activity."
         actions={editing ? (
           <>
-            <Button type="button" variant="outline" onClick={() => setDraft(null)} disabled={patch.isPending}>Cancel</Button>
-            <Button type="button" onClick={save} disabled={patch.isPending}>{patch.isPending && <Loader2 size={14} className="animate-spin" />}Save details</Button>
+            {/* On phones the sticky bar under the form carries these. */}
+            <Button type="button" variant="outline" className="max-md:hidden" onClick={() => setDraft(null)} disabled={patch.isPending}>Cancel</Button>
+            <Button type="button" className="max-md:hidden" onClick={save} disabled={patch.isPending}>{patch.isPending && <Loader2 size={14} className="animate-spin" />}Save details</Button>
           </>
         ) : canEdit ? (
           <Button type="button" variant="outline" onClick={() => startEditing()}><Pencil size={14} />Edit details</Button>
         ) : null}
       >
         {draft ? (
-          <DetailsForm draft={draft} onChange={setDraft} onSubmit={save} showWorkdayMatch={isIntegrationsOn} />
+          <>
+            <DetailsForm draft={draft} onChange={setDraft} onSubmit={save} showWorkdayMatch={isIntegrationsOn} attempted={attempted} />
+            <div className="sticky bottom-3 z-20 mt-3 flex gap-2 rounded-xl border border-border bg-card p-3 shadow-sm md:hidden">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setDraft(null)} disabled={patch.isPending}>Cancel</Button>
+              <Button type="button" className="flex-1" onClick={save} disabled={patch.isPending}>{patch.isPending && <Loader2 size={14} className="animate-spin" />}Save details</Button>
+            </div>
+          </>
         ) : (
           <dl className="grid grid-cols-1 gap-x-8 gap-y-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2 lg:grid-cols-3">
             <Fact label="Agreement type">{AGREEMENT_TYPE_LABEL[c.agreementType]}</Fact>
@@ -283,8 +296,10 @@ export function DetailsSection({ contract: c }: { contract: ContractDetail }) {
   );
 }
 
-function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming }: {
+function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming, disabled }: {
   contract: ContractDetail; gaps: CaptureGap[]; onFill: (gap: CaptureGap) => void; onConfirmType: () => void; confirming: boolean;
+  /** Another save is running. */
+  disabled: boolean;
 }) {
   const docHref = `/projects/${encodeURIComponent(c.currentDocId)}`;
   return (
@@ -300,7 +315,7 @@ function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming
             {gap === "agreementTypeUnsure" ? (
               <span className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-[var(--ink-600)]">Is it a {AGREEMENT_TYPE_LABEL[c.agreementType].toLowerCase()}?</span>
-                <Button type="button" size="sm" onClick={onConfirmType} disabled={confirming}><Check size={13} />Confirm type</Button>
+                <Button type="button" size="sm" variant="outline" onClick={onConfirmType} pending={confirming} disabled={disabled}><Check size={13} />Confirm type</Button>
                 <Button type="button" size="sm" variant="outline" onClick={() => onFill(gap)}>Change type</Button>
               </span>
             ) : gap === "value" ? (
@@ -319,8 +334,10 @@ function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming
   );
 }
 
-function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
+function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch, attempted }: {
   draft: Draft; onChange: (d: Draft) => void; onSubmit: () => void;
+  /** A save was tried: show amount errors even on fields not yet left. */
+  attempted: boolean;
   /** The match status only means something once the Workday integration is live. */
   showWorkdayMatch: boolean;
 }) {
@@ -328,6 +345,22 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
   const agreementTypes = useAgreementTypes(draft.agreementType);
   const setText = (key: TextKey, v: string) => onChange({ ...draft, text: { ...draft.text, [key]: v } });
   const setNumber = (key: NumberKey, v: string) => onChange({ ...draft, numbers: { ...draft.numbers, [key]: v } });
+  const [blurred, setBlurred] = useState<ReadonlySet<NumberKey>>(new Set());
+  const amountError = (key: NumberKey) =>
+    (attempted || blurred.has(key)) && parseAmount(draft.numbers[key]) === "invalid" ? AMOUNT_ERROR : undefined;
+  /** Props that tie an amount input to its error line. */
+  const amountProps = (key: NumberKey) => {
+    const error = amountError(key);
+    return {
+      id: fieldId(key),
+      inputMode: "decimal" as const,
+      value: draft.numbers[key],
+      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setNumber(key, e.target.value),
+      onBlur: () => setBlurred((b) => new Set(b).add(key)),
+      "aria-invalid": error ? true : undefined,
+      "aria-describedby": error ? `${fieldId(key)}-error` : undefined,
+    };
+  };
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
@@ -350,11 +383,11 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
           <Input id={fieldId(f.key)} value={draft.text[f.key]} placeholder={f.key === "counterparty" && !terms.researchFields ? terms.partyHint : f.placeholder} onChange={(e) => setText(f.key, e.target.value)} />
         </FormField>
       ))}
-      <FormField label="Expected value" id={fieldId("expectedValue")} hint="What intake expected it to be worth.">
-        <Input id={fieldId("expectedValue")} inputMode="decimal" value={draft.numbers.expectedValue} placeholder="e.g. 250000" onChange={(e) => setNumber("expectedValue", e.target.value)} />
+      <FormField label="Expected value" id={fieldId("expectedValue")} hint="What intake expected it to be worth." error={amountError("expectedValue")}>
+        <Input {...amountProps("expectedValue")} placeholder="e.g. 250000" />
       </FormField>
-      <FormField label="Value (entered by hand)" id={fieldId("manualValue")} hint="Overrides what Sonar found.">
-        <Input id={fieldId("manualValue")} inputMode="decimal" value={draft.numbers.manualValue} placeholder="e.g. 250000" onChange={(e) => setNumber("manualValue", e.target.value)} />
+      <FormField label="Value (entered by hand)" id={fieldId("manualValue")} hint="Overrides what Sonar found." error={amountError("manualValue")}>
+        <Input {...amountProps("manualValue")} placeholder="e.g. 250000" />
       </FormField>
       <FormField label="Currency" id={fieldId("currency")}>
         <Input id={fieldId("currency")} maxLength={3} value={draft.text.currency} placeholder="USD" onChange={(e) => setText("currency", e.target.value.toUpperCase())} />
@@ -366,8 +399,8 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
       ))}
       {!terms.researchFields && (
         <>
-          <FormField label="PO amount" id={fieldId("poAmount")} hint="What the purchase order allows; spend is tracked against it.">
-            <Input id={fieldId("poAmount")} inputMode="decimal" value={draft.numbers.poAmount} placeholder="e.g. 120000" onChange={(e) => setNumber("poAmount", e.target.value)} />
+          <FormField label="PO amount" id={fieldId("poAmount")} hint="What the purchase order allows; spend is tracked against it." error={amountError("poAmount")}>
+            <Input {...amountProps("poAmount")} placeholder="e.g. 120000" />
           </FormField>
           <FormField label="Pricing" id={fieldId("pricingModel")}>
             <Select value={draft.pricingModel ?? PRICING_NONE} onValueChange={(v) => onChange({ ...draft, pricingModel: v === PRICING_NONE ? null : v as PricingModel })}>
@@ -394,12 +427,15 @@ function DetailsForm({ draft, onChange, onSubmit, showWorkdayMatch }: {
   );
 }
 
-function FormField({ label, id, hint, children }: { label: string; id: string; hint?: string; children: React.ReactNode }) {
+function FormField({ label, id, hint, error, children }: { label: string; id: string; hint?: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <label htmlFor={id} className="text-xs font-semibold text-[var(--ink-700)]">{label}</label>
       {children}
-      {hint && <p className="text-xs text-[var(--ink-600)]">{hint}</p>}
+      {/* The error replaces the hint, under the exact input it is about. */}
+      {error
+        ? <p id={`${id}-error`} role="alert" className="text-xs text-[var(--danger)]">{error}</p>
+        : hint && <p className="text-xs text-[var(--ink-600)]">{hint}</p>}
     </div>
   );
 }

@@ -10,7 +10,12 @@ import { cn } from "@/lib/utils";
 export const CONTRACT_TABS = ["blockers", "matrix", "rounds", "details", "money", "activity"] as const;
 export type ContractTab = (typeof CONTRACT_TABS)[number];
 
-const DEFAULT_TAB: ContractTab = "matrix";
+/** The section a contract opens on when the link names none: what needs work now. */
+export function defaultTabFor(c: { openBlockers: number; state: string }): ContractTab {
+  if (c.state === "sent_back") return "rounds";        // the revised version is what comes next
+  if (c.openBlockers > 0) return "blockers";
+  return "matrix";
+}
 
 function subscribe(onChange: () => void) {
   window.addEventListener("hashchange", onChange);
@@ -21,9 +26,9 @@ function readHash(): string {
   return window.location.hash.slice(1);
 }
 
-export function useHashTab(): [ContractTab, (tab: ContractTab) => void] {
+export function useHashTab(fallback: ContractTab = "matrix"): [ContractTab, (tab: ContractTab) => void] {
   const hash = useSyncExternalStore(subscribe, readHash, () => "");
-  const tab = (CONTRACT_TABS as readonly string[]).includes(hash) ? (hash as ContractTab) : DEFAULT_TAB;
+  const tab = (CONTRACT_TABS as readonly string[]).includes(hash) ? (hash as ContractTab) : fallback;
   const setTab = useCallback((next: ContractTab) => {
     window.history.replaceState(null, "", `#${next}`);
     window.dispatchEvent(new HashChangeEvent("hashchange"));

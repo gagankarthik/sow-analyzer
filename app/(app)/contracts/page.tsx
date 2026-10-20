@@ -17,6 +17,7 @@ import { EditionOnly } from "@/components/govern/EditionOnly";
 import { DataTable } from "@/components/ds/DataTable";
 import { FilterPill, optionsFrom } from "@/components/ds/FilterPill";
 import { Button } from "@/components/ui/button";
+import { StatePanel } from "@/components/ui/StatePanel";
 import { FileSignature, Plus } from "@/components/ui/icons";
 import { RISK_LABEL } from "@/lib/chart-theme";
 import { AGREEMENT_TYPE_LABEL, STAGE_LABEL, STAGES, WAITING_ON_SHORT } from "@/lib/govern/labels";
@@ -117,6 +118,11 @@ function Contracts() {
     </div>
   );
 
+  const failed = isError && !data;
+  const isFiltered = filtering || (view.id !== "all" && all.length > 0);
+  // The empty panel carries its own filled Upload; the header's steps back to outline.
+  const showsEmpty = !isLoading && !failed && rows.length === 0 && !isFiltered;
+
   return (
     <RecordDashboard
       label="Contract views"
@@ -129,7 +135,7 @@ function Contracts() {
       actions={
         <>
           <EditionOnly feature="sowDrafting"><Button asChild variant="outline" size="lg" className="md:h-9"><Link href="/draft"><FileSignature size={15} />Draft an SOW</Link></Button></EditionOnly>
-          <Button asChild size="lg" className="md:h-9"><Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />Upload a contract</Link></Button>
+          <Button asChild variant={showsEmpty ? "outline" : "default"} size="lg" className="md:h-9"><Link href="/projects/upload"><Plus size={15} strokeWidth={2.25} />Upload a contract</Link></Button>
         </>
       }
       aside={preview && <ContractPreview contract={preview} me={me} onClose={closePreview} />}
@@ -147,19 +153,21 @@ function Contracts() {
             pageSize={25}
             columnsKey="contracts-table"
             toolbar={toolbar}
-            state={isLoading ? "loading" : isError && !data ? "error" : "ready"}
+            state={isLoading ? "loading" : failed ? "error" : "ready"}
             onRetry={() => void refetch()}
             errorDetail={error instanceof Error ? error.message : undefined}
-            isFiltered={filtering || (view.id !== "all" && all.length > 0)}
+            isFiltered={isFiltered}
             onClearFilters={filtering ? clearAll : () => goToView("all")}
             selection={{ selected, onChange: setSelected }}
             bulkActions={(chosen) => <BulkActions contracts={chosen} viewLabel={view.label} onDone={() => setSelected(new Set())} />}
             empty={
-              <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-14 text-center">
-                <p className="text-base font-semibold text-foreground">No contracts yet</p>
-                <p className="max-w-md text-sm text-[var(--ink-600)]">Upload a contract. Sonar reads it, checks it against your matrix and lists it here.</p>
-                <Button asChild><Link href="/projects/upload">Upload a contract</Link></Button>
-              </div>
+              <StatePanel
+                art="empty"
+                title="No contracts yet"
+                description="Upload a contract. Sonar reads it, checks it against your matrix and lists it here."
+              >
+                <Button asChild size="lg"><Link href="/projects/upload"><Plus size={15} />Upload a contract</Link></Button>
+              </StatePanel>
             }
           />
     </RecordDashboard>

@@ -17,7 +17,7 @@ import { useAddObligation, useGovernFeature, useSaveIncome, useUpdateObligation 
 import { ComingSoonPanel } from "@/components/govern/ComingSoon";
 import type { ContractDetail, IncomeItem, IncomeKind, Obligation, ObligationKind } from "@/lib/govern/types";
 import { fmtMoney } from "@/lib/contract-value";
-import { formatDate } from "@/lib/format";
+import { formatDate, parseAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Section } from "./SectionParts";
 
@@ -55,8 +55,16 @@ const toRow = (i: IncomeItem): IncomeRow => ({
 });
 
 function toNumber(s: string): number | null {
-  const n = Number(s.replace(/[,\s%]/g, ""));
-  return s.trim() && Number.isFinite(n) ? n : null;
+  const n = parseAmount(s);
+  return n === "invalid" ? null : n;
+}
+
+const AMOUNT_ERROR = "Enter an amount, e.g. 25,000, $25,000 or 25k";
+const PCT_ERROR = "Enter a percent, e.g. 3 or 3.5";
+
+/** The error for a typed amount or share, or nothing when it reads as a number (or is empty). */
+function amountError(value: string, message: string): string | undefined {
+  return parseAmount(value) === "invalid" ? message : undefined;
 }
 
 function IncomeTable({ contract: c }: { contract: ContractDetail }) {
@@ -64,6 +72,8 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
   const save = useSaveIncome(c.contractId);
   const onError = useGovernErrorToast();
   const [rows, setRows] = useState<IncomeRow[] | null>(null);
+  // A save was tried with a bad number: show the errors under those inputs.
+  const [attempted, setAttempted] = useState(false);
   const items = [...c.licensingIncome].sort((a, b) => (a.expectedDate ?? "9999").localeCompare(b.expectedDate ?? "9999"));
   const known = items.filter((i) => i.amount !== null);
   const total = known.reduce((s, i) => s + (i.amount ?? 0), 0);
@@ -72,6 +82,12 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
 
   async function submit() {
     if (!rows) return;
+    const bad = rows.find((r) => amountError(r.amount, AMOUNT_ERROR) || amountError(r.pct, PCT_ERROR));
+    if (bad) {
+      setAttempted(true);
+      document.getElementById(amountError(bad.amount, AMOUNT_ERROR) ? `${bad.key}-amt` : `${bad.key}-pct`)?.focus();
+      return;
+    }
     const payload: Partial<IncomeItem>[] = rows
       .filter((r) => r.description.trim() || r.amount.trim() || r.pct.trim())
       .map((r) => ({
@@ -87,10 +103,13 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
       await save.mutateAsync(payload);
       toast.success(byEdition("Income saved", "Payments saved"));
       setRows(null);
+      setAttempted(false);
     } catch (e) {
       onError(e, byEdition("save the income", "save the payments"), c.contractId);
     }
   }
+
+  const cancel = () => { setRows(null); setAttempted(false); };
 
   const addRow = () => setRows((rs) => [...(rs ?? []), {
     key: `new-${Math.random().toString(36).slice(2)}`, kind: "milestone", description: "", amount: "", pct: "", expectedDate: "", source: "manual",
@@ -102,8 +121,9 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
       description={byEdition("Fees, milestones, royalties and equity in this agreement, with when they are expected.", "Fees, milestone payments and rates in this agreement, with when they fall due.")}
       actions={!canEdit ? undefined : rows ? (
         <>
-          <Button type="button" variant="outline" onClick={() => setRows(null)} disabled={save.isPending}>Cancel</Button>
-          <Button type="button" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={14} className="animate-spin" />}{byEdition("Save income", "Save payments")}</Button>
+          {/* On phones the sticky bar under the rows carries these. */}
+          <Button type="button" variant="outline" className="max-md:hidden" onClick={cancel} disabled={save.isPending}>Cancel</Button>
+          <Button type="button" className="max-md:hidden" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={14} className="animate-spin" />}{byEdition("Save income", "Save payments")}</Button>
         </>
       ) : (
         <Button type="button" variant="outline" onClick={() => setRows(items.map(toRow))}><Pencil size={14} />{items.length ? byEdition("Edit income", "Edit payments") : byEdition("Add income", "Add payments")}</Button>
@@ -111,7 +131,10 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
     >
       {rows ? (
         <div className="flex flex-col gap-3">
-          {rows.map((r) => (
+          {rows.map((r) => {
+            const amtError = attempted ? amountError(r.amount, AMOUNT_ERROR) : undefined;
+            const pctError = attempted ? amountError(r.pct, PCT_ERROR) : undefined;
+            return (
             <div key={r.key} className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-[10rem_minmax(0,1fr)_8rem_6rem_10rem_auto] md:items-end">
               <IncomeField label="Kind" id={`${r.key}-kind`}>
                 <Select value={r.kind} onValueChange={(v) => update(r.key, { kind: v as IncomeKind })}>
@@ -122,11 +145,13 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
               <IncomeField label="Description" id={`${r.key}-desc`} className="col-span-2 md:col-span-1">
                 <Input id={`${r.key}-desc`} value={r.description} placeholder="e.g. On first commercial sale" onChange={(e) => update(r.key, { description: e.target.value })} />
               </IncomeField>
-              <IncomeField label={`Amount${c.currency ? ` (${c.currency})` : ""}`} id={`${r.key}-amt`}>
-                <Input id={`${r.key}-amt`} inputMode="decimal" value={r.amount} placeholder="—" onChange={(e) => update(r.key, { amount: e.target.value })} />
+              <IncomeField label={`Amount${c.currency ? ` (${c.currency})` : ""}`} id={`${r.key}-amt`} error={amtError}>
+                <Input id={`${r.key}-amt`} inputMode="decimal" value={r.amount} placeholder="—" onChange={(e) => update(r.key, { amount: e.target.value })}
+                  aria-invalid={amtError ? true : undefined} aria-describedby={amtError ? `${r.key}-amt-error` : undefined} />
               </IncomeField>
-              <IncomeField label="Percent" id={`${r.key}-pct`}>
-                <Input id={`${r.key}-pct`} inputMode="decimal" value={r.pct} placeholder="—" onChange={(e) => update(r.key, { pct: e.target.value })} />
+              <IncomeField label="Percent" id={`${r.key}-pct`} error={pctError}>
+                <Input id={`${r.key}-pct`} inputMode="decimal" value={r.pct} placeholder="—" onChange={(e) => update(r.key, { pct: e.target.value })}
+                  aria-invalid={pctError ? true : undefined} aria-describedby={pctError ? `${r.key}-pct-error` : undefined} />
               </IncomeField>
               <IncomeField label="Expected" id={`${r.key}-date`}>
                 <Input id={`${r.key}-date`} type="date" value={r.expectedDate} onChange={(e) => update(r.key, { expectedDate: e.target.value })} />
@@ -136,8 +161,13 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
                 <Trash2 size={15} />
               </Button>
             </div>
-          ))}
+            );
+          })}
           <Button type="button" variant="outline" className="self-start" onClick={addRow}><Plus size={14} />Add an item</Button>
+          <div className="sticky bottom-3 z-20 flex gap-2 rounded-xl border border-border bg-card p-3 shadow-sm md:hidden">
+            <Button type="button" variant="outline" className="flex-1" onClick={cancel} disabled={save.isPending}>Cancel</Button>
+            <Button type="button" className="flex-1" onClick={submit} disabled={save.isPending}>{save.isPending && <Loader2 size={14} className="animate-spin" />}{byEdition("Save income", "Save payments")}</Button>
+          </div>
         </div>
       ) : items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-[var(--ink-300)] px-4 py-6 text-sm text-[var(--ink-600)]">
@@ -202,11 +232,16 @@ function incomeAmount(i: IncomeItem, currency: string | null): string {
   return "—";
 }
 
-function IncomeField({ label, id, className, children }: { label: string; id: string; className?: string; children: React.ReactNode }) {
+function IncomeField({ label, id, className, error, children }: {
+  label: string; id: string; className?: string; children: React.ReactNode;
+  /** Why the typed value can't be used; the input's id + "-error". */
+  error?: string;
+}) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1.5", className)}>
       <label htmlFor={id} className="text-xs font-semibold text-[var(--ink-700)]">{label}</label>
       {children}
+      {error && <p id={`${id}-error`} role="alert" className="text-xs text-[var(--danger)]">{error}</p>}
     </div>
   );
 }
@@ -249,22 +284,30 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
   const onError = useGovernErrorToast();
   const done = o.status === "done";
   const late = !done && isPastDue(o.dueDate);
+  // Which button started the request, so only that one spins.
+  const [busy, setBusy] = useState<"verify" | "toggle" | null>(null);
 
   async function verify() {
+    setBusy("verify");
     try {
       await update.mutateAsync({ oblId: o.id, input: { verified: true } });
       toast.success("Obligation verified");
     } catch (e) {
       onError(e, "verify this obligation", c.contractId);
+    } finally {
+      setBusy(null);
     }
   }
 
   async function toggle() {
+    setBusy("toggle");
     try {
       await update.mutateAsync({ oblId: o.id, input: { status: done ? "open" : "done" } });
       toast.success(done ? "Marked as not done" : "Marked as done");
     } catch (e) {
       onError(e, "update this obligation", c.contractId);
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -285,13 +328,13 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
         <Clock size={12} />{o.dueDate ? `${late ? "Overdue · " : "Due "}${formatDate(o.dueDate)}` : "No due date"}
       </span>
       {canEdit && !o.verified && !done && (
-        <Button type="button" size="sm" variant="outline" onClick={verify} disabled={update.isPending}>
+        <Button type="button" size="sm" variant="outline" onClick={verify} disabled={update.isPending} pending={busy === "verify"}>
           <CheckCircle2 size={13} />Verify
         </Button>
       )}
       {canEdit && (
-        <Button type="button" size="sm" variant={done ? "ghost" : "outline"} onClick={toggle} disabled={update.isPending}>
-          {update.isPending ? <Loader2 size={13} className="animate-spin" /> : done ? <RefreshCw size={13} /> : <CheckCircle2 size={13} />}
+        <Button type="button" size="sm" variant={done ? "ghost" : "outline"} onClick={toggle} disabled={update.isPending} pending={busy === "toggle"}>
+          {done ? <RefreshCw size={13} /> : <CheckCircle2 size={13} />}
           {done ? "Undo" : "Mark done"}
         </Button>
       )}
@@ -306,8 +349,16 @@ function ObligationForm({ contract: c, onDone }: { contract: ContractDetail; onD
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [amount, setAmount] = useState("");
+  // Shown after the amount field is left or a save is tried.
+  const [checkAmount, setCheckAmount] = useState(false);
+  const amtError = checkAmount ? amountError(amount, AMOUNT_ERROR) : undefined;
 
   async function submit() {
+    if (amountError(amount, AMOUNT_ERROR)) {
+      setCheckAmount(true);
+      document.getElementById("obl-amount")?.focus();
+      return;
+    }
     try {
       await add.mutateAsync({ kind, title: title.trim(), dueDate: dueDate || null, amount: toNumber(amount) });
       toast.success("Obligation added");
@@ -334,8 +385,9 @@ function ObligationForm({ contract: c, onDone }: { contract: ContractDetail; onD
       <IncomeField label="Due date" id="obl-due">
         <Input id="obl-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
       </IncomeField>
-      <IncomeField label="Amount (optional)" id="obl-amount">
-        <Input id="obl-amount" inputMode="decimal" value={amount} placeholder="—" onChange={(e) => setAmount(e.target.value)} />
+      <IncomeField label="Amount (optional)" id="obl-amount" error={amtError}>
+        <Input id="obl-amount" inputMode="decimal" value={amount} placeholder="—" onChange={(e) => setAmount(e.target.value)} onBlur={() => setCheckAmount(true)}
+          aria-invalid={amtError ? true : undefined} aria-describedby={amtError ? "obl-amount-error" : undefined} />
       </IncomeField>
       <div className="flex justify-end gap-2 sm:col-span-2 lg:col-span-4">
         <Button type="button" variant="outline" onClick={onDone} disabled={add.isPending}>Cancel</Button>

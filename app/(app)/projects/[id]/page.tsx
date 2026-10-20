@@ -96,6 +96,9 @@ function DocumentOverview() {
   const [editTitle, setEditTitle] = useState("");
   const [editLifecycle, setEditLifecycle] = useState<Lifecycle>("draft");
   const [editDocType, setEditDocType] = useState<DocType>("OTHER");
+  // The title is checked once the field is left or a save is tried.
+  const [titleChecked, setTitleChecked] = useState(false);
+  const titleError = titleChecked && !editTitle.trim() ? "Give the document a title." : undefined;
 
   const clauses = useMemo<ApiClause[]>(() => classification?.clauses ?? [], [classification]);
   const storedCounts = detail?.document.riskCounts;
@@ -151,6 +154,7 @@ function DocumentOverview() {
     setEditTitle(doc.title || "");
     setEditLifecycle(doc.lifecycle);
     setEditDocType(doc.docType);
+    setTitleChecked(false);
     setShowEdit(true);
   }
   async function onReanalyze() {
@@ -162,6 +166,12 @@ function DocumentOverview() {
     }
   }
   async function handleSave() {
+    // The API rejects an empty title: say so under the field instead of saving.
+    if (!editTitle.trim()) {
+      setTitleChecked(true);
+      document.getElementById("edit-doc-title")?.focus();
+      return;
+    }
     const patch: { title?: string; lifecycle?: string; docType?: string } = {};
     if (editTitle.trim() !== doc.title) patch.title = editTitle.trim();
     if (editLifecycle !== doc.lifecycle) patch.lifecycle = editLifecycle;
@@ -257,7 +267,7 @@ function DocumentOverview() {
                 ))}
               </dl>
               <div className="mt-5 lg:mt-auto lg:pt-5">
-                <Button size="lg" className="w-full" asChild>
+                <Button size="lg" className="w-full lg:w-auto lg:self-start" asChild>
                   <Link href={`/projects/${project.id}/sow`}>Review clauses<ArrowRight size={14} strokeWidth={2.25} /></Link>
                 </Button>
               </div>
@@ -397,7 +407,10 @@ function DocumentOverview() {
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
           <DialogHeader><DialogTitle>Edit document</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1.5"><label htmlFor="edit-doc-title" className="text-sm font-medium text-foreground">Title</label><Input id="edit-doc-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Document title" className="h-10 text-base md:h-9" /></div>
+            <div className="space-y-1.5"><label htmlFor="edit-doc-title" className="text-sm font-medium text-foreground">Title</label><Input id="edit-doc-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onBlur={() => setTitleChecked(true)} placeholder="Document title" className="h-10 text-base md:h-9"
+              aria-invalid={titleError ? true : undefined} aria-describedby={titleError ? "edit-doc-title-error" : undefined} />
+              {titleError && <p id="edit-doc-title-error" role="alert" className="text-xs text-[var(--danger)]">{titleError}</p>}
+            </div>
             <div className="space-y-1.5"><label className="text-sm font-medium text-foreground">Document type</label>
               <Select value={editDocType} onValueChange={(v) => setEditDocType(v as DocType)}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent>{docTypesFor(DOC_TYPES, showSow).map((t) => <SelectItem key={t} value={t}>{docTypeLabel(t)}</SelectItem>)}</SelectContent></Select>
             </div>
@@ -409,7 +422,8 @@ function DocumentOverview() {
           <DialogFooter>
             <Button variant="outline" size="lg" className="md:h-9" onClick={() => setShowEdit(false)} disabled={updateMut.isPending}>Cancel</Button>
             <Button size="lg" className="md:h-9" onClick={handleSave} disabled={updateMut.isPending}>
-              {updateMut.isPending ? <><Loader2 size={13} className="animate-spin mr-1.5" />Saving…</> : "Save changes"}
+              {updateMut.isPending && <Loader2 size={13} className="animate-spin" />}
+              Save changes
             </Button>
           </DialogFooter>
         </DialogContent>

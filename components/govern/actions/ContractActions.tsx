@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ArrowRight, Ban, BadgeCheck, Building2, CheckCircle2, Coins, ExternalLink, Help, Hourglass, MessageSquare,
-  MoreHorizontal, PenLine, RefreshCw, Send, Undo2, Upload, UserRound, type LucideIcon,
+  MoreHorizontal, PenLine, RefreshCw, Send, Trash2, Undo2, Upload, UserRound, type LucideIcon,
 } from "@/components/ui/icons";
 import { NEXT_ACTION_LABEL, OFFICE_LABEL } from "@/lib/govern/labels";
 import type { Contract, ContractAction, ContractDetail } from "@/lib/govern/types";
@@ -25,6 +25,7 @@ import { RejectDialog } from "./RejectDialog";
 import { SendBackDialog } from "./SendBackDialog";
 import { MarkSignedDialog, SendForSignatureDialog } from "./SignatureDialogs";
 import { AddValueDialog, AskPiDialog, CommentDialog, PiAnsweredDialog, SimpleActionDialog } from "./SmallDialogs";
+import { RemoveContractDialog } from "./RemoveContract";
 
 export type ActionKind =
   | "approve" | "send_back" | "escalate" | "reject" | "assign" | "comment"
@@ -230,6 +231,9 @@ export function ContractActionsMenu({
   align?: "start" | "end";
 }) {
   const [open, setOpen] = useState<ActionKind | null>(null);
+  const [removing, setRemoving] = useState(false);
+  // Removing deletes the documents too, which the server allows their owner only.
+  const canRemove = contract.allowedActions.some((a) => a !== "comment");
   const primary = primaryAction(contract);
   const primaryKind = primary.type === "action" ? primary.kind : null;
   const actions = availableActions(contract).filter((k) => k !== primaryKind);
@@ -267,9 +271,18 @@ export function ContractActionsMenu({
           {moves.map(item)}
           {moves.length > 0 && other.length > 0 && <DropdownMenuSeparator />}
           {other.map(item)}
+          {canRemove && (
+            <>
+              {actions.length > 0 && <DropdownMenuSeparator />}
+              <DropdownMenuItem onSelect={() => setRemoving(true)} variant="destructive" className="min-h-9 cursor-pointer gap-2">
+                <Trash2 size={14} />Remove from Govern
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       <ActionDialogHost kind={open} contract={contract} onClose={() => setOpen(null)} />
+      {removing && <RemoveContractDialog contract={contract} open onOpenChange={setRemoving} />}
     </>
   );
 }

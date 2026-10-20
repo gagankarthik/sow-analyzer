@@ -29,9 +29,9 @@ export function LeaderHome({ contracts, attention, summary, currency }: {
     .filter((c) => isUnsigned(c) && (c.slaStatus === "red" || c.slaStatus === "amber"))
     .sort((a, b) => (a.slaStatus === b.slaStatus ? b.daysInStage - a.daysInStage : a.slaStatus === "red" ? -1 : 1));
   const tiles = [
-    { label: "Signed and active", dot: "bg-[var(--success)]", value: amountIn(summary.current, currency), sub: `${plural(summary.current.valued, "agreement")} in force` },
-    { label: "In the pipeline", dot: "bg-[var(--brand-primary-600)]", value: amountIn(summary.potential, currency), sub: `${plural(summary.potential.valued, "agreement")} not signed yet` },
-    { label: "Held up", dot: "bg-[var(--danger)]", value: amountIn(summary.heldUp, currency), sub: summary.heldUp.valued ? `${plural(summary.heldUp.valued, "agreement")} past ${summary.heldUp.valued === 1 ? "its" : "their"} target` : "Nothing past its target", alert: summary.heldUp.valued > 0 },
+    { label: "Signed and active", dot: "bg-[var(--viz-primary)]", value: amountIn(summary.current, currency), sub: `${plural(summary.current.valued, "agreement")} in force` },
+    { label: "In the pipeline", dot: "bg-[var(--viz-compare)]", value: amountIn(summary.potential, currency), sub: `${plural(summary.potential.valued, "agreement")} not signed yet` },
+    { label: "Held up", dot: "bg-[var(--warning)]", value: amountIn(summary.heldUp, currency), sub: summary.heldUp.valued ? `${plural(summary.heldUp.valued, "agreement")} past ${summary.heldUp.valued === 1 ? "its" : "their"} target` : "Nothing past its target", alert: summary.heldUp.valued > 0 },
   ];
 
   return (
@@ -44,7 +44,7 @@ export function LeaderHome({ contracts, attention, summary, currency }: {
                 <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-[var(--ink-600)]">
                   <span className={cn("size-2 rounded-full", t.dot)} aria-hidden />{t.label}
                 </p>
-                <p className={cn("mt-3 text-3xl font-bold tabular-nums tracking-tight", t.alert ? "text-[var(--danger)]" : "text-foreground")}>
+                <p className={cn("mt-3 text-3xl font-bold tabular-nums tracking-tight", t.alert ? "text-[var(--warning-fg)]" : "text-foreground")}>
                   {formatCompact(t.value, currency)}
                 </p>
                 <p className="mt-1 text-sm text-[var(--ink-600)]">{t.sub}</p>
@@ -79,7 +79,7 @@ export function LeaderHome({ contracts, attention, summary, currency }: {
                       </p>
                     </td>
                     <td className="md:px-4 md:py-3 md:align-top"><WaitingOnChip waitingOn={c.waitingOn} short /></td>
-                    <td className="md:px-4 md:py-3 md:align-top"><DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} compact /></td>
+                    <td className="md:px-4 md:py-3 md:align-top"><DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} /></td>
                     <td className="text-[var(--ink-700)] md:max-w-[22rem] md:px-4 md:py-3 md:align-top">{c.nextStep.headline}</td>
                   </tr>
                 ))}

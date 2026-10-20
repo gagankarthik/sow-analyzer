@@ -128,9 +128,13 @@ export default function LibraryPage() {
   const [editLifecycle, setEditLifecycle] = useState<Lifecycle>("draft");
   const [editDocType, setEditDocType] = useState<DocType>("OTHER");
   const saving = updateMut.isPending;
+  // The title is checked once the field is left or a save is tried.
+  const [titleChecked, setTitleChecked] = useState(false);
+  const titleError = titleChecked && !editTitle.trim() ? "Give the document a title." : undefined;
 
   function openEdit(doc: ApiDocument) {
     setEditTarget(doc);
+    setTitleChecked(false);
     setEditTitle(doc.title || "");
     setEditLifecycle(doc.lifecycle);
     setEditDocType(doc.docType);
@@ -152,10 +156,15 @@ export default function LibraryPage() {
 
   async function handleSave() {
     if (!editTarget) return;
+    // The API rejects an empty title: say so under the field instead of saving.
+    if (!editTitle.trim()) {
+      setTitleChecked(true);
+      document.getElementById("edit-doc-title")?.focus();
+      return;
+    }
     try {
       const patch: { title?: string; lifecycle?: string; docType?: string } = {};
-      // The API rejects an empty title, so clearing the field keeps the current one.
-      if (editTitle.trim() && editTitle.trim() !== editTarget.title) patch.title = editTitle.trim();
+      if (editTitle.trim() !== editTarget.title) patch.title = editTitle.trim();
       if (editLifecycle !== editTarget.lifecycle) patch.lifecycle = editLifecycle;
       if (editDocType !== editTarget.docType) patch.docType = editDocType;
 
@@ -602,9 +611,13 @@ export default function LibraryPage() {
                 id="edit-doc-title"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
+                onBlur={() => setTitleChecked(true)}
                 placeholder="Document title"
                 className="h-10 border-[var(--ink-300)]"
+                aria-invalid={titleError ? true : undefined}
+                aria-describedby={titleError ? "edit-doc-title-error" : undefined}
               />
+              {titleError && <p id="edit-doc-title-error" role="alert" className="text-xs text-[var(--danger)]">{titleError}</p>}
             </div>
             <div className="space-y-1.5">
               <label htmlFor="edit-doc-type" className="block text-sm font-medium text-foreground">Document type</label>
@@ -630,11 +643,8 @@ export default function LibraryPage() {
               Cancel
             </Button>
             <Button className="h-10 md:h-9" onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <><Loader2 size={14} className="mr-1.5 animate-spin" />Saving…</>
-              ) : (
-                "Save changes"
-              )}
+              {saving && <Loader2 size={14} className="animate-spin" />}
+              Save changes
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -665,7 +675,7 @@ function LifecycleLabel({ lifecycle }: { lifecycle: Lifecycle }) {
   const tone = STATUS_TONE[lifecycle] ?? STATUS_TONE.draft;
   return (
     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium ${tone.text}`}>
-      <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
+      <span aria-hidden className={`h-2 w-2 rounded-full ${tone.dot}`} />
       {LIFECYCLE_LABEL[lifecycle] ?? lifecycle}
     </span>
   );
@@ -683,9 +693,11 @@ function StatusBadge({ status, code }: { status: string; code?: string }) {
 }
 
 function getStatusBadge(status: string) {
-  if (status === "READY") return { label: "Ready", cls: "bg-[var(--success-soft)] text-[var(--success-fg)]" };
-  if (status === "FAILED") return { label: "Failed", cls: "bg-[var(--danger-soft)] text-[var(--danger)]" };
-  return { label: "Processing", cls: "bg-[var(--ink-100)] text-[var(--ink-600)]" };
+  // Ready is the normal case on almost every row, so it stays quiet; analysing
+  // uses Sonar's colour everywhere; only a failure is red.
+  if (status === "READY") return { label: "Ready", cls: "bg-[var(--ink-100)] text-[var(--ink-700)]" };
+  if (status === "FAILED") return { label: "Failed", cls: "bg-[var(--danger-soft)] text-[var(--danger-fg)]" };
+  return { label: "Analyzing", cls: "bg-[var(--ai-surface)] text-[var(--ai-ink)]" };
 }
 
 function ThSort({

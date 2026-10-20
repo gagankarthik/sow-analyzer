@@ -8,6 +8,7 @@
 import { Building2, CheckCircle2 } from "@/components/ui/icons";
 import { TierBadge } from "@/components/govern/primitives";
 import { ContractActionsMenu, NextStepButton, RedlineButton } from "@/components/govern/actions";
+import { AnalysisFailedActions } from "@/components/govern/actions/RemoveContract";
 import { latestSentBackClauses, latestSentBackNote } from "@/lib/govern/redline-docx";
 import { OFFICE_LABEL } from "@/lib/govern/labels";
 import { useGovernFeature } from "@/lib/govern/queries";
@@ -72,6 +73,9 @@ export function NextStepDetail({ contract: c }: { contract: ContractDetail }) {
 /** The one primary action for this step, the full actions menu and the redline. */
 export function NextStepActions({ contract: c, onUploadRevision }: { contract: ContractDetail; onUploadRevision: () => void }) {
   const redline = redlineFor(c);
+  if (c.nextStep.action === "analyze_anyway" || c.nextStep.action === "reanalyze") {
+    return <AnalysisFailedActions contract={c} />;
+  }
   return (
     <>
       <NextStepButton contract={c} size="lg" onUploadRevision={onUploadRevision} quietWhenNone className="min-w-0 max-sm:flex-1" />

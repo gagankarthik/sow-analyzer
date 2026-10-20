@@ -133,6 +133,43 @@ export function PipelineStrip({
   );
 }
 
+/** Wide screens: before or after signature. Each lane carries its own count,
+ *  days and overdue, so the switch only says how many are in each phase. */
+export function PhaseSwitch({ summaries, selected, onSelect, loading }: {
+  summaries: Map<Stage, StageSummary>;
+  selected: Stage;
+  onSelect: (s: Stage) => void;
+  loading: boolean;
+}) {
+  const post = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
+  const phases = [
+    { label: "Before signature", stages: PRE_SIGNATURE_STAGES },
+    { label: "After signature", stages: post },
+  ];
+  return (
+    <nav aria-label="Workflow phase" className="hidden xl:block">
+      <div className="inline-flex rounded-lg border border-border bg-card p-1">
+        {phases.map(({ label, stages }) => {
+          const on = stages.includes(selected);
+          const count = stages.reduce((n, s) => n + (summaries.get(s)?.contracts.length ?? 0), 0);
+          const overdue = stages.reduce((n, s) => n + (summaries.get(s)?.overdue ?? 0), 0);
+          return (
+            <button key={label} type="button" aria-pressed={on} onClick={() => onSelect(stages[0])}
+              className={cn(
+                "inline-flex min-h-9 items-center gap-2 rounded-md px-3.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
+                on ? "bg-[var(--brand-primary-50)] text-[var(--brand-primary-700)]" : "text-[var(--ink-700)] hover:bg-muted",
+              )}>
+              {label}
+              <span className="tabular-nums text-[var(--ink-600)]">{loading ? "…" : count}</span>
+              {!loading && overdue > 0 && <span className="text-xs font-semibold text-[var(--danger)]">{overdue} overdue</span>}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 /* ── Board lanes ─────────────────────────────────────────────────────────── */
 
 export function StageHeader({ summary, className }: { summary: StageSummary; className?: string }) {

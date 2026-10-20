@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BadgeCheck, Check, ChevronsRight, FileText } from "lucide-react";
 import { Sonar } from "@/components/ui/icons";
@@ -12,6 +12,7 @@ import { formatCompact } from "@/lib/govern/metrics";
 import { daysUntil } from "@/lib/govern/obligation-views";
 import type { PortfolioObligation } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
+import { DUE_SOON_DAYS } from "@/lib/format";
 
 /* Quick look at one obligation: what it is, when it is due, whether a person
    has confirmed it, the contract it comes from, and the two things you do
@@ -29,6 +30,8 @@ export function ObligationPreview({ obligation: o, today, busy, readOnly = false
   onClose: () => void;
 }) {
   const ref = useRef<HTMLElement>(null);
+  // Which button started the request, so only that one spins while `busy`.
+  const [clicked, setClicked] = useState<"verify" | "done" | null>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -52,8 +55,8 @@ export function ObligationPreview({ obligation: o, today, busy, readOnly = false
           <ChevronsRight size={17} aria-hidden />
         </button>
         <div className="flex gap-2">
-          {!readOnly && !o.verified && <Button size="sm" variant="outline" disabled={busy} onClick={onVerify}><BadgeCheck size={14} />Verify</Button>}
-          {!readOnly && <Button size="sm" disabled={busy} onClick={onDone}><Check size={14} />Mark done</Button>}
+          {!readOnly && !o.verified && <Button size="sm" variant="outline" disabled={busy} pending={busy && clicked === "verify"} onClick={() => { setClicked("verify"); onVerify(); }}><BadgeCheck size={14} />Verify</Button>}
+          {!readOnly && <Button size="sm" disabled={busy} pending={busy && clicked === "done"} onClick={() => { setClicked("done"); onDone(); }}><Check size={14} />Mark done</Button>}
         </div>
       </div>
 
@@ -62,7 +65,7 @@ export function ObligationPreview({ obligation: o, today, busy, readOnly = false
         <h2 className="mt-1 text-xl font-semibold leading-snug tracking-tight text-foreground">{o.title}</h2>
 
         <section aria-label="When it is due" className="mt-5 rounded-xl border border-border bg-card p-4 shadow-xs">
-          <p className={cn("text-lg font-semibold", n !== null && n < 0 ? "text-[var(--danger)]" : n !== null && n <= 14 ? "text-[var(--warning-fg)]" : "text-foreground")}>{when}</p>
+          <p className={cn("text-lg font-semibold", n !== null && n < 0 ? "text-[var(--danger)]" : n !== null && n <= DUE_SOON_DAYS ? "text-[var(--warning-fg)]" : "text-foreground")}>{when}</p>
           <p className="mt-0.5 text-sm text-[var(--ink-600)]">
             {[shortDate(o.dueDate), o.amount ? formatCompact(o.amount, o.currency) : null].filter(Boolean).join(" · ") || "Add a date on the contract so it is tracked."}
           </p>

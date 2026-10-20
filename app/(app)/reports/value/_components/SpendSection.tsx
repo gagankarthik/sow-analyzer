@@ -4,6 +4,7 @@
 // (fixed fee or time and materials), and committed value against the
 // purchase orders it spends from. Signed and active agreements only.
 
+import { ProgressMeter } from "@/components/ds";
 import { fmtMoney } from "@/lib/contract-value";
 import { PRICING_MODEL_LABEL } from "@/lib/govern/labels";
 import { isCurrent } from "@/lib/govern/metrics";
@@ -48,7 +49,7 @@ export function SpendSection({ contracts, currency }: { contracts: Contract[]; c
                 <span className="font-semibold tabular-nums text-foreground">{fmtMoney(r.amount, currency)}</span>
               </div>
               <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[var(--ink-100)]" aria-hidden>
-                <div className={cn("h-full rounded-full", r.bucket === "unknown" ? "bg-[var(--ink-300)]" : "bg-[var(--brand-primary-600)]")}
+                <div className={cn("h-full rounded-full", r.bucket === "unknown" ? "bg-[var(--ink-300)]" : "bg-[var(--viz-primary)]")}
                   style={{ width: `${total ? Math.max(2, (r.amount / total) * 100) : 0}%` }} />
               </div>
             </li>
@@ -69,9 +70,12 @@ export function SpendSection({ contracts, currency }: { contracts: Contract[]; c
               <dt className="text-xs text-[var(--ink-600)]">Purchase orders</dt>
               <dd className="text-xl font-semibold tabular-nums text-foreground">{fmtMoney(po.authorised, currency)}</dd>
             </div>
+            {/* Committed against what the purchase orders allow: one bar, red once any agreement is over. */}
+            <ProgressMeter className="col-span-2" size="md" label="Committed of purchase orders" value={po.committed} max={po.authorised}
+              tone={po.over.length ? "blocked" : "brand"} valueText={usedPct !== null ? `${usedPct}%` : undefined} />
             <div className="col-span-2 text-sm text-[var(--ink-700)]">
               {usedPct !== null && <>{usedPct}% of the purchase orders is committed.</>}
-              {po.over.length > 0 && <span className="text-[var(--danger)]"> {po.over.length} {po.over.length === 1 ? "agreement is" : "agreements are"} over its purchase order.</span>}
+              {po.over.length > 0 && <span className="font-medium text-[var(--danger-fg)]"> {po.over.length} {po.over.length === 1 ? "agreement is" : "agreements are"} over its purchase order.</span>}
               {missingPo > 0 && <span className="text-[var(--ink-600)]"> {missingPo} without a purchase order amount.</span>}
             </div>
           </dl>

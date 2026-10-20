@@ -36,7 +36,7 @@ function Card({
           "bg-[var(--ai-surface)] border-[var(--ai-border)]",
         // lift
         lift &&
-          "transition-[box-shadow,border-color] duration-150 hover:shadow-md hover:border-[var(--brand-primary-300)]",
+          "transition-colors duration-150 hover:border-[var(--brand-primary-300)] hover:bg-[var(--ink-50)]",
         className,
       )}
       {...props}

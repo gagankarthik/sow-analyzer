@@ -34,6 +34,7 @@ import type { ObligationInput, PortfolioObligation } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 import { KpiStrip, type Kpi } from "../home/_components/HomeSections";
 import { ObligationPreview } from "./_components/ObligationPreview";
+import { DUE_SOON_DAYS } from "@/lib/format";
 
 const GROUPS: ObligationViewGroup[] = ["all", "due", "verification", "kind"];
 const rowId = (o: PortfolioObligation) => `${o.contractId}:${o.id}`;
@@ -133,7 +134,7 @@ function Obligations() {
         return (
           <span className="flex flex-col">
             <span className="font-medium tabular-nums">{new Date(`${o.dueDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</span>
-            <span className={cn("text-xs font-medium", n < 0 ? "text-[var(--danger)]" : n <= 14 ? "text-[var(--warning-fg)]" : "text-[var(--ink-600)]")}>
+            <span className={cn("text-xs font-medium", n < 0 ? "text-[var(--danger-fg)]" : n <= DUE_SOON_DAYS ? "text-[var(--warning-fg)]" : "text-[var(--ink-600)]")}>
               {n < 0 ? `${plural(-n, "day")} overdue` : n === 0 ? "Due today" : `In ${plural(n, "day")}`}
             </span>
           </span>

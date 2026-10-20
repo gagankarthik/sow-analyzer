@@ -16,6 +16,12 @@ import { useGovernFeature } from "@/lib/govern/queries";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** The address in what was pasted: "Dana Whitfield <dana@uni.edu>" → "dana@uni.edu". */
+function emailOf(raw: string): string {
+  const t = raw.trim();
+  return (/<([^<>\s]+@[^<>\s]+)>/.exec(t)?.[1] ?? t).replace(/^mailto:/i, "");
+}
+
 export function SendForSignatureDialog({ contract, open, onOpenChange }: { contract: Contract; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { run, pending } = useRunContractAction();
   // DocuSign is a "Later" feature: while it is off, signing is by hand only.
@@ -24,11 +30,13 @@ export function SendForSignatureDialog({ contract, open, onOpenChange }: { contr
   const provider = isDocusignOn ? chosen : "manual";
   const [email, setEmail] = useState(contract.signature?.signatory?.email ?? "");
   const [name, setName] = useState(contract.signature?.signatory?.name ?? "");
-  const emailOk = EMAIL.test(email.trim());
+  const address = emailOf(email);
+  const emailOk = EMAIL.test(address);
+  const emailError = email.trim() !== "" && !emailOk ? "Enter an email like name@university.edu." : undefined;
   const needsSignatory = provider === "docusign";
 
   async function confirm() {
-    const signatory = emailOk ? { email: email.trim(), name: name.trim() || null } : undefined;
+    const signatory = emailOk ? { email: address, name: name.trim() || null } : undefined;
     const ok = await run(
       contract.contractId,
       { action: "send_for_signature", provider, signatory },
@@ -85,8 +93,9 @@ export function SendForSignatureDialog({ contract, open, onOpenChange }: { contr
         })}
       </fieldset>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label={needsSignatory ? "Signatory email" : "Signatory email (optional)"} htmlFor="sig-email">
-          <Input id="sig-email" type="email" inputMode="email" placeholder="signatory@example.org" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={email.trim() !== "" && !emailOk} />
+        <Field label={needsSignatory ? "Signatory email" : "Signatory email (optional)"} htmlFor="sig-email" error={emailError}>
+          <Input id="sig-email" type="email" inputMode="email" placeholder="signatory@example.org" value={email} onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={!!emailError} aria-describedby={emailError ? "sig-email-error" : undefined} />
         </Field>
         <Field label="Signatory name (optional)" htmlFor="sig-name">
           <Input id="sig-name" placeholder="e.g. Dana Whitfield" value={name} onChange={(e) => setName(e.target.value)} />
@@ -129,10 +138,11 @@ export function MarkSignedDialog({ contract, open, onOpenChange }: { contract: C
       confirmLabel="Mark as signed"
       onConfirm={confirm}
       pending={pending}
-      disabled={!date}
+      disabled={!date || date > todayIso()}
     >
-      <Field label="Date signed" htmlFor="signed-at">
-        <Input id="signed-at" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <Field label="Date signed" htmlFor="signed-at" error={date > todayIso() ? "The signing date can't be in the future." : undefined}>
+        <Input id="signed-at" type="date" max={todayIso()} value={date} onChange={(e) => setDate(e.target.value)}
+          aria-invalid={date > todayIso()} aria-describedby={date > todayIso() ? "signed-at-error" : undefined} />
       </Field>
       <div className="flex items-start gap-3 rounded-lg border border-border bg-[var(--panel)] p-3.5 text-sm leading-relaxed">
         <Coins size={16} className="mt-0.5 shrink-0 text-[var(--success)]" />

@@ -8,7 +8,6 @@ import { SESSION_MARKER_COOKIE } from "@/lib/auth/session";
 import { ArrowRight, ChevronDown, Menu, X } from "@/components/ui/icons";
 import { Logo } from "@/components/landing/primitives";
 import { NAV_MENUS, PRODUCT_SECTIONS, landingHref, type NavItem, type NavMenu } from "@/components/landing/site-nav";
-import { IconBadge } from "@/components/landing/IconBadge";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
 
 /* Public site header: the mark on the left, the three menus centred, the
@@ -284,7 +283,7 @@ function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void
   );
 }
 
-// Only product areas carry an icon (the area badge); teams, industries and
+// Only product areas carry an icon (a plain 16px area icon); teams, industries and
 // resources are words.
 const PRODUCT_AREA_BY_HREF = new Map<string, string>(PRODUCT_SECTIONS.map((s) => [landingHref(s.id), s.id]));
 
@@ -292,7 +291,11 @@ function MenuLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void 
   const area = PRODUCT_AREA_BY_HREF.get(item.href);
   return (
     <Link href={item.href} className="lp-menu-item" onClick={onNavigate}>
-      {area ? <IconBadge icon={item.icon} area={area} /> : null}
+      {area ? (
+        <span className={`lp-menu-icon lp-area-${area}`} aria-hidden="true">
+          <item.icon size={16} />
+        </span>
+      ) : null}
       <span className="min-w-0">
         <span className="lp-menu-title flex flex-wrap items-center gap-x-2 text-sm font-semibold text-lp-ink">
           {item.label}

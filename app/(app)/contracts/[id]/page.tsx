@@ -26,7 +26,7 @@ import { personName } from "@/lib/govern/labels";
 import { isForbidden, isNotFound } from "@/lib/api";
 import type { ContractDetail } from "@/lib/govern/types";
 import { BlockersSection } from "./_components/BlockersSection";
-import { ContractTabList, useHashTab, type ContractTab } from "./_components/ContractTabs";
+import { ContractTabList, defaultTabFor, useHashTab, type ContractTab } from "./_components/ContractTabs";
 import { DetailsSection } from "./_components/DetailsSection";
 import { MatrixSection } from "./_components/MatrixSection";
 import { MoneySection } from "./_components/MoneySection";
@@ -73,7 +73,7 @@ export default function ContractPage() {
 function ContractView({ contract: c, isError, onRefresh }: {
   contract: ContractDetail; isError: boolean; onRefresh: () => void;
 }) {
-  const [tab, setTab] = useHashTab();
+  const [tab, setTab] = useHashTab(defaultTabFor(c));
   const isObligationsOn = useGovernFeature("obligations");
   const tabsRef = useRef<HTMLDivElement>(null);
   const uploadRef = useRef<HTMLButtonElement>(null);

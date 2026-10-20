@@ -174,7 +174,7 @@ export function Sidebar({
         aria-label={isDrawer ? "Navigation" : undefined}
         className={cn(
           "flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
-          "fixed inset-y-0 left-0 z-50 h-dvh w-[240px] shadow-2xl",
+          "fixed inset-y-0 left-0 z-50 h-dvh w-[240px] shadow-lg",
           "transition-transform duration-300 ease-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0 lg:shadow-none lg:sticky lg:top-0 lg:z-30 lg:shrink-0",
@@ -196,7 +196,7 @@ export function Sidebar({
           <Image
             src="/logo.svg"
             alt="Blue-IQ"
-            width={97}
+            width={92}
             height={24}
             priority
             className={cn("select-none", collapsed && "lg:hidden")}

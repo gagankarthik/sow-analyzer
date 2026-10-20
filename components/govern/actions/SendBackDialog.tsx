@@ -38,6 +38,11 @@ export function SendBackDialog({ contract, open, onOpenChange }: { contract: Con
   const [rows, setRows] = useState<Row[]>(() => initialRows(contract));
   const [note, setNote] = useState("");
   const chosen = rows.filter((r) => r.include && r.label.trim());
+  // Confirm was pressed with nothing to send: say so under the message.
+  const [attempted, setAttempted] = useState(false);
+  const noteError = attempted && chosen.length === 0 && !note.trim()
+    ? "Pick a clause or say what needs to change, so the other side can respond."
+    : undefined;
 
   const update = (key: string, patch: Partial<Row>) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
@@ -70,6 +75,7 @@ export function SendBackDialog({ contract, open, onOpenChange }: { contract: Con
       onConfirm={confirm}
       pending={pending}
       disabled={chosen.length === 0 && !note.trim()}
+      onInvalidSubmit={() => setAttempted(true)}
     >
       {rows.length === 0 && (
         <p className="rounded-lg border border-dashed border-[var(--ink-300)] p-4 text-sm text-[var(--ink-600)]">
@@ -122,7 +128,7 @@ export function SendBackDialog({ contract, open, onOpenChange }: { contract: Con
       <Button type="button" variant="outline" className="self-start" onClick={addRow}>
         <Plus size={14} />Add another clause
       </Button>
-      <NoteField id="sendback-note" value={note} onChange={setNote} label="Message to the other side (optional)" placeholder={byEdition("e.g. Happy to discuss the publication window on a call.", "e.g. Happy to discuss the rate card on a call.")} />
+      <NoteField id="sendback-note" value={note} onChange={setNote} error={noteError} label="Message to the other side (optional)" placeholder={byEdition("e.g. Happy to discuss the publication window on a call.", "e.g. Happy to discuss the rate card on a call.")} />
       <div className="flex flex-col gap-2 rounded-lg border border-border bg-[var(--panel)] p-3.5 sm:flex-row sm:items-center">
         <p className="min-w-0 flex-1 text-sm leading-relaxed text-[var(--ink-700)]">
           Need a Word file for the other side? The redline shows these clauses as tracked changes they can accept.

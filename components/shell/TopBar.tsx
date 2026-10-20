@@ -520,11 +520,11 @@ function NotificationBell() {
 /*  Profile menu                                    */
 /* ──────────────────────────────────────────────── */
 
+// Notifications and Help have their own buttons in the bar; the account menu
+// holds only what is about the account.
 const ACCOUNT_LINKS = [
   { label: "Profile", href: "/profile", icon: User },
   { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Notifications", href: "/notifications", icon: Bell },
-  { label: "Help", href: "/help", icon: Help },
 ];
 
 /** 40px menu row. Icons inherit the muted ink until the row is focused. */
@@ -533,7 +533,6 @@ const MENU_ROW =
 
 function ProfileMenu() {
   const { user, status, signOut } = useAuth();
-  const { unreadCount, isLoading: notifLoading, isError: notifError } = useNotifications();
 
   const initials = initialsOf(user);
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
@@ -585,11 +584,6 @@ function ProfileMenu() {
               <Link href={href}>
                 <Icon size={16} />
                 <span className="min-w-0 flex-1 truncate">{label}</span>
-                {href === "/notifications" && !notifLoading && !notifError && unreadCount > 0 && (
-                  <span className="rounded-md bg-[var(--danger-soft)] px-1.5 py-0.5 text-xs font-semibold tabular-nums text-[var(--danger)]">
-                    {unreadCount > 99 ? "99+" : unreadCount} new
-                  </span>
-                )}
               </Link>
             </DropdownMenuItem>
           ))}
@@ -670,7 +664,7 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
             type="button"
             onClick={onCopilotToggle}
             aria-label="Ask Sonar"
-            className="sonar-button mx-1 inline-flex h-8 shrink-0 items-center gap-1.5 !rounded-full px-3 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
+            className="sonar-button mx-1 inline-flex h-10 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
           >
             <SonarIcon size={15} strokeWidth={1.75} className="shrink-0 text-[var(--brand-primary-600)]" />
             <span className="hidden sm:inline">Ask Sonar</span>

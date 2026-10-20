@@ -12,10 +12,13 @@ import type { Contract } from "@/lib/govern/types";
 import { ActionDialog, Field, NoteField } from "./ActionDialog";
 import { useGovernErrorToast, useRunContractAction } from "./useRunAction";
 import { toast } from "sonner";
+import { parseAmount } from "@/lib/format";
 
 export function CommentDialog({ contract, open, onOpenChange }: { contract: Contract; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { run, pending } = useRunContractAction();
   const [text, setText] = useState("");
+  const [attempted, setAttempted] = useState(false);
+  const textError = attempted && !text.trim() ? "Write the comment first, so others can read it." : undefined;
 
   async function confirm() {
     const ok = await run(contract.contractId, { action: "comment", text: text.trim() }, { what: "add your comment", success: "Comment added" });
@@ -32,8 +35,9 @@ export function CommentDialog({ contract, open, onOpenChange }: { contract: Cont
       onConfirm={confirm}
       pending={pending}
       disabled={!text.trim()}
+      onInvalidSubmit={() => setAttempted(true)}
     >
-      <NoteField id="comment-text" value={text} onChange={setText} label="Comment" placeholder={byEdition("e.g. Spoke to the sponsor; revised draft due Friday.", "e.g. Spoke to the vendor; revised SOW due Friday.")} />
+      <NoteField id="comment-text" value={text} onChange={setText} label="Comment" error={textError} placeholder={byEdition("e.g. Spoke to the sponsor; revised draft due Friday.", "e.g. Spoke to the vendor; revised SOW due Friday.")} />
     </ActionDialog>
   );
 }
@@ -43,6 +47,8 @@ export function CommentDialog({ contract, open, onOpenChange }: { contract: Cont
 export function AskPiDialog({ contract, open, onOpenChange }: { contract: Contract; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { run, pending } = useRunContractAction();
   const [request, setRequest] = useState("");
+  const [attempted, setAttempted] = useState(false);
+  const requestError = attempted && !request.trim() ? "Say what they need to provide, so they can answer." : undefined;
   const who = byEdition(contract.piName, null) || contract.department || byEdition("the PI or department", "the requesting department");
 
   async function confirm() {
@@ -60,8 +66,9 @@ export function AskPiDialog({ contract, open, onOpenChange }: { contract: Contra
       onConfirm={confirm}
       pending={pending}
       disabled={!request.trim()}
+      onInvalidSubmit={() => setAttempted(true)}
     >
-      <NoteField id="pi-request" value={request} onChange={setRequest} label="What do they need to provide?" placeholder={byEdition("e.g. Confirm the field of use with the lab.", "e.g. Confirm the start date and headcount with the hiring manager.")} />
+      <NoteField id="pi-request" value={request} onChange={setRequest} label="What do they need to provide?" error={requestError} placeholder={byEdition("e.g. Confirm the field of use with the lab.", "e.g. Confirm the start date and headcount with the hiring manager.")} />
     </ActionDialog>
   );
 }
@@ -100,11 +107,12 @@ export function AddValueDialog({ contract, open, onOpenChange }: { contract: Con
   const [amount, setAmount] = useState(contract.manualValue !== null ? String(contract.manualValue) : "");
   const orgCurrency = useOrgCurrency();
   const [currency, setCurrency] = useState(contract.currency ?? orgCurrency);
-  const parsed = Number(amount.replace(/[,\s]/g, ""));
-  const valid = amount.trim() !== "" && Number.isFinite(parsed) && parsed >= 0;
+  const parsed = parseAmount(amount);
+  const valid = typeof parsed === "number";
 
   async function confirm() {
     try {
+      if (typeof parsed !== "number") return;
       await patch.mutateAsync({ manualValue: parsed, currency: currency.trim().toUpperCase() || null });
       toast.success("Value saved", { description: "It now counts in the totals." });
       onOpenChange(false);
@@ -125,8 +133,10 @@ export function AddValueDialog({ contract, open, onOpenChange }: { contract: Con
       disabled={!valid}
     >
       <div className="grid grid-cols-[1fr_7rem] gap-3">
-        <Field label="Total value" htmlFor="value-amount" hint="The whole value over the term, before any amendments.">
-          <Input id="value-amount" inputMode="decimal" placeholder="e.g. 250000" value={amount} onChange={(e) => setAmount(e.target.value)} aria-invalid={amount.trim() !== "" && !valid} />
+        <Field label="Total value" htmlFor="value-amount" hint="The whole value over the term, before any amendments."
+          error={parsed === "invalid" ? "Enter an amount, e.g. 250,000, $250,000 or 250k." : undefined}>
+          <Input id="value-amount" inputMode="decimal" placeholder="e.g. 250,000" value={amount} onChange={(e) => setAmount(e.target.value)}
+            aria-invalid={parsed === "invalid"} aria-describedby={parsed === "invalid" ? "value-amount-error" : undefined} />
         </Field>
         <Field label="Currency" htmlFor="value-currency">
           <Input id="value-currency" list="value-currencies" maxLength={3} value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />

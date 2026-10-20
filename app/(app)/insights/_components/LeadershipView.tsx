@@ -5,6 +5,7 @@
 // time and money be saved. Everything is a count or sum over the live
 // contracts, obligations and trends.
 
+import { BarMeter } from "@/components/ds";
 import { byEdition } from "@/lib/edition-runtime";
 import { useMemo } from "react";
 import Link from "next/link";
@@ -31,7 +32,7 @@ function change(recent: number | null, before: number | null, unit: string, lowe
   const diff = recent - before;
   if (diff === 0) return { text: "Same as the 3 months before", tone: "neutral" };
   const better = lowerIsBetter ? diff < 0 : diff > 0;
-  return { text: `${diff > 0 ? "+" : "−"}${Math.abs(diff)}${unit} vs the 3 months before`, tone: better ? "neutral" : "warning" };
+  return { text: `${diff > 0 ? "+" : "−"}${Math.abs(diff)}${unit} vs the 3 months before`, tone: better ? "success" : "warning" };
 }
 
 export function LeadershipView() {
@@ -153,8 +154,19 @@ export function LeadershipView() {
                     <span className={cn("block font-semibold", r.key === "__unassigned" ? "text-[var(--warning-fg)]" : "text-foreground")}>{r.name}</span>
                     {r.email && r.email !== r.name && <span className="text-xs text-[var(--ink-600)]">{r.email}</span>}
                   </th>
-                  <td className="px-3 py-3 text-right font-semibold tabular-nums">{r.open}</td>
-                  <td className={cn("px-3 py-3 text-right tabular-nums", r.overdue > 0 ? "font-semibold text-[var(--danger)]" : "text-[var(--ink-600)]")}>{r.overdue}</td>
+                  <td className="px-3 py-3 text-right font-semibold tabular-nums">
+                    {r.open}
+                    {/* The mix at a glance: overdue, late and on time in one bar. */}
+                    {r.open > 0 && (
+                      <BarMeter className="ml-auto mt-1.5 w-20" size="sm" label={`${r.name}: open contracts by time against target`}
+                        segments={[
+                          { key: "o", label: "Overdue", value: r.overdue, tone: "blocked" },
+                          { key: "l", label: "Running late", value: r.late, tone: "caution" },
+                          { key: "t", label: "On time", value: Math.max(0, r.open - r.overdue - r.late), tone: "unknown" },
+                        ]} />
+                    )}
+                  </td>
+                  <td className={cn("px-3 py-3 text-right tabular-nums", r.overdue > 0 ? "font-semibold text-[var(--danger-fg)]" : "text-[var(--ink-600)]")}>{r.overdue}</td>
                   <td className={cn("px-3 py-3 text-right tabular-nums", r.late > 0 ? "font-semibold text-[var(--warning-fg)]" : "text-[var(--ink-600)]")}>{r.late}</td>
                   <td className="px-3 py-3 text-right tabular-nums text-[var(--ink-700)]">{plural(r.longestDays, "day")}</td>
                   <td className="px-5 py-3 text-right tabular-nums text-[var(--ink-700)]">{r.value === null ? "—" : formatCompact(r.value, v.currency)}</td>

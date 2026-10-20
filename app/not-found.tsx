@@ -14,7 +14,7 @@ export default function NotFound() {
       <header className="border-b border-border bg-card">
         <div className="app-container flex h-16 items-center">
           <Link href="/" aria-label="Blue-IQ home">
-            <Image src="/logo.svg" alt="Blue-IQ" width={113} height={28} priority />
+            <Image src="/logo.svg" alt="Blue-IQ" width={107} height={28} priority />
           </Link>
         </div>
       </header>

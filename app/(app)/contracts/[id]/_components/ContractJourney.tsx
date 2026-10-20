@@ -8,10 +8,11 @@
 import { Check, XCircle } from "@/components/ui/icons";
 import { contractJourney, type JourneyStep } from "@/lib/govern/journey";
 import type { ContractDetail } from "@/lib/govern/types";
+import { parseDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ContractTab } from "./ContractTabs";
 
-const fmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+const fmt = (iso: string) => parseDate(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 
 export function ContractJourney({ contract, onOpen }: { contract: ContractDetail; onOpen: (section: ContractTab) => void }) {
   const { steps, ended } = contractJourney(contract, fmt);

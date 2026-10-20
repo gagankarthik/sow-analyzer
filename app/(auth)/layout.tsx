@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft } from "@/components/ui/icons";
+import { LOGO_ASPECT } from "@/components/landing/primitives";
 import { TIER_LABEL } from "@/lib/govern/labels";
 import { NOINDEX } from "@/lib/seo";
 import { AppProviders } from "@/components/providers/AppProviders";
@@ -29,12 +30,12 @@ const panelLinkClass =
 function WhiteLogo({ height }: { height: number }) {
   return (
     <Image
-      src="/logo.svg"
+      src="/logo-on-dark.svg"
       alt="Blue-IQ"
-      width={Math.round(height * (165.88 / 41))}
+      width={Math.round(height * LOGO_ASPECT)}
       height={height}
       priority
-      className="select-none brightness-0 invert"
+      className="select-none"
     />
   );
 }

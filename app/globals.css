@@ -915,21 +915,13 @@ html { scroll-behavior: smooth; }
   .sonar-wave, .sonar-spark { animation: none; opacity: 1; }
 }
 
-/* Sonar's button: a rainbow edge that slowly turns, inside a white pill. */
-@property --sonar-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
-@keyframes sonar-ring { to { --sonar-angle: 360deg; } }
-/* The rainbow edge keeps each element's own corner radius. */
-.sonar-button { position: relative; isolation: isolate; border-radius: 10px; }
+/* Sonar's button and mark: a 1px border on the card surface like every other
+   control. The brand icon is what makes it Sonar; the accent shows on hover. */
+.sonar-button { position: relative; border-radius: 8px; }
 .sonar-button, .sonar-rainbow {
-  border: 1.5px solid transparent;
-  background:
-    linear-gradient(var(--sonar-fill, var(--card)), var(--sonar-fill, var(--card))) padding-box,
-    conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;
-  animation: sonar-ring 6s linear infinite;
+  border: 1px solid var(--border);
+  background: var(--sonar-fill, var(--card));
 }
-.sonar-button:hover {
-  background:
-    linear-gradient(var(--ink-50), var(--ink-50)) padding-box,
-    conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;
-}
-@media (prefers-reduced-motion: reduce) { .sonar-button, .sonar-rainbow { animation: none; } }
+.sonar-button { transition: border-color 150ms ease-out, background-color 150ms ease-out; }
+.sonar-button:hover { border-color: var(--brand-primary-300); background: var(--brand-primary-50); }
+@media (prefers-reduced-motion: reduce) { .sonar-button { transition: none; } }

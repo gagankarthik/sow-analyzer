@@ -39,7 +39,7 @@ export default async function OpengraphImage() {
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
-            <img src={mark} width={54} height={53} />
+            <img src={mark} width={54} height={54} />
           </div>
           <div style={{ marginLeft: 24, fontSize: 56, fontWeight: 700, letterSpacing: -1.5 }}>Blue-IQ</div>
         </div>

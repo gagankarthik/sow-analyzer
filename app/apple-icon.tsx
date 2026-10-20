@@ -22,7 +22,7 @@ export default async function AppleIcon() {
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
-        <img src={mark} width={112} height={109} />
+        <img src={mark} width={112} height={112} />
       </div>
     ),
     size,

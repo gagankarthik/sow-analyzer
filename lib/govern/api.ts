@@ -56,6 +56,12 @@ export async function runContractAction(id: string, action: ContractAction): Pro
   return normaliseContract(data.contract)
 }
 
+/** Removes the contract from Govern; returns its documents, which the caller deletes. */
+export async function removeContract(id: string): Promise<{ docIds: string[] }> {
+  const data = await request<{ docIds?: string[] }>(contractPath(id), { method: "DELETE" })
+  return { docIds: data.docIds ?? [id] }
+}
+
 export async function rescoreContract(id: string): Promise<ContractDetail> {
   return (await request<DetailResponse>(`${contractPath(id)}/rescore`, { method: "POST", body: "{}" })).contract
 }

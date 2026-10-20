@@ -89,7 +89,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
           <TierBar counts={review.counts} size="lg" />
           <TierLegend counts={review.counts} />
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            {blocking > 0 && <span className="font-semibold text-[var(--warning)]">{plural(blocking, "clause")} to resolve before signature</span>}
+            {blocking > 0 && <span className={cn("font-semibold", review.counts.unacceptable > 0 ? "text-[var(--danger-fg)]" : "text-[var(--warning-fg)]")}>{plural(blocking, "clause")} to resolve before signature</span>}
             {review.counts.beneficial > 0 && <BeneficialBadge />}
             {review.counts.beneficial > 0 && <span className="text-[var(--ink-700)]">{plural(review.counts.beneficial, "term")} favour you</span>}
           </div>
@@ -177,7 +177,7 @@ function ClauseRow({ clause: cl }: { clause: MatrixClauseResult }) {
         <div id={panelId} className="flex flex-col gap-4 border-t border-border p-4">
           {cl.reason && <p className="text-sm leading-relaxed text-[var(--ink-700)]">{cl.reason}</p>}
           {cl.beneficial && cl.beneficialReason && (
-            <p className="text-sm leading-relaxed text-[var(--success)]">Why it helps you: {cl.beneficialReason}</p>
+            <p className="text-sm leading-relaxed text-[var(--success-fg)]">Why it helps you: {cl.beneficialReason}</p>
           )}
           <dl className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <Compare label={cl.clauseNumber ? `In this agreement · clause ${cl.clauseNumber}` : "In this agreement"} text={cl.found} emphasis />

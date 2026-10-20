@@ -164,6 +164,8 @@ export const NEXT_ACTION_LABEL: Record<NextAction, string> = {
   assign: "Assign a reviewer",
   add_value: "Add the contract value",
   none: "No action needed",
+  analyze_anyway: "Analyze anyway",
+  reanalyze: "Analyze again",
 }
 
 export const REJECT_REASONS: RejectReason[] = [

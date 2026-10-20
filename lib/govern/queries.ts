@@ -13,13 +13,13 @@
 import { EDITION_AGREEMENT_TYPES, EDITION_TERMS, editionHas, resolveEdition, type Edition, type EditionFeature, type EditionTerms } from "@/lib/edition";
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
-import { isPermanentError } from "@/lib/api";
+import { deleteDocument, isNotFound, isPermanentError, reprocessDocument } from "@/lib/api";
 import { resolveFeatures, type GovernFeature, type GovernFeatureFlags } from "./features";
 import { documentKeys } from "@/lib/queries/documents";
 import {
   addBlocker, addObligation, createContract, listObligations, getCaptureReport, getContract, getTrends, getGovernMe, getMatrix, getMatrixVersion, getSyncLog,
   getUnmatchedContracts, getWorkflowSettings, importMatrix, listConnectors, listContracts,
-  patchContract, rescoreContract, runConnectorSync, runContractAction, saveConnector, saveIncome,
+  patchContract, removeContract, rescoreContract, runConnectorSync, runContractAction, saveConnector, saveIncome,
   saveMatrix, saveWorkflowSettings, updateBlocker, updateObligation,
 } from "./api";
 import type {
@@ -208,6 +208,44 @@ export function usePatchContract(id: string) {
   return useMutation({ mutationFn: (patch: ContractPatch) => patchContract(id, patch), onSuccess: apply });
 }
 
+/** Removes a contract from Govern, then deletes its documents (files and
+ *  analysis), so it leaves the board, the dashboard counts and the library. */
+export function useRemoveContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { docIds } = await removeContract(id);
+      for (const docId of docIds) {
+        try {
+          await deleteDocument(docId);
+        } catch (e) {
+          if (!isNotFound(e)) throw e;   // already gone
+        }
+      }
+      return id;
+    },
+    onSuccess: (id) => {
+      qc.removeQueries({ queryKey: governKeys.contract(id) });
+      void qc.invalidateQueries({ queryKey: ["govern"] });     // the board, obligations and the trends
+      void qc.invalidateQueries({ queryKey: documentKeys.all });
+    },
+  });
+}
+
+/** Runs Sonar again on the contract's current document. ``force`` skips the
+ *  not-an-agreement check (the person says it is one). */
+export function useReanalyzeContract(contract: { contractId: string; currentDocId: string }) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (force: boolean) => reprocessDocument(contract.currentDocId, { force }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: governKeys.contract(contract.contractId) });
+      void qc.invalidateQueries({ queryKey: governKeys.allContracts });
+      void qc.invalidateQueries({ queryKey: documentKeys.all });
+    },
+  });
+}
+
 export function useRescoreContract(id: string) {
   const apply = useApplyContract();
   return useMutation({ mutationFn: () => rescoreContract(id), onSuccess: apply });
@@ -223,8 +261,26 @@ export function useAddBlocker(id: string) {
 
 export function useUpdateBlocker(id: string) {
   const apply = useApplyContract();
+  const qc = useQueryClient();
+  const key = governKeys.contract(id);
   return useMutation({
     mutationFn: ({ blockerId, input }: { blockerId: string; input: BlockerInput }) => updateBlocker(id, blockerId, input),
+    // Closing or reopening shows at once; the server's copy replaces it, or the old one comes back on failure.
+    onMutate: async ({ blockerId, input }) => {
+      if (!input.status) return { previous: undefined };
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<ContractDetail>(key);
+      if (previous) {
+        const blockers = previous.blockers.map((b) => (b.id === blockerId ? { ...b, status: input.status! } : b));
+        qc.setQueryData<ContractDetail>(key, {
+          ...previous, blockers, openBlockers: blockers.filter((b) => b.status === "open").length,
+        });
+      }
+      return { previous };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(key, ctx.previous);
+    },
     onSuccess: apply,
   });
 }

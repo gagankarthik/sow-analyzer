@@ -9,6 +9,7 @@ import { byEdition } from "@/lib/edition-runtime";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { X } from "@/components/ui/icons";
+import { BarMeter, ProgressMeter } from "@/components/ds";
 import { prefersReducedMotion } from "@/lib/chart-theme";
 import { contractsTable, describeFilters, type ExportReport } from "@/lib/govern/export";
 import { STAGE_LABEL, WAITING_ON_SHORT, daysLabel, plural } from "@/lib/govern/labels";
@@ -168,10 +169,22 @@ export default function BottlenecksPage() {
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatTile label="Waiting for signature" value={open.length} tone="brand" />
-              <StatTile label="Overdue" value={view.overdue} tone={view.overdue > 0 ? "danger" : "success"} hint={view.overdue > 0 ? "Well past the step's target" : "None"} />
-              <StatTile label="Running late" value={view.late} tone={view.late > 0 ? "warning" : "success"} hint="Past the step's target" />
+              {/* On time is quiet: only overdue and late take a colour. */}
+              <StatTile label="Overdue" value={view.overdue} tone={view.overdue > 0 ? "danger" : "neutral"} hint={view.overdue > 0 ? "Well past the step's target" : "None"} />
+              <StatTile label="Running late" value={view.late} tone={view.late > 0 ? "warning" : "neutral"} hint="Past the step's target" />
               <StatTile label="Average days so far" value={view.avgTotal === null ? "—" : daysLabel(view.avgTotal)} hint="From arrival to today" />
             </div>
+            {open.length > 0 && (
+              <BarMeter
+                label="Open contracts by time against their step's target"
+                showKey
+                segments={[
+                  { key: "overdue", label: "Overdue", value: view.overdue, tone: "blocked" },
+                  { key: "late", label: "Running late", value: view.late, tone: "caution" },
+                  { key: "ontime", label: "On time", value: Math.max(0, open.length - view.overdue - view.late), tone: "unknown" },
+                ]}
+              />
+            )}
 
             {open.length === 0 ? (
               <p className="rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-5 py-10 text-center text-base text-[var(--ink-600)]">
@@ -251,9 +264,11 @@ function WhoList({ queues }: { queues: ReturnType<typeof waitingQueues> }) {
     <ul className="divide-y divide-border">
       {rows.map((r) => (
         <li key={r.key} className="flex items-baseline justify-between gap-3 py-2.5">
-          <span className="min-w-0">
+          <span className="min-w-0 flex-1">
             <span className="block truncate text-base font-medium text-foreground" title={r.label}>{r.label}</span>
             <span className="block text-sm text-[var(--ink-600)]">{r.group}</span>
+            {/* Who holds the most, at a glance: the bar is their share of the longest queue. */}
+            <ProgressMeter className="mt-1.5 max-w-xs" size="sm" hideLabel label={`${r.label} holds ${r.count}`} value={r.count} max={rows[0].count} valueText={String(r.count)} tone="brand" />
           </span>
           <span className="shrink-0 text-right text-sm tabular-nums text-[var(--ink-600)]">
             <span className="font-semibold text-foreground">{r.count}</span> · avg {daysLabel(Math.round(r.averageDays))}

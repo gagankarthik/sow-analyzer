@@ -15,6 +15,7 @@ import { CAPTURE_GAP_LABEL, STAGE_LABEL, plural } from "@/lib/govern/labels";
 import { useCaptureReport, useContracts } from "@/lib/govern/queries";
 import type { CaptureGap, CaptureReport, Contract } from "@/lib/govern/types";
 import type { ExportReport } from "@/lib/govern/export";
+import { LoadingState } from "@/components/ds/feedback";
 import { ExportButtons } from "../_components/ExportButtons";
 import { Panel, ReportError, ReportSkeleton } from "../_components/ReportKit";
 
@@ -156,7 +157,7 @@ export default function CapturePage() {
 }
 
 function GapContracts({ ids, byId, loading }: { ids: string[]; byId: Map<string, Contract>; loading: boolean }) {
-  if (loading) return <p className="text-sm text-[var(--ink-600)]">Loading contracts…</p>;
+  if (loading) return <LoadingState variant="text" count={Math.min(ids.length, 4) || 3} label="Loading contracts" />;
   return (
     <ul className="divide-y divide-border">
       {ids.map((id) => {

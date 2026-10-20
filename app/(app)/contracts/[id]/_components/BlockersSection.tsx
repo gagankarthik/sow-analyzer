@@ -72,7 +72,7 @@ export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
     <Section
       title="What blocks signature"
       description="Sonar lists every clause outside your matrix. Close an item when the other side fixes it; add your own for anything else."
-      actions={canEdit && !adding && <Button type="button" onClick={() => setAdding(true)}><Plus size={14} />Add an item</Button>}
+      actions={canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={14} />Add an item</Button>}
     >
       {adding && <BlockerForm contract={c} onDone={() => setAdding(false)} />}
 

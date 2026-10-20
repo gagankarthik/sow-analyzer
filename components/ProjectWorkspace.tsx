@@ -1092,7 +1092,10 @@ function ClauseSheetBody({ clause, related }: { clause: AggClause; related: AggC
                 ) : sug.text ? (
                   <p className="whitespace-pre-wrap rounded-lg border border-[var(--ai-border)] bg-[var(--ai-surface)] p-3 text-sm leading-relaxed text-foreground">{sug.text}</p>
                 ) : sug.err ? (
-                  <div className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-3 text-xs text-[var(--danger)]">{sug.err}</div>
+                  <div role="alert" className="rounded-lg border border-[var(--danger)]/30 bg-[var(--danger-soft)] p-3 text-xs text-[var(--danger)]">
+                    <p>{sug.err}</p>
+                    <button type="button" onClick={generate} className="mt-1.5 inline-flex min-h-10 items-center text-sm font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)] md:min-h-8">Try again</button>
+                  </div>
                 ) : (
                   <button type="button" onClick={generate} className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[var(--ai-ink)] bg-[var(--ai-surface)] p-3 text-sm font-semibold text-[var(--ai-ink)] transition-colors hover:border-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ai-ink)]">
                     <Sonar size={13} />Ask Sonar to draft a more balanced version

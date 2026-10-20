@@ -22,6 +22,8 @@ export type SlaStatus = "on_track" | "amber" | "red" | "none"
 export type RejectReason = "unacceptable_terms" | "sponsor_withdrew" | "pi_withdrew" | "duplicate" | "out_of_scope" | "other"
 export type NextAction =
   | "approve" | "send_back" | "escalate" | "reject" | "send_for_signature" | "wait" | "assign" | "add_value" | "none"
+  // Sonar could not read the document: analyze it anyway (it doubted it is an agreement) or again.
+  | "analyze_anyway" | "reanalyze"
 export type ObligationKind =
   | "sponsor_report" | "milestone_payment" | "royalty_report" | "diligence_milestone"
   | "publication_review" | "term_end" | "closeout" | "renewal_notice" | "data_return"
@@ -153,6 +155,8 @@ export interface Contract {
   slaStatus: SlaStatus
   rounds: number
   analysisStatus: string
+  /** The document's error code when its analysis failed ("not_agreement", …), else null. */
+  analysisError?: string | null
   value: number | null
   valueSource: "manual" | "extracted" | "expected" | null
   extractedValue: number | null

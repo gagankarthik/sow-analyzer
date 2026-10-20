@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Clock, DollarSign, Info } from "@/components/ui/icons";
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock, DollarSign, Info } from "@/components/ui/icons";
 import type { Opportunity } from "@/lib/govern/opportunities";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DIRECTION_LABEL, plural } from "@/lib/govern/labels";
@@ -91,34 +91,45 @@ export type Kpi = {
   value: string;
   sub: string;
   href: string;
-  tone?: "neutral" | "danger" | "warning";
+  /** danger / warning: needs action; success: a change for the better. Neutral is quiet. */
+  tone?: "neutral" | "danger" | "warning" | "success";
 };
+
+const KPI_TONE = {
+  danger: { value: "text-[var(--danger-fg)]", sub: "text-[var(--danger-fg)]", edge: "border-l-[var(--danger)]", Icon: AlertTriangle },
+  warning: { value: "text-[var(--warning-fg)]", sub: "text-[var(--warning-fg)]", edge: "border-l-[var(--warning)]", Icon: AlertTriangle },
+  success: { value: "text-foreground", sub: "text-[var(--success-fg)]", edge: null, Icon: CheckCircle2 },
+} as const;
 
 export function KpiStrip({ items }: { items: Kpi[] }) {
   return (
     <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Summary">
-      {items.map((k) => (
+      {items.map((k) => {
+        // A tile that needs action leads: its number in the status colour, an
+        // edge, and an icon with the note (never colour alone).
+        const t = k.tone && k.tone !== "neutral" ? KPI_TONE[k.tone] : null;
+        return (
         <li key={k.label} className="min-w-0">
           <Link
             href={k.href}
-            className="group flex h-full flex-col rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs transition-colors duration-150 hover:border-[var(--brand-primary-300)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+            className={cn(
+              "group flex h-full flex-col rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs transition-colors duration-150 hover:border-[var(--brand-primary-300)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]",
+              t?.edge && cn("border-l-[3px]", t.edge),
+            )}
           >
             <span className="flex items-center justify-between gap-2 text-sm font-medium text-[var(--ink-600)]">
               {k.label}
               <ArrowRight size={14} aria-hidden className="text-[var(--ink-400)] transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-[var(--brand-primary-600)] motion-reduce:transition-none" />
             </span>
-            <span className="mt-1 truncate text-3xl font-semibold tabular-nums tracking-[-0.02em] text-foreground">{k.value}</span>
-            <span
-              className={cn(
-                "mt-0.5 truncate text-xs font-medium",
-                k.tone === "danger" ? "text-[var(--danger)]" : k.tone === "warning" ? "text-[var(--warning-fg)]" : "text-[var(--ink-600)]",
-              )}
-            >
-              {k.sub}
+            <span className={cn("mt-1 truncate text-3xl font-semibold tabular-nums tracking-[-0.02em]", t?.value ?? "text-foreground")}>{k.value}</span>
+            <span className={cn("mt-0.5 flex min-w-0 items-center gap-1 text-xs font-medium", t?.sub ?? "text-[var(--ink-600)]")}>
+              {t && <t.Icon size={12} aria-hidden className="shrink-0" />}
+              <span className="truncate">{k.sub}</span>
             </span>
           </Link>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }
