@@ -25,7 +25,7 @@ import {
   InViewFooter, MoreFilters, QuickFilters, SheetFilters, activeFilterCount, type IndexFilter,
 } from "@/components/govern/IndexFilters";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, Check, Sonar } from "@/components/ui/icons";
+import { BadgeCheck, Check } from "@/components/ui/icons";
 import { updateObligation } from "@/lib/govern/api";
 import { OBLIGATION_KIND_LABEL, plural } from "@/lib/govern/labels";
 import { formatCompact } from "@/lib/govern/metrics";
@@ -38,6 +38,8 @@ import { cn } from "@/lib/utils";
 import { KpiStrip, type Kpi } from "../home/_components/HomeSections";
 import { ObligationPreview } from "./_components/ObligationPreview";
 import { DUE_SOON_DAYS, displayTitle } from "@/lib/format";
+import { StatusPill as DsStatusPill } from "@/components/ds/StatusPill";
+import { DateRangeFilter, inDateRange, type DateRange } from "@/components/ds/DateRangeFilter";
 
 /** The views shown as tabs, in order. Type views live in the Type filter. */
 const TAB_VIEWS = ["all", "overdue", "30", "90", "no-date", "needs", "verified"];
@@ -68,6 +70,7 @@ function Obligations() {
   const qc = useQueryClient();
   const view = obligationViewById(params.get("view"));
   const [today] = useState(() => startOfDay(Date.now()));
+  const [due, setDue] = useState<DateRange | null>(null);
 
   const [q, setQ] = useState("");
   const query = useDeferredValue(q.trim().toLowerCase());
@@ -104,9 +107,10 @@ function Obligations() {
   const rows = useMemo(() => inView.filter((o) =>
     (kind.length === 0 || kind.includes(o.kind))
     && (verification.length === 0 || verification.includes(o.verified ? "verified" : "needs"))
-    && (!query || [o.title, o.contractTitle, o.counterparty, o.owner?.name].some((s) => s?.toLowerCase().includes(query))),
-  ), [inView, kind, verification, query]);
-  const clearAll = () => { setQ(""); setKind([]); setVerification([]); };
+    && (!query || [o.title, o.contractTitle, o.counterparty, o.owner?.name].some((s) => s?.toLowerCase().includes(query)))
+    && inDateRange(o.dueDate, due, new Date(today), "future"),
+  ), [inView, kind, verification, query, due, today]);
+  const clearAll = () => { setQ(""); setKind([]); setVerification([]); setDue(null); };
 
   const filters: IndexFilter[] = [
     {
@@ -121,7 +125,7 @@ function Obligations() {
       ].filter((o) => o.count > 0),
     },
   ];
-  const activeCount = activeFilterCount(filters);
+  const activeCount = activeFilterCount(filters) + (due ? 1 : 0);
   const filtering = !!query || activeCount > 0;
 
   const d90 = all.filter((o) => obligationViewById("90").test(o, today));
@@ -175,9 +179,9 @@ function Obligations() {
     {
       id: "verified", header: "Verification", card: "status", sortValue: (o) => (o.verified ? 1 : 0),
       cell: (o) => o.verified ? (
-        <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--success-fg)]"><BadgeCheck size={12} aria-hidden />Verified</span>
+        <DsStatusPill size="sm" tone="ok">Verified</DsStatusPill>
       ) : (
-        <span className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md bg-[var(--warning-soft)] px-2 text-xs font-medium text-[var(--warning-fg)]"><Sonar size={12} aria-hidden />Needs verification</span>
+        <DsStatusPill size="sm" tone="caution">Needs verification</DsStatusPill>
       ),
     },
     {
@@ -254,7 +258,10 @@ function Obligations() {
               mobileSheet={<SheetFilters filters={filters} onClear={clearAll} />}
             >
               <Toolbar.Search label={`Search ${view.label.toLowerCase()}`} placeholder="Search this view" value={q} onChange={setQ} />
-              <Toolbar.Filters><QuickFilters filters={filters} /></Toolbar.Filters>
+              <Toolbar.Filters>
+                <QuickFilters filters={filters} />
+                <DateRangeFilter label="Due" direction="future" value={due} onChange={setDue} />
+              </Toolbar.Filters>
               <Toolbar.More><MoreFilters filters={filters} /></Toolbar.More>
               <Toolbar.Clear count={activeCount} onClear={clearAll} />
             </Toolbar>

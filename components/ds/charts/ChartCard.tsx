@@ -63,7 +63,7 @@ export function ChartCard({
       aria-labelledby={titleId}
       className={cn(
         "flex min-w-0 flex-col",
-        variant === "card" && "rounded-container border border-border-default bg-surface-raised shadow-raised",
+        variant === "card" && "rounded-container border border-border-default bg-surface-raised",
         className,
       )}
     >

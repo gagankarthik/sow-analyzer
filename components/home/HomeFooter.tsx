@@ -5,7 +5,8 @@ import { INDUSTRY_SECTIONS, PRODUCT_SECTIONS, SOLUTION_SECTIONS, landingHref } f
 import { COMING_SOON_LABEL, isComingSoon } from "@/components/landing/ComingSoon";
 import { DemoCta } from "@/components/home/DemoCta";
 
-/* Home footer, one navy close: the demo offer on top, then the brand and
+/* Home footer, on the light canvas so the page closes as it opened: the
+   demo offer as a navy stage with the rating ribbon (the hero's twin), then the brand and
    its promise beside the link columns, then the legal notice, copyright
    and back to top. The notice is the same
    fixed copy the app shows under every analysis
@@ -65,11 +66,11 @@ export function HomeFooter() {
       <div className="home-container">
         <DemoCta />
         <div className="home-footer-body">
+          <div className="home-footer-brand">
+            <Logo height={28} />
+            <p className="home-footer-promise">Every agreement checked against your matrix, moving to signature.</p>
+          </div>
           <div className="home-footer-grid">
-            <div className="home-footer-brand">
-              <Logo height={28} variant="dark" />
-              <p className="home-footer-promise">Every agreement checked against your matrix, moving to signature.</p>
-            </div>
             {COLUMNS.map((column) => (
               <nav key={column.id} aria-labelledby={`footer-${column.id}`}>
                 <h2 id={`footer-${column.id}`} className="home-footer-title">

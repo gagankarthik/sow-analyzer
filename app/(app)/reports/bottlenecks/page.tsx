@@ -22,7 +22,7 @@ import { useContracts } from "@/lib/govern/queries";
 import { ExportButtons } from "../_components/ExportButtons";
 import { SlaLegend, StageFlow, WaitingBars, stageTable, waitingTable } from "../_components/ReportCharts";
 import {
-  FilterBar, NoContracts, Panel, ReportError, StatTile, reviewerNameFrom,
+  FilterBar, NoContracts, Panel, ReportError, StatBar, StatTile, reviewerNameFrom,
 } from "../_components/ReportKit";
 import { useStageTargets } from "../_components/report-data";
 import { useHashFocus, type ReportFocus } from "../_components/use-hash-focus";
@@ -163,13 +163,13 @@ export default function BottlenecksPage() {
               noun="open contracts"
             />
 
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatBar label="Waiting figures">
               <StatTile label="Waiting for signature" value={open.length} />
               {/* On time is quiet: only overdue and late take a colour. */}
               <StatTile label="Overdue" value={view.overdue} tone={view.overdue > 0 ? "danger" : "neutral"} hint={view.overdue > 0 ? "Well past the step's target" : "None"} />
               <StatTile label="Running late" value={view.late} tone={view.late > 0 ? "warning" : "neutral"} hint="Past the step's target" />
               <StatTile label="Average days so far" value={view.avgTotal === null ? "—" : daysLabel(view.avgTotal)} hint="From arrival to today" />
-            </div>
+            </StatBar>
             {open.length > 0 && (
               <BarMeter
                 label="Open contracts by time against their step's target"

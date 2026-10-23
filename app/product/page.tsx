@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { SonarMark } from "@/components/ui/SonarMark";
-import { MarketingShell } from "@/components/landing/MarketingShell";
+import { MarketingShell, PageIntro } from "@/components/landing/MarketingShell";
 import { ClauseIndex } from "@/components/landing/ClauseIndex";
-import { StartCta } from "@/components/landing/StartCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PRODUCT_SECTIONS, type ProductSectionId } from "@/components/landing/site-nav";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
@@ -60,19 +59,9 @@ export default function ProductPage() {
       <JsonLd data={softwareApplicationSchema} />
       <JsonLd data={breadcrumbSchema([{ name: "Product", path: "/product" }])} />
 
-      <section className="lp-hero3 pb-12 md:pb-16" aria-labelledby="product-title">
-        <div className="lp-wrap">
-          <div className="lp-hero3-copy">
-            <h1 id="product-title" className="lp-hero3-title">
-              Everything Govern does
-              <span className="lp-hero3-accent">with an agreement.</span>
-            </h1>
-            <p className="lp-hero3-sub">
-              Sonar reads it, your matrix rates it, the board moves it to signature, and the reports show what it is worth.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageIntro title="Everything Govern does with an agreement.">
+        Sonar reads it, your matrix rates it, the board moves it to signature, and the reports show what it is worth.
+      </PageIntro>
 
       {/* The areas, one tap away while scrolling. */}
       <nav aria-label="Product areas" className="lp-subnav">
@@ -85,7 +74,7 @@ export default function ProductPage() {
 
       {/* Sonar, the AI inside every step. */}
       <section id="sonar" className="lp-wrap scroll-mt-32 pt-12" aria-labelledby="sonar-title">
-        <div className="lp-sonar sonar-rainbow">
+        <div className="lp-sonar">
           <div className="lp-sonar-copy">
             <p className="lp-sonar-kicker"><SonarMark size="sm" /> Sonar</p>
             <h2 id="sonar-title" className="lp-sonar-title">The AI inside every step</h2>
@@ -142,7 +131,6 @@ export default function ProductPage() {
       </section>
 
       <ClauseIndex />
-      <StartCta />
     </MarketingShell>
   );
 }

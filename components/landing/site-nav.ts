@@ -35,10 +35,9 @@ export type NavItem = { label: string; href: string; description: string; icon: 
 export type NavGroup = { label: string; items: NavItem[] };
 export type NavMenu = {
   label: string;
-  /** One sentence at the start of the sheet saying what the menu covers. */
-  intro: string;
   groups: NavGroup[];
-  foot: { label: string; href: string };
+  /** The panel at the right of the sheet: one next step worth taking. */
+  feature: { title: string; text: string; cta: string; href: string };
 };
 
 type Section = { id: string; label: string; description: string; icon: Icon; feature?: GovernFeature };
@@ -80,9 +79,9 @@ const EDITION_ITEMS: NavItem[] = [
 
 const RESOURCE_ITEMS: NavItem[] = [
   { label: "Security overview", href: "/security", description: "How contract data is protected", icon: IconShield },
+  { label: "Savings calculator", href: "/calculator", description: "Estimate review hours saved", icon: IconCalculator },
   { label: "Privacy policy", href: "/legal/privacy", description: "What we process and why", icon: IconPrivacy },
   { label: "Data processing", href: "/legal/dpa", description: "Processor terms and sub-processors", icon: IconAgreement },
-  { label: "Savings calculator", href: "/calculator", description: "Estimate review hours saved", icon: IconCalculator },
 ];
 
 /** Where a landing-page section lives, from any page. */
@@ -94,26 +93,38 @@ const toItems = (sections: readonly Section[]): NavItem[] =>
 export const NAV_MENUS: NavMenu[] = [
   {
     label: "Product",
-    intro: "One platform reads each agreement, checks it against your matrix, moves it to signature and reports its value.",
     groups: [
       { label: "Platform", items: toItems(PRODUCT_SECTIONS) },
       { label: "Editions", items: EDITION_ITEMS },
     ],
-    foot: { label: "Platform overview", href: "/product" },
+    feature: {
+      title: "Meet Sonar",
+      text: "The AI in Govern reads every clause, rates it against your matrix and drafts the fix.",
+      cta: "See Sonar at work",
+      href: "/product#sonar",
+    },
   },
   {
     label: "Solutions",
-    intro: "Every office that touches an agreement works from the same matrix and the same status.",
     groups: [
       { label: "By team", items: toItems(SOLUTION_SECTIONS) },
       { label: "By industry", items: toItems(INDUSTRY_SECTIONS) },
     ],
-    foot: { label: "All solutions", href: "/solutions" },
+    feature: {
+      title: "See your own contract, reviewed",
+      text: "Send one agreement and your matrix. We run the review before the call.",
+      cta: "Request a demo",
+      href: "/signup",
+    },
   },
   {
     label: "Resources",
-    intro: "How Blue-IQ protects your agreements, and what Govern could save your team.",
     groups: [{ label: "Resources", items: RESOURCE_ITEMS }],
-    foot: { label: "Terms of service", href: "/legal/terms" },
+    feature: {
+      title: "Signed DPA on request",
+      text: "Our Data Processing Agreement and sub-processor list, ready for your security review.",
+      cta: "Read the security overview",
+      href: "/security",
+    },
   },
 ];

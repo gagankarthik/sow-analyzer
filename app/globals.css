@@ -1,4 +1,30 @@
 @import "tailwindcss";
+
+/* Public-site utilities (bg-lp-surface, border-lp-line, text-lp-ink, …).
+   They must be declared in Tailwind's entry file to be generated; the
+   --lp-* values they point to are set on the public site's wrapper
+   (app/landing.css, re-skinned by app/site.css). */
+@theme inline {
+  --color-lp-canvas: var(--lp-canvas);
+  --color-lp-surface: var(--lp-surface);
+  --color-lp-subtle: var(--lp-subtle);
+  --color-lp-line: var(--lp-line);
+  --color-lp-line-strong: var(--lp-line-strong);
+  --color-lp-ink: var(--lp-ink);
+  --color-lp-ink-2: var(--lp-ink-2);
+  --color-lp-ink-3: var(--lp-ink-3);
+  --color-lp-heading: var(--lp-heading);
+  --color-lp-accent: var(--lp-accent);
+  --color-lp-structure: var(--lp-structure);
+  --color-lp-structure-line: var(--lp-structure-line);
+  --color-lp-on-structure: var(--lp-on-structure);
+  --color-lp-on-structure-2: var(--lp-on-structure-2);
+  --color-lp-soft: var(--lp-soft);
+  --color-lp-soft-ink: var(--lp-soft-ink);
+
+  --radius-lp-control: var(--lp-radius-control);
+  --radius-lp-container: var(--lp-radius-container);
+}
 @import "tw-animate-css";
 
 /* Light theme only. The variant is pinned to a `.dark` class that is never
@@ -58,7 +84,9 @@
      canvas #F8FAFC. Steps 0–400 are SURFACES, BORDERS and DECORATIVE marks:
      never text. Steps 500–900 are TEXT, each >= 4.5:1 on white and canvas.
      (On the panel tint #F1F5F9 use 600 or darker for small text: 500 is 4.34.) */
-  --paper:       #F8FAFC;    /* canvas */
+  --paper:       #FFFFFF;    /* canvas: the work area is white; the sidebar rail carries the tint */
+  --rail:        #EEF2F7;    /* sidebar rail: app chrome, set apart from the white work area */
+  --rail-hover:  #E2E8F0;    /* row hover on the rail */
   --paper-elev:  #FFFFFF;    /* surface: panels, popovers, inputs */
   --panel:       #F1F5F9;    /* panel tint: table header, selected row, inset */
   --ink-0:   #FFFFFF;        /* surface */
@@ -123,12 +151,12 @@
        text-3xl  24  KPI values (600, tabular)
        text-4xl  32  the one hero KPI on a page
      One scale: 12 / 14 / 16 / 20 / 24 / 32.                            */
-  --text-xs:   0.75rem;    --text-xs--line-height:   1.5;
+  --text-xs:   0.8125rem;  --text-xs--line-height:   1.45;  /* 13px: notes and meta stay readable */
   --text-sm:   0.875rem;   --text-sm--line-height:   1.5;
-  --text-base: 0.875rem;   --text-base--line-height: 1.55;
+  --text-base: 0.9375rem;  --text-base--line-height: 1.55;  /* 15px: titles and reading text sit above 14px UI text */
   --text-lg:   1rem;       --text-lg--line-height:   1.5;
   --text-xl:   1.25rem;    --text-xl--line-height:   1.4;
-  --text-2xl:  1.25rem;    --text-2xl--line-height:  1.4;
+  --text-2xl:  1.375rem;   --text-2xl--line-height:  1.35;
   --text-3xl:  1.5rem;     --text-3xl--line-height:  1.25;
   --text-4xl:  2rem;       --text-4xl--line-height:  1.15;
   --tracking-tight:  -0.02em;
@@ -195,13 +223,13 @@
   /* Sidebar: light. White rail with an ink-200 edge; items ink-700
      (10.35:1 on white), hover ink-50; the active item is the panel tint
      with accent-700 text (6.6:1 on #F1F5F9): subtle, not a big highlight. */
-  --sidebar: var(--paper-elev);
+  --sidebar: var(--rail);
   --sidebar-foreground: var(--ink-700);
-  --sidebar-primary: var(--panel);
+  --sidebar-primary: var(--paper-elev);  /* the active item: a raised white chip on the rail */
   --sidebar-primary-foreground: var(--brand-primary-700);
-  --sidebar-accent: var(--ink-100);
+  --sidebar-accent: var(--rail-hover);
   --sidebar-accent-foreground: var(--ink-900);
-  --sidebar-border: var(--ink-200);
+  --sidebar-border: var(--ink-300);
   --sidebar-ring: var(--brand-primary-600);
 }
 
@@ -551,7 +579,7 @@
      text-display     40/48  a single hero number
      text-display-lg  56/64  marketing / empty-canvas hero only            */
 @theme {
-  --text-caption: 0.75rem;     --text-caption--line-height: 1rem;
+  --text-caption: 0.8125rem;   --text-caption--line-height: 1.125rem;
   --text-body: 0.875rem;       --text-body--line-height: 1.25rem;
   --text-body-lg: 1rem;        --text-body-lg--line-height: 1.5rem;
   --text-title-sm: 1.25rem;    --text-title-sm--line-height: 1.75rem;
@@ -830,12 +858,11 @@ html { scroll-behavior: smooth; }
 .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--ink-300); border: 0; border-radius: 3px; }
 .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-400); }
 
-/* Page container: one max-width and gutter for every app page
-   (UI_SPEC section 3.6: 16px on mobile, 24px from md). */
+/* Page container: one gutter for every app page (UI_SPEC section 3.6:
+   16px on mobile, 24px from md). No max-width: pages run from the
+   sidebar to the window's right edge. */
 .app-container {
   width: 100%;
-  max-width: 1480px;
-  margin-inline: auto;
   padding-inline: 16px;
 }
 @media (min-width: 768px)  { .app-container { padding-inline: 24px; } }
@@ -858,6 +885,7 @@ html { scroll-behavior: smooth; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
 /* Indeterminate progress bar: page load and document processing. */
+@keyframes drawer-in { from { opacity: 0; transform: translateX(16px); } }
 @keyframes indeterminate {
   0%   { transform: translateX(-120%); }
   100% { transform: translateX(360%); }

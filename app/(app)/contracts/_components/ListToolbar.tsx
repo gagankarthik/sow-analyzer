@@ -38,6 +38,10 @@ export type ListToolbarProps = {
   columns: ColumnSetting[];
   onClear: () => void;
   exports: { csv: () => void; excel: () => void; busy: boolean } | null;
+  /** Quick filters kept by the page rather than the saved view (a date range). */
+  extraFilters?: React.ReactNode;
+  /** How many of those are set, for the clear button. */
+  extraActive?: number;
 };
 
 export function ListToolbar(p: ListToolbarProps) {
@@ -47,7 +51,7 @@ export function ListToolbar(p: ListToolbarProps) {
   const setHidden = (id: string, hide: boolean) =>
     p.onSettings({ columns: { ...p.settings.columns, hidden: hide ? [...new Set([...p.settings.columns.hidden, id])] : p.settings.columns.hidden.filter((x) => x !== id) } });
   const setOrder = (order: string[]) => p.onSettings({ columns: { ...p.settings.columns, order } });
-  const active = countActiveRules(filters) + (p.q.trim() ? 1 : 0);
+  const active = countActiveRules(filters) + (p.q.trim() ? 1 : 0) + (p.extraActive ?? 0);
 
   const columnSettings = (
     <ColumnSettings
@@ -74,6 +78,7 @@ export function ListToolbar(p: ListToolbarProps) {
         <QuickOwner filters={filters} onChange={setFilters} owners={p.owners} me={p.me} />
         <QuickChoice field="agreementType" label="Type" filters={filters} onChange={setFilters} />
         <QuickChoice field="risk" label="Risk" filters={filters} onChange={setFilters} />
+        {p.extraFilters}
       </Toolbar.Filters>
       <Toolbar.More>
         <AdvancedFilters value={filters} onChange={setFilters} suggestions={p.suggestions} />

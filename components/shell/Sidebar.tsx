@@ -229,7 +229,7 @@ export function Sidebar({
           {/* The organization's edition, so a switch is visible on every page. */}
           <span
             title={`${EDITION_LABEL[edition]} edition`}
-            className="ml-2 truncate text-xs text-[var(--ink-500)] lg:[[data-sidebar=collapsed]_&]:hidden"
+            className="ml-2 truncate text-xs text-[var(--ink-600)] lg:[[data-sidebar=collapsed]_&]:hidden"
           >
             {EDITION_LABEL[edition]}
           </span>
@@ -256,7 +256,7 @@ export function Sidebar({
                   <div key={g.label} role="group" aria-labelledby={`nav-group-${g.label}`}>
                     <p
                       id={`nav-group-${g.label}`}
-                      className="px-2 pb-1 pt-1 text-xs font-medium text-[var(--ink-500)] lg:[[data-sidebar=collapsed]_&]:sr-only"
+                      className="px-2 pb-1 pt-1 text-xs font-medium text-[var(--ink-600)] lg:[[data-sidebar=collapsed]_&]:sr-only"
                     >
                       {g.label}
                     </p>
@@ -340,7 +340,7 @@ function NavRow({
     <>
       <Icon size={16} aria-hidden className="shrink-0" />
       <span className="min-w-0 flex-1 truncate text-left lg:[[data-sidebar=collapsed]_&]:sr-only">{item.label}</span>
-      {item.drill && <ChevronRight size={12} aria-hidden className="shrink-0 text-[var(--ink-400)] lg:[[data-sidebar=collapsed]_&]:hidden" />}
+      {item.drill && <ChevronRight size={12} aria-hidden className="shrink-0 text-[var(--ink-500)] lg:[[data-sidebar=collapsed]_&]:hidden" />}
     </>
   );
 
@@ -349,8 +349,8 @@ function NavRow({
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
     "lg:[[data-sidebar=collapsed]_&]:mx-auto lg:[[data-sidebar=collapsed]_&]:w-8 lg:[[data-sidebar=collapsed]_&]:justify-center lg:[[data-sidebar=collapsed]_&]:px-0",
     active
-      ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
-      : "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-[var(--ink-50)] [&_svg]:text-[var(--ink-500)] hover:[&_svg]:text-[var(--ink-700)]",
+      ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium shadow-[0_1px_2px_rgba(15,23,42,0.08)] ring-1 ring-[var(--ink-200)]"
+      : "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent [&_svg]:text-[var(--ink-600)] hover:[&_svg]:text-[var(--ink-800)]",
   );
 
   const shortcut = item.href ? shortcutForHref(item.href) : undefined;

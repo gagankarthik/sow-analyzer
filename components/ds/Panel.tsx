@@ -1,6 +1,7 @@
-// Panels (UI_SPEC section 3): white, 1px border, 8px radius, no shadow, a
-// 44px header with an H3 (14px/600) and a right-aligned actions slot, then a
-// 16px body. No nested cards inside a panel: separate rows with dividers.
+// Panels: one bordered card per section (white, 1px border, 8px radius, no
+// shadow), a 44px header with an H3 (14px/600) and a right-aligned actions
+// slot, then a 16px body. One card per section, never per metric or row:
+// inside a panel, separate rows with dividers.
 //
 // Two explicit variants instead of a `flush` boolean:
 //   <Panel>      padded body (text, charts, forms)
@@ -43,12 +44,12 @@ function PanelFrame({
       id={id}
       aria-labelledby={headingId}
       className={cn(
-        "flex min-w-0 scroll-mt-20 flex-col rounded-container border border-border-default bg-surface-raised",
+        "flex min-w-0 scroll-mt-20 flex-col overflow-hidden rounded-container border border-border-default bg-surface-raised",
         className,
       )}
       {...props}
     >
-      <header className="flex min-h-11 min-w-0 items-center justify-between gap-3 border-b border-border-default px-4 py-2">
+      <header className="flex min-h-11 min-w-0 items-center justify-between gap-3 border-b border-border-subtle px-4 py-2">
         <div className="flex min-w-0 items-baseline gap-2">
           <Heading id={headingId} className="min-w-0 truncate text-base font-semibold text-fg-primary">
             {title}

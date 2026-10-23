@@ -41,7 +41,7 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "relative min-w-0 rounded-xl border border-border bg-card p-4 shadow-xs md:p-5",
+        "relative min-w-0 rounded-container border border-border-default bg-surface-raised p-4 md:p-5",
         className,
       )}
     >

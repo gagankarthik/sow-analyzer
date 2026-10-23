@@ -34,15 +34,12 @@ import { ROLE_META } from "@/components/team/roles";
 import { displayTitle } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ApiClassification, ApiDocument, Lifecycle, RiskLevel } from "@/lib/types";
+import { StatusPill as DsStatusPill } from "@/components/ds/StatusPill";
+import { RecordDrawer } from "@/components/ds/RecordDrawer";
+import { KeyValueList } from "@/components/ds/KeyValueList";
 // (ApiClassification is the type of the shared classification cache entries.)
 
 const RISK_RANK: Record<RiskLevel, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-const RISK_PILL: Record<RiskLevel, string> = {
-  critical: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  high: "bg-[var(--warning-soft)] text-[var(--warning-fg)]",
-  medium: "bg-[var(--ink-100)] text-[var(--ink-600)]",
-  low: "bg-[var(--success-soft)] text-[var(--success-fg)]",
-};
 const RISK_HEX: Record<RiskLevel, string> = { critical: "var(--danger)", high: "var(--warning)", medium: "var(--ink-400)", low: "var(--success)" };
 const DAY = 86_400_000;
 
@@ -194,6 +191,8 @@ function Projects() {
   });
   const [docType, setDocType] = useState<string[]>([]);
   const [columnOrder, setColumnOrder] = useState<string[] | undefined>(undefined);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
 
   const byId = useMemo(() => new Map(docs.map((d) => [d.docId, d])), [docs]);
 
@@ -367,8 +366,11 @@ function Projects() {
             columns={columns}
             rows={filtered}
             getRowId={(a) => a.project.id}
-            getRowHref={(a) => `/projects/${a.project.id}`}
-            getRowLabel={(a) => `Open ${a.project.name}`}
+            selection={{ selected, onChange: setSelected }}
+            exportName={byEdition("projects", "engagements")}
+            onRowClick={(a) => setPreviewId(a.project.id)}
+            activeRowId={previewId}
+            getRowLabel={(a) => `Preview ${a.project.name}`}
             defaultSort={{ columnId: "risk", direction: "asc" }}
             pageSize={50}
             columnsKey="projects-table"
@@ -381,7 +383,38 @@ function Projects() {
           />
         )}
       </div>
+      <ProjectDrawer agg={previewId ? aggregates.find((a) => a.project.id === previewId) ?? null : null} onClose={() => setPreviewId(null)} />
     </>
+  );
+}
+
+/** The row's slide-over: status, risk, documents, value and the next key date. */
+function ProjectDrawer({ agg: a, onClose }: { agg: Agg | null; onClose: () => void }) {
+  if (!a) return null;
+  return (
+    <RecordDrawer
+      title={displayTitle(a.project.name)}
+      subtitle={a.project.client || undefined}
+      status={<><StatusPill lifecycle={a.lifecycle} hideEmpty />{a.overallRisk && <RiskPill level={a.overallRisk} />}</>}
+      href={`/projects/${a.project.id}`}
+      openLabel={byEdition("Open project", "Open engagement")}
+      onClose={onClose}
+    >
+      <KeyValueList
+        columns={2}
+        items={[
+          { label: "Documents", value: a.docCount },
+          { label: "Clauses", value: a.clauseCount },
+          { label: "High-risk clauses", value: a.total === 0 ? null : a.highRisk },
+          { label: "Value", value: a.value > 0 ? fmtMoney(a.value, a.currency) : null },
+          {
+            label: a.dateKind === "renewal" ? "Renews" : "Term ends",
+            value: a.expired ? "Expired" : a.daysToDate === null ? null : a.daysToDate === 0 ? "Today" : `In ${a.daysToDate} days`,
+          },
+          { label: "Analyzing", value: a.processing > 0 ? `${a.processing} document${a.processing === 1 ? "" : "s"}` : "None" },
+        ]}
+      />
+    </RecordDrawer>
   );
 }
 
@@ -393,19 +426,24 @@ function Dash() {
 
 /** Worst clause risk level in the project (not a blended score). */
 function RiskPill({ level }: { level: RiskLevel }) {
-  return <span title={byEdition("Highest clause risk level found in this project", "Highest clause risk level found in this engagement")} className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${RISK_PILL[level]}`}>{level}</span>;
+  return (
+    <DsStatusPill
+      size="sm"
+      tone={RISK_TONE[level]}
+      className="capitalize"
+      title={byEdition("Highest clause risk level found in this project", "Highest clause risk level found in this engagement")}
+    >
+      {level}
+    </DsStatusPill>
+  );
 }
+
+const RISK_TONE: Record<RiskLevel, "blocked" | "caution" | "unknown"> = { critical: "blocked", high: "caution", medium: "unknown", low: "unknown" };
 
 function StatusPill({ lifecycle, hideEmpty = false }: { lifecycle: Lifecycle | "—"; hideEmpty?: boolean }) {
   if (lifecycle === "—") return hideEmpty ? null : <Dash />;
-  const meta = STATUS_META[lifecycle] ?? { label: lifecycle, Icon: Check };
-  const Icon = meta.Icon;
-  const danger = lifecycle === "expired";
-  return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-0.5 text-xs font-medium ${danger ? "border-[var(--danger)]/30 bg-[var(--danger-soft)] text-[var(--danger)]" : "border-border bg-[var(--panel)] text-[var(--ink-700)]"}`}>
-      <Icon size={12} />{meta.label}
-    </span>
-  );
+  const meta = STATUS_META[lifecycle] ?? { label: lifecycle };
+  return <DsStatusPill size="sm" tone={lifecycle === "expired" ? "blocked" : "unknown"}>{meta.label}</DsStatusPill>;
 }
 
 function SeverityBar({ rc, total }: { rc: Agg["rc"]; total: number }) {
@@ -450,11 +488,7 @@ function RenewalCell({ expired, days, kind }: { expired: boolean; days: number |
 function AttentionTag({ reason, risk, expired, failed }: { reason: string | null; risk: RiskLevel | null; expired: boolean; failed: boolean }) {
   if (!reason) return <Dash />;
   const danger = failed || expired || risk === "critical" || risk === "high";
-  return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${danger ? "bg-[var(--danger-soft)] text-[var(--danger)]" : "bg-[var(--warning-soft)] text-[var(--warning-fg)]"}`}>
-      <AlertTriangle size={12} />{reason}
-    </span>
-  );
+  return <DsStatusPill size="sm" tone={danger ? "blocked" : "caution"}>{reason}</DsStatusPill>;
 }
 
 /* ── Grid card (toggle) ───────────────────────────────────────── */

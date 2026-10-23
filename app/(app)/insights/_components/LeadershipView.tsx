@@ -5,11 +5,11 @@
 // time and money be saved. Everything is a count or sum over the live
 // contracts, obligations and trends.
 
-import { BarMeter } from "@/components/ds";
 import { byEdition } from "@/lib/edition-runtime";
 import { useMemo } from "react";
 import Link from "next/link";
 import { LeadershipSkeleton } from "./InsightsSkeletons";
+import { TeamWorkloadTable } from "./TeamWorkloadTable";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/govern/labels";
 import { formatCompact, valueSummary } from "@/lib/govern/metrics";
@@ -18,13 +18,17 @@ import { findOpportunities } from "@/lib/govern/opportunities";
 import {
   obligationsByMonth, riskExposure, speed, topCounterparties, valueByType, workload, type ValueRow,
 } from "@/lib/govern/leadership";
-import { cn } from "@/lib/utils";
 import { KpiStrip, OpportunitiesPanel, Panel, type Kpi } from "../../home/_components/HomeSections";
 
 function mainCurrency(...totals: { currency: string; amount: number }[][]): string | null {
   const by = new Map<string, number>();
   for (const list of totals) for (const t of list) by.set(t.currency, (by.get(t.currency) ?? 0) + t.amount);
   return [...by.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
+/** Relative change from `before` to `recent` (0.25 = +25%); null without a base to compare. */
+function relative(recent: number | null, before: number | null): number | null {
+  return recent === null || before === null || before === 0 ? null : (recent - before) / before;
 }
 
 function change(recent: number | null, before: number | null, unit: string, lowerIsBetter = false): { text: string; tone: Kpi["tone"] } {
@@ -81,12 +85,27 @@ export function LeadershipView() {
     );
   }
 
+  const periods = trendsQ.data?.periods ?? [];
   const signedChange = change(sp.signedRecent, sp.signedBefore, "");
   const cycleChange = change(sp.cycleRecent, sp.cycleBefore, " days", true);
   const due90 = v.months.reduce((s, m) => s + m.count, 0);
   const kpis: Kpi[] = [
-    { label: "Signed, last 3 months", value: trendsQ.data ? String(sp.signedRecent) : "—", sub: trendsQ.data ? signedChange.text : "Trends unavailable", tone: signedChange.tone, href: "/reports/trends" },
-    { label: "Days to signature", value: sp.cycleRecent === null ? "—" : String(sp.cycleRecent), sub: sp.cycleRecent === null ? "Nothing signed recently" : cycleChange.text, tone: cycleChange.tone, href: "/reports/trends" },
+    {
+      label: "Signed, last 3 months",
+      value: trendsQ.data ? String(sp.signedRecent) : "—",
+      sub: trendsQ.data ? signedChange.text : "Trends unavailable",
+      href: "/reports/trends",
+      delta: trendsQ.data ? { value: relative(sp.signedRecent, sp.signedBefore), goodWhen: "up", period: "vs prior 3 mo" } : undefined,
+      trend: periods.map((p) => p.signed),
+    },
+    {
+      label: "Days to signature",
+      value: sp.cycleRecent === null ? "—" : String(sp.cycleRecent),
+      sub: sp.cycleRecent === null ? "Nothing signed recently" : cycleChange.text,
+      href: "/reports/trends",
+      delta: sp.cycleRecent === null ? undefined : { value: relative(sp.cycleRecent, sp.cycleBefore), goodWhen: "down", period: "vs prior 3 mo" },
+      trend: periods.map((p) => p.avgCycleDays),
+    },
     { label: "Pipeline value", value: formatCompact(v.pipeline, v.currency), sub: v.heldUp > 0 ? `${formatCompact(v.heldUp, v.currency)} held up by delays` : "Nothing held up", tone: v.heldUp > 0 ? "warning" : "neutral", href: "/reports/value" },
     { label: "Obligations, next 3 months", value: obligationsQ.data ? String(due90) : "—", sub: obligationsQ.isError ? "Obligations unavailable" : byEdition("Reports, payments and term ends", "Deliverables, payments and term ends"), href: "/obligations?view=90" },
   ];
@@ -95,7 +114,7 @@ export function LeadershipView() {
     <div className="flex flex-col gap-6">
       <KpiStrip items={kpis} />
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <Panel id="value-by-type" className="lg:col-span-7" title="Value by agreement type" meta={v.currency ?? undefined} action={{ href: "/reports/value", label: "Report" }}>
           <ValueBars rows={v.byType} currency={v.currency} empty="No contract has a value yet." />
         </Panel>
@@ -123,51 +142,10 @@ export function LeadershipView() {
       </div>
 
       <Panel id="team" title="Team workload" meta={v.team.length || undefined} action={{ href: "/settings/team", label: "Team" }} flush>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-sm">
-            <thead className="border-b border-border bg-[var(--panel)] text-left text-xs text-[var(--ink-600)]">
-              <tr className="h-[38px]">
-                <th scope="col" className="px-4 font-medium">Reviewer</th>
-                <th scope="col" className="px-3 text-right font-medium">Open</th>
-                <th scope="col" className="px-3 text-right font-medium">Overdue</th>
-                <th scope="col" className="px-3 text-right font-medium">Running late</th>
-                <th scope="col" className="px-3 text-right font-medium">Longest wait</th>
-                <th scope="col" className="px-4 text-right font-medium">Value held</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {v.team.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-5 text-[var(--ink-600)]">No open contracts right now.</td></tr>
-              ) : v.team.map((r) => (
-                <tr key={r.key} className="hover:bg-[var(--ink-50)]">
-                  <th scope="row" className="px-4 py-2 text-left font-normal">
-                    <span className={cn("block font-medium", r.key === "__unassigned" ? "text-[var(--warning-fg)]" : "text-foreground")}>{r.name}</span>
-                    {r.email && r.email !== r.name && <span className="text-xs text-[var(--ink-600)]">{r.email}</span>}
-                  </th>
-                  <td className="px-3 py-2 text-right font-semibold tabular-nums">
-                    {r.open}
-                    {/* The mix at a glance: overdue, late and on time in one bar. */}
-                    {r.open > 0 && (
-                      <BarMeter className="ml-auto mt-1.5 w-20" size="sm" label={`${r.name}: open contracts by time against target`}
-                        segments={[
-                          { key: "o", label: "Overdue", value: r.overdue, tone: "blocked" },
-                          { key: "l", label: "Running late", value: r.late, tone: "caution" },
-                          { key: "t", label: "On time", value: Math.max(0, r.open - r.overdue - r.late), tone: "unknown" },
-                        ]} />
-                    )}
-                  </td>
-                  <td className={cn("px-3 py-2 text-right tabular-nums", r.overdue > 0 ? "font-semibold text-[var(--danger-fg)]" : "text-[var(--ink-600)]")}>{r.overdue}</td>
-                  <td className={cn("px-3 py-2 text-right tabular-nums", r.late > 0 ? "font-semibold text-[var(--warning-fg)]" : "text-[var(--ink-600)]")}>{r.late}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-[var(--ink-700)]">{plural(r.longestDays, "day")}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-[var(--ink-700)]">{r.value === null ? "—" : formatCompact(r.value, v.currency)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TeamWorkloadTable rows={v.team} currency={v.currency} />
       </Panel>
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Panel id="risk" title="Risk in open contracts" answer={v.risk.unacceptable + v.risk.withBlockers === 0
           ? "No open contract has an unacceptable term or an open blocker."
           : `${plural(v.risk.unacceptable, "contract")} with an unacceptable term, ${plural(v.risk.withBlockers, "contract")} with other open items.`}
@@ -184,7 +162,7 @@ export function LeadershipView() {
                     <span className="truncate text-[var(--ink-700)]">{r.label}</span>
                     <span className="flex h-2.5 overflow-hidden rounded-full bg-[var(--ink-100)]" role="img" aria-label={`${r.unacceptable} unacceptable, ${r.open} with open items`}>
                       <span className="h-full bg-[var(--danger)]" style={{ width: `${(r.unacceptable / max) * 100}%` }} />
-                      <span className="h-full bg-[var(--warning)]" style={{ width: `${(r.open / max) * 100}%` }} />
+                      <span className="h-full bg-[var(--ink-400)]" style={{ width: `${(r.open / max) * 100}%` }} />
                     </span>
                     <span className="text-right font-semibold tabular-nums">{total}</span>
                   </li>
@@ -192,7 +170,7 @@ export function LeadershipView() {
               })}
               <li className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-xs text-[var(--ink-600)]">
                 <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[var(--danger)]" aria-hidden />Unacceptable term</span>
-                <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[var(--warning)]" aria-hidden />Other open items</span>
+                <span className="inline-flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[var(--ink-400)]" aria-hidden />Other open items</span>
               </li>
             </ul>
           )}

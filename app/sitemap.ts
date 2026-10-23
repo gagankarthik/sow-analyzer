@@ -3,6 +3,8 @@ import { absoluteUrl } from "@/lib/seo";
 import { LEGAL, LEGAL_UPDATED_ISO } from "@/app/legal/documents";
 
 // Public pages only. Signed-in and auth routes are noindex and left out.
+// Bump SITE_UPDATED_ISO when the marketing pages change materially.
+const SITE_UPDATED_ISO = "2026-10-23";
 const PAGES: { path: string; priority: number }[] = [
   { path: "/", priority: 1 },
   { path: "/product", priority: 0.9 },
@@ -17,6 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     ...PAGES.map(({ path, priority }) => ({
       url: absoluteUrl(path),
+      lastModified: SITE_UPDATED_ISO,
       changeFrequency: "monthly" as const,
       priority,
     })),

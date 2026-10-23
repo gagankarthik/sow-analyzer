@@ -31,14 +31,14 @@ export function LeadershipSkeleton() {
   return (
     <SkeletonRegion label="leadership insights" className="flex flex-col gap-6">
       <SummaryTilesSkeleton labels={LEADERSHIP_TILES} />
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <PanelSkeleton title="Value by agreement type" className="lg:col-span-7" padded>
           <BarRows rows={5} />
         </PanelSkeleton>
         <PanelSkeleton title="Largest counterparties" className="lg:col-span-5" row="key-value" rows={5} actions={false} />
       </div>
       <PanelSkeleton title="Team workload" rows={4} />
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <PanelSkeleton title="Risk in open contracts" padded actions={false}>
           <BarRows rows={4} />
         </PanelSkeleton>

@@ -173,7 +173,7 @@ function Home() {
     body = (
       <>
         {staleError && (
-          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div role="alert" className="flex flex-col gap-3 rounded-md border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="flex items-start gap-2 text-sm text-foreground">
               <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning-fg)]" aria-hidden />
               Couldn&apos;t refresh. These are the figures loaded earlier.
@@ -218,7 +218,7 @@ function Home() {
         <KpiStrip items={kpis} />
 
         {setupPending && (
-          <div role="status" className="flex flex-col gap-2 rounded-xl border border-border bg-card px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div role="status" className="flex flex-col gap-2 rounded-md border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="flex min-w-0 items-center gap-2 text-sm text-foreground">
               <AlertTriangle size={16} className="shrink-0 text-[var(--warning-fg)]" aria-hidden />
               Organization setup isn&apos;t finished.
@@ -232,30 +232,26 @@ function Home() {
             </Link>
           </div>
         )}
-        {view.attention.length === 0 && <AllClear />}
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-          <div className="flex min-w-0 flex-col gap-6 lg:col-span-8">
-            {view.attention.length > 0 && <AttentionPanel contracts={view.attention} />}
-            <OpportunitiesPanel items={opportunities} />
-            <WaitingPanel waiting={view.waiting} contracts={contracts} />
-            <StepsPanel stages={view.stages} targets={targets} redAfter={redAfter} />
-          </div>
-          <div className="flex min-w-0 flex-col gap-6 lg:col-span-4">
-            <ViewsCard />
-            <MoneyPanel
-              summary={view.summary}
-              unvalued={view.unvalued}
-              primary={view.primary}
-              captureGaps={view.captureGaps}
-            />
-            <LongestPanel longest={view.longest} />
-            {/* Trends have their own page; home keeps to today's work. */}
-            <Link href="/reports/trends" className={cn(TEXT_LINK, "w-fit")}>
-              Throughput and cycle-time trends
-              <ArrowRight size={12} aria-hidden />
-            </Link>
-          </div>
+        {/* The overview reads in bands, top to bottom: your work, then where
+            things stand, then where the queue waits, then the steps. Every
+            section in a band shares its row height, so columns never end
+            ragged. */}
+        {view.attention.length > 0 ? <AttentionPanel contracts={view.attention} /> : <AllClear />}
+        <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2 xl:grid-cols-3">
+          <ViewsCard />
+          <MoneyPanel
+            summary={view.summary}
+            unvalued={view.unvalued}
+            primary={view.primary}
+            captureGaps={view.captureGaps}
+          />
+          <OpportunitiesPanel items={opportunities} className="md:col-span-2 xl:col-span-1" />
         </div>
+        <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">
+          <WaitingPanel waiting={view.waiting} contracts={contracts} />
+          <LongestPanel longest={view.longest} />
+        </div>
+        <StepsPanel stages={view.stages} targets={targets} redAfter={redAfter} />
           </>
         )}
       </>

@@ -1,0 +1,85 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { ChevronsRight, Maximize2 } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
+
+/* A slide-over inspector for one row of a list: a quick look without
+   leaving the page. The same frame as the contract preview: fixed to the
+   right under the top bar, Escape or the close button returns to the list,
+   and "Open" goes to the record's own page. The caller supplies the body
+   (key facts, status). */
+
+export function RecordDrawer({
+  title,
+  subtitle,
+  status,
+  href,
+  openLabel,
+  onClose,
+  children,
+}: {
+  title: string;
+  subtitle?: React.ReactNode;
+  /** Status badges under the title. */
+  status?: React.ReactNode;
+  /** The record's full page. */
+  href: string;
+  /** "Open document". */
+  openLabel: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const panelRef = React.useRef<HTMLElement>(null);
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // Move focus into the panel each time it opens on a new record.
+  React.useEffect(() => {
+    panelRef.current?.focus({ preventScroll: true });
+  }, [href]);
+
+  return (
+    <aside
+      ref={panelRef}
+      tabIndex={-1}
+      aria-label={`Preview: ${title}`}
+      className="fixed inset-y-0 right-0 z-40 flex w-full max-w-[30rem] flex-col border-l border-border bg-background shadow-[0_0_48px_-16px_rgba(10,13,20,0.28)] outline-none motion-safe:animate-[drawer-in_200ms_ease-out] lg:top-[52px]"
+    >
+      <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-4 py-2.5">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close preview"
+            className="inline-flex size-9 items-center justify-center rounded-md text-[var(--ink-600)] hover:bg-[var(--ink-100)] hover:text-foreground"
+          >
+            <ChevronsRight size={16} aria-hidden />
+          </button>
+          <Link
+            href={href}
+            aria-label={openLabel}
+            className="inline-flex size-9 items-center justify-center rounded-md text-[var(--ink-600)] hover:bg-[var(--ink-100)] hover:text-foreground"
+          >
+            <Maximize2 size={16} aria-hidden />
+          </Link>
+        </div>
+        <Button asChild size="sm">
+          <Link href={href}>{openLabel}</Link>
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-10 pt-5">
+        <h2 className="text-xl font-semibold leading-snug tracking-tight text-foreground">{title}</h2>
+        {subtitle && <p className="mt-1.5 text-sm text-[var(--ink-600)]">{subtitle}</p>}
+        {status && <div className="mt-3 flex flex-wrap gap-1.5">{status}</div>}
+        <div className="mt-8">{children}</div>
+      </div>
+    </aside>
+  );
+}

@@ -26,7 +26,10 @@ import { DUE_SOON_DAYS, displayTitle, parseDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { documentKeyDates, formatKeyDate, isoDayToMs, portfolioDates, type DerivedKeyDate, type KeyDateKind } from "@/lib/key-dates";
 import type { ApiDocument, DocType } from "@/lib/types";
-import { CalendarClock, Repeat, XCircle, CheckCircle2, RefreshCw, Clock, Info } from "@/components/ui/icons";
+import { Repeat, XCircle, CheckCircle2, RefreshCw, Info } from "@/components/ui/icons";
+import { StatusPill as DsStatusPill } from "@/components/ds/StatusPill";
+import { RecordDrawer } from "@/components/ds/RecordDrawer";
+import { KeyValueList } from "@/components/ds/KeyValueList";
 
 type ViewId = "all" | "renewal" | "upcoming" | "passed" | "expired";
 const VIEW_IDS: ViewId[] = ["all", "renewal", "upcoming", "passed", "expired"];
@@ -228,6 +231,8 @@ function Renewals() {
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [windowFilter, setWindowFilter] = useState<string[]>([]);
   const [columnOrder, setColumnOrder] = useState<string[] | undefined>(undefined);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
   const inStatus = useMemo(() => items.filter((i) => statusFilter === "all" || i.kind === statusFilter), [items, statusFilter]);
   const availableTypes = useMemo(() => [...new Set(inStatus.map((i) => i.doc.docType))].sort(), [inStatus]);
   const visibleItems = useMemo(() => {
@@ -343,8 +348,11 @@ function Renewals() {
           columns={columns}
           rows={visibleItems}
           getRowId={(i) => i.key}
-          getRowHref={(i) => i.href}
-          getRowLabel={(i) => `Open ${i.doc.title || "document"}`}
+          selection={{ selected, onChange: setSelected }}
+          exportName="renewals"
+          onRowClick={(i) => setPreviewKey(i.key)}
+          activeRowId={previewKey}
+          getRowLabel={(i) => `Preview ${i.doc.title || "document"}`}
           defaultSort={{ columnId: "date", direction: "asc" }}
           groupBy={{ key: groupOf, label: groupLabel, order: groupOrder }}
           pageSize={50}
@@ -385,7 +393,34 @@ function Renewals() {
           }
         />
       </div>
+      <RenewalDrawer item={previewKey ? visibleItems.find((i) => i.key === previewKey) ?? null : null} onClose={() => setPreviewKey(null)} />
     </>
+  );
+}
+
+/** The row's slide-over: the date, its status, how far away it is, the value. */
+function RenewalDrawer({ item: i, onClose }: { item: Item | null; onClose: () => void }) {
+  if (!i) return null;
+  return (
+    <RecordDrawer
+      title={displayTitle(i.doc.title) || "Untitled"}
+      subtitle={docTypeShort(i.doc.docType)}
+      status={<KindMark kind={i.kind} />}
+      href={i.href}
+      openLabel="Open timeline"
+      onClose={onClose}
+    >
+      <KeyValueList
+        columns={2}
+        items={[
+          { label: i.dateLabel, value: i.date !== null ? i.dateText ?? DATE.format(new Date(i.date)) : null },
+          { label: "When", value: i.days === null ? null : i.days < 0 ? `${Math.abs(i.days)} days ago` : daysLabel(i.days) },
+          { label: "Auto-renews", value: i.autoRenews ? "Yes" : "No" },
+          { label: "Value", value: i.value !== null && i.value > 0 ? fmtMoney(i.value, i.doc.currency) : null },
+          ...(i.detail ? [{ label: "Detail", value: i.detail }] : []),
+        ]}
+      />
+    </RecordDrawer>
   );
 }
 
@@ -397,21 +432,16 @@ function groupLabel(key: string): string {
 }
 
 const KIND_MARK = {
-  expired: { Icon: XCircle, cls: "text-[var(--danger-fg)]", label: "Expired" },
-  renewal: { Icon: Repeat, cls: "text-[var(--warning-fg)]", label: "Up for renewal" },
-  upcoming: { Icon: CalendarClock, cls: "text-[var(--ink-700)]", label: "Upcoming" },
-  passed: { Icon: Clock, cls: "text-[var(--warning-fg)]", label: "Due date passed" },
+  expired: { tone: "blocked", label: "Expired" },
+  renewal: { tone: "caution", label: "Up for renewal" },
+  upcoming: { tone: "unknown", label: "Upcoming" },
+  passed: { tone: "caution", label: "Due date passed" },
 } as const;
 
-/** Status as icon + word, coloured only when it needs attention. */
+/** Status as a dot and a word, coloured only when it needs attention. */
 function KindMark({ kind }: { kind: Item["kind"] }) {
   const m = KIND_MARK[kind];
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium", m.cls)}>
-      <m.Icon size={12} aria-hidden />
-      {m.label}
-    </span>
-  );
+  return <DsStatusPill size="sm" tone={m.tone}>{m.label}</DsStatusPill>;
 }
 
 /** Documents analyzed before key-date extraction list fewer dates: say so,

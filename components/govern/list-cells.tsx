@@ -5,23 +5,24 @@
 
 import * as React from "react";
 import { Avatar } from "@/components/ds/Avatar";
-import { TONE_SOFT, TONE_TEXT, type Tone } from "@/components/ds/tone";
+import { TONE_DOT, TONE_SOFT, TONE_TEXT, type Tone } from "@/components/ds/tone";
 import { STAGE_LABEL } from "@/lib/govern/labels";
 import type { Contract, SlaStatus } from "@/lib/govern/types";
 import type { RiskLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** 22px tag, 12px text: risk, SLA, counts. */
+/** 22px tag, 12px text, a status dot: risk, SLA, counts. */
 export function ListTag({ tone = "unknown", dashed, className, children }: { tone?: Tone; dashed?: boolean; className?: string; children: React.ReactNode }) {
   return (
     <span
       className={cn(
-        "inline-flex h-[22px] max-w-full shrink-0 items-center rounded-md border px-2 text-[12px] leading-none whitespace-nowrap",
+        "inline-flex h-[22px] max-w-full shrink-0 items-center gap-1.5 rounded-md border px-2 text-[12px] leading-none whitespace-nowrap",
         TONE_SOFT[tone],
         dashed && "border-dashed bg-transparent text-[var(--ink-600)]",
         className,
       )}
     >
+      <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", dashed ? "bg-[var(--ink-400)]" : TONE_DOT[tone])} />
       <span className="truncate">{children}</span>
     </span>
   );
@@ -98,15 +99,36 @@ export function OwnerCell({ owner }: { owner: Contract["owner"] }) {
 }
 
 const SLA_TONE: Record<SlaStatus, Tone> = { on_track: "unknown", amber: "caution", red: "blocked", none: "unknown" };
+const SLA_FILL: Record<SlaStatus, string> = { on_track: "", amber: "fill-[var(--warning)]", red: "fill-[var(--danger)]", none: "" };
 const SLA_WORD: Record<SlaStatus, string> = { on_track: "On track", amber: "Due soon", red: "Overdue", none: "No target" };
 
-/** Days in the current step, in ink unless the step is running late. */
-export function DaysCell({ days, sla }: { days: number; sla: SlaStatus }) {
+/**
+ * Days in the current step, in ink unless the step is running late. With a
+ * target, a short bar beside the figure shows the time used against it
+ * (full at the target; late steps fill in their status colour).
+ */
+export function DaysCell({ days, sla, target }: { days: number; sla: SlaStatus; target?: number | null }) {
   const late = sla === "amber" || sla === "red";
+  const used = target && target > 0 ? Math.min(1, days / target) : null;
   return (
-    <span className={cn("tabular-nums", late ? cn(TONE_TEXT[SLA_TONE[sla]], "font-medium") : "text-[var(--ink-900)]")}>
-      {days}
-      {late && <span className="sr-only">, {SLA_WORD[sla].toLowerCase()}</span>}
+    <span className="inline-flex items-center justify-end gap-2">
+      {used !== null && (
+        <svg aria-hidden viewBox="0 0 40 4" className="h-1 w-10 shrink-0 overflow-hidden rounded-full">
+          <rect width="40" height="4" rx="2" className="fill-[var(--ink-100)]" />
+          <rect
+            width={Math.max(4, Math.round(used * 40))}
+            height="4"
+            rx="2"
+            className={late ? SLA_FILL[sla] : "fill-[var(--ink-400)]"}
+          />
+        </svg>
+      )}
+      <span className={cn("tabular-nums", late ? cn(TONE_TEXT[SLA_TONE[sla]], "font-medium") : "text-[var(--ink-900)]")}>
+        {days}
+        {target ? <span className="text-[var(--ink-500)]">/{target}</span> : null}
+        {late && <span className="sr-only">, {SLA_WORD[sla].toLowerCase()}</span>}
+        {target ? <span className="sr-only"> of a {target}-day target</span> : null}
+      </span>
     </span>
   );
 }

@@ -106,7 +106,7 @@ export default function NotificationsPage() {
 
       {/* A reading column: the list stays at a comfortable measure on wide screens. */}
       <div className="app-container app-page gap-3">
-        <div className="flex max-w-[880px] flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {(() => {
             const quick = (
               <>

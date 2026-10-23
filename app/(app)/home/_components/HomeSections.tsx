@@ -19,7 +19,8 @@ import {
 import type { Contract, Stage } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 import { ListPanel, Panel as DsPanel } from "@/components/ds/Panel";
-import { SummaryTiles } from "@/components/ds/KpiTile";
+import { SummaryTiles, type DeltaProps } from "@/components/ds/KpiTile";
+import { Sparkline } from "@/components/ds/charts/Sparkline";
 import {
   LegendDot, MoneySplitBar, SlaLegend, StageFlow, VALUE_FILL, WaitingBars, stageTable, waitingTable,
 } from "../../reports/_components/ReportCharts";
@@ -84,6 +85,10 @@ export type Kpi = {
   href: string;
   /** danger / warning: needs action; success: a change for the better. Neutral is quiet. */
   tone?: "neutral" | "danger" | "warning" | "success";
+  /** Change against the previous period, from real history only. */
+  delta?: DeltaProps;
+  /** The figure per period, oldest first, drawn as a sparkline. */
+  trend?: (number | null)[];
 };
 
 /** The summary row: the shared ds tiles, so every page's KPIs look the same. */
@@ -96,6 +101,8 @@ export function KpiStrip({ items }: { items: Kpi[] }) {
         footnote: k.sub,
         href: k.href,
         tone: k.tone && k.tone !== "neutral" ? k.tone : undefined,
+        delta: k.delta,
+        sparkline: k.trend ? <Sparkline values={k.trend} /> : undefined,
       }))}
     />
   );

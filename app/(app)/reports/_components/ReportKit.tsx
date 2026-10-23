@@ -150,7 +150,20 @@ export function StatTile({
   // Neutral by default: only a value that needs action (warning, danger)
   // is coloured; "brand" emphasis is no longer a colour.
   const t = tone === "warning" || tone === "danger" || tone === "success" ? tone : undefined;
-  return <KpiTile label={label} value={value} footnote={hint} tone={t} href={href} className={className} />;
+  return <KpiTile label={label} value={value} footnote={hint} tone={t} href={href} className={className} frame="cell" />;
+}
+
+/** The figures row: StatTiles as cells of one bordered card, divided by
+ *  hairlines, the same bar as every page's KPI summary. */
+export function StatBar({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <section aria-label={label} className={cn(
+      "grid min-w-0 grid-cols-2 overflow-hidden rounded-container border border-border-default bg-surface-raised lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none [&>*]:border-border-subtle [&>*:nth-child(even)]:border-l max-lg:[&>*:nth-child(n+3)]:border-t lg:[&>*:not(:first-child)]:border-l",
+      className,
+    )}>
+      {children}
+    </section>
+  );
 }
 
 /** A quiet text link with an arrow, used for "See all" and "Details". */

@@ -6,12 +6,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight } from "@/components/ui/icons";
 import { SOLUTION_SECTIONS, type ProductSectionId, type SolutionSectionId } from "@/components/landing/site-nav";
 import { useHashTab } from "@/components/landing/use-hash-tab";
-import { EASE_OUT, Reveal } from "@/components/home/Reveal";
-import { SonarLine } from "@/components/home/SonarLine";
+import { DURATION, EASE_OUT, EXIT, Reveal } from "@/components/home/Reveal";
 
-/* One queue, every office: the agreements waiting across the institution
-   in one table. Picking an office highlights its rows and says what that
-   office gets; the rest dim but stay, so the table never changes height.
+/* One queue, every office: a bar chart of the longest wait per office
+   against the target, then the agreements themselves in one table.
+   Each bar is the control: picking an office highlights its rows and says
+   what that office gets; the rest dim but stay, so nothing changes height.
    Each office has an anchor with the id the menus link to
    (`/#legal-affairs`), so a link lands here with that office picked. */
 
@@ -51,6 +51,9 @@ const ROWS: QueueRow[] = [
 /* Past this many days a row is late. */
 const LATE_AFTER_DAYS = 14;
 
+/* The wait chart's scale, in days. */
+const CHART_DAYS = 30;
+
 const OFFICE_IDS = SOLUTION_SECTIONS.map((section) => section.id);
 
 export function TeamQueue() {
@@ -58,6 +61,8 @@ export function TeamQueue() {
   const selectFromHash = useCallback((index: number) => setOffice(OFFICE_IDS[index]), []);
   useHashTab(OFFICE_IDS, selectFromHash);
   const selected = SOLUTION_SECTIONS.find((s) => s.id === office);
+  const longestWait = (id: SolutionSectionId) =>
+    Math.max(...ROWS.filter((row) => row.office === id).map((row) => row.days));
 
   return (
     <section id="teams" className="home-section home-section-surface scroll-mt-20" aria-labelledby="teams-title">
@@ -70,25 +75,49 @@ export function TeamQueue() {
             <h2 id="teams-title" className="home-h2">
               Nothing waits on the wrong desk
             </h2>
-            <p className="home-lede">One queue across every office, with how long each agreement has waited and why.</p>
-            <SonarLine>Sonar routes each exception to the office your matrix names.</SonarLine>
+            <p className="home-lede">Sonar routes each exception to the office your matrix names.</p>
           </div>
-          <div className="home-queue-filter" role="group" aria-label="Highlight an office">
-            <button type="button" className="home-filter" aria-pressed={office === null} onClick={() => setOffice(null)}>
-              All offices
-            </button>
-            {SOLUTION_SECTIONS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`home-filter lp-area-${OFFICE_AREA[item.id]}`}
-                aria-pressed={office === item.id}
-                onClick={() => setOffice(office === item.id ? null : item.id)}
-              >
-                <span className="home-filter-dot" aria-hidden="true" />
-                {item.label}
+          <div className="home-waitchart" role="group" aria-label="Longest wait by office; pick one to highlight its agreements">
+            <div className="home-waitchart-head">
+              <p className="home-waitchart-title">Longest wait by office</p>
+              <button type="button" className="home-filter" aria-pressed={office === null} onClick={() => setOffice(null)}>
+                All offices
               </button>
-            ))}
+            </div>
+            <ul className="home-waitchart-rows">
+              {SOLUTION_SECTIONS.map((item, index) => {
+                const days = longestWait(item.id);
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      className={`home-waitbar lp-area-${OFFICE_AREA[item.id]}`}
+                      aria-pressed={office === item.id}
+                      data-dim={office !== null && office !== item.id ? "" : undefined}
+                      onClick={() => setOffice(office === item.id ? null : item.id)}
+                    >
+                      <span className="home-waitbar-label">{item.label}</span>
+                      <span className="home-waitbar-track">
+                        <motion.span
+                          className={days > LATE_AFTER_DAYS ? "home-waitbar-fill is-late" : "home-waitbar-fill"}
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${(Math.min(days, CHART_DAYS) / CHART_DAYS) * 100}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: DURATION.enter, ease: EASE_OUT, delay: index * 0.06 }}
+                        />
+                      </span>
+                      <span className="home-waitbar-days">
+                        {days}d{days > LATE_AFTER_DAYS ? <span className="home-waitbar-late">Late</span> : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="home-waitchart-target">
+              <span className="home-waitchart-target-line" aria-hidden="true" />
+              Target: {LATE_AFTER_DAYS} days
+            </p>
           </div>
         </Reveal>
 
@@ -98,14 +127,14 @@ export function TeamQueue() {
               key={office ?? "all"}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: EASE_OUT }}
+              exit={{ opacity: 0, y: -6, transition: EXIT }}
+              transition={{ duration: DURATION.surface, ease: EASE_OUT }}
             >
               {selected && office ? (
                 <>
                   <strong>{selected.label}:</strong> {OFFICE_SUMMARY[office]}{" "}
                   <Link href={`/solutions#${office}`} className="home-link">
-                    More <ArrowRight size={14} aria-hidden="true" />
+                    See what {selected.label.toLowerCase()} gets <ArrowRight size={14} aria-hidden="true" />
                   </Link>
                 </>
               ) : (

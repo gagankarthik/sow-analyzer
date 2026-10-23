@@ -2,127 +2,186 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AlertTriangle, Check, FileText, X } from "@/components/ui/icons";
+import { FileText } from "@/components/ui/icons";
 import { SonarMark } from "@/components/ui/SonarMark";
-import { EASE_OUT } from "@/components/home/Reveal";
+import { DURATION, EASE_OUT, EXIT } from "@/components/home/Reveal";
 
-/* The hero's demonstration, kept to one idea a newcomer gets at a glance:
-   a contract, three of its clauses checked one by one against your rules,
-   each with a plain verdict, then a one-line summary. It plays on a loop;
-   with reduced motion it shows the finished check. */
+/* The hero's demonstration, built as the review screen a buyer would use:
+   the agreement on the left with the clauses Sonar flagged highlighted in
+   their rating colours, and on the right the finding for the highlighted
+   clause: what your matrix allows, what the contract says, the wording to
+   send back and the office that decides. It steps through the findings
+   (pausing while the pointer is over it); with reduced motion it holds on
+   the first exception. Every pane has a fixed height, so the hero never
+   changes size. */
 
-type Verdict = "ok" | "review" | "fail";
+type Rating = "within" | "deviates" | "unacceptable";
 
-const CLAUSES: { text: string; verdict: Verdict; result: string }[] = [
-  { text: "Payment is due within 30 days of each invoice.", verdict: "ok", result: "Matches your rules" },
-  { text: "The sponsor may delay publication for 135 days.", verdict: "fail", result: "Your limit is 30 days" },
-  { text: "The university indemnifies the sponsor without limit.", verdict: "review", result: "Needs Legal's approval" },
+type Finding = {
+  section: string;
+  clause: string;
+  rating: Rating;
+  ratingLabel: string;
+  /** The clause as it reads in the agreement. */
+  text: string;
+  matrix: string;
+  contract: string;
+  /** What to do: the suggested wording, or that nothing needs to change. */
+  next: string;
+  owner: string;
+};
+
+const FINDINGS: Finding[] = [
+  {
+    section: "7.1",
+    clause: "Publication review",
+    rating: "unacceptable",
+    ratingLabel: "Not acceptable",
+    text: "The Sponsor may delay publication for up to 135 days.",
+    matrix: "30 days, 60 as fallback",
+    contract: "135 days",
+    next: "“The Sponsor may delay publication for up to 60 days to file patents.”",
+    owner: "Sponsored programs",
+  },
+  {
+    section: "9.3",
+    clause: "Indemnification",
+    rating: "deviates",
+    ratingLabel: "Needs changes",
+    text: "The University shall indemnify the Sponsor without limit.",
+    matrix: "Capped at fees paid",
+    contract: "Uncapped",
+    next: "“…capped at the fees paid under this Agreement.”",
+    owner: "Legal affairs",
+  },
+  {
+    section: "4.2",
+    clause: "Payment terms",
+    rating: "within",
+    ratingLabel: "Within",
+    text: "Payment is due within 30 days of each invoice.",
+    matrix: "Net 30 to Net 45",
+    contract: "Net 30",
+    next: "No change needed.",
+    owner: "Research administration",
+  },
 ];
 
-const VERDICT_ICON = { ok: Check, review: AlertTriangle, fail: X } as const;
+/* The agreement's clauses in document order; the rest of each section is
+   drawn as text lines. */
+const DOCUMENT_ORDER = ["4.2", "7.1", "9.3"];
 
-const STEP_MS = 1300;
-const HOLD_MS = 3600;
+/* The whole agreement's result: 14 clauses, as the header bar shows them. */
+const SUMMARY = { within: 11, deviates: 2, unacceptable: 1 };
+const CLAUSE_COUNT = SUMMARY.within + SUMMARY.deviates + SUMMARY.unacceptable;
+
+const STEP_MS = 3600;
 
 export function HeroReviewDemo() {
   const reducedMotion = useReducedMotion();
-  // How many clauses have been checked so far (CLAUSES.length = finished).
-  const [checked, setChecked] = useState(0);
-  const shown = reducedMotion ? CLAUSES.length : checked;
-  const isDone = shown === CLAUSES.length;
+  const [active, setActive] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const finding = FINDINGS[active];
 
   useEffect(() => {
-    if (reducedMotion) return;
-    const delay = checked === CLAUSES.length ? HOLD_MS : STEP_MS;
-    const timer = setTimeout(() => setChecked((n) => (n === CLAUSES.length ? 0 : n + 1)), delay);
+    if (reducedMotion || isPaused) return;
+    const timer = setTimeout(() => setActive((i) => (i + 1) % FINDINGS.length), STEP_MS);
     return () => clearTimeout(timer);
-  }, [checked, reducedMotion]);
+  }, [active, isPaused, reducedMotion]);
 
   return (
     <motion.div
-      className="home-demo"
+      className="home-review"
       aria-hidden="true"
       initial={{ y: 24 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.8, ease: EASE_OUT }}
+      transition={{ duration: DURATION.enter, ease: EASE_OUT }}
+      onPointerEnter={() => setIsPaused(true)}
+      onPointerLeave={() => setIsPaused(false)}
     >
-      <div className="home-demo-head">
-        <span className="home-demo-file">
-          <FileText size={18} />
-          Research agreement.pdf
+      <div className="home-review-head">
+        <span className="home-review-file">
+          <FileText size={16} />
+          Sponsored research agreement.pdf
         </span>
-        <span className="home-demo-status">
+        <span className="home-review-checked">
           <SonarMark size="xs" />
-          {isDone ? "Checked" : "Checking…"}
+          {CLAUSE_COUNT} clauses checked
+        </span>
+        <span className="home-review-bar">
+          {/* Segment widths (11 : 2 : 1) are set in site.css to match SUMMARY. */}
+          <span data-rating="within" />
+          <span data-rating="deviates" />
+          <span data-rating="unacceptable" />
+        </span>
+        <span className="home-review-tally">
+          <b>{SUMMARY.within}</b> within · <b>{SUMMARY.deviates}</b> need changes · <b>{SUMMARY.unacceptable}</b> not acceptable
         </span>
       </div>
 
-      <ul className="home-demo-clauses">
-        {CLAUSES.map((clause, index) => {
-          const isChecked = index < shown;
-          const isActive = index === shown && !isDone;
-          const VerdictIcon = VERDICT_ICON[clause.verdict];
-          return (
-            <li
-              key={clause.text}
-              className="home-demo-clause"
-              data-verdict={isChecked ? clause.verdict : undefined}
-              data-active={isActive || undefined}
-            >
-              <p className="home-demo-text">{clause.text}</p>
-              <div className="home-demo-result">
-                <AnimatePresence mode="wait" initial={false}>
-                  {isChecked ? (
-                    <motion.span
-                      key="verdict"
-                      className={`home-demo-verdict home-demo-verdict-${clause.verdict}`}
-                      initial={{ opacity: 0, scale: 0.9, y: 4 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3, ease: EASE_OUT }}
-                    >
-                      <VerdictIcon size={14} />
-                      {clause.result}
-                    </motion.span>
-                  ) : isActive ? (
-                    <motion.span
-                      key="scan"
-                      className="home-demo-scanning"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                    >
-                      Checking against your rules…
-                    </motion.span>
-                  ) : null}
-                </AnimatePresence>
+      <div className="home-review-body">
+        <div className="home-review-doc">
+          {DOCUMENT_ORDER.map((section) => {
+            const item = FINDINGS.find((f) => f.section === section)!;
+            return (
+              <div key={section} className="home-review-section">
+                <p className="home-review-section-title">
+                  {section} {item.clause}
+                </p>
+                <span className="home-review-line" />
+                <p
+                  className="home-review-mark"
+                  data-rating={item.rating}
+                  data-active={item === finding || undefined}
+                >
+                  {item.text}
+                </p>
+                <span className="home-review-line home-review-line-short" />
               </div>
-            </li>
-          );
-        })}
-      </ul>
+            );
+          })}
+        </div>
 
-      {/* Always present, so the card keeps one height while the check plays. */}
-      <div className="home-demo-summary">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.p
-            key={isDone ? "done" : "checking"}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.3, ease: EASE_OUT }}
-          >
-            {isDone ? (
-              <>
-                <strong>2 clauses need attention.</strong> Sent to the right office with suggested wording.
-              </>
-            ) : (
-              <>
-                <strong>Checking {CLAUSES.length} clauses</strong> against your review matrix…
-              </>
-            )}
-          </motion.p>
-        </AnimatePresence>
+        <div className="home-review-finding">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={finding.section}
+              className="home-review-finding-inner"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6, transition: EXIT }}
+              transition={{ duration: DURATION.surface, ease: EASE_OUT }}
+            >
+              <p className="home-review-finding-head">
+                <span>
+                  {finding.section} {finding.clause}
+                </span>
+                <span className={`home-badge home-badge-${finding.rating}`}>{finding.ratingLabel}</span>
+              </p>
+              <dl className="home-review-compare">
+                <div>
+                  <dt>Your matrix</dt>
+                  <dd>{finding.matrix}</dd>
+                </div>
+                <div>
+                  <dt>This contract</dt>
+                  <dd>{finding.contract}</dd>
+                </div>
+              </dl>
+              <p className="home-review-next" data-rating={finding.rating}>
+                {finding.next}
+              </p>
+              <p className="home-review-owner">
+                Decided by <b>{finding.owner}</b>
+              </p>
+            </motion.div>
+          </AnimatePresence>
+          <span className="home-review-steps">
+            {FINDINGS.map((f, index) => (
+              <span key={f.section} data-active={index === active || undefined} />
+            ))}
+          </span>
+        </div>
       </div>
     </motion.div>
   );
