@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { MarketingShell } from "@/components/landing/MarketingShell";
-import { Hero } from "@/components/landing/Hero";
-import { Lifecycle } from "@/components/landing/Lifecycle";
-import { TrustCards } from "@/components/landing/TrustCards";
-import { Editions } from "@/components/landing/Editions";
-import { TeamTabs } from "@/components/landing/TeamTabs";
-import { StartCta } from "@/components/landing/StartCta";
+// After the shell, so the home scope's overrides follow landing.css.
+import "./home.css";
+import { HomeHero } from "@/components/home/HomeHero";
+import { ContractJourney } from "@/components/home/ContractJourney";
+import { PlatformTour } from "@/components/home/PlatformTour";
+import { MatrixPositions } from "@/components/home/MatrixPositions";
+import { EditionComparison } from "@/components/home/EditionComparison";
+import { TeamQueue } from "@/components/home/TeamQueue";
+import { SecuritySummary } from "@/components/home/SecuritySummary";
+import { HomeMotionConfig } from "@/components/home/Reveal";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationSchema, pageMetadata, SITE_DESCRIPTION, websiteSchema } from "@/lib/seo";
 
@@ -15,21 +19,25 @@ export const metadata: Metadata = pageMetadata({
   path: "/",
 });
 
-/* Six sections, one idea each: what it is (hero, with the product as the
-   key visual), how every agreement moves on one record, the two editions,
-   why its answers can be trusted, what each office gets, and the offer. Product detail lives on
-   /product. */
+/* One idea per section: what Govern is (hero, with the product as the key
+   visual), how every agreement moves on one record, the platform's areas,
+   that one matrix edit re-checks every agreement, the two editions, what
+   each office gets and why the data is safe. The offer closes the page
+   inside the footer. Product detail lives on /product. */
 export default function LandingPage() {
   return (
-    <MarketingShell>
+    <MarketingShell variant="home">
       <JsonLd data={organizationSchema} />
       <JsonLd data={websiteSchema} />
-      <Hero />
-      <Lifecycle />
-      <Editions />
-      <TrustCards />
-      <TeamTabs />
-      <StartCta />
+      <HomeMotionConfig>
+        <HomeHero />
+        <ContractJourney />
+        <PlatformTour />
+        <MatrixPositions />
+        <EditionComparison />
+        <TeamQueue />
+        <SecuritySummary />
+      </HomeMotionConfig>
     </MarketingShell>
   );
 }
