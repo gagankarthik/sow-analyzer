@@ -78,11 +78,16 @@ export type KpiTileProps = {
   /** `hero` = the one focal number on a page (32px instead of 24px). */
   emphasis?: "default" | "hero";
   loading?: boolean;
+  /** `cell`: a cell of the summary bar (no border or radius of its own). */
+  frame?: "tile" | "cell";
   className?: string;
 };
 
 const TILE_FRAME =
   "relative flex h-full min-w-0 flex-col rounded-container border border-border-default bg-surface-raised px-4 py-3";
+/* A tile inside the summary bar: no frame of its own; the bar draws the
+   hairlines between cells. */
+const CELL_FRAME = "relative flex h-full min-w-0 flex-col px-4 py-3 md:px-5";
 
 /** Value colour + note colour + note icon for a tone that carries meaning. */
 function tileTone(tone: ToneInput | undefined) {
@@ -113,8 +118,10 @@ export function KpiTile({
   icon,
   emphasis = "default",
   loading = false,
+  frame = "tile",
   className,
 }: KpiTileProps) {
+  const frameClass = frame === "cell" ? CELL_FRAME : TILE_FRAME;
   const isNumeric = typeof value === "number" || value === null || value === undefined;
   const t = tileTone(tone);
 
@@ -172,7 +179,7 @@ export function KpiTile({
       <Link
         href={href}
         className={cn(
-          TILE_FRAME,
+          frameClass,
           "group transition-colors duration-(--duration-fast) hover:border-border-strong hover:bg-surface-hover",
           className,
         )}
@@ -181,15 +188,16 @@ export function KpiTile({
       </Link>
     );
   }
-  return <div aria-busy={loading || undefined} className={cn(TILE_FRAME, className)}>{body}</div>;
+  return <div aria-busy={loading || undefined} className={cn(frameClass, className)}>{body}</div>;
 }
 
 /* ─── SummaryTiles ───────────────────────────────────────────────── */
 
 /**
- * The summary row: at most 4 KpiTiles (UI_SPEC section 3), two per row on
- * phones, four from lg. Renders a labelled list so the figures are grouped
- * for assistive tech.
+ * The metric summary bar: 3 to 5 KPIs in one bordered card,
+ * divided by vertical rules (two per row on phones, one row from lg), each
+ * with its figure, delta and trend. Renders a labelled list so the figures
+ * are grouped for assistive tech.
  */
 export function SummaryTiles({
   items,
@@ -201,10 +209,19 @@ export function SummaryTiles({
   className?: string;
 }) {
   return (
-    <ul aria-label={label} className={cn("grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4", className)}>
-      {items.slice(0, 4).map(({ key, ...tile }) => (
-        <li key={key ?? tile.label} className="min-w-0">
-          <KpiTile {...tile} />
+    <ul
+      aria-label={label}
+      className={cn(
+        "grid min-w-0 grid-cols-2 overflow-hidden rounded-container border border-border-default bg-surface-raised lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none",
+        className,
+      )}
+    >
+      {items.slice(0, 5).map(({ key, ...tile }) => (
+        <li
+          key={key ?? tile.label}
+          className="min-w-0 border-border-subtle even:border-l max-lg:[&:nth-child(n+3)]:border-t lg:[&:not(:first-child)]:border-l"
+        >
+          <KpiTile {...tile} frame="cell" />
         </li>
       ))}
     </ul>

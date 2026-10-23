@@ -50,6 +50,7 @@ import { SaveViewDialog, type SaveViewMode } from "./_components/SaveViewDialog"
 import { ViewPicker } from "./_components/ViewPicker";
 import { ViewTabs, type ViewTab } from "./_components/ViewTabs";
 import { useStoredColumns } from "./_components/use-stored-columns";
+import { DateRangeFilter, inDateRange, type DateRange } from "@/components/ds/DateRangeFilter";
 
 const DEFAULTS: ColumnDefaults = {
   ids: CONTRACT_LIST_COLUMN_IDS,
@@ -112,6 +113,8 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
   const currency = useOrgCurrency();
   const exportsOn = useGovernFeature("exports");
   const [now] = useState(() => Date.now());
+  // Received date: a quick filter on top of the view, not saved with it.
+  const [received, setReceived] = useState<DateRange | null>(null);
 
   /* ── Settings: a saved view carries its own; presets use this browser's layout ── */
   const [storedDensity, setStoredDensity] = useDensity("contracts-list-density", "comfortable");
@@ -145,7 +148,10 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
   /* ── Rows: base → filters → search → sort ── */
   const ctx = useMemo(() => ({ me, now }), [me, now]);
   const inBase = useMemo(() => all.filter((c) => base.test(c, ctx)), [all, base, ctx]);
-  const filtered = useMemo(() => applyFilters(inBase, settings.filters, now), [inBase, settings.filters, now]);
+  const filtered = useMemo(
+    () => applyFilters(inBase, settings.filters, now).filter((c) => inDateRange(c.createdAt, received, new Date(now))),
+    [inBase, settings.filters, now, received],
+  );
   const searched = useMemo(() => (query
     ? filtered.filter((c) => [c.title, c.counterparty, c.sponsor, c.piName, c.department, c.owner?.name, c.owner?.email, c.huronRecordId].some((s) => s?.toLowerCase().includes(query)))
     : filtered), [filtered, query]);
@@ -254,8 +260,8 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
     counterparty: [...new Set(all.map((c) => c.counterparty || c.sponsor).filter((s): s is string => !!s))].sort(),
     department: [...new Set(all.map((c) => c.department).filter((s): s is string => !!s))].sort(),
   }), [all, owners]);
-  const filtering = !!query || countActiveRules(settings.filters) > 0;
-  const clearFilters = () => { setQ(""); update({ filters: { match: "all", rules: [] } }); };
+  const filtering = !!query || countActiveRules(settings.filters) > 0 || received !== null;
+  const clearFilters = () => { setQ(""); setReceived(null); update({ filters: { match: "all", rules: [] } }); };
 
   const failed = isError && !data;
   const isFiltered = filtering || (base.id !== "all" && all.length > 0);
@@ -366,6 +372,8 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
             sortOptions={SORT_OPTIONS}
             columns={orderColumns(CONTRACT_LIST_COLUMNS, settings.columns.order).map((c) => ({ id: c.id, label: c.header, locked: c.card === "title" }))}
             onClear={clearFilters}
+            extraFilters={<DateRangeFilter label="Received" value={received} onChange={setReceived} />}
+            extraActive={received ? 1 : 0}
             exports={exportsOn ? { csv: exportCsv, excel: () => void exportExcel(), busy: exporting } : null}
           />
         }

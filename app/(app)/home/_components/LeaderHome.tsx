@@ -4,14 +4,16 @@
 // needs the leader, in that order. Plain labels (UI_SPEC section 4), no
 // charts and no stage codes; every row opens the contract in one click.
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "@/components/ui/icons";
+import { DataTable, type DataTableColumn } from "@/components/ds/DataTable";
 import { SummaryTiles } from "@/components/ds/KpiTile";
 import { ListPanel, PanelEmpty } from "@/components/ds/Panel";
 import { DaysInStage, WaitingOnChip } from "@/components/govern/primitives";
 import { byEdition } from "@/lib/edition-runtime";
 import { displayTitle } from "@/lib/format";
-import { plural } from "@/lib/govern/labels";
+import { plural, WAITING_ON_LABEL } from "@/lib/govern/labels";
 import { contractValueText, formatCompact, isUnsigned, type ValueSummary } from "@/lib/govern/metrics";
 import { amountIn } from "../../reports/_components/report-data";
 import { TEXT_LINK } from "../../reports/_components/ReportKit";
@@ -21,6 +23,40 @@ import { ContractRow } from "./ContractRow";
 
 const STUCK_ROWS = 6;
 const ATTENTION_ROWS = 5;
+
+/** Sponsor, value and PI under the agreement's title. */
+const agreementMeta = (c: Contract) =>
+  [c.sponsor || c.counterparty, c.value !== null ? contractValueText(c) : null, byEdition(c.piName ? `PI ${c.piName}` : null, null)].filter(Boolean).join(" · ");
+
+const STUCK_COLUMNS: DataTableColumn<Contract>[] = [
+  {
+    id: "agreement", header: "Agreement", card: "title", className: "min-w-[14rem]",
+    sortValue: (c) => (displayTitle(c.title) || "Untitled contract").toLowerCase(),
+    exportValue: (c) => displayTitle(c.title) || "Untitled contract",
+    cell: (c) => (
+      <span className="flex min-w-0 max-w-[22rem] flex-col">
+        <span className="truncate font-medium">{displayTitle(c.title) || "Untitled contract"}</span>
+        <span className="truncate text-xs font-normal text-[var(--ink-600)]">{agreementMeta(c)}</span>
+      </span>
+    ),
+  },
+  {
+    id: "waiting", header: "Waiting on", card: "status",
+    sortValue: (c) => c.waitingOn.label || WAITING_ON_LABEL[c.waitingOn.kind],
+    cell: (c) => <WaitingOnChip waitingOn={c.waitingOn} short />,
+  },
+  {
+    id: "days", header: "In this step", numeric: true, card: "status",
+    sortValue: (c) => c.daysInStage,
+    exportValue: (c) => c.daysInStage,
+    cell: (c) => <DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} />,
+  },
+  {
+    id: "next", header: "Next step", priority: 2,
+    sortValue: (c) => c.nextStep.headline,
+    truncate: (c) => c.nextStep.headline,
+  },
+];
 
 function SeeAll({ href, label }: { href: string; label: string }) {
   return (
@@ -40,6 +76,7 @@ export function LeaderHome({ contracts, attention, summary, currency }: {
     .filter((c) => isUnsigned(c) && (c.slaStatus === "red" || c.slaStatus === "amber"))
     .sort((a, b) => (a.slaStatus === b.slaStatus ? b.daysInStage - a.daysInStage : a.slaStatus === "red" ? -1 : 1));
   const heldUp = summary.heldUp.valued > 0;
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,42 +119,17 @@ export function LeaderHome({ contracts, attention, summary, currency }: {
         actions={<SeeAll href="/reports/bottlenecks" label="Bottlenecks" />}
         footer={stuck.length > STUCK_ROWS ? <SeeAll href="/contracts?view=overdue" label={`See all ${stuck.length}`} /> : undefined}
       >
-        {stuck.length === 0 ? (
-          <PanelEmpty>Nothing is past its target.</PanelEmpty>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-0 text-sm md:min-w-[44rem]">
-              <thead className="hidden border-b border-border bg-[var(--panel)] text-left text-xs text-[var(--ink-600)] md:table-header-group">
-                <tr className="h-[38px]">
-                  <th scope="col" className="px-4 font-medium">Agreement</th>
-                  <th scope="col" className="px-4 font-medium">Waiting on</th>
-                  <th scope="col" className="px-4 text-right font-medium">In this step</th>
-                  <th scope="col" className="px-4 font-medium">Next step</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {stuck.slice(0, STUCK_ROWS).map((c) => (
-                  <tr key={c.contractId} className="group relative flex flex-col gap-1.5 px-4 py-2.5 hover:bg-[var(--ink-50)] md:table-row md:h-[42px] md:p-0">
-                    <td className="min-w-0 md:max-w-[22rem] md:px-4 md:py-2">
-                      <Link
-                        href={contractHref(c.contractId)}
-                        className="block truncate font-medium text-foreground after:absolute after:inset-0 hover:underline focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[var(--brand-primary-300)]"
-                      >
-                        {displayTitle(c.title) || "Untitled contract"}
-                      </Link>
-                      <span className="block truncate text-xs text-[var(--ink-600)]">
-                        {[c.sponsor || c.counterparty, c.value !== null ? contractValueText(c) : null, byEdition(c.piName ? `PI ${c.piName}` : null, null)].filter(Boolean).join(" · ")}
-                      </span>
-                    </td>
-                    <td className="md:px-4 md:py-2"><WaitingOnChip waitingOn={c.waitingOn} short /></td>
-                    <td className="md:px-4 md:py-2 md:text-right"><DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} /></td>
-                    <td className="min-w-0 truncate text-[var(--ink-700)] md:max-w-[22rem] md:px-4 md:py-2">{c.nextStep.headline}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <DataTable
+          caption="Agreements running late"
+          noun="agreements"
+          columns={STUCK_COLUMNS}
+          rows={stuck.slice(0, STUCK_ROWS)}
+          getRowId={(c) => c.contractId}
+          getRowHref={(c) => contractHref(c.contractId)}
+          selection={{ selected, onChange: setSelected }}
+          exportName="running-late"
+          empty={<PanelEmpty>Nothing is past its target.</PanelEmpty>}
+        />
       </ListPanel>
 
       <ListPanel

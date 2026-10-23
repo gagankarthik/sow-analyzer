@@ -25,7 +25,7 @@ import { ContractRow } from "../../home/_components/ContractRow";
 import { ExportButtons } from "../_components/ExportButtons";
 import { LegendDot, MoneySplitBar, VALUE_FILL } from "../_components/ReportCharts";
 import {
-  FilterBar, NoContracts, Panel, ReportError, StatTile, TEXT_LINK, reviewerNameFrom,
+  FilterBar, NoContracts, Panel, ReportError, StatBar, StatTile, TEXT_LINK, reviewerNameFrom,
 } from "../_components/ReportKit";
 import { amountIn, mainCurrency } from "../_components/report-data";
 import { BREAKDOWN_KEYS, BreakdownSection, breakdownName } from "./_components/BreakdownSection";
@@ -176,7 +176,7 @@ export default function ValueReportPage() {
               noun="contracts"
             />
 
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatBar label="Value figures">
               <StatTile label="Current" value={formatMoney(summary.current)} hint={`Signed and active · ${plural(summary.current.valued, "contract")}`} />
               <StatTile label="Potential" value={formatMoney(summary.potential)} hint={`Still in the pipeline · ${plural(summary.potential.valued, "contract")}`} />
               <StatTile label="Held up" tone={summary.heldUp.valued > 0 ? "warning" : "neutral"} value={formatMoney(summary.heldUp)} hint="Past its step's target" href="/reports/bottlenecks" />
@@ -187,7 +187,7 @@ export default function ValueReportPage() {
                 hint={view.noValue.length > 0 ? "Not in any total" : "Every contract has a value"}
                 href={view.noValue.length > 0 ? "#no-value" : undefined}
               />
-            </div>
+            </StatBar>
 
             <Panel id="direction" title="Money in and money out">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:divide-x md:divide-border">

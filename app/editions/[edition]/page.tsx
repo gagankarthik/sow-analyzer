@@ -3,10 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Check } from "@/components/ui/icons";
 import { MarketingShell, PageIntro } from "@/components/landing/MarketingShell";
-import { StartCta } from "@/components/landing/StartCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { EDITIONS, EDITION_IDS, type EditionId } from "@/components/landing/editions-data";
-import { absoluteUrl, breadcrumbSchema, pageMetadata, SITE_NAME } from "@/lib/seo";
+import { absoluteUrl, breadcrumbSchema, faqSchema, pageMetadata, SITE_NAME } from "@/lib/seo";
 
 /* One page per edition, each with its own title, description and FAQ so it
    can rank for the agreements its buyers search for. */
@@ -48,11 +47,7 @@ export default async function EditionPage({ params }: Props) {
         operatingSystem: "Web",
         audience: { "@type": "Audience", audienceType: e.audience },
       }} />
-      <JsonLd data={{
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        mainEntity: e.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-      }} />
+      <JsonLd data={faqSchema(e.faq)} />
 
       <PageIntro title={e.title} kicker={`Govern ${e.name} · ${e.tagline}`}>
         {e.description} Built for {e.audience.charAt(0).toLowerCase() + e.audience.slice(1)}
@@ -112,8 +107,6 @@ export default async function EditionPage({ params }: Props) {
           </Link>
         </div>
       </section>
-
-      <StartCta />
     </MarketingShell>
   );
 }

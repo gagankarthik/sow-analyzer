@@ -58,6 +58,10 @@ import type { ApiDocument, DocType, Lifecycle } from "@/lib/types";
 import { STATUS_TONE } from "@/lib/status-tone";
 import { displayTitle, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { StatusPill as DsStatusPill } from "@/components/ds/StatusPill";
+import { DateRangeFilter, inDateRange, type DateRange } from "@/components/ds/DateRangeFilter";
+import { RecordDrawer } from "@/components/ds/RecordDrawer";
+import { KeyValueList } from "@/components/ds/KeyValueList";
 
 const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "LICENSE", "DPA", "BAA", "COMPLIANCE", "OTHER"];
 
@@ -112,7 +116,12 @@ function Library() {
   }, [projects]);
 
   // Delete state
-  const [deleteTarget, setDeleteTarget] = useState<ApiDocument | null>(null);
+  // One document (its row's bin) or several (the selection's bulk delete).
+  const [deleteTargets, setDeleteTargets] = useState<ApiDocument[] | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [created, setCreated] = useState<DateRange | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [today] = useState(() => new Date());
   const deleting = deleteMut.isPending;
 
   // Edit state
@@ -134,15 +143,21 @@ function Library() {
   }
 
   async function handleDelete() {
-    if (!deleteTarget) return;
-    try {
-      // Removes it from every project and refreshes the shared list.
-      await deleteMut.mutateAsync(deleteTarget.docId);
-      toast.success("Document deleted", { description: deleteTarget.title || "Untitled" });
-      setDeleteTarget(null);
-    } catch (e) {
-      toast.error("Couldn't delete the document", {
-        description: e instanceof Error ? e.message : "Try again.",
+    if (!deleteTargets) return;
+    // Removes each from every project and refreshes the shared list.
+    const results = await Promise.allSettled(deleteTargets.map((d) => deleteMut.mutateAsync(d.docId)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const deleted = deleteTargets.length - failed;
+    if (failed === 0) {
+      toast.success(deleted === 1 ? "Document deleted" : `${deleted} documents deleted`, {
+        description: deleteTargets.length === 1 ? deleteTargets[0].title || "Untitled" : undefined,
+      });
+      setDeleteTargets(null);
+      setSelected(new Set());
+    } else {
+      const reason = results.find((r): r is PromiseRejectedResult => r.status === "rejected")?.reason;
+      toast.error(deleted > 0 ? `${deleted} deleted, ${failed} couldn't be deleted` : "Couldn't delete the document", {
+        description: reason instanceof Error ? reason.message : "Try again.",
       });
     }
   }
@@ -194,11 +209,13 @@ function Library() {
       || (projectByDocId.get(d.docId)?.toLowerCase().includes(query) ?? false))
     && (docTypeFilter.length === 0 || docTypeFilter.includes(d.docType))
     && (lifecycleFilter.length === 0 || lifecycleFilter.includes(d.lifecycle))
-    && (projectFilter.length === 0 || projectFilter.includes(projectByDocId.get(d.docId) ?? "")),
-  ), [inView, query, docTypeFilter, lifecycleFilter, projectFilter, projectByDocId]);
+    && (projectFilter.length === 0 || projectFilter.includes(projectByDocId.get(d.docId) ?? ""))
+    && inDateRange(d.createdAt, created, today),
+  ), [inView, query, docTypeFilter, lifecycleFilter, projectFilter, projectByDocId, created, today]);
 
   function clearFilters() {
     setQ("");
+    setCreated(null);
     setDocTypeFilter([]);
     setLifecycleFilter([]);
     setProjectFilter([]);
@@ -230,7 +247,7 @@ function Library() {
       options: [...projectCounts.keys()].sort().map((p) => ({ value: p, label: p, count: projectCounts.get(p) })),
     }] : []),
   ];
-  const activeCount = activeFilterCount(filters);
+  const activeCount = activeFilterCount(filters) + (created ? 1 : 0);
 
   const tabs: ListView[] = VIEWS.map((v) => ({
     id: v.id, label: v.label, count: loading ? null : docs.filter(v.test).length,
@@ -306,8 +323,24 @@ function Library() {
           columns={columns}
           rows={filtered}
           getRowId={(d) => d.docId}
-          getRowHref={(d) => `/projects/${d.docId}`}
-          getRowLabel={(d) => `Open ${d.title || "document"}`}
+          selection={{ selected, onChange: setSelected }}
+          exportName="documents"
+          bulkActions={(chosen) => {
+            const deletable = chosen.filter((d) => can(d.role, "delete_document"));
+            return deletable.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setDeleteTargets(deletable)}
+                className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-body font-medium text-[var(--danger-soft)] hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white"
+              >
+                <Trash2 size={14} aria-hidden />
+                Delete{deletable.length < chosen.length ? ` ${deletable.length}` : ""}
+              </button>
+            ) : null;
+          }}
+          onRowClick={(d) => setPreviewId(d.docId)}
+          activeRowId={previewId}
+          getRowLabel={(d) => `Preview ${d.title || "document"}`}
           defaultSort={{ columnId: "created", direction: "desc" }}
           pageSize={50}
           columnsKey="library-table"
@@ -333,7 +366,7 @@ function Library() {
               {can(d.role, "delete_document") && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" aria-label={`Delete ${d.title || "document"}`} onClick={() => setDeleteTarget(d)} className={cn(ICON_ACTION, "hover:bg-[var(--danger-soft)] hover:text-[var(--danger-fg)]")}>
+                    <button type="button" aria-label={`Delete ${d.title || "document"}`} onClick={() => setDeleteTargets([d])} className={cn(ICON_ACTION, "hover:bg-[var(--danger-soft)] hover:text-[var(--danger-fg)]")}>
                       <Trash2 size={16} aria-hidden />
                     </button>
                   </TooltipTrigger>
@@ -355,7 +388,10 @@ function Library() {
           toolbar={
             <Toolbar label="Document filters" activeCount={activeCount} mobileSheet={<SheetFilters filters={filters} onClear={clearFilters} />}>
               <Toolbar.Search label="Search documents" placeholder={byEdition("Search title or project", "Search title or engagement")} value={q} onChange={setQ} />
-              <Toolbar.Filters><QuickFilters filters={filters} /></Toolbar.Filters>
+              <Toolbar.Filters>
+                <QuickFilters filters={filters} />
+                <DateRangeFilter label="Created" value={created} onChange={setCreated} />
+              </Toolbar.Filters>
               <Toolbar.More><MoreFilters filters={filters} /></Toolbar.More>
               <Toolbar.Clear count={activeCount} onClear={clearFilters} />
             </Toolbar>
@@ -374,15 +410,46 @@ function Library() {
         />
       </div>
 
+      {(() => {
+        const doc = previewId ? docs.find((d) => d.docId === previewId) : null;
+        if (!doc) return null;
+        return (
+          <RecordDrawer
+            title={displayTitle(doc.title) || "Untitled"}
+            subtitle={projectByDocId.get(doc.docId) ?? undefined}
+            status={<><StatusBadge status={doc.status} code={doc.errorCode} /><LifecycleLabel lifecycle={doc.lifecycle as Lifecycle} /></>}
+            href={`/projects/${doc.docId}`}
+            openLabel="Open document"
+            onClose={() => setPreviewId(null)}
+          >
+            <KeyValueList
+              columns={2}
+              items={[
+                { label: "Type", value: <DocTypeBadge type={doc.docType} /> },
+                { label: noun("Project"), value: projectByDocId.get(doc.docId) },
+                { label: "Parties", value: doc.status === "READY" ? doc.parties?.length ?? 0 : null },
+                { label: "Version", value: `v${doc.latestVersion}` },
+                { label: "Created", value: formatDate(doc.createdAt) },
+                { label: "Reference", value: <span className="font-mono">{doc.docId.slice(0, 8).toUpperCase()}</span> },
+              ]}
+            />
+          </RecordDrawer>
+        );
+      })()}
+
       {/* Delete confirmation dialog */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <AlertDialog open={!!deleteTargets} onOpenChange={(open) => !open && setDeleteTargets(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete document?</AlertDialogTitle>
+            <AlertDialogTitle>{deleteTargets && deleteTargets.length > 1 ? `Delete ${deleteTargets.length} documents?` : "Delete document?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong className="break-words font-semibold text-foreground">{deleteTarget?.title ? displayTitle(deleteTarget.title) : "This document"}</strong> and all its
-              versions, clauses, and analytics will be permanently removed, for everyone it
-              is shared with. This cannot be undone.
+              {deleteTargets && deleteTargets.length > 1 ? (
+                <strong className="font-semibold text-foreground">These {deleteTargets.length} documents</strong>
+              ) : (
+                <strong className="break-words font-semibold text-foreground">{deleteTargets?.[0]?.title ? displayTitle(deleteTargets[0].title) : "This document"}</strong>
+              )}{" "}
+              and all {deleteTargets && deleteTargets.length > 1 ? "their" : "its"} versions, clauses, and analytics will be permanently removed, for
+              everyone {deleteTargets && deleteTargets.length > 1 ? "they are" : "it is"} shared with. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -480,20 +547,14 @@ function LifecycleLabel({ lifecycle }: { lifecycle: Lifecycle }) {
 }
 
 function StatusBadge({ status, code }: { status: string; code?: string }) {
-  const badge = status === "FAILED" && code === "not_agreement"
-    ? { label: "Not an agreement", cls: "bg-[var(--warning-soft)] text-[var(--warning-fg)]" }
-    : getStatusBadge(status);
-  return (
-    <span className={`inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${badge.cls}`}>
-      {badge.label}
-    </span>
-  );
+  const badge = status === "FAILED" && code === "not_agreement" ? { label: "Not an agreement", tone: "caution" as const } : getStatusBadge(status);
+  return <DsStatusPill size="sm" tone={badge.tone}>{badge.label}</DsStatusPill>;
 }
 
 function getStatusBadge(status: string) {
   // Ready is the normal case on almost every row, so it stays quiet; analysing
   // uses Sonar's colour everywhere; only a failure is red.
-  if (status === "READY") return { label: "Ready", cls: "bg-[var(--ink-100)] text-[var(--ink-700)]" };
-  if (status === "FAILED") return { label: "Failed", cls: "bg-[var(--danger-soft)] text-[var(--danger-fg)]" };
-  return { label: "Analyzing", cls: "bg-[var(--ai-surface)] text-[var(--ai-ink)]" };
+  if (status === "READY") return { label: "Ready", tone: "unknown" as const };
+  if (status === "FAILED") return { label: "Failed", tone: "blocked" as const };
+  return { label: "Analyzing", tone: "ai" as const };
 }

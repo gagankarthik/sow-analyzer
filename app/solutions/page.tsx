@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check } from "@/components/ui/icons";
-import { MarketingShell } from "@/components/landing/MarketingShell";
+import { MarketingShell, PageIntro } from "@/components/landing/MarketingShell";
 import { BoardCard, BottleneckCard, CaptureCard, RedlineCard, ValueCard } from "@/components/landing/ProductCards";
-import { StartCta } from "@/components/landing/StartCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
   INDUSTRY_SECTIONS,
@@ -66,20 +65,9 @@ export default function SolutionsPage() {
     <MarketingShell>
       <JsonLd data={breadcrumbSchema([{ name: "Solutions", path: "/solutions" }])} />
 
-      <section className="lp-hero3 pb-12 md:pb-16" aria-labelledby="solutions-title">
-        <div className="lp-wrap">
-          <div className="lp-hero3-copy">
-            <h1 id="solutions-title" className="lp-hero3-title">
-              One record of every agreement,
-              <span className="lp-hero3-accent">for every office that touches it.</span>
-            </h1>
-            <p className="lp-hero3-sub">
-              The people who review agreements, the offices that sign off and the leaders who report on them work
-              from the same matrix and the same status.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageIntro title="One record of every agreement, for every office that touches it.">
+        The people who review agreements, the offices that sign off and the leaders who report on them work from the same matrix and the same status.
+      </PageIntro>
 
       <nav aria-label="Teams" className="lp-subnav">
         <div className="lp-wrap lp-subnav-row">
@@ -117,7 +105,7 @@ export default function SolutionsPage() {
         <div className="lp-wrap">
           <div className="max-w-2xl">
             <h2 id="industries-title" className="lp-h2">
-              Built for research, <span className="lp-serif">wherever it happens.</span>
+              Built for research, wherever it happens.
             </h2>
             <p className="lp-lede mt-4">The same review and workflow, tuned to the agreements each kind of institution signs most.</p>
           </div>
@@ -149,8 +137,6 @@ export default function SolutionsPage() {
           </div>
         </div>
       </section>
-
-      <StartCta />
     </MarketingShell>
   );
 }

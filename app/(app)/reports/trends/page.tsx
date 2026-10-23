@@ -48,7 +48,7 @@ const SIGNED = ACCENT;
 
 const THROUGHPUT: ChartSeries[] = [{ key: "received", label: "Received", color: RECEIVED }, { key: "signed", label: "Signed", color: SIGNED }];
 const CYCLE: ChartSeries[] = [{ key: "days", label: "Average days to signature", color: SIGNED }];
-const ON_TIME: ChartSeries[] = [{ key: "pct", label: "Finished within target", color: "var(--success)" }];
+const ON_TIME: ChartSeries[] = [{ key: "pct", label: "Finished within target", color: ACCENT }];
 const FRICTION: ChartSeries[] = [
   { key: "sentBack", label: "Sent back", color: ACCENT },
   { key: "rejected", label: "Rejected", color: "var(--ink-500)", dashed: true },

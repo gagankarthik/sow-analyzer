@@ -17,7 +17,7 @@ import type { CaptureGap, CaptureReport, Contract } from "@/lib/govern/types";
 import type { ExportReport } from "@/lib/govern/export";
 import { displayTitle } from "@/lib/format";
 import { ExportButtons } from "../_components/ExportButtons";
-import { Panel, ReportError, StatTile } from "../_components/ReportKit";
+import { Panel, ReportError, StatBar, StatTile } from "../_components/ReportKit";
 import { CaptureSkeleton, GapContractsSkeleton } from "../_components/ReportSkeletons";
 
 function reconciledText(iso: string | null): string {
@@ -66,7 +66,7 @@ export default function CapturePage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatBar label="Capture figures">
               <StatTile
                 label="Contracts missing details"
                 value={affected.toLocaleString("en-US")}
@@ -81,7 +81,7 @@ export default function CapturePage() {
                 hint={missed.length > 0 ? "In no report yet" : "None"}
                 href={missed.length > 0 ? "#missed" : undefined}
               />
-            </div>
+            </StatBar>
             <p className="-mt-3 text-xs text-[var(--ink-600)]">{reconciledText(data?.lastReconciledAt ?? null)}</p>
 
             {gaps.length > 0 && (

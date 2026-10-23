@@ -9,7 +9,7 @@ const DEFAULT_SITE_URL =
   process.env.NODE_ENV === "production" ? "https://govern.blue-iq.ai" : "http://localhost:3000";
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL).replace(/\/+$/, "");
 export const SITE_DESCRIPTION =
-  "Blue-IQ Govern checks licenses, research agreements and SOWs against your review matrix, assigns an owner and next step, and tracks obligations after signing.";
+  "Govern checks research agreements, licenses, SOWs and MSAs against your own review matrix, routes exceptions to the right office and tracks obligations.";
 
 // A page that sets its own `openGraph` replaces the root one wholesale, share
 // image included, so every page names the image from app/opengraph-image.tsx.
@@ -90,6 +90,19 @@ export const softwareApplicationSchema = {
   operatingSystem: "Web",
   publisher: { "@id": ORGANIZATION_ID },
 };
+
+/** FAQPage markup for questions answered in full on the same page. */
+export function faqSchema(items: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
+}
 
 /** Breadcrumb trail for an inner page; Home is added for you. */
 export function breadcrumbSchema(trail: { name: string; path: string }[]) {

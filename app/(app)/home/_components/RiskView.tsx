@@ -26,16 +26,18 @@ import { RiskViewSkeleton } from "./RiskViewSkeleton";
 import {
   Briefcase, ShieldAlert, ArrowRight, ArrowUp, ArrowDown, Plus, RefreshCw, Layers, FileText, DollarSign,
   AlertTriangle, CheckCircle2, CalendarClock, BarChart3, TrendingUp, ShieldCheck,
-  ChevronUp, ChevronDown, XCircle, Loader2, Info,
+  ChevronDown, XCircle, Info,
 } from "@/components/ui/icons";
 import { useDocuments, useClassifications, isProcessing } from "@/lib/queries/documents";
 import { useCompliancePacks } from "@/lib/queries/compliance";
 import { computeContractValue, fmtMoney, persistedOf, type ValuedDoc } from "@/lib/contract-value";
 import { docTypeShort } from "@/lib/doc-types";
-import { ACCENT, NEUTRAL_MARK, RISK_COLOR, RISK_LABEL, RISK_PILL } from "@/lib/chart-theme";
+import { ACCENT, NEUTRAL_MARK, RISK_COLOR, RISK_LABEL } from "@/lib/chart-theme";
 import { HBarChart, type HBarDatum } from "@/components/charts/HBarChart";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DataTable, type DataTableColumn } from "@/components/ds/DataTable";
 import { ListPanel, Panel as DsPanel } from "@/components/ds/Panel";
+import { StatusPill } from "@/components/ds/StatusPill";
 import { RadioFilterButton } from "@/components/ds/FilterButton";
 import { Toolbar } from "@/components/ds/Toolbar";
 import { displayTitle, parseDate } from "@/lib/format";
@@ -409,8 +411,7 @@ export function RiskView() {
     });
     return rows;
   }, [aggregates, sort]);
-  const toggleSort = (key: SortKey) =>
-    setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: key === "name" || key === "status" ? "asc" : "desc" }));
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const setSortKey = (key: SortKey) =>
     setSort({ key, dir: key === "name" || key === "status" || key === "risk" ? "asc" : "desc" });
 
@@ -693,8 +694,8 @@ export function RiskView() {
                           <li key={a.project.id}>
                             <Link href={`/projects/${a.project.id}`} className="group flex min-h-11 min-w-0 items-center gap-3 px-4 py-2 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)]">
                               {isRisky(a.overallRisk)
-                                ? <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${RISK_PILL[a.overallRisk as RiskLevel]}`}>{RISK_LABEL[a.overallRisk as RiskLevel]}</span>
-                                : <span className="shrink-0 rounded-md bg-[var(--danger-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--danger)]">Failed</span>}
+                                ? <StatusPill size="sm" tone={RISK_TONE[a.overallRisk as RiskLevel]}>{RISK_LABEL[a.overallRisk as RiskLevel]}</StatusPill>
+                                : <StatusPill size="sm" tone="blocked">Failed</StatusPill>}
                               <div className="min-w-0 flex-1">
                                 <div className="truncate text-sm font-medium text-foreground">{displayTitle(a.project.name)}</div>
                                 <div className="truncate text-xs text-muted-foreground">
@@ -790,45 +791,22 @@ export function RiskView() {
                   </Toolbar>
                 );
               })()}
-              {/* Below md the table keeps Project, High-risk, Value and Risk; the rest return as space allows. */}
-              <div className="overflow-x-auto border-y border-border">
-                <table className="w-full min-w-[440px] border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-[var(--panel)] text-left">
-                      <SortableTh label={byEdition("Project", "Engagement")} k="name" sort={sort} onSort={toggleSort} />
-                      <SortableTh label="Status" k="status" sort={sort} onSort={toggleSort} className="hidden md:table-cell" />
-                      <SortableTh label="Docs" k="docCount" sort={sort} onSort={toggleSort} align="right" className="hidden lg:table-cell" />
-                      <SortableTh label="Clauses" k="clauseCount" sort={sort} onSort={toggleSort} align="right" className="hidden lg:table-cell" />
-                      <SortableTh label="High-risk" k="highRisk" sort={sort} onSort={toggleSort} align="right" />
-                      <SortableTh label="Value" k="value" sort={sort} onSort={toggleSort} align="right" />
-                      <th scope="col" className={`hidden text-right xl:table-cell ${TH}`}>Amended</th>
-                      <th scope="col" className={`hidden xl:table-cell ${TH}`}>Data</th>
-                      <SortableTh label="Risk" k="risk" sort={sort} onSort={toggleSort} />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleRows.length === 0 && (
-                      <tr><td colSpan={9} className="px-4 py-10 text-center">
-                        <p className="text-base font-semibold text-foreground">No contracts match these filters</p>
-                        <Button variant="outline" className="mt-4 h-10 sm:h-9" onClick={resetFilters}>Clear filters</Button>
-                      </td></tr>
-                    )}
-                    {visibleRows.map((a) => (
-                      <tr key={a.project.id} className="border-b border-border transition-colors last:border-0 hover:bg-[var(--panel)]">
-                        <td className="max-w-[220px] px-4 py-2 md:max-w-[320px]"><Link href={`/projects/${a.project.id}`} className="block truncate rounded-sm font-medium text-foreground hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">{displayTitle(a.project.name)}</Link>{a.project.client && <div className="truncate text-xs text-muted-foreground">{a.project.client}</div>}</td>
-                        <td className="hidden px-4 py-2 capitalize text-[var(--ink-600)] md:table-cell">{a.lifecycle ? stageLabel(a.lifecycle) : <Dash />}</td>
-                        <td className="hidden px-4 py-2 text-right tabular-nums text-[var(--ink-600)] lg:table-cell">{a.docCount}</td>
-                        <td className="hidden px-4 py-2 text-right tabular-nums text-[var(--ink-600)] lg:table-cell">{a.clauseCount === null ? <Dash /> : a.clauseCount.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{a.rated === 0 ? <Dash /> : a.highRisk > 0 ? <span className="font-semibold text-[var(--danger)]">{a.highRisk}</span> : <span className="text-[var(--ink-600)]">0</span>}</td>
-                        <td className="whitespace-nowrap px-4 py-2 text-right font-semibold tabular-nums text-foreground">{a.value !== null ? fmtMoney(a.value, a.currency) : <Dash />}</td>
-                        <td className="hidden whitespace-nowrap px-4 py-2 text-right xl:table-cell"><ValueDelta delta={a.valueDelta} currency={a.currency} /></td>
-                        <td className="hidden whitespace-nowrap px-4 py-2 xl:table-cell"><ReconciledBadge reconciled={a.reconciled} hasValue={a.value !== null} /></td>
-                        <td className="whitespace-nowrap px-4 py-2"><RiskCell a={a} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                caption="Contracts"
+                noun="contracts"
+                columns={contractColumns()}
+                rows={visibleRows}
+                getRowId={(a) => a.project.id}
+                getRowHref={(a) => `/projects/${a.project.id}`}
+                sort={{ columnId: sort.key, direction: sort.dir }}
+                onSortChange={(next) => next && setSort({ key: next.columnId as SortKey, dir: next.direction })}
+                pageSize={25}
+                columnsKey="home-risk-contracts"
+                selection={{ selected, onChange: setSelected }}
+                exportName="contracts"
+                isFiltered={filtersActive}
+                onClearFilters={resetFilters}
+              />
             </section>
           </>
         )}
@@ -837,7 +815,6 @@ export function RiskView() {
 }
 
 const TEXT_LINK = "inline-flex min-h-10 items-center gap-1 rounded-sm text-sm font-semibold text-[var(--brand-primary-600)] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] sm:min-h-0";
-const TH = "h-[38px] px-4 text-xs font-medium text-muted-foreground";
 
 type YearRow = { key: string; year: number; currency: string; value: number; atRisk: number };
 
@@ -863,18 +840,74 @@ function MoreToggle({ total, first, open, onToggle, noun }: { total: number; fir
   );
 }
 
+/** Pill tone per risk level: red and amber only for critical and high. */
+const RISK_TONE: Record<RiskLevel, "blocked" | "caution" | "unknown"> = { critical: "blocked", high: "caution", medium: "unknown", low: "unknown" };
+
 /** Risk cell of the contracts table: the worst rated level, or why there is none. */
 function RiskCell({ a }: { a: Agg }) {
   if (a.overallRisk) {
-    return <span title="Highest clause risk level found in this contract" className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${RISK_PILL[a.overallRisk]}`}>{RISK_LABEL[a.overallRisk]}</span>;
+    return <StatusPill size="sm" tone={RISK_TONE[a.overallRisk]} title="Highest clause risk level found in this contract">{RISK_LABEL[a.overallRisk]}</StatusPill>;
   }
-  if (a.processing > 0) {
-    return <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--ai-ink)]"><Loader2 size={12} className="animate-spin motion-reduce:animate-none" />Analyzing</span>;
-  }
-  if (a.failed > 0 && a.readyCount === 0) {
-    return <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--danger-fg)]"><XCircle size={12} />Failed</span>;
-  }
-  return <span className="text-xs text-muted-foreground">Not assessed</span>;
+  if (a.processing > 0) return <StatusPill size="sm" tone="ai">Analyzing</StatusPill>;
+  if (a.failed > 0 && a.readyCount === 0) return <StatusPill size="sm" tone="blocked">Failed</StatusPill>;
+  return <StatusPill size="sm" tone="unknown" dashed>Not assessed</StatusPill>;
+}
+
+/** Plain risk text for the CSV export, matching RiskCell. */
+const riskText = (a: Agg) =>
+  a.overallRisk ? RISK_LABEL[a.overallRisk] : a.processing > 0 ? "Analyzing" : a.failed > 0 && a.readyCount === 0 ? "Failed" : "Not assessed";
+
+/** Columns of the contracts table. The page sorts the rows (sortedRows), so
+ *  sortValue only marks a column sortable and feeds the default export. */
+function contractColumns(): DataTableColumn<Agg>[] {
+  return [
+    {
+      id: "name", header: byEdition("Project", "Engagement"), card: "title", className: "min-w-[12rem]",
+      sortValue: (a) => a.project.name, exportValue: (a) => displayTitle(a.project.name),
+      cell: (a) => (
+        <span className="flex min-w-0 max-w-[min(20rem,40cqw)] flex-col">
+          <span className="truncate font-medium">{displayTitle(a.project.name)}</span>
+          {a.project.client && <span className="truncate text-xs font-normal text-muted-foreground">{a.project.client}</span>}
+        </span>
+      ),
+    },
+    {
+      id: "status", header: "Status", priority: 2,
+      sortValue: (a) => a.lifecycle, exportValue: (a) => (a.lifecycle ? stageLabel(a.lifecycle) : null),
+      cell: (a) => (a.lifecycle ? <span className="capitalize text-[var(--ink-600)]">{stageLabel(a.lifecycle)}</span> : <Dash />),
+    },
+    { id: "docCount", header: "Docs", priority: 3, numeric: true, sortValue: (a) => a.docCount, exportValue: (a) => a.docCount },
+    {
+      id: "clauseCount", header: "Clauses", priority: 3, numeric: true,
+      sortValue: (a) => a.clauseCount, exportValue: (a) => a.clauseCount,
+      cell: (a) => (a.clauseCount === null ? <Dash /> : a.clauseCount.toLocaleString()),
+    },
+    {
+      id: "highRisk", header: "High-risk", numeric: true,
+      sortValue: (a) => (a.rated > 0 ? a.highRisk : null), exportValue: (a) => (a.rated > 0 ? a.highRisk : null),
+      cell: (a) => (a.rated === 0 ? <Dash /> : a.highRisk > 0 ? <span className="font-semibold text-[var(--danger)]">{a.highRisk}</span> : "0"),
+    },
+    {
+      id: "value", header: "Value", numeric: true,
+      sortValue: (a) => a.value, exportValue: (a) => (a.value !== null ? fmtMoney(a.value, a.currency) : null),
+      cell: (a) => (a.value !== null ? <span className="font-semibold">{fmtMoney(a.value, a.currency)}</span> : <Dash />),
+    },
+    {
+      id: "amended", header: "Amended", priority: 3, numeric: true, sortable: false,
+      exportValue: (a) => (a.valueDelta ? fmtMoney(a.valueDelta, a.currency) : null),
+      cell: (a) => <ValueDelta delta={a.valueDelta} currency={a.currency} />,
+    },
+    {
+      id: "data", header: "Data", priority: 3, sortable: false,
+      exportValue: (a) => (a.value === null ? null : a.reconciled === true ? "Reconciled" : a.reconciled === false ? "Check" : "Not reconciled"),
+      cell: (a) => <ReconciledBadge reconciled={a.reconciled} hasValue={a.value !== null} />,
+    },
+    {
+      id: "risk", header: "Risk", card: "status", sortFirst: "asc",
+      sortValue: (a) => (a.overallRisk ? RISK_RANK[a.overallRisk] : UNRATED_RANK), exportValue: riskText,
+      cell: (a) => <RiskCell a={a} />,
+    },
+  ];
 }
 
 /* ── Focal: value at risk — the one solid block on the page ──────
@@ -983,25 +1016,10 @@ function ValueDelta({ delta, currency }: { delta: number; currency: string | nul
 
 function ReconciledBadge({ reconciled, hasValue }: { reconciled: boolean | null; hasValue: boolean }) {
   if (!hasValue) return <Dash />;
-  if (reconciled === true) return <span title="Figures reconcile to the stated total" className="inline-flex items-center gap-1 text-xs font-medium text-[var(--success)]"><CheckCircle2 size={12} />Reconciled</span>;
+  if (reconciled === true) return <span title="Figures reconcile to the stated total" className="inline-flex items-center gap-1 text-xs font-medium text-[var(--ink-700)]"><CheckCircle2 size={12} />Reconciled</span>;
   if (reconciled === false) return <span title="Figures don't reconcile. Review them." className="inline-flex items-center gap-1 text-xs font-medium text-[var(--warning)]"><AlertTriangle size={12} />Check</span>;
   // The figure is the extracted one; the validation step just had nothing to reconcile it against.
   return <span title="Extracted from the document. No stated total was available to reconcile it against." className="text-xs text-muted-foreground">Not reconciled</span>;
-}
-
-function SortableTh({ label, k, sort, onSort, align = "left", className = "" }: { label: string; k: SortKey; sort: { key: SortKey; dir: SortDir }; onSort: (k: SortKey) => void; align?: "left" | "right"; className?: string }) {
-  const active = sort.key === k;
-  return (
-    <th scope="col" aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"} className={`px-4 py-1 ${align === "right" ? "text-right" : ""} ${className}`}>
-      <button
-        type="button" onClick={() => onSort(k)}
-        className={`inline-flex min-h-9 items-center gap-1 whitespace-nowrap rounded-sm text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] ${align === "right" ? "flex-row-reverse" : ""} ${active ? "text-foreground" : "text-muted-foreground"}`}
-      >
-        {label}
-        {active ? (sort.dir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />) : <ChevronDown size={12} className="text-[var(--ink-300)]" />}
-      </button>
-    </th>
-  );
 }
 
 /** A titled panel (UI_SPEC section 3). The icon prop is kept for callers but

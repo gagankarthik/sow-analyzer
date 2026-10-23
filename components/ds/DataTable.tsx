@@ -9,22 +9,26 @@
 //  • the whole row is ONE real <a> (keyboard, middle-click, copy link);
 //    secondary actions sit above the link layer
 //  • density toggle remembered per table
-//  • pagination ("Showing 1–50 of 2,431") for large sets
+//  • a footer bar on paged tables: "Showing 1–50 of 2,431", rows per page
+//    and previous / next, present even when everything fits on one page
 //  • group-by with count + subtotal per group
 //  • loading / empty / no results / error are four distinct states
 //  • optional row selection (shift+click selects a range) with a sticky
-//    bulk-action bar, and a "Columns" menu to hide columns (remembered per
+//    bulk-action bar (with `exportName`, it always offers a CSV of the
+//    selected rows, in the visible columns), and a "Columns" menu to hide columns (remembered per
 //    table) and, with onColumnOrderChange, reorder them
 //  • hidden columns, column order and density can be controlled by the
 //    caller (a saved view) instead of remembered locally
 //  • groups collapse from their header
 //  • variant "flush" (default): flat on the page, 38px header, 42px rows,
 //    hairline dividers; "card" keeps the framed look; optional footer bar
+//  • numbers, money and percentages: right-aligned, tabular, monospace
 
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Columns3 } from "@/components/ui/icons";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Columns3, Download } from "@/components/ui/icons";
+import { csvFileName, downloadCsv, rowsToCsv } from "@/lib/csv";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -118,6 +122,8 @@ export type DataTableProps<T> = {
 
   /** Client-side page size. Omit to render all rows (fine below ~100). */
   pageSize?: number;
+  /** Choices in the footer's rows-per-page menu (the page size is added if missing). */
+  pageSizeOptions?: number[];
   /** Noun for counts: "contracts". */
   noun?: string;
   groupBy?: DataTableGroupBy<T>;
@@ -142,6 +148,8 @@ export type DataTableProps<T> = {
   selection?: { selected: Set<string>; onChange: (next: Set<string>) => void };
   /** Actions for the selected rows, shown in a bar above the table. */
   bulkActions?: (rows: T[]) => React.ReactNode;
+  /** File name base for exporting the selected rows as CSV ("renewals"). */
+  exportName?: string;
   /** Persist hidden columns under this key; also shows the Columns menu. */
   columnsKey?: string;
   /** Toolbar content shown left of the density toggle (filters summary, export). */
@@ -197,7 +205,8 @@ export function DataTable<T>(props: DataTableProps<T>) {
     defaultSort = null,
     sort: controlledSort,
     onSortChange,
-    pageSize,
+    pageSize: initialPageSize,
+    pageSizeOptions = DEFAULT_PAGE_SIZES,
     noun = "rows",
     groupBy,
     densityKey,
@@ -213,6 +222,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     className,
     selection,
     bulkActions,
+    exportName,
     columnsKey,
     columnOrder,
     onColumnOrderChange,
@@ -226,6 +236,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     headerEnd,
   } = props;
   const flush = variant === "flush";
+  const [pageSize, setPageSize] = React.useState(initialPageSize);
 
   const [storedHidden, setStoredHidden] = useHiddenColumns(columnsKey);
   const hiddenIds = React.useMemo(() => (controlledHidden ? new Set(controlledHidden) : storedHidden), [controlledHidden, storedHidden]);
@@ -294,7 +305,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
       collapsed.has(g.key) ? [{ kind: "collapsed", group: g.key }] : g.rows.map((row) => ({ kind: "row", row, group: g.key })),
     );
   }, [groups, sorted, collapsed]);
-  const pagination = usePagination(units.length, pageSize ?? Math.max(units.length, 1), `${sort?.columnId}:${sort?.direction}:${rows.length}:${groupBy ? "g" : ""}`);
+  const pagination = usePagination(units.length, pageSize ?? Math.max(units.length, 1), `${sort?.columnId}:${sort?.direction}:${rows.length}:${groupBy ? "g" : ""}:${pageSize}`);
   const pageUnits = pageSize ? units.slice(pagination.from - 1, pagination.to) : units;
   const pageRows = pageUnits.flatMap((u) => (u.kind === "row" ? [u.row] : []));
   const groupByKey = new Map((groups ?? []).map((g) => [g.key, g]));
@@ -372,6 +383,19 @@ export function DataTable<T>(props: DataTableProps<T>) {
     }
     selection.onChange(next);
   }
+  /** The selected rows as CSV, in the columns on screen, using each column's export value. */
+  function exportRows(list: T[]) {
+    if (!exportName) return;
+    const csv = rowsToCsv(
+      columns.map((c) => ({
+        header: c.header,
+        value: (r: T) => (c.exportValue ? c.exportValue(r) : cellText(c, r)),
+      })),
+      list,
+    );
+    downloadCsv(csvFileName(exportName), csv);
+  }
+
   function setPageSelected(on: boolean) {
     if (!selection) return;
     const next = new Set([...selection.selected].filter((x) => rowIds.has(x)));
@@ -447,8 +471,20 @@ export function DataTable<T>(props: DataTableProps<T>) {
             <span aria-hidden className="inline-flex size-4 items-center justify-center rounded border border-white/70 text-[10px] leading-none">–</span>
             <span aria-live="polite">{formatValue(selectedRows.length)} selected</span>
           </button>
-          {bulkActions && (
-            <div className="dt-bulk flex flex-wrap items-center gap-1 border-l border-white/20 ps-2">{bulkActions(selectedRows)}</div>
+          {(bulkActions || exportName) && (
+            <div className="dt-bulk flex flex-wrap items-center gap-1 border-l border-white/20 ps-2">
+              {bulkActions?.(selectedRows)}
+              {exportName && (
+                <button
+                  type="button"
+                  onClick={() => exportRows(selectedRows)}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-body font-medium hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white"
+                >
+                  <Download size={14} aria-hidden />
+                  Export CSV
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -493,7 +529,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
               <thead>
                 <tr>
                   {selection && (
-                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default ps-3", headCellBg)}>
+                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default ps-3 text-start align-middle", headCellBg)}>
                       <Checkbox
                         checked={allOnPage}
                         indeterminate={pageSelected > 0 && !allOnPage}
@@ -503,7 +539,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                     </th>
                   )}
                   {hasExpand && (
-                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default", headCellBg, expandHide)}>
+                    <th scope="col" className={cn("sticky top-0 z-(--z-sticky) w-10 border-b border-border-default text-start", headCellBg, expandHide)}>
                       <span className="sr-only">Details</span>
                     </th>
                   )}
@@ -519,12 +555,13 @@ export function DataTable<T>(props: DataTableProps<T>) {
                         className={cn(
                           "sticky top-0 z-(--z-sticky) border-b border-border-default whitespace-nowrap",
                           flush
-                            ? "h-[38px] border-t bg-surface-canvas text-[12px] font-normal text-[var(--ink-600)]"
+                            ? "h-[38px] border-t bg-surface-canvas text-[13px] font-medium text-[var(--ink-600)]"
                             : "h-(--table-header-height) bg-surface-sunken text-caption font-semibold text-fg-secondary",
                           col.numeric ? "text-end" : "text-start",
-                          sortable ? "px-1.5" : cellPad,
+                          // Header text sits on the cells' inset: the cell pad minus the sort button's 8px.
+                          sortable ? (flush ? "px-1" : "px-2") : cellPad,
                           PRIORITY_CELL[col.priority ?? 1],
-                          col.className,
+                          col.className ?? (col.numeric ? NUMERIC_FIT : undefined),
                         )}
                       >
                         {sortable ? (
@@ -532,7 +569,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                             type="button"
                             onClick={() => handleSort(col)}
                             className={cn(
-                              "inline-flex items-center gap-1 rounded-md px-2.5 transition-colors duration-(--duration-instant) hover:bg-surface-hover hover:text-fg-primary",
+                              "inline-flex items-center gap-1 rounded-md px-2 transition-colors duration-(--duration-instant) hover:bg-surface-hover hover:text-fg-primary",
                               flush ? "h-7" : "min-h-(--target-min) py-1",
                               col.numeric && "flex-row-reverse",
                               active && "text-fg-primary",
@@ -572,13 +609,14 @@ export function DataTable<T>(props: DataTableProps<T>) {
 
           {footer}
 
-          {pageSize && units.length > pageSize && (
-            <Pagination state={pagination} noun={noun} />
-          )}
-          {pageSize && units.length <= pageSize && !footer && (
-            <p className="text-caption text-fg-tertiary" aria-live="polite">
-              Showing {formatValue(ordered.length)} {noun}
-            </p>
+          {pageSize && (
+            <Pagination
+              state={pagination}
+              noun={noun}
+              pageSizeOptions={pageSizeOptions}
+              onPageSizeChange={setPageSize}
+              className="px-3 pt-1"
+            />
           )}
         </>
       )}
@@ -697,10 +735,10 @@ export function DataTable<T>(props: DataTableProps<T>) {
                     "border-b border-border-subtle align-middle text-fg-primary",
                     rowHeight,
                     cellPad,
-                    col.numeric ? "text-end tabular-nums whitespace-nowrap" : "text-start",
+                    col.numeric ? "text-end font-mono text-[13px] tabular-nums whitespace-nowrap" : "text-start",
                     col.stopRowClick && "relative z-(--z-raised) cursor-default",
                     PRIORITY_CELL[col.priority ?? 1],
-                    col.className,
+                    col.className ?? (col.numeric ? NUMERIC_FIT : undefined),
                   )}
                 >
                   {isTitle && href ? (
@@ -744,7 +782,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                   {hiddenColumns.map((col) => (
                     <div key={col.id} className={cn("flex min-w-0 flex-col gap-0.5", col.priority === 2 && "@4xl/table:hidden", col.priority === 3 && "@5xl/table:hidden")}>
                       <dt className="text-caption text-fg-tertiary">{col.header}</dt>
-                      <dd className={cn("min-w-0 text-body text-fg-primary", col.numeric && "tabular-nums")}>{renderCell(col, row)}</dd>
+                      <dd className={cn("min-w-0 text-body text-fg-primary", col.numeric && "font-mono tabular-nums")}>{renderCell(col, row)}</dd>
                     </div>
                   ))}
                 </dl>
@@ -824,7 +862,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                 {fieldCols.map((c) => (
                   <div key={c.id} className="min-w-0">
                     <dt className="text-caption text-fg-tertiary">{c.header}</dt>
-                    <dd className={cn("min-w-0 text-body text-fg-primary", c.numeric && "tabular-nums")}>{renderCell(c, row)}</dd>
+                    <dd className={cn("min-w-0 text-body text-fg-primary", c.numeric && "font-mono tabular-nums")}>{renderCell(c, row)}</dd>
                   </div>
                 ))}
               </dl>
@@ -837,6 +875,10 @@ export function DataTable<T>(props: DataTableProps<T>) {
 }
 
 /* ─── Cell helpers ───────────────────────────────────────────────── */
+
+/** A numeric column with no width of its own hugs its widest figure, so the
+ *  text columns take the free space instead of it spreading between numbers. */
+const NUMERIC_FIT = "w-[1%]";
 
 function cellText<T>(col: DataTableColumn<T>, row: T): string {
   if (col.truncate) return col.truncate(row);
@@ -873,16 +915,24 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
 
 /* ─── Pagination ─────────────────────────────────────────────────── */
 
-/** "Showing 1–50 of 2,431 contracts" with previous / next. Works for client or server pages. */
+const DEFAULT_PAGE_SIZES = [25, 50, 100];
+
+/** "Showing 1–50 of 2,431 contracts", rows per page, previous / next. Works for client or server pages. */
 export function Pagination({
   state,
   noun = "rows",
+  pageSizeOptions,
+  onPageSizeChange,
   className,
 }: {
-  state: Pick<PaginationState, "page" | "pageCount" | "total" | "from" | "to" | "setPage">;
+  state: Pick<PaginationState, "page" | "pageCount" | "total" | "from" | "to" | "setPage" | "pageSize">;
   noun?: string;
+  /** With onPageSizeChange: show a rows-per-page menu. */
+  pageSizeOptions?: number[];
+  onPageSizeChange?: (size: number) => void;
   className?: string;
 }) {
+  const sizes = pageSizeOptions && [...new Set([...pageSizeOptions, state.pageSize])].sort((a, b) => a - b);
   return (
     <nav aria-label="Pagination" className={cn("flex flex-wrap items-center justify-between gap-3", className)}>
       <p className="text-body text-fg-secondary" aria-live="polite">
@@ -890,6 +940,22 @@ export function Pagination({
         <span className="tabular-nums">{formatValue(state.total)}</span> {noun}
       </p>
       <div className="flex items-center gap-2">
+        {sizes && onPageSizeChange && (
+          <label className="me-2 hidden items-center gap-2 text-caption text-fg-tertiary sm:inline-flex">
+            Rows per page
+            <select
+              value={state.pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="h-8 cursor-pointer rounded-control border border-border-strong bg-surface-raised px-2 text-caption font-medium tabular-nums text-fg-primary hover:border-[var(--ink-400)] focus-visible:outline-2 focus-visible:outline-focus"
+            >
+              {sizes.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <span className="hidden text-caption text-fg-tertiary sm:inline">
           Page {formatValue(state.page + 1)} of {formatValue(state.pageCount)}
         </span>

@@ -1,21 +1,23 @@
 "use client";
 
-import { SonarMark } from "@/components/ui/SonarMark";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { SESSION_MARKER_COOKIE } from "@/lib/auth/session";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ChevronDown, Menu, X } from "@/components/ui/icons";
 import { Logo } from "@/components/landing/primitives";
 import { NAV_MENUS, PRODUCT_SECTIONS, landingHref, type NavItem, type NavMenu } from "@/components/landing/site-nav";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
+import { AccountMenu, AccountSummary, useVisitor } from "@/components/landing/AccountMenu";
 
-/* Public site header: the mark on the left, the three menus centred, the
-   actions on the right. A menu opens as a full-width sheet under the bar,
-   on hover or click; Escape, an outside click or leaving the header closes
-   it. On narrow screens the menus become an accordion in a drawer. */
+/* Public site header: a full-width bar with the mark on the left, the
+   three menus centred and the actions on the right. A menu opens as a
+   mega menu under the bar, on hover or click; Escape, an outside click or
+   leaving the header closes it. On narrow screens the menus become an
+   accordion in a drawer. */
 
 const MOBILE_NAV_ID = "lp-mobile-nav";
+// The account menu shares the header's open-menu state with the three menus.
+const ACCOUNT_MENU = "Account";
 const CLOSE_DELAY_MS = 160;
 
 const menuId = (label: string) => `lp-menu-${label.toLowerCase()}`;
@@ -27,9 +29,8 @@ export function SiteHeader() {
   const headerRef = useRef<HTMLElement | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [isScrolled, setIsScrolled] = useState(false);
-  // The session marker cookie says whether someone is signed in, without
-  // loading the sign-in library on the public site.
-  const isSignedIn = useSyncExternalStore(noopSubscribe, hasSessionCookie, () => false);
+  // Who is signed in, read from the session cookies (null when nobody is).
+  const visitor = useVisitor();
 
   useEffect(() => {
     if (!openMenu && !isDrawerOpen) return;
@@ -124,10 +125,16 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center justify-end gap-2">
-          {isSignedIn ? (
-            <Link href="/home" className="lp-btn lp-btn-primary lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
-              Open Govern
-            </Link>
+          {visitor ? (
+            <div className="hidden sm:block">
+              <AccountMenu
+                visitor={visitor}
+                isOpen={openMenu === ACCOUNT_MENU}
+                onOpen={() => open(ACCOUNT_MENU)}
+                onToggle={() => (openMenu === ACCOUNT_MENU ? setOpenMenu(null) : open(ACCOUNT_MENU))}
+                onNavigate={closeAll}
+              />
+            </div>
           ) : (
             <>
               <Link href="/login" className="lp-btn lp-btn-quiet lp-btn-sm hidden sm:inline-flex" onClick={closeAll}>
@@ -200,10 +207,6 @@ export function SiteHeader() {
                           </ul>
                         </div>
                       ))}
-                      <Link href={menu.foot.href} className="lp-sheet-foot mt-2 px-3" onClick={closeAll}>
-                        {menu.foot.label}
-                        <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
-                      </Link>
                     </div>
                   )}
                 </div>
@@ -211,10 +214,14 @@ export function SiteHeader() {
             })}
           </div>
           <div className="lp-drawer-actions lp-wrap">
-              {isSignedIn ? (
-                <Link href="/home" onClick={closeAll} className="lp-btn lp-btn-primary flex-1">
-                  Open Govern
-                </Link>
+              {visitor ? (
+                <>
+                  <AccountSummary visitor={visitor} />
+                  <Link href="/home" onClick={closeAll} className="lp-btn lp-btn-primary lp-btn-lg w-full">
+                    Go to platform
+                    <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+                  </Link>
+                </>
               ) : (
                 <>
                   <Link href="/signup" onClick={closeAll} className="lp-btn lp-btn-primary lp-btn-lg w-full">
@@ -233,69 +240,57 @@ export function SiteHeader() {
   );
 }
 
-/* The full-width sheet: what the menu covers on the left, its links
-   grouped on the right. */
+/* The mega menu: a full-width panel under the bar. Its link groups sit in
+   columns on the left, every link with its icon, title and one line; on
+   the right, one next step in the bar's own colours under the rating ribbon.
+   Switching menus while one is open swaps the content in place (the key
+   remounts it, replaying the CSS entrance). */
 function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void }) {
-  const isGrouped = menu.groups.length > 1;
+  const isSingle = menu.groups.length === 1;
   return (
     <div id={menuId(menu.label)} className="lp-sheet hidden lg:block">
-      <div className="lp-wrap lp-sheet-grid">
-        <div className="lp-sheet-intro">
-          <p className="lp-sheet-title">{menu.label}</p>
-          <p className="mt-2 text-sm text-lp-ink-2">{menu.intro}</p>
-          {/* Sonar, the AI in every step, under the Product menu's intro. */}
-          {menu.label === "Product" && (
-            <Link href="/product#sonar" onClick={onNavigate} className="lp-sheet-sonar sonar-rainbow">
-              <SonarMark size="sm" tile />
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-lp-ink">Meet Sonar</span>
-                <span className="block text-xs text-lp-ink-2">The AI that reads, rates and drafts</span>
-              </span>
-              <ArrowRight size={14} strokeWidth={2} aria-hidden="true" className="ml-auto shrink-0 text-lp-ink-3" />
-            </Link>
-          )}
-          <Link href={menu.foot.href} className="lp-sheet-foot" onClick={onNavigate}>
-            {menu.foot.label}
-            <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
-          </Link>
-        </div>
-        {/* A group of more than four links takes two columns, so the sheet
-            stays short enough to fit under the bar on a laptop screen. */}
-        <div className={isGrouped ? "grid grid-cols-3 gap-x-8" : undefined}>
+      <div key={menu.label} className="lp-wrap site-mega">
+        <div className="site-mega-groups">
           {menu.groups.map((group) => {
-            const wide = !isGrouped || group.items.length > 4;
+            // A long group, or the menu's only group, spreads over two columns.
+            const isWide = isSingle || group.items.length > 4;
             return (
-            <div key={group.label} className={isGrouped && wide ? "col-span-2" : undefined}>
-              {isGrouped ? <p className="lp-sheet-label px-3">{group.label}</p> : null}
-              <ul className={cn("grid gap-1", isGrouped && "mt-2", wide && "grid-cols-2")}>
-                {group.items.map((item) => (
-                  <li key={item.href}>
-                    <MenuLink item={item} onNavigate={onNavigate} />
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <div key={group.label} className="site-mega-group" data-wide={isSingle ? "all" : isWide || undefined}>
+                {isSingle ? null : <p className="site-mega-label">{group.label}</p>}
+                <ul>
+                  {group.items.map((item) => (
+                    <li key={item.href}>
+                      <MenuLink item={item} onNavigate={onNavigate} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
             );
           })}
         </div>
+        <Link href={menu.feature.href} className="site-mega-feature" onClick={onNavigate}>
+          <span className="site-mega-feature-title">{menu.feature.title}</span>
+          <span className="site-mega-feature-text">{menu.feature.text}</span>
+          <span className="site-mega-feature-cta">
+            {menu.feature.cta}
+            <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+          </span>
+        </Link>
       </div>
     </div>
   );
 }
 
-// Only product areas carry an icon (a plain 16px area icon); teams, industries and
-// resources are words.
+// Product areas take their area colour; every other link's icon is ink.
 const PRODUCT_AREA_BY_HREF = new Map<string, string>(PRODUCT_SECTIONS.map((s) => [landingHref(s.id), s.id]));
 
 function MenuLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
   const area = PRODUCT_AREA_BY_HREF.get(item.href);
   return (
     <Link href={item.href} className="lp-menu-item" onClick={onNavigate}>
-      {area ? (
-        <span className={`lp-menu-icon lp-area-${area}`} aria-hidden="true">
-          <item.icon size={16} />
-        </span>
-      ) : null}
+      <span className={cn("lp-menu-icon", area ? `lp-area-${area}` : "site-mega-icon")} aria-hidden="true">
+        <item.icon size={18} />
+      </span>
       <span className="min-w-0">
         <span className="lp-menu-title flex flex-wrap items-center gap-x-2 text-sm font-semibold text-lp-ink">
           {item.label}
@@ -306,10 +301,4 @@ function MenuLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void 
       <ArrowRight size={16} strokeWidth={2} className="lp-menu-arrow" aria-hidden="true" />
     </Link>
   );
-}
-
-const noopSubscribe = () => () => {};
-
-function hasSessionCookie(): boolean {
-  return document.cookie.split("; ").some((c) => c.startsWith(`${SESSION_MARKER_COOKIE}=`) && c.length > SESSION_MARKER_COOKIE.length + 1);
 }

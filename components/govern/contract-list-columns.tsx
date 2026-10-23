@@ -36,10 +36,10 @@ export const CONTRACT_LIST_COLUMNS: DataTableColumn<Contract>[] = [
     cell: (c) => <StageMeter contract={c} />,
   },
   {
-    id: "days", header: "Days in step", numeric: true, sortFirst: "desc", className: "w-28",
+    id: "days", header: "Days in step", numeric: true, sortFirst: "desc", className: "w-32",
     sortValue: (c) => c.daysInStage,
     exportValue: (c) => c.daysInStage,
-    cell: (c) => <DaysCell days={c.daysInStage} sla={c.slaStatus} />,
+    cell: (c) => <DaysCell days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} />,
   },
   {
     id: "owner", header: "Owner", card: "field", stopRowClick: true,

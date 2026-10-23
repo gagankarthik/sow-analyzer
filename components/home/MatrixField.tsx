@@ -21,11 +21,11 @@ const QUIET_MAX = 0.18;    // most a cell behind text may light
 
 /* How often each tier is dealt, roughly the shape of a real review. */
 const TIER_WEIGHTS = [
-  { variable: "--home-within", weight: 60 },
-  { variable: "--home-fallback", weight: 22 },
-  { variable: "--home-deviates", weight: 9 },
-  { variable: "--home-unacceptable", weight: 6 },
-  { variable: "--home-missing", weight: 3 },
+  { variable: "--site-within", weight: 60 },
+  { variable: "--site-fallback", weight: 22 },
+  { variable: "--site-deviates", weight: 9 },
+  { variable: "--site-unacceptable", weight: 6 },
+  { variable: "--site-missing", weight: 3 },
 ];
 
 type Rgb = [number, number, number];
@@ -41,7 +41,7 @@ export function MatrixField() {
     if (!canvas || !host || !ctx) return;
 
     const styles = getComputedStyle(host);
-    const base = toRgb(styles.getPropertyValue("--home-line"));
+    const base = toRgb(styles.getPropertyValue("--site-line"));
     const tiers = TIER_WEIGHTS.map((t) => toRgb(styles.getPropertyValue(t.variable)));
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { ArrowRight } from "@/components/ui/icons";
+import { BrandRibbon } from "@/components/landing/BrandRibbon";
 
-/* The closing offer, the opening lines of the home footer: the offer and
-   one sentence on the left, the action on the right, on the footer's own
-   navy so the two read as one close. */
+/* The closing offer at the top of the footer: a navy stage like the
+   hero's, the offer and one sentence on the left, the actions on the
+   right, and the rating ribbon sweeping out of the corner behind them. */
 export function DemoCta() {
   return (
     <section id="start" className="home-closing scroll-mt-20" aria-labelledby="cta-title">
+      <BrandRibbon className="home-closing-ribbon" />
       <div className="home-closing-copy">
         <h2 id="cta-title" className="home-closing-title">
           See your own contract, reviewed before the call

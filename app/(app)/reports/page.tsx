@@ -58,7 +58,7 @@ export default function ReportsPage() {
           <ReportError error={error} onRetry={() => void refetch()} what="your reports" />
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 overflow-hidden rounded-container border border-border-default bg-surface-raised md:grid-cols-2">
               <BottlenecksCard facts={facts} />
               <MoneyCard facts={facts} />
               <TrendsCard />
@@ -116,13 +116,14 @@ function ReportCard({
   figure: React.ReactNode;
   figureLabel: string;
   tone?: "neutral" | "danger" | "warning";
-  detail: string;
+  /** A caveat the figure needs ("totals are incomplete"); omit when there is none. */
+  detail?: string;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className="group flex min-w-0 flex-col rounded-xl border border-border bg-card p-4 transition-colors duration-150 hover:border-[var(--ink-300)] hover:bg-[var(--ink-25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]"
+      className="group flex min-w-0 flex-col border-border-subtle p-4 transition-colors duration-150 not-first:border-t hover:bg-[var(--ink-25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)] md:p-5 md:even:border-l md:[&:nth-child(2)]:border-t-0"
     >
       <span className="flex min-w-0 items-center gap-2">
         <Icon size={16} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
@@ -137,7 +138,12 @@ function ReportCard({
         </span>
       </span>
       <span className="mt-3 block min-h-[4.5rem]">{children}</span>
-      <span className="mt-3 block border-t border-border pt-2.5 text-xs text-[var(--ink-600)]">{detail}</span>
+      {detail && (
+        <span className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[var(--warning-fg)]">
+          <AlertTriangle size={12} aria-hidden className="shrink-0" />
+          {detail}
+        </span>
+      )}
     </Link>
   );
 }
@@ -155,7 +161,6 @@ function BottlenecksCard({ facts }: { facts: Facts }) {
       figure={String(facts.open)}
       figureLabel={facts.overdue > 0 ? `waiting, ${facts.overdue} overdue` : "waiting for signature"}
       tone={facts.overdue > 0 ? "danger" : "neutral"}
-      detail="By step and by holder, days against target"
     >
       {queues.length === 0 ? (
         <span className="text-sm text-[var(--ink-600)]">Nothing is waiting right now.</span>
@@ -189,7 +194,7 @@ function MoneyCard({ facts }: { facts: Facts }) {
       title="Value"
       figure={formatCompact(current, primary)}
       figureLabel={`signed · ${formatCompact(potential, primary)} on the way`}
-      detail={facts.unvalued > 0 ? `${plural(facts.unvalued, "contract")} without a value: totals are incomplete` : "Money in and out, held-up value, breakdowns"}
+      detail={facts.unvalued > 0 ? `${plural(facts.unvalued, "contract")} without a value: totals are incomplete` : undefined}
     >
       {any ? (
         <MoneySplitBar
@@ -216,7 +221,6 @@ function TrendsCard() {
       title="Trends"
       figure={isLoading ? <SkeletonLine text="text-3xl font-semibold" width="w-12" className="inline-block" /> : isError ? "—" : String(signed)}
       figureLabel="signed in the last 6 months"
-      detail="Arrivals, signatures, days to sign, terms that cause changes"
     >
       {isLoading ? (
         <SkeletonRegion label="trends"><ReportCardBodySkeleton /></SkeletonRegion>
@@ -249,11 +253,10 @@ function CaptureCard({ total, missing }: { total: number; missing: number }) {
       figure={`${pct}%`}
       figureLabel={missing > 0 ? `complete · ${plural(missing, "contract")} missing details` : "of contracts complete"}
       tone={missing > 0 ? "warning" : "neutral"}
-      detail="Missing key details and documents that never became a contract"
     >
       <span className="flex flex-col gap-2">
         <span className="h-2 overflow-hidden rounded-full bg-[var(--ink-100)]" role="img" aria-label={`${pct}% of contracts have every key detail`}>
-          <span className="block h-full rounded-full bg-[var(--success)]" style={{ width: `${pct}%` }} />
+          <span className="block h-full rounded-full bg-[var(--viz-primary)]" style={{ width: `${pct}%` }} />
         </span>
         <span className="text-sm text-[var(--ink-600)]">
           {complete} of {plural(total, "contract")} {complete === 1 ? "has" : "have"} every key detail.

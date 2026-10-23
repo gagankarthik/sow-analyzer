@@ -38,8 +38,8 @@ export function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("flex min-w-0 flex-col rounded-xl border border-border bg-card shadow-xs", className)}>
-      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-3.5 md:px-5">
+    <section className={cn("flex min-w-0 flex-col overflow-hidden rounded-container border border-border-default bg-surface-raised", className)}>
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border-subtle px-4 py-3.5 md:px-5">
         <div className="flex min-w-0 items-center gap-2">
           {icon && <span className="shrink-0 text-muted-foreground">{icon}</span>}
           <h3 className="text-base font-semibold min-w-0 tracking-tight text-foreground">{title}</h3>

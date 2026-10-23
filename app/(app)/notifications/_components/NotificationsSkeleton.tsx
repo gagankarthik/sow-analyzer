@@ -37,7 +37,7 @@ export function NotificationsPageSkeleton() {
     <SkeletonRegion label="notifications">
       <PageTitleSkeleton title="Notifications" count actions={1} />
       <div className="app-container app-page gap-3">
-        <div className="flex max-w-[880px] flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <ToolbarSkeleton search={false} filters={2} filtersAlways more={false} actions={0} />
           <NotificationListSkeleton rows={8} />
         </div>

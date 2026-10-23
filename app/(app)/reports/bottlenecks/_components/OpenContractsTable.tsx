@@ -1,28 +1,28 @@
 "use client";
 
-// Every open contract in one table. Columns carry a priority: the essentials
-// always show, the rest appear as the screen widens (and all of it is one
-// click away on the contract page). Under md the rows become stacked cards.
-// Sortable headers, a sticky header, optional
-// grouping by step or by who it waits on, and pages of 50 for large sets.
+// Every open contract in one table (the shared DataTable). Columns carry a
+// priority: the essentials always show, the rest appear as the screen widens
+// (and all of it is one click away on the contract page). Under md the rows
+// become stacked cards. Sortable headers, a sticky header, optional grouping
+// by step or by who it waits on, selection with CSV export, and pages of 25.
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Fragment, useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight } from "@/components/ui/icons";
-import { DaysInStage, WaitingOnChip } from "@/components/govern/primitives";
-import { SLA_LABEL, STAGE_LABEL, STAGES, WAITING_ON_SHORT, daysLabel, personName, plural } from "@/lib/govern/labels";
+import { useMemo, useState } from "react";
+import { DataTable, StatusPill, type DataTableColumn, type DataTableGroupBy } from "@/components/ds";
+import type { ToneInput } from "@/components/ds/tone";
+import { WaitingOnChip } from "@/components/govern/primitives";
+import { SLA_LABEL, STAGE_LABEL, STAGES, WAITING_ON_SHORT, daysLabel, personName } from "@/lib/govern/labels";
 import { contractValueText } from "@/lib/govern/metrics";
-import type { Contract, SlaStatus } from "@/lib/govern/types";
-import { cn } from "@/lib/utils";
+import type { Contract, SlaStatus, WaitingOnKind } from "@/lib/govern/types";
 import { displayTitle } from "@/lib/format";
 
 export type SortKey = "title" | "stage" | "waitingOn" | "owner" | "daysInStage" | "totalDays" | "sla" | "value";
 type SortDir = "asc" | "desc";
 export type GroupBy = "none" | "stage" | "waitingOn";
 
-const PAGE_SIZE = 50;
 const SLA_RANK: Record<SlaStatus, number> = { red: 0, amber: 1, on_track: 2, none: 3 };
+/** Red and amber only where a target is actually missed; the rest stays neutral. */
+const SLA_TONE: Record<SlaStatus, ToneInput> = { red: "blocked", amber: "caution", on_track: "unknown", none: "unknown" };
 
 function compare(a: Contract, b: Contract, key: SortKey): number {
   switch (key) {
@@ -43,22 +43,6 @@ export function sortContracts(rows: Contract[], key: SortKey, dir: SortDir): Con
   return [...rows].sort((a, b) => compare(a, b, key) * sign || b.daysInStage - a.daysInStage);
 }
 
-/** P1 always shows; P2 from lg; P3 from xl. */
-type Priority = 1 | 2 | 3;
-const COLUMNS: { key: SortKey | null; label: string; priority: Priority; numeric?: boolean; width: string }[] = [
-  { key: "title", label: "Contract", priority: 1, width: "w-[30%] lg:w-[24%] xl:w-[21%]" },
-  { key: "stage", label: "Step", priority: 2, width: "w-[11%]" },
-  { key: "waitingOn", label: "Waiting on", priority: 1, width: "w-[30%] lg:w-[18%] xl:w-[16%]" },
-  { key: "owner", label: "Owner", priority: 2, width: "w-[11%] xl:w-[10%]" },
-  { key: "daysInStage", label: "In step", priority: 1, numeric: true, width: "w-[18%] lg:w-[11%] xl:w-[9%]" },
-  { key: "totalDays", label: "Total", priority: 3, numeric: true, width: "w-[6%]" },
-  { key: "value", label: "Value", priority: 3, numeric: true, width: "w-[10%]" },
-  { key: null, label: "Next step", priority: 2, width: "w-auto" },
-];
-
-const HIDE: Record<Priority, string> = { 1: "", 2: "hidden lg:table-cell", 3: "hidden xl:table-cell" };
-const HIDE_COL: Record<Priority, string> = { 1: "", 2: "hidden lg:table-column", 3: "hidden xl:table-column" };
-
 export function useContractSort(initial: SortKey = "daysInStage") {
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: initial, dir: "desc" });
   const toggle = (key: SortKey) =>
@@ -68,11 +52,60 @@ export function useContractSort(initial: SortKey = "daysInStage") {
   return { sort, toggle };
 }
 
-function groupOf(c: Contract, by: GroupBy): { key: string; label: string } {
-  if (by === "stage") return { key: c.stage, label: STAGE_LABEL[c.stage] };
-  if (by === "waitingOn") return { key: c.waitingOn.kind, label: `Waiting on ${WAITING_ON_SHORT[c.waitingOn.kind].toLowerCase()}` };
-  return { key: "all", label: "" };
+const COLUMNS: DataTableColumn<Contract>[] = [
+  {
+    id: "title", header: "Contract", card: "title", className: "min-w-[14rem]", sortValue: (c) => c.title,
+    exportValue: (c) => displayTitle(c.title),
+    cell: (c) => (
+      <span className="flex min-w-0 max-w-[min(24rem,32cqw)] flex-col">
+        <span className="truncate" title={c.title}>{displayTitle(c.title)}</span>
+        {(c.sponsor || c.counterparty) && (
+          <span className="truncate text-xs font-normal text-[var(--ink-600)]">{c.sponsor || c.counterparty}</span>
+        )}
+      </span>
+    ),
+  },
+  { id: "stage", header: "Step", priority: 2, sortValue: (c) => STAGES.indexOf(c.stage), exportValue: (c) => STAGE_LABEL[c.stage], cell: (c) => STAGE_LABEL[c.stage] },
+  {
+    id: "waitingOn", header: "Waiting on", sortValue: (c) => c.waitingOn.label, exportValue: (c) => c.waitingOn.label,
+    cell: (c) => <WaitingOnChip waitingOn={c.waitingOn} />,
+  },
+  { id: "owner", header: "Owner", priority: 2, sortValue: (c) => personName(c.owner), truncate: (c) => personName(c.owner) },
+  {
+    id: "daysInStage", header: "In step", numeric: true, sortValue: (c) => c.daysInStage, exportValue: (c) => c.daysInStage,
+    cell: (c) => daysLabel(c.daysInStage),
+  },
+  {
+    id: "sla", header: "Against target", card: "status", sortFirst: "asc", sortValue: (c) => SLA_RANK[c.slaStatus], exportValue: (c) => SLA_LABEL[c.slaStatus],
+    cell: (c) => (
+      <StatusPill size="sm" tone={SLA_TONE[c.slaStatus]} title={c.targetDays ? `Target ${daysLabel(c.targetDays)} in this step` : undefined}>
+        {SLA_LABEL[c.slaStatus]}
+      </StatusPill>
+    ),
+  },
+  { id: "totalDays", header: "Total", priority: 3, numeric: true, sortValue: (c) => c.totalDays, exportValue: (c) => c.totalDays, cell: (c) => daysLabel(c.totalDays) },
+  { id: "value", header: "Value", priority: 3, numeric: true, sortValue: (c) => c.value, exportValue: (c) => c.value, cell: (c) => contractValueText(c) },
+  { id: "next", header: "Next step", priority: 2, exportValue: (c) => c.nextStep.headline, truncate: (c) => c.nextStep.headline },
+];
+
+/** Group header: whole-group average days in step and overdue count. */
+function groupNote(rows: Contract[]): string {
+  const avg = Math.round(rows.reduce((s, c) => s + c.daysInStage, 0) / Math.max(1, rows.length));
+  const overdue = rows.filter((c) => c.slaStatus === "red").length;
+  return `avg ${daysLabel(avg)}${overdue ? ` · ${overdue} overdue` : ""}`;
 }
+
+const WAITING_ORDER = (Object.keys(WAITING_ON_SHORT) as WaitingOnKind[]).sort((a, b) => WAITING_ON_SHORT[a].localeCompare(WAITING_ON_SHORT[b]));
+
+const GROUPS: Record<Exclude<GroupBy, "none">, DataTableGroupBy<Contract>> = {
+  stage: { key: (c) => c.stage, label: (k) => STAGE_LABEL[k as Contract["stage"]], order: [...STAGES], subtotal: groupNote },
+  waitingOn: {
+    key: (c) => c.waitingOn.kind,
+    label: (k) => `Waiting on ${(WAITING_ON_SHORT[k as WaitingOnKind] ?? k).toLowerCase()}`,
+    order: WAITING_ORDER,
+    subtotal: groupNote,
+  },
+};
 
 export function OpenContractsTable({
   contracts, sort, onSort,
@@ -82,226 +115,50 @@ export function OpenContractsTable({
   onSort: (key: SortKey) => void;
 }) {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
-  const [page, setPage] = useState(0);
-
-  const sorted = useMemo(() => {
-    const rows = sortContracts(contracts, sort.key, sort.dir);
-    if (groupBy === "none") return rows;
-    const order = groupBy === "stage" ? (c: Contract) => STAGES.indexOf(c.stage) : (c: Contract) => c.waitingOn.label;
-    return [...rows].sort((a, b) => {
-      const ga = order(a), gb = order(b);
-      return ga < gb ? -1 : ga > gb ? 1 : 0;
-    });
-  }, [contracts, sort, groupBy]);
-
-  // Group headers show the whole group's count and average, not just this page's.
-  const groupStats = useMemo(() => {
-    const m = new Map<string, { count: number; days: number; overdue: number }>();
-    for (const c of contracts) {
-      const g = groupOf(c, groupBy).key;
-      const s = m.get(g) ?? { count: 0, days: 0, overdue: 0 };
-      s.count += 1;
-      s.days += c.daysInStage;
-      if (c.slaStatus === "red") s.overdue += 1;
-      m.set(g, s);
-    }
-    return m;
-  }, [contracts, groupBy]);
-
-  const pages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const current = Math.min(page, pages - 1);
-  const rows = sorted.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
-  const from = sorted.length ? current * PAGE_SIZE + 1 : 0;
-  const to = current * PAGE_SIZE + rows.length;
-  const pad = "py-2.5";
-  const href = (c: Contract) => `/contracts/${encodeURIComponent(c.contractId)}`;
-
-  const groupHeader = (c: Contract) => {
-    const g = groupOf(c, groupBy);
-    const s = groupStats.get(g.key);
-    return { ...g, note: s ? `${plural(s.count, "contract")} · avg ${daysLabel(Math.round(s.days / s.count))}${s.overdue ? ` · ${s.overdue} overdue` : ""}` : "" };
-  };
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const rows = useMemo(() => sortContracts(contracts, sort.key, sort.dir), [contracts, sort]);
 
   return (
-    <div className="min-w-0">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-4 py-2">
-        <div className="flex items-center gap-2">
-          <span id="group-by-label" className="text-xs text-[var(--ink-600)]">Group by</span>
-          <Select value={groupBy} onValueChange={(v) => { setGroupBy(v as GroupBy); setPage(0); }}>
-            <SelectTrigger aria-labelledby="group-by-label" className="h-8 w-44 text-xs max-md:h-11"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Nothing</SelectItem>
-              <SelectItem value="stage">Step</SelectItem>
-              <SelectItem value="waitingOn">Who it waits on</SelectItem>
-            </SelectContent>
-          </Select>
+    <DataTable
+      caption="Open contracts, sortable. Select a contract to open it."
+      noun="contracts"
+      columns={COLUMNS}
+      rows={rows}
+      getRowId={(c) => c.contractId}
+      getRowHref={(c) => `/contracts/${encodeURIComponent(c.contractId)}`}
+      getRowLabel={(c) => displayTitle(c.title)}
+      sort={{ columnId: sort.key, direction: sort.dir }}
+      onSortChange={(s) => s && onSort(s.columnId as SortKey)}
+      groupBy={groupBy === "none" ? undefined : GROUPS[groupBy]}
+      pageSize={25}
+      columnsKey="bottlenecks-open-contracts"
+      selection={{ selected, onChange: setSelected }}
+      exportName="open-contracts"
+      toolbar={
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 pt-2">
+          <div className="flex items-center gap-2">
+            <span id="group-by-label" className="text-xs text-[var(--ink-600)]">Group by</span>
+            <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)}>
+              <SelectTrigger aria-labelledby="group-by-label" className="h-8 w-44 text-xs max-md:h-11"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nothing</SelectItem>
+                <SelectItem value="stage">Step</SelectItem>
+                <SelectItem value="waitingOn">Who it waits on</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Phones show cards without headers, so sorting moves here. */}
+          <div className="flex items-center gap-2 md:hidden">
+            <span id="sort-by-label" className="text-xs text-[var(--ink-600)]">Sort by</span>
+            <Select value={sort.key} onValueChange={(v) => onSort(v as SortKey)}>
+              <SelectTrigger aria-labelledby="sort-by-label" className="h-11 w-44 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {COLUMNS.filter((c) => c.sortValue).map((c) => <SelectItem key={c.id} value={c.id}>{c.header}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex items-center gap-2 md:hidden">
-          <span id="sort-by-label" className="text-xs text-[var(--ink-600)]">Sort by</span>
-          <Select value={sort.key} onValueChange={(v) => onSort(v as SortKey)}>
-            <SelectTrigger aria-labelledby="sort-by-label" className="h-11 w-44 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {COLUMNS.filter((c) => c.key).map((c) => <SelectItem key={c.key} value={c.key!}>{c.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Phones: stacked cards with the essentials. */}
-      <ul className="md:hidden">
-        {rows.map((c, i) => {
-          const g = groupBy !== "none" && (i === 0 || groupOf(rows[i - 1], groupBy).key !== groupOf(c, groupBy).key) ? groupHeader(c) : null;
-          return (
-            <Fragment key={c.contractId}>
-              {g && (
-                <li className="border-b border-border bg-[var(--panel)] px-4 py-2">
-                  <p className="text-sm font-semibold text-foreground">{g.label}</p>
-                  <p className="text-xs text-[var(--ink-600)]">{g.note}</p>
-                </li>
-              )}
-              <li>
-                <Link href={href(c)} className="block border-b border-border px-4 py-3 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)]">
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="min-w-0">
-                      <span className="line-clamp-2 break-words text-sm font-medium text-foreground">{displayTitle(c.title)}</span>
-                      <span className="block truncate text-sm text-[var(--ink-600)]">{STAGE_LABEL[c.stage]} · {personName(c.owner)}</span>
-                    </span>
-                    <ChevronRight size={16} aria-hidden className="mt-1 shrink-0 text-[var(--ink-400)]" />
-                  </span>
-                  <span className="mt-2 flex flex-wrap gap-2">
-                    <WaitingOnChip waitingOn={c.waitingOn} />
-                    <DaysInStage days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} />
-                  </span>
-                  <span className="mt-2 line-clamp-2 text-sm text-[var(--ink-700)]">
-                    <span className="text-[var(--ink-600)]">Next: </span>{c.nextStep.headline}
-                  </span>
-                </Link>
-              </li>
-            </Fragment>
-          );
-        })}
-      </ul>
-
-      {/* md and up: the table. */}
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full table-fixed border-collapse text-sm">
-          <caption className="sr-only">Open contracts, sortable. Select a contract to open it.</caption>
-          <colgroup>
-            {COLUMNS.map((c) => <col key={c.label} className={cn(c.width, HIDE_COL[c.priority])} />)}
-          </colgroup>
-          <thead>
-            <tr>
-              {COLUMNS.map((col) => {
-                const active = col.key !== null && sort.key === col.key;
-                return (
-                  <th
-                    key={col.label}
-                    scope="col"
-                    aria-sort={col.key === null ? undefined : active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
-                    className={cn(
-                      "sticky top-0 z-10 h-[38px] border-b border-border bg-[var(--panel)] px-3 text-xs font-medium text-[var(--ink-600)]",
-                      col.numeric ? "text-right" : "text-left",
-                      HIDE[col.priority],
-                    )}
-                  >
-                    {col.key ? (
-                      <button
-                        type="button"
-                        onClick={() => onSort(col.key!)}
-                        className={cn(
-                          "inline-flex min-h-6 items-center gap-1 rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]",
-                          active && "text-foreground",
-                        )}
-                      >
-                        {col.label}
-                        {active
-                          ? (sort.dir === "asc" ? <ArrowUp size={12} aria-hidden /> : <ArrowDown size={12} aria-hidden />)
-                          : <ArrowDown size={12} aria-hidden className="opacity-0" />}
-                      </button>
-                    ) : col.label}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((c, i) => {
-              const g = groupBy !== "none" && (i === 0 || groupOf(rows[i - 1], groupBy).key !== groupOf(c, groupBy).key) ? groupHeader(c) : null;
-              return (
-                <Fragment key={c.contractId}>
-                  {g && (
-                    <tr className="bg-[var(--panel)]">
-                      <th scope="colgroup" colSpan={COLUMNS.length} className="px-3 py-2 text-left">
-                        <span className="text-sm font-semibold text-foreground">{g.label}</span>
-                        <span className="ml-2 text-xs font-normal text-[var(--ink-600)]">{g.note}</span>
-                      </th>
-                    </tr>
-                  )}
-                  {/* The title link stretches over the whole row: one click target, real <a>. */}
-                  <tr className="relative border-b border-border align-top transition-colors duration-150 hover:bg-[var(--ink-50)] focus-within:bg-[var(--ink-50)]">
-                    <td className={cn("px-3", pad)}>
-                      <Link
-                        href={href(c)}
-                        title={c.title}
-                        className="block truncate font-medium text-foreground after:absolute after:inset-0 after:content-[''] hover:text-[var(--brand-primary-700)] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[var(--brand-primary-600)]"
-                      >
-                        {displayTitle(c.title)}
-                      </Link>
-                      {(c.sponsor || c.counterparty) && (
-                        <span className="block truncate text-xs text-[var(--ink-600)]" title={c.sponsor || c.counterparty || undefined}>{c.sponsor || c.counterparty}</span>
-                      )}
-                    </td>
-                    <td className={cn("truncate px-3 text-[var(--ink-700)]", pad, HIDE[2])} title={STAGE_LABEL[c.stage]}>{STAGE_LABEL[c.stage]}</td>
-                    <td className={cn("px-3", pad)}><WaitingOnChip waitingOn={c.waitingOn} /></td>
-                    <td className={cn("truncate px-3 text-[var(--ink-700)]", pad, HIDE[2])} title={c.owner?.email}>{personName(c.owner)}</td>
-                    <td className={cn("px-3 text-right", pad)}>
-                      <DaysInStage compact days={c.daysInStage} sla={c.slaStatus} target={c.targetDays} />
-                      {c.slaStatus !== "on_track" && (
-                        <span className="mt-0.5 block text-xs text-[var(--ink-600)]">{SLA_LABEL[c.slaStatus]}</span>
-                      )}
-                    </td>
-                    <td className={cn("px-3 text-right tabular-nums text-[var(--ink-700)]", pad, HIDE[3])}>{c.totalDays.toLocaleString()}</td>
-                    <td className={cn("truncate px-3 text-right tabular-nums text-[var(--ink-700)]", pad, HIDE[3])} title={contractValueText(c)}>{contractValueText(c)}</td>
-                    <td className={cn("px-3 text-[var(--ink-700)]", pad, HIDE[2])}>
-                      <span className="line-clamp-2" title={c.nextStep.headline}>{c.nextStep.headline}</span>
-                    </td>
-                  </tr>
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
-        <p className="text-xs tabular-nums text-[var(--ink-600)]" aria-live="polite">
-          {sorted.length > PAGE_SIZE
-            ? `${from.toLocaleString("en-US")}–${to.toLocaleString("en-US")} of ${sorted.length.toLocaleString("en-US")} in view`
-            : `${sorted.length.toLocaleString("en-US")} in view`}
-        </p>
-      {pages > 1 && (
-        <nav aria-label="Pages" className="flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setPage(current - 1)}
-            disabled={current === 0}
-            className="inline-flex h-11 items-center gap-1 rounded-md border border-[var(--ink-300)] bg-card px-2.5 text-xs font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] md:h-8"
-          >
-            <ChevronLeft size={16} aria-hidden />Previous
-          </button>
-          <span className="text-xs tabular-nums text-[var(--ink-600)]">Page {current + 1} of {pages}</span>
-          <button
-            type="button"
-            onClick={() => setPage(current + 1)}
-            disabled={current >= pages - 1}
-            className="inline-flex h-11 items-center gap-1 rounded-md border border-[var(--ink-300)] bg-card px-2.5 text-xs font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] md:h-8"
-          >
-            Next<ChevronRight size={16} aria-hidden />
-          </button>
-        </nav>
-      )}
-      </div>
-    </div>
+      }
+    />
   );
 }

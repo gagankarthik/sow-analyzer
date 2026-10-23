@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Check } from "@/components/ui/icons";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
-import { EASE_OUT } from "@/components/home/Reveal";
+import { DURATION, EASE_OUT } from "@/components/home/Reveal";
 
 /* The platform tour's product views, one per area, drawn as the product
    would show them rather than as generic tables: positions as gauges,
@@ -77,7 +77,7 @@ export function MatrixPreview() {
                   className={`home-zone home-zone-${zone.tone}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${zone.width}%` }}
-                  transition={{ duration: 0.5, ease: EASE_OUT, delay: index * 0.08 }}
+                  transition={{ duration: DURATION.enter, ease: EASE_OUT, delay: index * 0.08 }}
                 />
               ))}
               <motion.span
@@ -127,7 +127,7 @@ export function WorkflowPreview() {
             data-state={index < CURRENT_STAGE ? "done" : index === CURRENT_STAGE ? "current" : "next"}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ duration: 0.35, ease: EASE_OUT, delay: index * 0.05 }}
+            transition={{ duration: DURATION.surface, ease: EASE_OUT, delay: index * 0.05 }}
           />
         ))}
       </div>
@@ -156,7 +156,7 @@ export function WorkflowPreview() {
             key={item.text}
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.35, ease: EASE_OUT, delay: 0.2 + index * 0.08 }}
+            transition={{ duration: DURATION.surface, ease: EASE_OUT, delay: 0.2 + index * 0.08 }}
           >
             <span className={`home-avatar home-avatar-sm lp-area-${item.tone}`}>{item.who}</span>
             <span className="home-activity-text">{item.text}</span>
@@ -211,7 +211,7 @@ export function ValuePreview() {
             className={`home-composition-${part.key}`}
             initial={{ width: 0 }}
             animate={{ width: `${(part.value / VALUE_TOTAL) * 100}%` }}
-            transition={{ duration: 0.6, ease: EASE_OUT, delay: index * 0.1 }}
+            transition={{ duration: DURATION.enter, ease: EASE_OUT, delay: index * 0.1 }}
           />
         ))}
       </div>
@@ -226,7 +226,7 @@ export function ValuePreview() {
                 className="home-heldup-fill"
                 initial={{ width: 0 }}
                 animate={{ width: `${(row.value / HELD_UP[0].value) * 100}%` }}
-                transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.3 + index * 0.08 }}
+                transition={{ duration: DURATION.enter, ease: EASE_OUT, delay: 0.3 + index * 0.08 }}
               />
             </span>
             <span className="home-heldup-value">${row.value.toFixed(2)}M</span>
@@ -263,7 +263,7 @@ export function ObligationsPreview() {
             key={item.title}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: EASE_OUT, delay: index * 0.07 }}
+            transition={{ duration: DURATION.surface, ease: EASE_OUT, delay: index * 0.07 }}
           >
             <span className="home-date">
               <span className="home-date-month">{item.month}</span>

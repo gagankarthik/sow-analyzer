@@ -12,7 +12,7 @@ import { plural } from "@/lib/govern/labels";
 import { formatCompact, formatMoney, valueSummary, type Money } from "@/lib/govern/metrics";
 import { useContracts } from "@/lib/govern/queries";
 import { isNotFound } from "@/lib/api";
-import { StatTile } from "./ReportKit";
+import { StatBar, StatTile } from "./ReportKit";
 
 /** "$1.25M" for one currency; the full "$1,250,000 + €40,000" when there are several. */
 function tileValue(m: Money): string {
@@ -56,7 +56,7 @@ export function ValueTiles() {
   if (!summary || data?.contracts.length === 0) return null;
 
   return (
-    <section aria-label="Contract value" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+    <StatBar label="Contract value">
       <StatTile
         href="/reports/value"
         label="Current value"
@@ -77,6 +77,6 @@ export function ValueTiles() {
         value={<span title={formatMoney(summary.heldUp)}>{tileValue(summary.heldUp)}</span>}
         hint={summary.heldUp.valued > 0 ? countHint(summary.heldUp, "Past its target") : "Nothing past its target"}
       />
-    </section>
+    </StatBar>
   );
 }

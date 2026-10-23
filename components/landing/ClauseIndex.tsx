@@ -21,7 +21,7 @@ export function ClauseIndex() {
     <section id="clauses" className="lp-band lp-section scroll-mt-20">
       <div className="lp-wrap">
         <h2 className="lp-h2 max-w-3xl">
-          Ten positions in the standard matrix, <span className="lp-serif">ready to make your own.</span>
+          Ten positions in the standard matrix, ready to make your own.
         </h2>
         <p className="lp-lede mt-5">
           Every agreement type starts from these. Change any position, fallback or reviewing office, or import your
