@@ -1,11 +1,14 @@
 "use client";
 
-// Signature: send it out (DocuSign or by hand), then record that it is signed.
+// Signature: send it out (Govern e-signature, DocuSign or by hand), then record
+// that it is signed. Govern e-signature hands over to the envelope editor.
 // Signing is the moment the value moves from potential to current.
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Coins, PenLine, Send } from "@/components/ui/icons";
+import { Coins, PenLine, Send, Signature } from "@/components/ui/icons";
+import { Callout } from "@/components/ds/feedback";
+import { PdfPicker, usePrepareEnvelope } from "@/components/govern/esign/PrepareEnvelope";
 import { contractValueText } from "@/lib/govern/metrics";
 import type { Contract } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
@@ -23,11 +26,13 @@ function emailOf(raw: string): string {
 }
 
 export function SendForSignatureDialog({ contract, open, onOpenChange }: { contract: Contract; open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { run, pending } = useRunContractAction();
-  // DocuSign is a "Later" feature: while it is off, signing is by hand only.
+  const { run, pending: running } = useRunContractAction();
+  const prepare = usePrepareEnvelope(contract.contractId);
+  const pending = running || prepare.pending;
+  // DocuSign is a "Later" feature: while it is off, it can't be chosen.
   const isDocusignOn = useGovernFeature("docusign");
-  const [chosen, setProvider] = useState<"docusign" | "manual">(isDocusignOn ? "docusign" : "manual");
-  const provider = isDocusignOn ? chosen : "manual";
+  const [chosen, setProvider] = useState<"govern" | "docusign" | "manual">("govern");
+  const provider = chosen === "docusign" && !isDocusignOn ? "govern" : chosen;
   const [email, setEmail] = useState(contract.signature?.signatory?.email ?? "");
   const [name, setName] = useState(contract.signature?.signatory?.name ?? "");
   const address = emailOf(email);
@@ -36,6 +41,11 @@ export function SendForSignatureDialog({ contract, open, onOpenChange }: { contr
   const needsSignatory = provider === "docusign";
 
   async function confirm() {
+    if (provider === "govern") {
+      // A Word version can't be signed: the dialog then asks for a PDF instead.
+      if (await prepare.start()) onOpenChange(false);
+      return;
+    }
     const signatory = emailOk ? { email: address, name: name.trim() || null } : undefined;
     const ok = await run(
       contract.contractId,
@@ -50,6 +60,7 @@ export function SendForSignatureDialog({ contract, open, onOpenChange }: { contr
   }
 
   const options = [
+    { id: "govern" as const, title: "Govern e-signature", text: "Add signers, place fields on the pages and send private signing links. Sealed and filed here when done.", Icon: Signature },
     { id: "docusign" as const, title: "DocuSign", text: "Send an envelope. The card moves to Signed by itself when it is signed.", Icon: Send },
     { id: "manual" as const, title: "By hand", text: "Signed on paper or by email. You mark it signed when it comes back.", Icon: PenLine },
   ];
@@ -60,12 +71,13 @@ export function SendForSignatureDialog({ contract, open, onOpenChange }: { contr
       onOpenChange={onOpenChange}
       title="Send for signature"
       description={<>All approvals are in for <strong className="font-semibold text-foreground">{contract.title}</strong>.</>}
-      confirmLabel={provider === "docusign" ? "Send through DocuSign" : "Mark as out for signature"}
+      confirmLabel={provider === "govern" ? "Prepare document" : provider === "docusign" ? "Send through DocuSign" : "Mark as out for signature"}
       onConfirm={confirm}
       pending={pending}
-      disabled={needsSignatory ? !emailOk : email.trim() !== "" && !emailOk}
+      disabled={provider === "govern" ? !!prepare.needsPdf : needsSignatory ? !emailOk : email.trim() !== "" && !emailOk}
+      wide
     >
-      <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <legend className="sr-only">How will it be signed?</legend>
         {options.map(({ id, title, text, Icon }) => {
           const isComingSoon = id === "docusign" && !isDocusignOn;
@@ -86,12 +98,29 @@ export function SendForSignatureDialog({ contract, open, onOpenChange }: { contr
             <span className="inline-flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
               <Icon size={15} />{title}
               {isComingSoon && <ComingSoonBadge />}
+              {id === "govern" && <span className="inline-flex h-5 items-center rounded-full border border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] px-2 text-xs font-semibold text-[var(--brand-primary-700)]">Recommended</span>}
             </span>
             <span className="text-xs leading-relaxed text-[var(--ink-600)]">{text}</span>
           </button>
           );
         })}
       </fieldset>
+      {provider === "govern" ? (
+        prepare.needsPdf ? (
+          <Callout tone="warning" title="This version can't be signed as it is">
+            <p>{prepare.needsPdf}</p>
+            <PdfPicker
+              className="mt-3"
+              disabled={pending}
+              onPick={async (file) => { if (await prepare.start(file)) onOpenChange(false); }}
+            />
+          </Callout>
+        ) : (
+          <p className="text-sm leading-relaxed text-[var(--ink-600)]">
+            The contract&apos;s current PDF is prepared for signature. Next you add the signers and place their fields.
+          </p>
+        )
+      ) : (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label={needsSignatory ? "Signatory email" : "Signatory email (optional)"} htmlFor="sig-email" error={emailError}>
           <Input id="sig-email" type="email" inputMode="email" placeholder="signatory@example.org" value={email} onChange={(e) => setEmail(e.target.value)}
@@ -101,6 +130,7 @@ export function SendForSignatureDialog({ contract, open, onOpenChange }: { contr
           <Input id="sig-name" placeholder="e.g. Dana Whitfield" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
       </div>
+      )}
     </ActionDialog>
   );
 }

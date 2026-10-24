@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
-import { useRouter } from "next/navigation";
 import { useGlobalHotkeys, type HotkeyAction } from "@/lib/hotkeys";
 import { useUIStore } from "@/lib/stores/ui";
 import { EditionScope } from "./EditionScope";
@@ -45,16 +44,13 @@ function Shell({ children }: { children: React.ReactNode }) {
   const copilotMounted = useOpenedOnce(copilotOpen);
   const shortcutsMounted = useOpenedOnce(shortcutsOpen);
   const [mobileNav, setMobileNav] = useState(false);
-  const router = useRouter();
 
-  // Global keyboard shortcuts (H, W, C, O, R, U, S, /, ?, Ctrl/Cmd+K), bound once.
+  // Global keyboard shortcuts (/, ?, Ctrl/Cmd+K), bound once.
   const onHotkey = useCallback((action: HotkeyAction) => {
     const ui = useUIStore.getState();
-    if (action.type === "navigate") router.push(action.href);
-    else if (action.type === "palette") ui.setPaletteOpen(!ui.paletteOpen);
-    else if (action.type === "sonar") ui.toggleCopilot();
+    if (action.type === "palette") ui.setPaletteOpen(!ui.paletteOpen);
     else ui.setShortcutsOpen(true);
-  }, [router]);
+  }, []);
   useGlobalHotkeys(onHotkey);
 
   // Load the projects the signed-in user can see (their own and the ones shared

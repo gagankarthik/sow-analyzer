@@ -3,42 +3,19 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 // Global keyboard shortcuts. `resolveHotkey` is pure (event in, action out) so
 // the rules are tested; `useGlobalHotkeys` binds it once, in the app shell.
 
-export type HotkeyAction =
-  | { type: "navigate"; href: string }
-  | { type: "palette" }
-  | { type: "sonar" }
-  | { type: "shortcuts" };
+export type HotkeyAction = { type: "palette" } | { type: "shortcuts" };
 
-export type ShortcutGroup = "Navigation" | "Search" | "Lists";
+export type ShortcutGroup = "Search" | "Lists";
 
 export type Shortcut = {
   /** Keys pressed together, as shown. "Mod" renders as ⌘ or Ctrl. */
   keys: string[];
   label: string;
   group: ShortcutGroup;
-  /** Single-key navigation target (also used for sidebar hints). */
-  href?: string;
-};
-
-/** Single-key navigation. Keys are lowercase `KeyboardEvent.key` values. */
-export const NAV_KEYS: Record<string, string> = {
-  h: "/home",
-  w: "/workflow",
-  c: "/contracts",
-  o: "/obligations",
-  r: "/renewals",
-  u: "/projects/upload",
 };
 
 /** Every shortcut the workspace answers to, for the shortcuts dialog. */
 export const SHORTCUTS: Shortcut[] = [
-  { keys: ["H"], label: "Home", group: "Navigation", href: "/home" },
-  { keys: ["W"], label: "Workflow", group: "Navigation", href: "/workflow" },
-  { keys: ["C"], label: "Contracts", group: "Navigation", href: "/contracts" },
-  { keys: ["O"], label: "Obligations", group: "Navigation", href: "/obligations" },
-  { keys: ["R"], label: "Renewals", group: "Navigation", href: "/renewals" },
-  { keys: ["U"], label: "Upload a contract", group: "Navigation", href: "/projects/upload" },
-  { keys: ["S"], label: "Open or close Sonar", group: "Navigation" },
   { keys: ["Mod", "K"], label: "Open the command palette", group: "Search" },
   { keys: ["/"], label: "Search", group: "Search" },
   { keys: ["?"], label: "Show keyboard shortcuts", group: "Search" },
@@ -48,11 +25,6 @@ export const SHORTCUTS: Shortcut[] = [
   { keys: ["Tab"], label: "Show or hide the preview", group: "Lists" },
   { keys: ["Esc"], label: "Close the palette or dialog", group: "Lists" },
 ];
-
-/** The shortcut key for a sidebar destination, if it has one. */
-export function shortcutForHref(href: string): string | undefined {
-  return SHORTCUTS.find((s) => s.href === href && s.keys.length === 1)?.keys[0];
-}
 
 /** What the resolver needs from a keyboard event. */
 export type HotkeyEvent = {
@@ -74,9 +46,9 @@ export type HotkeyContext = {
 /**
  * Maps a key press to an action, or null to leave it alone.
  * - Mod+K opens the palette from anywhere, text fields included.
- * - Single keys fire only outside text fields and dialogs, with no modifier
- *   (Shift is allowed for "?" alone), and never on key repeat.
- * - Inside the Sonar panel, only S works (it closes the panel).
+ * - "/" and "?" fire only outside text fields and dialogs, with no modifier
+ *   (Shift is allowed for them), and never on key repeat.
+ * - There are no single-letter shortcuts: letters are always left alone.
  */
 export function resolveHotkey(e: HotkeyEvent, ctx: HotkeyContext): HotkeyAction | null {
   if (e.repeat) return null;
@@ -90,14 +62,7 @@ export function resolveHotkey(e: HotkeyEvent, ctx: HotkeyContext): HotkeyAction 
   // "?" and "/" are judged by the character, since some layouts need Shift for them.
   if (e.key === "?") return ctx.inDialog ? null : { type: "shortcuts" };
   if (e.key === "/") return ctx.inDialog ? null : { type: "palette" };
-  if (e.shiftKey) return null;
-
-  if (ctx.inDialog === "sonar") return key === "s" ? { type: "sonar" } : null;
-  if (ctx.inDialog) return null;
-
-  if (key === "s") return { type: "sonar" };
-  const href = NAV_KEYS[key];
-  return href ? { type: "navigate", href } : null;
+  return null;
 }
 
 /** Marks the Sonar panel so S can close it while focus is inside. */

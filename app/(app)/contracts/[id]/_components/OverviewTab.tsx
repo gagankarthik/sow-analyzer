@@ -1,7 +1,8 @@
 "use client";
 
-// The Overview tab (UI_SPEC section 8.3): Sonar's summary when there is one,
-// the matrix result, and the top open blockers, each with a way into its tab.
+// The Overview tab (UI_SPEC section 8.3): Govern e-signature envelopes while
+// signing is in play, Sonar's summary when there is one, the matrix result,
+// and the top open blockers, each with a way into its tab.
 
 import { ArrowRight, Blocker, Sonar } from "@/components/ui/icons";
 import { ListPanel, Panel, PanelEmpty, PanelRow } from "@/components/ds/Panel";
@@ -9,6 +10,7 @@ import { OFFICE_LABEL } from "@/lib/govern/labels";
 import { useDocument } from "@/lib/queries/documents";
 import type { ContractDetail } from "@/lib/govern/types";
 import type { ContractTab } from "./ContractTabs";
+import { EnvelopesPanel } from "@/components/govern/esign/EnvelopesPanel";
 import { TierBar, TierLegend, blockingCount, totalClauses } from "./TierBar";
 
 const TOP_BLOCKERS = 3;
@@ -110,6 +112,7 @@ function OpenBlockers({ contract: c, onOpen }: { contract: ContractDetail; onOpe
 export function OverviewTab({ contract: c, onOpen }: { contract: ContractDetail; onOpen: (tab: ContractTab) => void }) {
   return (
     <div className="flex flex-col gap-6">
+      <EnvelopesPanel contract={c} />
       <SonarSummary contract={c} />
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <MatrixResult contract={c} onOpen={onOpen} />

@@ -184,7 +184,8 @@ export interface Contract {
    *  the contract is waiting on them. */
   piRequest?: { request: string; at: string; by: Person | null } | null
   signature: {
-    provider: "docusign" | "manual"
+    /** "govern": Govern e-signature; envelopeId is then the Govern envelope (docs/GOVERN_ESIGN.md). */
+    provider: "docusign" | "manual" | "govern"
     envelopeId: string | null
     sentAt: string | null
     signedAt: string | null
