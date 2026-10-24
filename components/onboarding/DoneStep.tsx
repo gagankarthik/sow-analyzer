@@ -77,7 +77,7 @@ export function DoneStep({ doc, onAnother }: { doc: ApiDocument; onAnother: () =
           <Link href="/settings/team"><Users size={16} aria-hidden />Invite your team</Link>
         </Button>
         <Button variant="outline" asChild>
-          <Link href="/home">Go to home</Link>
+          <Link href="/dashboard">Go to Dashboard</Link>
         </Button>
       </div>
       <button

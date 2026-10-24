@@ -34,6 +34,7 @@ import {
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ColumnSettings } from "./ColumnSettings";
+import { SelectionBar } from "./SelectionBar";
 import {
   nextSort,
   useHiddenColumns,
@@ -352,7 +353,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
     ? density === "compact" ? "px-3 py-1" : "px-3 py-1.5"
     : density === "compact" ? "px-3 py-1.5" : "px-4 py-2.5";
   const hasExpand = hiddenColumns.length > 0;
-  const headCellBg = flush ? "h-[38px] border-t bg-surface-canvas" : "bg-surface-sunken";
+  const headCellBg = flush ? "h-[38px] border-t bg-surface-sunken" : "bg-surface-sunken";
   // The expand toggle stays until the widest hidden column is on screen.
   const expandHide = hiddenColumns.some((c) => c.priority === 4) ? "@7xl/table:hidden"
     : hiddenColumns.some((c) => c.priority === 3) ? "@5xl/table:hidden" : "@4xl/table:hidden";
@@ -455,24 +456,10 @@ export function DataTable<T>(props: DataTableProps<T>) {
         </div>
       )}
 
-      {selection && selectedRows.length > 0 && (
-        // Floating action bar, bottom centre: what you can do to the selection.
-        <div
-          role="region"
-          aria-label="Selected rows"
-          className="fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center gap-x-1 gap-y-2 rounded-xl bg-[var(--ink-900,#111827)] px-2 py-1.5 text-white shadow-[0_16px_40px_-12px_rgba(10,13,20,0.5)]"
-        >
-          <button
-            type="button"
-            onClick={() => selection.onChange(new Set())}
-            aria-label="Clear selection"
-            className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-body font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white"
-          >
-            <span aria-hidden className="inline-flex size-4 items-center justify-center rounded border border-white/70 text-[10px] leading-none">–</span>
-            <span aria-live="polite">{formatValue(selectedRows.length)} selected</span>
-          </button>
+      {selection && (
+        <SelectionBar count={selectedRows.length} onClear={() => selection.onChange(new Set())}>
           {(bulkActions || exportName) && (
-            <div className="dt-bulk flex flex-wrap items-center gap-1 border-l border-white/20 ps-2">
+            <>
               {bulkActions?.(selectedRows)}
               {exportName && (
                 <button
@@ -484,9 +471,9 @@ export function DataTable<T>(props: DataTableProps<T>) {
                   Export CSV
                 </button>
               )}
-            </div>
+            </>
           )}
-        </div>
+        </SelectionBar>
       )}
 
       {state === "loading" ? (
@@ -555,7 +542,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                         className={cn(
                           "sticky top-0 z-(--z-sticky) border-b border-border-default whitespace-nowrap",
                           flush
-                            ? "h-[38px] border-t bg-surface-canvas text-[13px] font-medium text-[var(--ink-600)]"
+                            ? "h-[38px] border-t bg-surface-sunken text-[13px] font-medium text-[var(--ink-700)]"
                             : "h-(--table-header-height) bg-surface-sunken text-caption font-semibold text-fg-secondary",
                           col.numeric ? "text-end" : "text-start",
                           // Header text sits on the cells' inset: the cell pad minus the sort button's 8px.

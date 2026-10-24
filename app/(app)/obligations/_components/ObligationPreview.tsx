@@ -13,6 +13,7 @@ import type { PortfolioObligation } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 import { DUE_SOON_DAYS, displayTitle } from "@/lib/format";
 
+import { SonarName } from "@/components/ui/SonarText";
 /* Quick look at one obligation: what it is, when it is due, whether a person
    has confirmed it, the contract it comes from, and the two things you do
    with it (verify, mark done). */
@@ -77,7 +78,7 @@ export function ObligationPreview({ obligation: o, today, busy, readOnly = false
             ) : (
               <>
                 <Sonar size={16} aria-hidden className="text-[var(--warning-fg)]" />
-                <span>Found by Sonar. Check it against the agreement, then verify.</span>
+                <span>Found by <SonarName />. Check it against the agreement, then verify.</span>
               </>
             )}
           </p>
@@ -101,7 +102,7 @@ export function ObligationPreview({ obligation: o, today, busy, readOnly = false
             </div>
             <div>
               <dt className="text-xs text-[var(--ink-600)]">Source</dt>
-              <dd className="mt-0.5 text-sm text-foreground">{o.source === "sonar" ? "Found by Sonar in the signed agreement" : "Added by a person"}</dd>
+              <dd className="mt-0.5 text-sm text-foreground">{o.source === "sonar" ? <>Found by <SonarName /> in the signed agreement</> : "Added by a person"}</dd>
             </div>
           </dl>
         </section>

@@ -1,6 +1,7 @@
 "use client";
 
-// The view picker: Default (My contracts, All contracts), My saved views,
+// The view picker, in the header beside the page title: its trigger names the
+// open view and its count. Inside: Default (My contracts, All contracts), My saved views,
 // Shared views and Quick views (the workflow presets), each with a live
 // count. Every view is a URL (?view=id). A saved view you made has a menu:
 // rename or change who sees it, update it with the current settings, or
@@ -13,7 +14,7 @@ import { Popover as PopoverPrimitive } from "radix-ui";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, ChevronDown, EllipsisVertical, Lock, Search, UserCheck, Users } from "@/components/ui/icons";
+import { Check, ChevronDown, EllipsisVertical, Lock, Plus, Search, UserCheck, Users } from "@/components/ui/icons";
 import type { ContractView } from "@/lib/govern/views";
 import type { SavedView, ViewVisibility } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,14 @@ export type ViewPickerProps = {
   /** Mobile sheet: the list without the popover. */
   inline?: boolean;
   onNavigate?: () => void;
+  /** The open view's count for the trigger; null while loading. */
+  activeCount?: number | null;
+  /** "+ New view": save the current settings as a view. */
+  onNewView?: () => void;
+  /** The open view's settings differ from what it was saved with. */
+  dirty?: boolean;
+  /** Save those changes into the open view (a saved view you can edit). */
+  onUpdateActive?: () => void;
 };
 
 export function ViewPicker(props: ViewPickerProps) {
@@ -51,16 +60,18 @@ export function ViewPicker(props: ViewPickerProps) {
       <PopoverPrimitive.Trigger asChild>
         <button
           type="button"
-          aria-label={`All views. Open view: ${props.activeLabel}`}
-          className="group inline-flex h-10 shrink-0 items-center gap-1 border-b-2 border-transparent px-2.5 text-[14px] text-[var(--ink-600)] transition-colors duration-150 hover:text-[var(--ink-900)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus data-[state=open]:text-[var(--ink-900)] max-md:h-11"
+          aria-label={`Views. Open view: ${props.activeLabel}${props.activeCount != null ? `, ${props.activeCount} contracts` : ""}${props.dirty ? ", unsaved changes" : ""}`}
+          className="group inline-flex h-8 min-w-0 max-w-[16rem] items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-[var(--ink-900)] transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus data-[state=open]:bg-surface-hover max-md:h-10"
         >
-          All views
-          <ChevronDown size={16} aria-hidden className="text-[var(--ink-500)] transition-transform duration-200 group-data-[state=open]:rotate-180 motion-reduce:transition-none" />
+          <span className="truncate">{props.activeLabel}</span>
+          {props.activeCount != null && <span className="shrink-0 rounded-full bg-[var(--ink-100)] px-1.5 text-[11px] leading-[18px] tabular-nums text-[var(--ink-700)]">{props.activeCount.toLocaleString()}</span>}
+          {props.dirty && <span aria-hidden title="Unsaved changes" className="size-1.5 shrink-0 rounded-full bg-[var(--warning)]" />}
+          <ChevronDown size={12} aria-hidden className="shrink-0 text-[var(--ink-500)] transition-transform duration-200 group-data-[state=open]:rotate-180 motion-reduce:transition-none" />
         </button>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
-          align="end"
+          align="start"
           sideOffset={4}
           collisionPadding={12}
           className="z-50 w-80 rounded-lg border border-border-default bg-surface-raised p-1.5 shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 motion-reduce:animate-none"
@@ -72,7 +83,7 @@ export function ViewPicker(props: ViewPickerProps) {
   );
 }
 
-function ViewList({ activeId, defaults, quick, mine, shared, countsFor, hrefFor, saved, onEdit, onUpdate, onDelete, onNavigate, inline }: ViewPickerProps) {
+function ViewList({ activeId, defaults, quick, mine, shared, countsFor, hrefFor, saved, onEdit, onUpdate, onDelete, onNavigate, inline, onNewView, dirty, onUpdateActive }: ViewPickerProps) {
   const [q, setQ] = React.useState("");
   const counts = React.useMemo(() => countsFor(), [countsFor]);
   const query = q.trim().toLowerCase();
@@ -109,15 +120,32 @@ function ViewList({ activeId, defaults, quick, mine, shared, countsFor, hrefFor,
         <Section title="My saved views">
           {saved.loading ? <Note>Loading saved views…</Note>
             : saved.error ? <SavedError retry={saved.retry} />
-            : mine.length === 0 ? <Note>Views you save appear here. Use “Save view as…” to keep filters, columns and grouping.</Note>
+            : mine.length === 0 ? <Note>Views you save appear here. Use “New view…” below to keep filters, properties and grouping.</Note>
             : savedRows(mine)}
         </Section>
         {!saved.error && !saved.loading && shared.length > 0 && <Section title="Shared views">{savedRows(shared)}</Section>}
         <Section title="Quick views">{presetRows(quick)}</Section>
       </div>
+      {onNewView && (
+        <div className="flex flex-wrap items-center gap-1 border-t border-border-default px-0.5 pt-1.5">
+          <button type="button" onClick={() => { onNavigate?.(); onNewView(); }} className={footerButton}>
+            <Plus size={12} aria-hidden />
+            {dirty ? "Save as new view…" : "New view…"}
+          </button>
+          {dirty && onUpdateActive && (
+            <button type="button" onClick={() => { onNavigate?.(); onUpdateActive(); }} className={footerButton}>
+              Update this view
+            </button>
+          )}
+          {dirty && <span className="ms-auto px-2 text-[12px] text-[var(--ink-600)]">Unsaved changes</span>}
+        </div>
+      )}
     </nav>
   );
 }
+
+const footerButton =
+  "inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-[var(--brand-primary-700)] hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus max-md:h-11";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const items = React.Children.toArray(children);

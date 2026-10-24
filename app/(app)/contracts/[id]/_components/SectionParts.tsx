@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 import type { MatrixReview } from "@/lib/govern/types";
 
+import { withSonar } from "@/components/ui/SonarText";
 /** A clause type in words: the review's own label, else the type made readable. */
 export function clauseLabel(clauseType: string | null, review: MatrixReview | null): string | null {
   if (!clauseType) return null;
@@ -90,7 +91,7 @@ export function ProvenanceMark({ kind, text, className }: { kind: keyof typeof P
   return (
     <span className={cn("inline-flex items-start gap-1 text-xs leading-snug", PROVENANCE_TONE[kind], className)}>
       <Icon size={12} className="mt-px shrink-0" aria-hidden />
-      <span className="min-w-0">{text}</span>
+      <span className="min-w-0">{withSonar(text)}</span>
     </span>
   );
 }

@@ -43,6 +43,7 @@ import { can } from "@/lib/projects-store";
 import { clauseTypeLabel } from "@/lib/clause-categories";
 import type { ApiClause, ApiKeyFinding, DocType, Lifecycle, RiskLevel, FindingSeverity } from "@/lib/types";
 
+import { SonarName } from "@/components/ui/SonarText";
 type Project = ReturnType<typeof apiDocToProject>;
 
 const DOC_TYPES: DocType[] = ["SOW", "MSA", "AMENDMENT", "NDA", "LICENSE", "DPA", "BAA", "COMPLIANCE", "OTHER"];
@@ -335,7 +336,7 @@ function DocumentOverview() {
               {/* Sonar summary */}
               <Panel
                 as="h2"
-                title={<span className="inline-flex items-center gap-2"><Sonar size={16} aria-hidden className="text-[var(--ai-ink)]" />Sonar summary</span>}
+                title={<span className="inline-flex items-center gap-2"><Sonar size={16} aria-hidden className="text-[var(--ai-ink)]" /><SonarName /> summary</span>}
                 actions={
                   <Link href={`/projects/${project.id}/sow`} className={TEXT_LINK}>
                     All clauses<ArrowRight size={12} aria-hidden />

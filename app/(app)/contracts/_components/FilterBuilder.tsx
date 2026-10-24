@@ -20,10 +20,18 @@ import { fieldClass } from "./controls";
 
 export type FilterSuggestions = Partial<Record<FilterFieldId, string[]>>;
 
-/** "More filters": the toolbar button and its right-hand sheet with the builder. */
-export function AdvancedFilters({ value, onChange, suggestions }: { value: FilterGroup; onChange: (g: FilterGroup) => void; suggestions: FilterSuggestions }) {
+/** "More filters": the toolbar button and its right-hand sheet with the
+ *  builder. `children`: filters kept outside the rules (a date range), shown
+ *  above them; `extraActive` counts those that are set. */
+export function AdvancedFilters({ value, onChange, suggestions, children, extraActive = 0 }: {
+  value: FilterGroup;
+  onChange: (g: FilterGroup) => void;
+  suggestions: FilterSuggestions;
+  children?: React.ReactNode;
+  extraActive?: number;
+}) {
   const [open, setOpen] = React.useState(false);
-  const n = countActiveRules(value);
+  const n = countActiveRules(value) + extraActive;
   return (
     <Sheet
       open={open}
@@ -41,7 +49,8 @@ export function AdvancedFilters({ value, onChange, suggestions }: { value: Filte
           <SheetTitle className="text-[16px] font-medium">Filters</SheetTitle>
           <SheetDescription className="text-[12px] text-[var(--ink-600)]">The table updates as you change a filter.</SheetDescription>
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+          {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
           <FilterRulesEditor value={value} onChange={onChange} suggestions={suggestions} onDone={() => setOpen(false)} />
         </div>
       </SheetContent>

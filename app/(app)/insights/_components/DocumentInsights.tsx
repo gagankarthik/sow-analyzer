@@ -525,7 +525,7 @@ export function DocumentInsights() {
                               <span className="mt-0.5 line-clamp-2 block text-sm text-[var(--ink-600)]">{a.summary || "No summary was returned for this clause."}</span>
                               <span className="mt-0.5 block truncate text-xs text-muted-foreground">{displayTitle(a.docTitle)}</span>
                             </span>
-                            <ArrowRight size={16} aria-hidden className="mt-0.5 hidden shrink-0 text-[var(--ink-400)] transition-colors duration-150 group-hover:text-[var(--brand-primary-600)] rtl:rotate-180 sm:block" />
+                            <ArrowRight size={16} aria-hidden className="mt-0.5 hidden shrink-0 text-[var(--ink-500)] transition-colors duration-150 group-hover:text-[var(--brand-primary-600)] rtl:rotate-180 sm:block" />
                           </Link>
                         </li>
                       ))}
@@ -828,7 +828,7 @@ function MissingList({ title, rows, empty, tone }: { title: string; rows: DocRef
 function EmptyNote({ title, text, icon, bare = false }: { title: string; text: string; icon?: React.ReactNode; bare?: boolean }) {
   return (
     <div className={`flex flex-col items-center text-center ${bare ? "py-6" : "px-4 py-8"}`}>
-      {icon && <span className="mb-2 text-[var(--ink-400)]">{icon}</span>}
+      {icon && <span className="mb-2 text-[var(--ink-500)]">{icon}</span>}
       <p className="text-base font-semibold text-foreground">{title}</p>
       <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">{text}</p>
     </div>

@@ -37,3 +37,23 @@ export function attentionSentence(c: Contract): string {
 }
 
 export const contractHref = (id: string) => `/contracts/${encodeURIComponent(id)}`;
+
+/** The task itself, as a verb phrase: the contract's next step, else why it is listed. */
+export function actionTask(c: Contract): string {
+  const task = c.nextStep.headline.trim() || attentionReasons(c)[0] || "Open the contract";
+  return task.replace(/[.\s]+$/, "");
+}
+
+export type DueTone = "danger" | "warning" | "neutral";
+
+/** When the current step is due, against its target: "3 days late", "Due today", "Due in 2 days". */
+export function dueText(c: Contract): { label: string; tone: DueTone } {
+  if (c.targetDays === null) {
+    return { label: `${plural(c.daysInStage, "day")} in step`, tone: c.slaStatus === "red" ? "danger" : "neutral" };
+  }
+  const left = c.targetDays - c.daysInStage;
+  if (left < 0) return { label: `${plural(-left, "day")} late`, tone: "danger" };
+  if (c.slaStatus === "red") return { label: "Overdue", tone: "danger" };
+  if (left === 0) return { label: "Due today", tone: "warning" };
+  return { label: `Due in ${plural(left, "day")}`, tone: "neutral" };
+}

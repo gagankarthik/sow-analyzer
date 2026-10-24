@@ -127,7 +127,7 @@ export function OnboardingFlow() {
 
   function skip() {
     if (state.outcome !== "completed") update({ outcome: "skipped" });
-    router.push("/home");
+    router.push("/dashboard");
   }
 
   return (

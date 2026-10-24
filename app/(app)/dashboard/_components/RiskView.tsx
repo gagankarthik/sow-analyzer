@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { ChartSkeleton } from "@/components/ds/skeletons";
 import { RiskViewSkeleton } from "./RiskViewSkeleton";
 import {
-  Briefcase, ShieldAlert, ArrowRight, ArrowUp, ArrowDown, Plus, RefreshCw, Layers, FileText, DollarSign,
+  Briefcase, ShieldAlert, ArrowRight, ArrowUp, ArrowDown, RefreshCw, Layers, FileText, DollarSign,
   AlertTriangle, CheckCircle2, CalendarClock, BarChart3, TrendingUp, ShieldCheck,
   ChevronDown, XCircle, Info,
 } from "@/components/ui/icons";
@@ -469,14 +469,6 @@ export function RiskView() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* This view's one action: add documents. */}
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant={!loading && !loadFailed && projects.length === 0 ? "outline" : "default"} size="sm" asChild>
-            <Link href="/projects/new"><Plus size={16} aria-hidden />New project</Link>
-          </Button>
-        </div>
-      </div>
         {loading ? (
           <RiskViewSkeleton label="risk and documents" />
         ) : loadFailed ? (
@@ -683,9 +675,9 @@ export function RiskView() {
                 >
                   {attention.length === 0 ? (
                     everythingAssessed ? (
-                      <div className="flex flex-col items-center px-4 py-8 text-center"><CheckCircle2 size={24} aria-hidden className="mb-2 text-[var(--ink-400)]" /><p className="text-base font-semibold text-foreground">All clear</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">All {plural(docs.length, "document")} are analyzed and rated, and no clause is rated high or critical.</p></div>
+                      <div className="flex flex-col items-center px-4 py-8 text-center"><CheckCircle2 size={24} aria-hidden className="mb-2 text-[var(--ink-500)]" /><p className="text-base font-semibold text-foreground">All clear</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">All {plural(docs.length, "document")} are analyzed and rated, and no clause is rated high or critical.</p></div>
                     ) : (
-                      <div className="flex flex-col items-center px-4 py-8 text-center"><Info size={24} aria-hidden className="mb-2 text-[var(--ink-400)]" /><p className="text-base font-semibold text-foreground">Nothing flagged so far</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">No assessed document has a high or critical clause, but {pendingNote}.</p></div>
+                      <div className="flex flex-col items-center px-4 py-8 text-center"><Info size={24} aria-hidden className="mb-2 text-[var(--ink-500)]" /><p className="text-base font-semibold text-foreground">Nothing flagged so far</p><p className="mt-0.5 max-w-sm text-sm text-muted-foreground">No assessed document has a high or critical clause, but {pendingNote}.</p></div>
                     )
                   ) : (
                     <>

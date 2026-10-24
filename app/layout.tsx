@@ -1,17 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { IBM_Plex_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
-// IBM Plex Sans for the interface and body: an institutional grotesk with
-// clear figures, suited to research and legal offices. Plex Mono for
-// references and figures (not preloaded: it is never above-the-fold text).
-// The public site's Instrument faces load with MarketingShell
-// (components/landing/fonts.ts), not here.
-const plexSans = IBM_Plex_Sans({
+// Inter for the interface and headings (variable: weights 400–700 incl.
+// the 450 body weight). Plex Mono for references and figures (not preloaded).
+// The public site's Instrument faces load with MarketingShell. The CSS
+// variable keeps its old name so nothing else changes.
+const plexSans = Inter({
   variable: "--font-plex",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 

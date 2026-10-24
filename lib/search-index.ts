@@ -209,7 +209,7 @@ export function emptyView(hits: SearchHit[], recent: RecentHit[]): SearchView {
 
 const PAGE_HITS: SearchHit[] = [
   // Each `sub` says what the page actually shows today (kept in step with the page headers).
-  { id: "p-dashboard", label: "Risk and documents", sub: "Clause risk, value and compliance", href: "/home?view=risk", group: "Pages", icon: "insights" },
+  { id: "p-dashboard", label: "Risk and documents", sub: "Clause risk, value and compliance", href: "/dashboard#risk", group: "Pages", icon: "insights" },
   { id: "p-contracts", label: "Contracts", sub: "Every agreement, in progress and signed", href: "/contracts", group: "Pages", icon: "contract" },
   { id: "p-workflow", label: "Workflow", sub: "Who has each agreement and what moves it to signature", href: "/workflow", group: "Pages", icon: "workflow" },
   { id: "p-library", label: "Library", sub: "Every uploaded document", href: "/library", group: "Pages", icon: "document" },
@@ -223,7 +223,7 @@ const PAGE_HITS: SearchHit[] = [
 const ACTION_HITS: SearchHit[] = [
   { id: "a-upload", label: "Upload a contract", sub: "Add an agreement for Sonar to review", href: "/projects/upload", group: "Actions", icon: "upload", keywords: "new add document file" },
   { id: "a-sonar", label: "Ask Sonar", sub: "Open the assistant", command: "sonar", group: "Actions", icon: "sonar", keywords: "assistant ai copilot chat question" },
-  { id: "a-home", label: "Go to Home", sub: "What needs you today", href: "/home", group: "Actions", icon: "home", keywords: "navigate" },
+  { id: "a-home", label: "Go to Dashboard", sub: "What needs you today", href: "/dashboard", group: "Actions", icon: "home", keywords: "navigate" },
   { id: "a-workflow", label: "Go to Workflow", sub: "The board, by stage", href: "/workflow", group: "Actions", icon: "workflow", keywords: "navigate board" },
   { id: "a-contracts", label: "Go to Contracts", sub: "Every agreement", href: "/contracts", group: "Actions", icon: "contract", keywords: "navigate agreements" },
   { id: "a-obligations", label: "Go to Obligations", sub: "Deliverables and reports due", href: "/obligations", group: "Actions", icon: "obligations", keywords: "navigate" },

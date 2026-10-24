@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ChevronDown, Menu, X } from "@/components/ui/icons";
 import { Logo } from "@/components/landing/primitives";
-import { NAV_MENUS, PRODUCT_SECTIONS, landingHref, type NavItem, type NavMenu } from "@/components/landing/site-nav";
+import { NAV_MENUS, PRODUCT_SECTIONS, productHref, type NavItem, type NavMenu } from "@/components/landing/site-nav";
 import { ComingSoonBadge } from "@/components/landing/ComingSoon";
 import { AccountMenu, AccountSummary, useVisitor } from "@/components/landing/AccountMenu";
 
@@ -88,6 +88,14 @@ export function SiteHeader() {
   };
 
   const activeMenu = NAV_MENUS.find((menu) => menu.label === openMenu);
+  // The sheet fades out on close: hold the last menu until the fade ends.
+  const [shownMenu, setShownMenu] = useState<NavMenu | null>(null);
+  if (activeMenu && activeMenu !== shownMenu) setShownMenu(activeMenu);
+  useEffect(() => {
+    if (activeMenu || !shownMenu) return;
+    const t = window.setTimeout(() => setShownMenu(null), SHEET_CLOSE_MS);
+    return () => window.clearTimeout(t);
+  }, [activeMenu, shownMenu]);
 
   return (
     <header
@@ -159,7 +167,7 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {activeMenu ? <MenuSheet menu={activeMenu} onNavigate={closeAll} /> : null}
+      {shownMenu ? <MenuSheet menu={shownMenu} closing={!activeMenu} onNavigate={closeAll} /> : null}
 
       {isDrawerOpen && (
         <nav id={MOBILE_NAV_ID} aria-label="Primary" className="lp-drawer lg:hidden">
@@ -217,7 +225,7 @@ export function SiteHeader() {
               {visitor ? (
                 <>
                   <AccountSummary visitor={visitor} />
-                  <Link href="/home" onClick={closeAll} className="lp-btn lp-btn-primary lp-btn-lg w-full">
+                  <Link href="/dashboard" onClick={closeAll} className="lp-btn lp-btn-primary lp-btn-lg w-full">
                     Go to platform
                     <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
                   </Link>
@@ -245,10 +253,12 @@ export function SiteHeader() {
    the right, one next step in the bar's own colours under the rating ribbon.
    Switching menus while one is open swaps the content in place (the key
    remounts it, replaying the CSS entrance). */
-function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void }) {
+const SHEET_CLOSE_MS = 140;
+
+function MenuSheet({ menu, closing, onNavigate }: { menu: NavMenu; closing: boolean; onNavigate: () => void }) {
   const isSingle = menu.groups.length === 1;
   return (
-    <div id={menuId(menu.label)} className="lp-sheet hidden lg:block">
+    <div id={menuId(menu.label)} className="lp-sheet site-sheet hidden lg:block" data-state={closing ? "closing" : "open"} inert={closing ? true : undefined}>
       <div key={menu.label} className="lp-wrap site-mega">
         <div className="site-mega-groups">
           {menu.groups.map((group) => {
@@ -282,7 +292,7 @@ function MenuSheet({ menu, onNavigate }: { menu: NavMenu; onNavigate: () => void
 }
 
 // Product areas take their area colour; every other link's icon is ink.
-const PRODUCT_AREA_BY_HREF = new Map<string, string>(PRODUCT_SECTIONS.map((s) => [landingHref(s.id), s.id]));
+const PRODUCT_AREA_BY_HREF = new Map<string, string>(PRODUCT_SECTIONS.map((s) => [productHref(s.id), s.id]));
 
 function MenuLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
   const area = PRODUCT_AREA_BY_HREF.get(item.href);

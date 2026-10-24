@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { ArrowRight, ChevronDown, Settings, UserRound } from "@/components/ui/icons";
+import { ArrowRight, ChevronDown, Help, LayoutDashboard, Settings, UserRound } from "@/components/ui/icons";
+import { avatarTone } from "@/components/ds/Avatar";
 import { SESSION_COOKIE, SESSION_MARKER_COOKIE, decodeJwt } from "@/lib/auth/session";
 
 /* The signed-in visitor on the public site: who they are and the way back
@@ -50,8 +51,9 @@ function initialsOf({ name, email }: Visitor): string {
 
 function Avatar({ visitor }: { visitor: Visitor }) {
   const letters = initialsOf(visitor);
+  // The person's own tint, the same one their avatar has inside Govern.
   return (
-    <span className="site-account-avatar" aria-hidden="true">
+    <span className="site-account-avatar ds-avatar" data-tone={avatarTone(visitor.name, visitor.email)} aria-hidden="true">
       {letters || <UserRound size={16} />}
     </span>
   );
@@ -101,10 +103,17 @@ export function AccountMenu({
       {isOpen ? (
         <div id={ACCOUNT_MENU_ID} className="site-account-card">
           <AccountSummary visitor={visitor} />
-          <Link href="/home" className="lp-btn lp-btn-primary w-full" onClick={onNavigate}>
-            Go to platform
-            <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
-          </Link>
+          <div className="site-account-sep" />
+          <ul className="site-account-links">
+            <li>
+              <Link href="/dashboard" className="site-account-primary" onClick={onNavigate}>
+                <LayoutDashboard size={16} aria-hidden="true" />
+                Go to Dashboard
+                <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
+              </Link>
+            </li>
+          </ul>
+          <div className="site-account-sep" />
           <ul className="site-account-links">
             <li>
               <Link href="/profile" onClick={onNavigate}>
@@ -116,6 +125,12 @@ export function AccountMenu({
               <Link href="/settings" onClick={onNavigate}>
                 <Settings size={16} aria-hidden="true" />
                 Settings
+              </Link>
+            </li>
+            <li>
+              <Link href="/help" onClick={onNavigate}>
+                <Help size={16} aria-hidden="true" />
+                Help
               </Link>
             </li>
           </ul>

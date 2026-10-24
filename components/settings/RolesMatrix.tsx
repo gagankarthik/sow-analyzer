@@ -16,7 +16,7 @@ function Mark({ value }: { value: Allowed }) {
   if (value === "own") return <span className="text-xs font-medium text-[var(--ink-700)]">Where editor</span>;
   return value
     ? <><Check size={16} aria-hidden className="mx-auto text-[var(--ink-700)]" /><span className="sr-only">Yes</span></>
-    : <><Minus size={16} aria-hidden className="mx-auto text-[var(--ink-300)]" /><span className="sr-only">No</span></>;
+    : <><Minus size={16} aria-hidden className="mx-auto text-[var(--ink-500)]" /><span className="sr-only">No</span></>;
 }
 
 export function RolesMatrix() {

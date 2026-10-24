@@ -1,6 +1,7 @@
 "use client";
 
-import { byEdition } from "@/lib/edition-runtime";
+import { byEdition, noun } from "@/lib/edition-runtime";
+import { SonarName } from "@/components/ui/SonarText";
 import { useEditionTerms } from "@/lib/govern/queries";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -8,8 +9,15 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, AlertCircle, Loader2 } from "@/components/ui/icons";
-import { createProject } from "@/lib/projects-store";
+import { createProject, type LocalProject } from "@/lib/projects-store";
 import { Panel } from "@/components/ds/Panel";
+import { InviteForm } from "@/components/team/InviteForm";
+import { UploadDropzone } from "@/components/upload/UploadDropzone";
+import { StepBar, StepFooter, StepTitle } from "@/components/ds/Steps";
+
+/* Three steps: the project (created on "Continue", so the next two have an id
+   to work with), then people (optional), then documents (optional). */
+const STEPS = [{ label: "Details" }, { label: "Team", optional: true }, { label: "Documents", optional: true }];
 
 const FIELD = "bg-card placeholder:text-[var(--ink-500)]";
 
@@ -22,6 +30,9 @@ export default function NewProjectPage() {
   // Show the "required" message only after the user has left the field or tried to submit.
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState(0);
+  const [project, setProject] = useState<LocalProject | null>(null);
+  const finish = () => project && router.push(`/projects/${project.id}`);
 
   const canCreate = name.trim().length > 0 && !creating;
   const nameError = touched && name.trim().length === 0;
@@ -34,8 +45,8 @@ export default function NewProjectPage() {
     setCreating(true);
     setError(null);
     try {
-      const project = await createProject(name, client);
-      router.push(`/projects/${project.id}`);
+      setProject(await createProject(name, client));
+      setStep(1);
     } catch (e) {
       setError(e instanceof Error && e.message ? e.message : "The server did not accept the request.");
       setCreating(false);
@@ -49,12 +60,17 @@ export default function NewProjectPage() {
         title={byEdition("New project", "New engagement")}
       />
 
-      <div className="app-container app-page">
+      {/* Onboarding: one centred column, a heading per step. */}
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-10 sm:py-14">
+        <StepBar steps={STEPS} step={step} />
+
+        {step === 0 && (
         <form
           noValidate
           onSubmit={(e) => { e.preventDefault(); void create(); }}
-          className="max-w-xl"
+          className="mx-auto w-full max-w-lg"
         >
+        <StepTitle title={byEdition("Name your project", "Name your engagement")} body="Use the counterparty and the work, so it is easy to find later." />
         <Panel as="h2" title="Details">
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -107,13 +123,34 @@ export default function NewProjectPage() {
           )}
 
           <div className="mt-4 flex flex-col-reverse gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-[var(--ink-600)]">{byEdition("You will own the project.", "You will own the engagement.")} Add documents and people next.</p>
+            <p className="text-xs text-[var(--ink-600)]">{byEdition("You will own the project.", "You will own the engagement.")} Add people and documents next.</p>
             <Button type="submit" disabled={creating} className="w-full sm:w-auto">
-              {creating ? <><Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project…", "Creating engagement…")}</> : <>{byEdition("Create project", "Create engagement")} <ArrowRight size={16} aria-hidden /></>}
+              {creating ? <><Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />{byEdition("Creating project…", "Creating engagement…")}</> : <>Create and continue <ArrowRight size={16} aria-hidden /></>}
             </Button>
           </div>
         </Panel>
         </form>
+        )}
+
+        {step === 1 && project && (
+          <div className="mx-auto w-full max-w-lg">
+            <StepTitle title="Invite your team" body={`Who works on ${project.name}? Invite them now, or skip and do it later from the ${noun("project")}'s Team tab.`} />
+            <Panel as="h2" title="People">
+              <InviteForm projects={[{ id: project.id, name: project.name }]} lockedProjectId={project.id} />
+            </Panel>
+            <StepFooter onSkip={() => setStep(2)} onNext={() => setStep(2)} next="Continue" />
+          </div>
+        )}
+
+        {step === 2 && project && (
+          <div className="w-full">
+            <StepTitle title="Add documents" body={<>Upload the agreement and any amendments. <SonarName /> reads each one as it lands.</>} />
+            <Panel as="h2" title="Documents">
+              <UploadDropzone projectId={project.id} compact />
+            </Panel>
+            <StepFooter onSkip={finish} onNext={finish} next={byEdition("Open project", "Open engagement")} />
+          </div>
+        )}
       </div>
     </>
   );

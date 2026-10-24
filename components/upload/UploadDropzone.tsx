@@ -26,6 +26,7 @@ import type { ContractDetail, ContractPatch } from "@/lib/govern/types";
 import { CaptureGapChecklist } from "./CaptureGapChecklist";
 import { intakeSummary } from "./contract-intake";
 
+import { SonarName } from "@/components/ui/SonarText";
 // Mirrors the backend upload-url handler: it signs uploads for .pdf, .docx and
 // .txt only (legacy .doc has no parser) and accepts file names of 1 to 200
 // characters from the set below.
@@ -613,7 +614,7 @@ function ContractLine({
     <div className="mt-2">
       <p className="text-sm text-[var(--ink-700)]">
         <CheckCircle2 size={12} className="mr-1 inline align-[-2px] text-[var(--success-fg)]" />
-        On the contract board as <span className="font-semibold text-foreground">New</span> while Sonar reads it{applied ? ` · ${applied}` : ""}.
+        On the contract board as <span className="font-semibold text-foreground">New</span> while <SonarName /> reads it{applied ? ` · ${applied}` : ""}.
       </p>
       <div className="mt-1 flex flex-wrap gap-x-4">
         <Link href={`/contracts/${encodeURIComponent(contract.contractId)}`} className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[var(--brand-primary-600)] transition-colors hover:text-[var(--brand-primary-700)] md:min-h-8">

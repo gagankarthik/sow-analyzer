@@ -21,6 +21,7 @@ import { formatDate, parseAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Section } from "./SectionParts";
 
+import { SonarName, withSonar } from "@/components/ui/SonarText";
 const INCOME_KINDS = Object.keys(INCOME_KIND_LABEL) as IncomeKind[];
 const OBLIGATION_KINDS = Object.keys(OBLIGATION_KIND_LABEL) as ObligationKind[];
 
@@ -170,7 +171,7 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
         </div>
       ) : items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-[var(--ink-300)] px-4 py-6 text-sm text-[var(--ink-600)]">
-          {byEdition("No income items. Sonar lists them for license and option agreements; add any it missed.", "No payment items yet. Add the fees and milestone payments this agreement sets out.")}
+          {withSonar(byEdition("No income items. Sonar lists them for license and option agreements; add any it missed.", "No payment items yet. Add the fees and milestone payments this agreement sets out."))}
         </p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -182,7 +183,7 @@ function IncomeTable({ contract: c }: { contract: ContractDetail }) {
                   <span className="text-sm font-semibold tabular-nums text-foreground">{incomeAmount(i, c.currency)}</span>
                 </div>
                 <p className="text-sm text-[var(--ink-700)]">{i.description}</p>
-                <p className="text-xs text-[var(--ink-600)]">{i.expectedDate ? `Expected ${formatDate(i.expectedDate)}` : "No expected date"}{i.source === "sonar" ? " · found by Sonar" : ""}</p>
+                <p className="text-xs text-[var(--ink-600)]">{i.expectedDate ? `Expected ${formatDate(i.expectedDate)}` : "No expected date"}{i.source === "sonar" ? <> · found by <SonarName /></> : ""}</p>
               </li>
             ))}
           </ul>
@@ -315,7 +316,7 @@ function ObligationRow({ obligation: o, contract: c }: { obligation: Obligation;
         <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--ink-600)]">
           <span>{OBLIGATION_KIND_LABEL[o.kind]}</span>
           {o.amount !== null && <span className="tabular-nums">{fmtMoney(o.amount, c.currency)}</span>}
-          {o.source === "sonar" && <span className="inline-flex items-center gap-1 text-[var(--ai-ink)]"><Sonar size={12} />Found by Sonar</span>}
+          {o.source === "sonar" && <span className="inline-flex items-center gap-1 text-[var(--ai-ink)]"><Sonar size={12} />Found by <SonarName /></span>}
           {!o.verified && <span className="inline-flex h-5 items-center rounded bg-[var(--warning-soft)] px-1.5 font-medium text-[var(--warning-fg)]">Needs verification</span>}
           {done && o.completedAt && <span>Done {formatDate(o.completedAt)}</span>}
         </p>

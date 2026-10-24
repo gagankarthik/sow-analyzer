@@ -28,6 +28,7 @@ import { fmtMoney } from "@/lib/contract-value";
 import { cn } from "@/lib/utils";
 import { Fact, ProvenanceMark, Section } from "./SectionParts";
 
+import { SonarName } from "@/components/ui/SonarText";
 type TextKey = "counterparty" | "sponsor" | "piName" | "department" | "college" | "currency" | "requestedDate"
   | "effectiveDate" | "termEndDate" | "huronRecordId" | "workdayRef" | "poNumber";
 
@@ -220,7 +221,7 @@ export function DetailsSection({ contract: c, compact = false }: {
           <Coins size={20} className="shrink-0 text-structure-soft-fg" />
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-foreground">Add the contract value so totals are never incomplete</p>
-            <p className="text-sm text-[var(--ink-700)]">Sonar could not find a value in this agreement. Until someone adds it, it is counted apart in every report.</p>
+            <p className="text-sm text-[var(--ink-700)]"><SonarName /> could not find a value in this agreement. Until someone adds it, it is counted apart in every report.</p>
           </div>
           <Button type="button" variant="outline" onClick={() => setValueDialog(true)}><Coins size={16} />Add the value</Button>
         </div>
@@ -312,7 +313,7 @@ function MissingChecklist({ contract: c, gaps, onFill, onConfirmType, confirming
     <section id="missing-details" aria-labelledby="missing-heading" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
       <div>
         <h2 id="missing-heading" className="text-lg font-semibold inline-flex items-center gap-2 text-foreground"><CircleDashed size={16} className="text-[var(--warning)]" />What&rsquo;s missing</h2>
-        <p className="mt-0.5 text-sm text-[var(--ink-600)]">Sonar could not find these. Fill them in so this contract is counted and filtered correctly.</p>
+        <p className="mt-0.5 text-sm text-[var(--ink-600)]"><SonarName /> could not find these. Fill them in so this contract is counted and filtered correctly.</p>
       </div>
       <ul className="flex flex-col divide-y divide-border">
         {gaps.map((gap) => (

@@ -98,13 +98,13 @@ export function SkeletonLine({
   );
 }
 
-/** A 32px control outline (44px on phones): white, 1px border, 6px radius, with a faint label bar. */
+/** A 36px control outline (44px on phones): white, 1px border, 6px radius, with a faint label bar. */
 function ControlSkeleton({ className, bar = "w-1/2" }: { className?: string; bar?: string }) {
   return (
     <span
       aria-hidden
       className={cn(
-        "flex h-11 shrink-0 items-center rounded-[6px] border border-border-default bg-surface-raised px-2.5 md:h-8",
+        "flex h-11 shrink-0 items-center rounded-[6px] border border-border-default bg-surface-raised px-2.5 md:h-9",
         className,
       )}
     >
@@ -166,7 +166,7 @@ export function TableSkeleton({
   const headCell = cn(
     "border-b border-border-default whitespace-nowrap",
     flush
-      ? "h-[38px] border-t bg-surface-canvas text-[12px] font-normal text-[var(--ink-600)]"
+      ? "h-[38px] border-t bg-surface-sunken text-[12px] font-normal text-[var(--ink-700)]"
       : "h-(--table-header-height) bg-surface-sunken text-caption font-semibold text-fg-secondary",
   );
   const lines = Array.from({ length: rows }, (_, i) => i);
@@ -286,7 +286,7 @@ export function TableFooterSkeleton({ cells = 4, className }: { cells?: number; 
 /**
  * The list toolbar (UI_SPEC section 9) in its fixed order: search (240px) →
  * quick filters → "More filters" ⟷ right-hand icon buttons → layout switch.
- * Every control 32px (44px on phones), on one row from md.
+ * Every control 36px (44px on phones), on one row from md.
  */
 export function ToolbarSkeleton({
   search = true,

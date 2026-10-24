@@ -9,13 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SonarMark } from "@/components/ui/SonarMark";
 import { MarkdownView } from "@/components/MarkdownView";
-import { Panel } from "@/components/ds/Panel";
+import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import {
-  DraftSow, Sonar, Download, Loader2, ChevronLeft, FileSignature, Check, RefreshCw, AlertTriangle, Eye, Edit3, Send, DollarSign, Repeat, Scale, XCircle, Lock, CheckCircle2, Globe2, Gavel, ShieldAlert, GitBranch, Layers, type LucideIcon,
+  DraftSow, Sonar, Download, Loader2, ChevronLeft, ChevronDown, ChevronUp, FileSignature, Check, RefreshCw, AlertTriangle, Eye, Edit3, Send, Plus, Trash2,
 } from "@/components/ui/icons";
-import { CLAUSE_TYPES } from "@/lib/clause-types";
-import { PRICING_LABELS, EMPTY_ANSWERS, type SowAnswers, type SowPricingModel } from "@/lib/sow/types";
+import {
+  PRICING_LABELS, EMPTY_ANSWERS, SECTION_DEF, SOW_SECTIONS, isCustomSection, migrateAnswers,
+  type SowAnswers, type SowPricingModel, type SowSection,
+} from "@/lib/sow/types";
 import { draftSow, reviseSow, type SowError } from "@/lib/sow/client";
 import { downloadDocx, markdownToDocxBlob } from "@/lib/docx";
 import { useRouter } from "next/navigation";
@@ -23,12 +25,7 @@ import { toast } from "sonner";
 import { getUploadUrl, uploadToS3 } from "@/lib/api";
 import { useCreateContract } from "@/lib/govern/queries";
 
-const CLAUSE_ICONS: Record<string, LucideIcon> = {
-  "payment-milestone": DollarSign, "auto-renewal": Repeat, "ip-ownership": FileSignature,
-  "liability-cap": Scale, "termination-notice": XCircle, confidentiality: Lock,
-  penalty: AlertTriangle, "acceptance-criteria": CheckCircle2, "governing-law": Globe2,
-  "dispute-resolution": Gavel, "force-majeure": ShieldAlert, "scope-change": GitBranch, other: Layers,
-};
+import { SonarName } from "@/components/ui/SonarText";
 
 const REVISE_SUGGESTIONS = [
   "Add a confidentiality clause",
@@ -88,7 +85,7 @@ function DraftSowPageContent() {
       const a = localStorage.getItem(LS_ANSWERS);
       const d = localStorage.getItem(LS_DRAFT);
       // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time rehydrate from localStorage
-      if (a) setAnswers({ ...EMPTY_ANSWERS, ...JSON.parse(a) });
+      if (a) setAnswers(migrateAnswers(JSON.parse(a)));
       if (d) { setDraft(d); setStep("editor"); }
     } catch { /* ignore */ }
   }, []);
@@ -106,13 +103,8 @@ function DraftSowPageContent() {
   const set = <K extends keyof SowAnswers>(key: K, value: SowAnswers[K]) =>
     setAnswers((a) => ({ ...a, [key]: value }));
 
-  const toggleClause = (id: string) =>
-    setAnswers((a) => ({
-      ...a,
-      clauses: a.clauses.includes(id) ? a.clauses.filter((c) => c !== id) : [...a.clauses, id],
-    }));
-
-  const canDraft = answers.title.trim().length > 0 && answers.scope.trim().length > 0 && !busy;
+  const scope = answers.sections.find((s) => s.key === "scope")?.body ?? "";
+  const canDraft = answers.title.trim().length > 0 && scope.trim().length > 0 && !busy;
 
   async function generate() {
     if (!canDraft) return;
@@ -169,7 +161,7 @@ function DraftSowPageContent() {
         <IntakeForm
           answers={answers}
           set={set}
-          toggleClause={toggleClause}
+          update={setAnswers}
           canDraft={canDraft}
           busy={busy}
           error={error}
@@ -183,17 +175,32 @@ function DraftSowPageContent() {
   );
 }
 
-/* ── Intake questionnaire ───────────────────────────────────────── */
+/* ── Intake: an editable SOW, section by section ────────────────── */
 
 const FIELD = "bg-card placeholder:text-[var(--ink-500)]";
 const AREA = "bg-card placeholder:text-[var(--ink-500)]";
 
+/** A starting point: the pricing model and the optional sections this kind of
+ *  work usually needs. It only adds sections; it never writes contract text. */
+type SowTemplate = { id: string; label: string; blurb: string; pricing: SowPricingModel; add: string[] };
+
+const TEMPLATES: SowTemplate[] = [
+  { id: "software", label: "Software implementation", blurb: "Build, configure and hand over a system.", pricing: "milestone", add: ["liability", "data-security", "governing-law", "reporting"] },
+  { id: "consulting", label: "Consulting", blurb: "Expert time on a defined question.", pricing: "time_and_materials", add: ["liability", "governing-law"] },
+  { id: "research", label: "Research services", blurb: "A study or analysis ending in a report.", pricing: "fixed", add: ["data-security", "governing-law", "reporting"] },
+  { id: "support", label: "Ongoing support", blurb: "Monthly support or a managed service.", pricing: "retainer", add: ["reporting", "liability", "force-majeure", "subcontracting"] },
+  { id: "full", label: "Everything", blurb: "Every core and optional section.", pricing: "fixed", add: SOW_SECTIONS.filter((s) => s.kind === "optional").map((s) => s.key) },
+];
+
+const sectionDomId = (key: string) => `sow-${key}`;
+const jumpTo = (key: string) => document.getElementById(sectionDomId(key))?.scrollIntoView({ behavior: "smooth", block: "start" });
+
 function IntakeForm({
-  answers, set, toggleClause, canDraft, busy, error, noKey, onGenerate,
+  answers, set, update, canDraft, busy, error, noKey, onGenerate,
 }: {
   answers: SowAnswers;
   set: <K extends keyof SowAnswers>(key: K, value: SowAnswers[K]) => void;
-  toggleClause: (id: string) => void;
+  update: (fn: (a: SowAnswers) => SowAnswers) => void;
   canDraft: boolean;
   busy: boolean;
   error: string | null;
@@ -202,120 +209,205 @@ function IntakeForm({
 }) {
   // Required-field messages appear once the user has left the field empty.
   const [touched, setTouched] = useState({ title: false, scope: false });
+  const [template, setTemplate] = useState<string | null>(null);
   const titleError = touched.title && !answers.title.trim() ? "Enter an engagement title." : undefined;
-  const scopeError = touched.scope && !answers.scope.trim() ? "Describe the scope of work." : undefined;
+  const sections = answers.sections;
+  const filled = sections.filter((s) => s.body.trim()).length;
+  const missingOptional = SOW_SECTIONS.filter((d) => d.kind === "optional" && !sections.some((s) => s.key === d.key));
+
+  const setSections = (fn: (s: SowSection[]) => SowSection[]) => update((a) => ({ ...a, sections: fn(a.sections) }));
+  const editSection = (key: string, patch: Partial<SowSection>) => setSections((ss) => ss.map((s) => (s.key === key ? { ...s, ...patch } : s)));
+  const move = (key: string, by: -1 | 1) => setSections((ss) => {
+    const i = ss.findIndex((s) => s.key === key);
+    const j = i + by;
+    if (i < 0 || j < 0 || j >= ss.length) return ss;
+    const next = [...ss];
+    [next[i], next[j]] = [next[j], next[i]];
+    return next;
+  });
+  const remove = (key: string) => setSections((ss) => ss.filter((s) => s.key !== key));
+  const addSection = (s: SowSection) => {
+    setSections((ss) => [...ss, s]);
+    requestAnimationFrame(() => {
+      jumpTo(s.key);
+      document.getElementById(`${sectionDomId(s.key)}-title`)?.focus();
+    });
+  };
+  const addCustom = () => addSection({ key: `custom-${Date.now().toString(36)}`, title: "", body: "" });
+
+  function applyTemplate(t: SowTemplate) {
+    setTemplate(t.id);
+    set("pricingModel", t.pricing);
+    setSections((ss) => [
+      ...ss,
+      ...t.add.filter((k) => !ss.some((s) => s.key === k)).map((k) => ({ key: k, title: SECTION_DEF[k].title, body: "" })),
+    ]);
+  }
 
   return (
     <div className="app-container app-page">
-      <div className="flex max-w-3xl flex-col gap-6">
-        {error && (
-          <div role="alert" className="flex items-start gap-2.5 rounded-md border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2.5">
-            <AlertTriangle size={16} aria-hidden className="mt-0.5 shrink-0 text-[var(--danger-fg)]" />
-            <div className="min-w-0 text-sm leading-relaxed text-[var(--danger-fg)]">
-              <p className="font-medium">{error}</p>
-              {noKey && (
-                <p className="mt-1 break-words">
-                  Drafting is not switched on for this workspace yet. Ask your administrator to finish setup.
-                </p>
-              )}
-            </div>
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[230px_minmax(0,1fr)]">
+        {/* Outline: the SOW's sections, which are written, and a way to add one. */}
+        <nav aria-label="SOW sections" className="hidden lg:sticky lg:top-4 lg:block">
+          <p className="text-[12px] font-medium text-[var(--ink-600)]">{filled} of {sections.length} sections written</p>
+          <div aria-hidden className="mt-2 h-1 overflow-hidden rounded-full bg-[var(--ink-100)]">
+            <div className="h-full rounded-full bg-[var(--brand-primary-700)] transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${sections.length ? (filled / sections.length) * 100 : 0}%` }} />
           </div>
-        )}
-          <Section title="Engagement">
-            <Field label="Engagement title" required error={titleError}>
-              <Input value={answers.title} onChange={(e) => set("title", e.target.value)} onBlur={() => setTouched((t) => ({ ...t, title: true }))} aria-invalid={!!titleError} placeholder="e.g. Acme Corp: Data Platform Implementation" className={FIELD} />
-            </Field>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Service provider">
-                <Input value={answers.provider} onChange={(e) => set("provider", e.target.value)} placeholder="Your company" className={FIELD} />
-              </Field>
-              <Field label="Client / counterparty">
-                <Input value={answers.client} onChange={(e) => set("client", e.target.value)} placeholder="e.g. Acme Corp" className={FIELD} />
-              </Field>
+          <ol className="mt-4 flex flex-col gap-0.5 text-[13px]">
+            {sections.map((s, i) => {
+              const done = !!s.body.trim();
+              const required = SECTION_DEF[s.key]?.required;
+              return (
+                <li key={s.key}>
+                  <button type="button" onClick={() => jumpTo(s.key)} className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[var(--ink-800)] hover:bg-[var(--hover)]">
+                    <span aria-hidden className={cn(
+                      "inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
+                      done ? "bg-[var(--success)] text-white" : "border border-[var(--ink-300)] text-[var(--ink-600)]",
+                    )}>
+                      {done ? <Check size={12} /> : i + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{s.title || "Untitled section"}</span>
+                    {required && !done && <span className="text-[11px] text-[var(--danger-fg)]">Required</span>}
+                    <span className="sr-only">{done ? "(written)" : "(empty)"}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+          <button type="button" onClick={() => document.getElementById("sow-add")?.scrollIntoView({ behavior: "smooth", block: "center" })} className="mt-2 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium text-[var(--brand-primary-700)] hover:bg-[var(--hover)]">
+            <Plus size={14} aria-hidden />Add a section
+          </button>
+        </nav>
+
+        <div className="flex min-w-0 max-w-3xl flex-col gap-6">
+          {error && (
+            <div role="alert" className="flex items-start gap-2.5 rounded-md border border-[var(--danger-border)] bg-[var(--danger-soft)] px-3 py-2.5">
+              <AlertTriangle size={16} aria-hidden className="mt-0.5 shrink-0 text-[var(--danger-fg)]" />
+              <div className="min-w-0 text-sm leading-relaxed text-[var(--danger-fg)]">
+                <p className="font-medium">{error}</p>
+                {noKey && <p className="mt-1 break-words">Drafting is not switched on for this workspace yet. Ask your administrator to finish setup.</p>}
+              </div>
             </div>
-            <Field label="Background & objectives" hint="Why this engagement exists and what success looks like.">
-              <Textarea value={answers.background} onChange={(e) => set("background", e.target.value)} placeholder="Acme is migrating off a legacy warehouse and needs…" rows={3} className={AREA} />
-            </Field>
-          </Section>
-          <Section title="Scope and deliverables">
-            <Field label="Scope of work" required error={scopeError} hint="What's included. Plain prose or bullet points both work.">
-              <Textarea value={answers.scope} onChange={(e) => set("scope", e.target.value)} onBlur={() => setTouched((t) => ({ ...t, scope: true }))} aria-invalid={!!scopeError} placeholder="Design and build a data pipeline, including…" rows={4} className={AREA} />
-            </Field>
-            <Field label="Key deliverables" hint="One per line.">
-              <Textarea value={answers.deliverables} onChange={(e) => set("deliverables", e.target.value)} placeholder={"Architecture document\nIngestion pipeline\nAdmin dashboard\nHandover & training"} rows={4} className={AREA} />
-            </Field>
-            <Field label="Assumptions & out of scope">
-              <Textarea value={answers.assumptions} onChange={(e) => set("assumptions", e.target.value)} placeholder="Client provides data access by week 1. Mobile apps are out of scope." rows={3} className={AREA} />
-            </Field>
-          </Section>
-          <Section title="Timeline and commercials">
-            <Field label="Timeline & milestones" hint="Start/end dates and any phase milestones.">
-              <Textarea value={answers.timeline} onChange={(e) => set("timeline", e.target.value)} placeholder={"Start: 1 Jun 2026, End: 30 Sep 2026\nPhase 1: Discovery (Jun)\nPhase 2: Build (Jul–Aug)\nPhase 3: Launch (Sep)"} rows={3} className={AREA} />
-            </Field>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Pricing model">
-                <Select value={answers.pricingModel} onValueChange={(v) => set("pricingModel", v as SowPricingModel)}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(PRICING_LABELS) as SowPricingModel[]).map((k) => (
-                      <SelectItem key={k} value={k}>{PRICING_LABELS[k]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Governing law">
-                <Input value={answers.governingLaw} onChange={(e) => set("governingLaw", e.target.value)} placeholder="e.g. State of Delaware, USA" className={FIELD} />
-              </Field>
-            </div>
-            <Field label="Fees & payment terms" hint="Amounts, schedule, and net terms.">
-              <Textarea value={answers.fees} onChange={(e) => set("fees", e.target.value)} placeholder="$240,000 fixed fee. 30% on signature, 40% at Phase 2, 30% on acceptance. Net 30." rows={3} className={AREA} />
-            </Field>
-          </Section>
-          <Section title="Clauses to include">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {CLAUSE_TYPES.filter((c) => c.id !== "other").map((c) => {
-                const Icon = CLAUSE_ICONS[c.id] ?? Layers;
-                const active = answers.clauses.includes(c.id);
+          )}
+
+          <section aria-labelledby="sow-template-h">
+            <h2 id="sow-template-h" className="text-[13px] font-semibold text-[var(--ink-700)]">Start from a template</h2>
+            <p className="mt-0.5 text-[13px] text-[var(--ink-600)]">Adds the sections this kind of work usually needs and sets the pricing model. Nothing you wrote is changed.</p>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              {TEMPLATES.map((t) => {
+                const active = template === t.id;
                 return (
                   <button
+                    key={t.id}
                     type="button"
-                    key={c.id}
-                    onClick={() => toggleClause(c.id)}
                     aria-pressed={active}
-                    className={`flex min-w-0 items-start gap-2.5 rounded-md border px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] ${
-                      active
-                        ? "border-[var(--brand-primary-600)] bg-[var(--brand-primary-50)]"
-                        : "border-border bg-card hover:bg-[var(--ink-50)]"
-                    }`}
+                    onClick={() => applyTemplate(t)}
+                    className={cn(
+                      "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]",
+                      active ? "border-[var(--brand-primary-700)] bg-[var(--brand-primary-50)]" : "border-[var(--ink-200)] bg-card hover:border-[var(--ink-300)] hover:bg-[var(--hover)]",
+                    )}
                   >
-                    <span className={`mt-0.5 shrink-0 ${active ? "text-[var(--brand-primary-700)]" : "text-[var(--ink-500)]"}`}>
-                      {active ? <Check size={16} aria-hidden /> : <Icon size={16} aria-hidden />}
+                    <span className="flex w-full items-center justify-between gap-2 text-[13px] font-medium text-[var(--ink-900)]">
+                      {t.label}
+                      {active && <Check size={14} aria-hidden className="shrink-0 text-[var(--brand-primary-700)]" />}
                     </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium text-foreground">{c.label}</span>
-                      <span className="block text-xs leading-snug text-[var(--ink-600)]">{c.blurb}</span>
-                    </span>
+                    <span className="text-[12px] leading-snug text-[var(--ink-600)]">{t.blurb}</span>
                   </button>
                 );
               })}
             </div>
-            <Field label="Anything else for Sonar?" hint="Special terms, tone, or instructions.">
-              <Textarea value={answers.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Include a 12-month warranty on deliverables. Keep clauses concise." rows={2} className={AREA} />
-            </Field>
-          </Section>
+          </section>
 
-        {/* Sticky action bar: the page's one primary action. */}
-        <div className="sticky bottom-3 z-10 md:bottom-4">
-          <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 shadow-md sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="flex min-w-0 items-center gap-2">
-              <Sonar size={16} aria-hidden className="shrink-0 text-[var(--ai-ink)]" />
-              <p className="text-sm text-[var(--ink-600)]" aria-live="polite">
-                {canDraft ? "Sonar drafts in a few seconds." : "Add a title and scope to draft."}
-              </p>
+          {/* The document: parties first, then the numbered sections in order. */}
+          <article aria-label="Statement of work" className="rounded-lg border border-[var(--ink-200)] bg-card">
+            <section aria-labelledby="sow-parties-h" className="border-b border-[var(--ink-200)] bg-[var(--panel)] px-5 py-5 sm:px-6">
+              <h2 id="sow-parties-h" className="mb-4 text-[15px] font-semibold text-[var(--ink-900)]">Engagement and parties</h2>
+              <div className="flex flex-col gap-4">
+                <Field label="Engagement title" required error={titleError}>
+                  <Input value={answers.title} onChange={(e) => set("title", e.target.value)} onBlur={() => setTouched((t) => ({ ...t, title: true }))} aria-invalid={!!titleError} placeholder="e.g. Acme Corp: Data Platform Implementation" className={FIELD} />
+                </Field>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Service provider">
+                    <Input value={answers.provider} onChange={(e) => set("provider", e.target.value)} placeholder="Your company" className={FIELD} />
+                  </Field>
+                  <Field label="Client / counterparty">
+                    <Input value={answers.client} onChange={(e) => set("client", e.target.value)} placeholder="e.g. Acme Corp" className={FIELD} />
+                  </Field>
+                </div>
+              </div>
+            </section>
+
+            {sections.map((s, i) => (
+              <SectionBlock
+                key={s.key}
+                n={i + 1}
+                section={s}
+                first={i === 0}
+                last={i === sections.length - 1}
+                scopeError={s.key === "scope" && touched.scope && !s.body.trim() ? "Describe the scope of work." : undefined}
+                onBlurBody={s.key === "scope" ? () => setTouched((t) => ({ ...t, scope: true })) : undefined}
+                onChange={(patch) => editSection(s.key, patch)}
+                onMove={(by) => move(s.key, by)}
+                onRemove={() => remove(s.key)}
+              >
+                {s.key === "payment" && (
+                  <Field label="Pricing model">
+                    <Select value={answers.pricingModel} onValueChange={(v) => set("pricingModel", v as SowPricingModel)}>
+                      <SelectTrigger className="w-full sm:max-w-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(PRICING_LABELS) as SowPricingModel[]).map((k) => (
+                          <SelectItem key={k} value={k}>{PRICING_LABELS[k]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              </SectionBlock>
+            ))}
+
+            {/* Add a section: the optional ones not in yet, or the user's own. */}
+            <div id="sow-add" className="scroll-mt-4 px-5 py-5 sm:px-6">
+              <h2 className="text-[13px] font-semibold text-[var(--ink-700)]">Add a section</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {missingOptional.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    title={d.hint}
+                    onClick={() => addSection({ key: d.key, title: d.title, body: "" })}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--ink-200)] bg-card px-2.5 text-[13px] text-[var(--ink-800)] transition-colors hover:border-[var(--ink-300)] hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]"
+                  >
+                    <Plus size={14} aria-hidden className="text-[var(--ink-500)]" />{d.title}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={addCustom}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-[var(--ink-400)] px-2.5 text-[13px] font-medium text-[var(--brand-primary-700)] transition-colors hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]"
+                >
+                  <Plus size={14} aria-hidden />Your own section
+                </button>
+              </div>
             </div>
-            <Button disabled={!canDraft} onClick={onGenerate} className="w-full shrink-0 sm:w-auto">
-              {busy ? <><Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />Drafting…</> : <><DraftSow size={16} aria-hidden />Draft with Sonar</>}
-            </Button>
+          </article>
+
+          <section aria-labelledby="sow-notes-h" className="rounded-lg border border-[var(--ink-200)] bg-card px-5 py-5 sm:px-6">
+            <h2 id="sow-notes-h" className="text-[15px] font-semibold text-[var(--ink-900)]">Notes for <SonarName /></h2>
+            <p className="mt-0.5 mb-3 text-[13px] text-[var(--ink-600)]">Tone, special terms or instructions. Not printed in the SOW.</p>
+            <Textarea value={answers.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Keep clauses concise. Use US spelling." rows={2} aria-label="Notes for Sonar" className={AREA} />
+          </section>
+
+          {/* Sticky action bar: the page's one primary action. */}
+          <div className="sticky bottom-3 z-10 md:bottom-4">
+            <div className="flex flex-col gap-3 rounded-lg border border-[var(--ink-200)] bg-card p-3 shadow-[0_4px_16px_-8px_rgba(15,15,16,0.18)] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <p className="flex min-w-0 items-center gap-2 text-sm text-[var(--ink-700)]" aria-live="polite">
+                <Sonar size={16} aria-hidden className="shrink-0 text-[var(--ai-ink)]" />
+                {canDraft ? <>{filled} of {sections.length} sections written. <SonarName /> drafts the rest with [TBD] placeholders.</> : "Add a title and the scope of work to draft."}
+              </p>
+              <Button disabled={!canDraft} onClick={onGenerate} className="w-full shrink-0 sm:w-auto">
+                {busy ? <><Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />Drafting…</> : <><DraftSow size={16} aria-hidden />Draft with <SonarName /></>}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -323,19 +415,74 @@ function IntakeForm({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** One numbered, editable section: its title, its text, and move / remove. */
+function SectionBlock({
+  n, section, first, last, scopeError, onBlurBody, onChange, onMove, onRemove, children,
+}: {
+  n: number;
+  section: SowSection;
+  first: boolean;
+  last: boolean;
+  scopeError?: string;
+  onBlurBody?: () => void;
+  onChange: (patch: Partial<SowSection>) => void;
+  onMove: (by: -1 | 1) => void;
+  onRemove: () => void;
+  children?: React.ReactNode;
+}) {
+  const def = SECTION_DEF[section.key];
+  const custom = isCustomSection(section.key);
+  const done = !!section.body.trim();
+  const id = sectionDomId(section.key);
+  const name = section.title || "Untitled section";
+  const tool = "inline-flex size-7 items-center justify-center rounded-md text-[var(--ink-600)] hover:bg-[var(--hover)] hover:text-[var(--ink-900)] disabled:opacity-40 disabled:hover:bg-transparent";
   return (
-    <Panel as="h2" title={title} bodyClassName="gap-4">
-      {children}
-    </Panel>
+    <section id={id} aria-label={`Section ${n}: ${name}`} className="group scroll-mt-4 border-b border-[var(--ink-200)] px-5 py-5 sm:px-6">
+      <div className="mb-3 flex items-center gap-3">
+        <span aria-hidden className="font-mono text-[13px] font-semibold tabular-nums text-[var(--ink-500)]">{String(n).padStart(2, "0")}</span>
+        <input
+          id={`${id}-title`}
+          value={section.title}
+          onChange={(e) => onChange({ title: e.target.value })}
+          aria-label={`Section ${n} title`}
+          placeholder="Section title"
+          maxLength={120}
+          className="min-w-0 flex-1 rounded-sm bg-transparent text-[15px] font-semibold text-[var(--ink-900)] outline-none placeholder:text-[var(--ink-500)] hover:bg-[var(--hover)] focus-visible:bg-[var(--hover)]"
+        />
+        <span className={cn("hidden text-[12px] sm:inline", done ? "text-[var(--success-fg)]" : def?.required ? "text-[var(--danger-fg)]" : "text-[var(--ink-500)]")}>
+          {done ? "Written" : def?.required ? "Required" : custom ? "Your section" : def?.kind === "optional" ? "Optional" : "Empty"}
+        </span>
+        <span className="flex items-center">
+          <button type="button" className={tool} onClick={() => onMove(-1)} disabled={first} aria-label={`Move ${name} up`}><ChevronUp size={16} aria-hidden /></button>
+          <button type="button" className={tool} onClick={() => onMove(1)} disabled={last} aria-label={`Move ${name} down`}><ChevronDown size={16} aria-hidden /></button>
+          {!def?.required && (
+            <button type="button" className={tool} onClick={onRemove} aria-label={`Remove ${name}`}><Trash2 size={16} aria-hidden /></button>
+          )}
+        </span>
+      </div>
+      <div className="flex flex-col gap-4">
+        {children}
+        <Field label={def?.required ? `${def.title} details` : "Details"} required={def?.required} error={scopeError} hint={def?.hint ?? "Write it the way it should read, or leave notes for Sonar to draft from."} srOnlyLabel>
+          <Textarea
+            value={section.body}
+            onChange={(e) => onChange({ body: e.target.value })}
+            onBlur={onBlurBody}
+            aria-invalid={!!scopeError}
+            placeholder={def?.placeholder ?? "What this section should say…"}
+            rows={section.key === "scope" || section.key === "deliverables" ? 4 : 3}
+            className={AREA}
+          />
+        </Field>
+      </div>
+    </section>
   );
 }
 
 // The control is nested in the <label>, so it is named without needing an id.
-function Field({ label, hint, required, error, children }: { label: string; hint?: string; required?: boolean; error?: string; children: React.ReactNode }) {
+function Field({ label, hint, required, error, srOnlyLabel, children }: { label: string; hint?: string; required?: boolean; error?: string; srOnlyLabel?: boolean; children: React.ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="block text-sm font-medium text-foreground">
+      <span className={cn("block text-sm font-medium text-foreground", srOnlyLabel && "sr-only")}>
         {label}
         {required && <><span className="ml-0.5 text-[var(--danger)]" aria-hidden="true">*</span><span className="sr-only"> (required)</span></>}
       </span>
@@ -360,6 +507,13 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
   const [error, setError] = useState<string | null>(null);
   const history = useRef<string[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  const page = useRef<HTMLDivElement>(null);
+  // The draft's own sections (its "## " headings), for the outline.
+  const outline = draft.split("\n").filter((l) => /^##\s/.test(l)).map((l) => l.replace(/^##\s+/, "").replace(/[*_`]/g, "").trim());
+  const jump = (i: number) => {
+    setMode("preview");
+    requestAnimationFrame(() => page.current?.querySelectorAll("h2")[i]?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   async function revise(text: string) {
     const ins = text.trim();
@@ -389,7 +543,21 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
   return (
     <div className="app-container app-page">
       {/* Stacks on phones and tablets; the revise rail sits beside the document from lg. */}
-      <div className="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[200px_minmax(0,1fr)_320px]">
+        {/* Outline: the draft's sections, to jump between them. */}
+        <nav aria-label="Draft sections" className="hidden xl:sticky xl:top-4 xl:block">
+          <p className="px-2 text-[12px] font-medium text-[var(--ink-600)]">{outline.length} sections</p>
+          <ol className="mt-2 flex flex-col gap-0.5 text-[13px]">
+            {outline.map((h, i) => (
+              <li key={`${i}-${h}`}>
+                <button type="button" onClick={() => jump(i)} className="flex w-full items-baseline gap-2 rounded-md px-2 py-1.5 text-left text-[var(--ink-800)] hover:bg-[var(--hover)]">
+                  <span aria-hidden className="font-mono text-[11px] tabular-nums text-[var(--ink-500)]">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="min-w-0 truncate">{h}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
         {/* Document */}
         <main className="min-w-0">
           <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -405,7 +573,7 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
               )}
             </div>
             {mode === "preview" ? (
-              <div className="max-h-[65vh] overflow-y-auto px-4 py-5 sm:px-6 md:px-10 md:py-8 lg:max-h-[72vh]">
+              <div ref={page} className="max-h-[65vh] overflow-y-auto px-4 py-5 sm:px-6 md:px-10 md:py-8 lg:max-h-[72vh]">
                 <MarkdownView markdown={draft} />
               </div>
             ) : (
@@ -426,10 +594,10 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
             <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4">
               <div className="mb-2 flex items-center gap-2">
                 <SonarMark size="sm" />
-                <h2 className="text-base font-semibold text-foreground">Ask Sonar to revise</h2>
+                <h2 className="text-base font-semibold text-foreground">Ask <SonarName /> to revise</h2>
               </div>
               <p className="text-xs leading-relaxed text-[var(--ink-600)]">
-                Describe a change; Sonar rewrites the document and keeps the rest intact.
+                Describe a change; <SonarName /> rewrites the document and keeps the rest intact.
               </p>
 
               <div className="mt-3 flex flex-wrap gap-1.5">
@@ -465,8 +633,8 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
               </div>
 
               {error && <p role="alert" className="mt-2 text-sm text-[var(--danger)]">{error}</p>}
-              <p className="mt-3 text-xs leading-relaxed text-[var(--ink-600)]">Review before sending. Sonar can be wrong.</p>
-              {revising && <p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--ai-text)]" role="status"><Loader2 size={12} aria-hidden className="animate-spin motion-reduce:animate-none" />Sonar is revising the document…</p>}
+              <p className="mt-3 text-xs leading-relaxed text-[var(--ink-600)]">Review before sending. <SonarName /> can be wrong.</p>
+              {revising && <p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--ai-text)]" role="status"><Loader2 size={12} aria-hidden className="animate-spin motion-reduce:animate-none" /><SonarName /> is revising the document…</p>}
             </div>
 
           </div>

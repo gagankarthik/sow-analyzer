@@ -14,7 +14,7 @@ export default function AppNotFound() {
         <Link href="/contracts">Contracts</Link>
       </Button>
       <Button variant="outline" asChild>
-        <Link href="/home">Home</Link>
+        <Link href="/dashboard">Dashboard</Link>
       </Button>
     </StatePanel>
   );

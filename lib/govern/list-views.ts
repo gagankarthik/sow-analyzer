@@ -28,7 +28,17 @@ export const QUICK_VIEWS: ContractView[] = CONTRACT_VIEWS.filter((v) => v.id !==
 const PRESETS = [...DEFAULT_VIEWS, ...QUICK_VIEWS]
 
 /** The view a bare /contracts opens. */
-export const DEFAULT_VIEW_ID = "all"
+export const DEFAULT_VIEW_ID = "in-progress"
+
+/** The view tabs shared by the Contracts table and the workflow board (two
+ *  layouts of one list), with their short tab labels. `alert`: the count
+ *  reads in the danger colour when above zero. */
+export const LIST_TABS: { id: string; label: string; alert?: boolean }[] = [
+  { id: "in-progress", label: "All open" },
+  { id: "mine", label: "Mine" },
+  { id: "overdue", label: "Past target", alert: true },
+  { id: "signed", label: "Signed" },
+]
 
 export function presetById(id: string | null | undefined): ContractView | undefined {
   return id ? PRESETS.find((v) => v.id === id) : undefined

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { makeContract, NO_COUNTS } from "./__fixtures__/contract"
 import {
   applyFilters, byUrgency, daysBand, formatCompact, formatMoney, inValueBand, matchesSearch,
-  needsAttention, NO_FILTERS, stageQueues, sumMoney, valueHeldUp, valueSummary, waitingQueues,
+  needsAttention, NO_FILTERS, signedByMonth, stageQueues, sumMoney, valueHeldUp, valueSummary, waitingQueues,
 } from "./metrics"
 
 describe("sumMoney", () => {
@@ -148,5 +148,20 @@ describe("plain-word search and filters (Requirement 5)", () => {
     const list = [research, makeContract({ agreementType: "nda" })]
     expect(applyFilters(list, { ...NO_FILTERS, agreementType: "nda" })).toHaveLength(1)
     expect(applyFilters(list, { ...NO_FILTERS, q: "raman" })).toEqual([research])
+  })
+})
+
+describe("signedByMonth", () => {
+  it("counts signatures per month, oldest first, and skips older or unsigned ones", () => {
+    const now = new Date("2026-10-23T12:00:00Z")
+    const rows = signedByMonth([
+      makeContract({ signedAt: "2026-10-02T00:00:00Z" }),
+      makeContract({ signedAt: "2026-10-20T00:00:00Z" }),
+      makeContract({ signedAt: "2026-05-31T23:00:00Z" }),
+      makeContract({ signedAt: "2026-04-30T00:00:00Z" }), // before the window
+      makeContract({ signedAt: null }),
+    ], now)
+    expect(rows.map((r) => r.month)).toEqual(["May", "Jun", "Jul", "Aug", "Sep", "Oct"])
+    expect(rows.map((r) => r.signed)).toEqual([1, 0, 0, 0, 0, 2])
   })
 })

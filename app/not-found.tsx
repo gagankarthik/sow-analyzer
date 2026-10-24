@@ -26,7 +26,7 @@ export default function NotFound() {
           description="The link may be mistyped, or the page has moved."
         >
           <Button size="lg" asChild>
-            <Link href="/home">Open workspace</Link>
+            <Link href="/dashboard">Open workspace</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
             <Link href="/">Go to website</Link>

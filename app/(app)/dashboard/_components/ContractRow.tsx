@@ -61,7 +61,7 @@ export function ContractRow({
             <span className="hidden shrink-0 lg:flex"><WaitingOnChip waitingOn={c.waitingOn} short /></span>
           )
         )}
-        <ChevronRight aria-hidden size={16} className="shrink-0 text-[var(--ink-400)] group-hover:text-[var(--brand-primary-600)] rtl:rotate-180" />
+        <ChevronRight aria-hidden size={16} className="shrink-0 text-[var(--ink-500)] group-hover:text-[var(--brand-primary-600)] rtl:rotate-180" />
       </Link>
     </li>
   );

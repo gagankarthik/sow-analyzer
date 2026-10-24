@@ -1,8 +1,7 @@
 // Builds the chat messages Sonar uses to draft and revise a Statement of Work.
 // Pure functions — no I/O — so they're trivial to test and safe on the server.
 
-import { CLAUSE_TYPES } from "../clause-types";
-import { PRICING_LABELS, type SowAnswers } from "./types";
+import { PRICING_LABELS, SECTION_DEF, type SowAnswers } from "./types";
 
 export interface ChatMessage {
   role: "system" | "user";
@@ -32,30 +31,38 @@ function field(label: string, value: string): string {
   return v ? `${label}: ${v}` : `${label}: (not provided)`;
 }
 
-function requestedClauses(ids: string[]): string {
-  const chosen = CLAUSE_TYPES.filter((c) => ids.includes(c.id));
-  if (!chosen.length) return "Include only the clauses essential to a basic SOW.";
-  const lines = chosen.map((c) => `- ${c.label}: ${c.prompt}`);
-  return `Include dedicated sections for the following clauses:\n${lines.join("\n")}`;
-}
-
 export function draftMessages(a: SowAnswers): ChatMessage[] {
-  const facts = [
+  const parties = [
     field("Engagement title", a.title),
     field("Service provider (the party performing the work)", a.provider),
     field("Client / counterparty", a.client),
-    field("Background and objectives", a.background),
-    field("Scope of work / what is included", a.scope),
-    field("Key deliverables", a.deliverables),
-    field("Timeline, start/end dates, and milestones", a.timeline),
     field("Pricing model", PRICING_LABELS[a.pricingModel]),
-    field("Fees and payment terms", a.fees),
-    field("Assumptions and out-of-scope items", a.assumptions),
-    field("Governing law / jurisdiction", a.governingLaw),
-    field("Additional notes", a.notes),
   ].join("\n");
 
-  const user = `Draft a complete Statement of Work from these facts:\n\n<facts>\n${facts}\n</facts>\n\n${requestedClauses(a.clauses)}\n\nReturn only the SOW as Markdown — no preamble, no commentary.`;
+  // The user's sections, in their order. A section with no text still goes in:
+  // the user chose it, so Sonar drafts standard language with placeholders.
+  const sections = a.sections
+    .map((s, i) => {
+      const def = SECTION_DEF[s.key];
+      const title = asData(s.title).trim() || def?.title || "Untitled section";
+      const about = def ? ` (covers ${def.guide})` : " (a section the user added)";
+      const body = asData(s.body).trim();
+      return `Section ${i + 1}: ${title}${about}\n${body || "(no details given: draft standard language and mark missing specifics as [TBD: ...])"}`;
+    })
+    .join("\n\n");
+
+  const notes = asData(a.notes).trim();
+  const user = `Draft a complete Statement of Work from these facts:
+
+<facts>
+${parties}
+
+${sections}${notes ? `\n\nAdditional notes for the drafter: ${notes}` : ""}
+</facts>
+
+Use exactly these sections, in this order, as the numbered "## " sections, with the titles given. Do not add, drop or reorder sections. A Signatures section is a signature block for both parties (name, title, signature, date).
+
+Return only the SOW as Markdown — no preamble, no commentary.`;
 
   return [
     { role: "system", content: SYSTEM },

@@ -293,7 +293,7 @@ export function StageFlow({
                 <div className={cls}>{body}</div>
               )}
               {i < queues.length - 1 && (
-                <ChevronRight aria-hidden size={16} className="absolute -right-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-card text-[var(--ink-400)] xl:block" />
+                <ChevronRight aria-hidden size={16} className="absolute -right-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-card text-[var(--ink-500)] xl:block" />
               )}
             </li>
           );

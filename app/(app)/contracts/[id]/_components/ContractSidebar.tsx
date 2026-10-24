@@ -1,46 +1,121 @@
 "use client";
 
-// The right sidebar (UI_SPEC section 8.3): Details (the properties, edited in
-// place by the same form as the Details tab), Related (the agreement it
-// amends or its amendments, the documents, the workspace) and Files (each
-// version's original upload).
+// The right rail: who signs off and where each one stands, the latest three
+// activity entries, the agreements this one belongs with, and the documents
+// (each version opens in its workspace or downloads as uploaded).
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
-import { Download, ExternalLink, FileText, Loader2 } from "@/components/ui/icons";
-import { RecordSidebar } from "@/components/ds/Record";
+import { Check, Download, FileText, Loader2, X } from "@/components/ui/icons";
+import { ListPanel, PanelEmpty } from "@/components/ds/Panel";
 import { ContractFamily } from "@/components/govern/ContractFamily";
-import { ContractDocuments, shortDate } from "@/components/govern/ContractFacts";
+import { shortDate } from "@/components/govern/ContractFacts";
 import { getDocFile } from "@/lib/api";
-import type { ContractDetail, ContractVersion } from "@/lib/govern/types";
+import { ACTIVITY_LABEL, OFFICE_LABEL, personName } from "@/lib/govern/labels";
+import { contractSteps, type StepPerson } from "@/lib/govern/steps";
+import type { ActivityEntry, ContractDetail, ContractVersion } from "@/lib/govern/types";
+import { cn } from "@/lib/utils";
 
-const DetailsSection = dynamic(() => import("./DetailsSection").then((m) => m.DetailsSection), {
-  loading: () => <DetailsFieldsSkeleton />,
-});
+import { SonarName, withSonar } from "@/components/ui/SonarText";
+const LATEST = 3;
 
-function Related({ contract: c }: { contract: ContractDetail }) {
+/* ─── Sign-offs ──────────────────────────────────────────────────── */
+
+function SignOffMark({ status }: { status: StepPerson["status"] }) {
+  if (status === "done") {
+    return <span aria-hidden className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--success)] text-white"><Check size={12} strokeWidth={3} /></span>;
+  }
+  if (status === "stopped") {
+    return <span aria-hidden className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--danger)] text-white"><X size={12} strokeWidth={3} /></span>;
+  }
   return (
-    <div className="flex flex-col gap-5">
-      <ContractFamily contract={c} />
-      <ContractDocuments contract={c} versions={c.versions} />
-      <section aria-labelledby={`workspace-${c.contractId}`}>
-        <h3 id={`workspace-${c.contractId}`} className="text-base font-semibold text-fg-primary">Workspace</h3>
-        <Link
-          href={`/projects/${encodeURIComponent(c.currentDocId)}`}
-          className="mt-2 inline-flex min-h-8 items-center gap-1.5 rounded-control text-body font-medium text-fg-link hover:underline underline-offset-2 max-md:min-h-11"
-        >
-          <ExternalLink size={16} aria-hidden />Open document workspace
-        </Link>
-      </section>
-    </div>
+    <span
+      aria-hidden
+      className={cn("size-5 shrink-0 rounded-full border-[1.5px] bg-card", status === "current" || status === "waiting" ? "border-[var(--brand-primary-800)]" : "border-[var(--ink-300)]")}
+    />
   );
 }
 
-function FileRow({ version: v, latest }: { version: ContractVersion; latest: boolean }) {
+/** The reviewer, each office the matrix routes to, and the signatory. */
+function SignOffs({ contract: c }: { contract: ContractDetail }) {
+  const approvals = c.routing?.approvals ?? [];
+  const rows = contractSteps(c)
+    .filter((s) => s.id === "review" || s.id === "approvals" || s.id === "signature")
+    .flatMap((s) => s.people);
+  if (rows.length === 0) return null;
+  return (
+    <ListPanel title="Sign-offs" as="h2">
+      <ul className="py-1.5">
+        {rows.map((p, i) => {
+          const at = p.status === "done"
+            ? approvals.find((a) => (a.office === "reviewer" ? p.role === "Reviewer" : OFFICE_LABEL[a.office] === p.role))?.at
+            : undefined;
+          const note = [p.person ? personName(p.person) : null, p.statusLabel.toLowerCase(), at ? shortDate(at) : null].filter(Boolean).join(" · ");
+          return (
+            <li key={`${p.role}-${i}`} className="flex items-center gap-3 px-4 py-2">
+              <SignOffMark status={p.status} />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-body font-semibold text-fg-primary">{p.role}</span>
+                <span className="truncate text-caption text-[var(--ink-600)]">{note.charAt(0).toUpperCase() + note.slice(1)}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </ListPanel>
+  );
+}
+
+/* ─── Latest activity ────────────────────────────────────────────── */
+
+function when(iso: string): string {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function ActivityLine({ entry: e }: { entry: ActivityEntry }) {
+  const name = e.actor ? personName(e.actor) : "Sonar";
+  // Summaries are full sentences that usually start with the actor's name;
+  // bold that name rather than printing it twice.
+  const rest = e.summary
+    ? (e.summary.startsWith(name) ? e.summary.slice(name.length) : null)
+    : " " + (ACTIVITY_LABEL[e.action] ?? e.action).toLowerCase();
+  return (
+    <li className="flex flex-col px-4 py-2">
+      <span className="line-clamp-2 text-body text-fg-primary">
+        {rest === null ? withSonar(e.summary) : <>{e.actor ? <span className="font-semibold">{name}</span> : <SonarName />}{rest}</>}
+      </span>
+      <time dateTime={e.at} className="text-caption tabular-nums text-[var(--ink-600)]">{when(e.at)}</time>
+    </li>
+  );
+}
+
+function LatestActivity({ contract: c, onAll }: { contract: ContractDetail; onAll: () => void }) {
+  const latest = [...c.activity].sort((a, b) => b.at.localeCompare(a.at)).slice(0, LATEST);
+  return (
+    <ListPanel
+      title="Latest activity"
+      as="h2"
+      footer={
+        <button
+          type="button"
+          onClick={onAll}
+          className="inline-flex min-h-8 items-center rounded-control text-body font-semibold text-[var(--brand-primary-700)] hover:underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary-600)] max-md:min-h-11"
+        >
+          All activity
+        </button>
+      }
+    >
+      {latest.length === 0 ? <PanelEmpty>Nothing yet</PanelEmpty> : <ol className="py-1.5">{latest.map((e) => <ActivityLine key={e.id} entry={e} />)}</ol>}
+    </ListPanel>
+  );
+}
+
+/* ─── Documents ──────────────────────────────────────────────────── */
+
+function DocumentRow({ version: v, latest }: { version: ContractVersion; latest: boolean }) {
   const [busy, setBusy] = useState(false);
   async function download() {
     setBusy(true);
@@ -54,14 +129,14 @@ function FileRow({ version: v, latest }: { version: ContractVersion; latest: boo
     }
   }
   return (
-    <li className="flex min-w-0 items-center gap-2 border-b border-border-subtle py-2.5 last:border-b-0">
-      <FileText size={16} aria-hidden className="shrink-0 text-fg-tertiary" />
-      <span className="min-w-0 flex-1">
+    <li className="flex min-w-0 items-center gap-2 border-b border-border-subtle px-4 py-2.5 last:border-b-0">
+      <FileText size={16} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
+      <Link href={`/projects/${encodeURIComponent(v.docId)}`} className="min-w-0 flex-1 rounded-sm hover:underline underline-offset-2">
         <span className="block truncate text-body font-medium text-fg-primary" title={v.title}>{v.title || "Untitled"}</span>
-        <span className="block text-caption text-fg-tertiary">
+        <span className="block text-caption text-[var(--ink-600)]">
           {[latest ? "Latest" : null, `Round ${v.round}`, shortDate(v.createdAt)].filter(Boolean).join(" · ")}
         </span>
-      </span>
+      </Link>
       <Button type="button" variant="ghost" size="icon-sm" onClick={download} disabled={busy} aria-label={`Download ${v.title || "file"}`}>
         {busy ? <Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" /> : <Download size={16} aria-hidden />}
       </Button>
@@ -69,37 +144,33 @@ function FileRow({ version: v, latest }: { version: ContractVersion; latest: boo
   );
 }
 
-function Files({ contract: c }: { contract: ContractDetail }) {
+function Documents({ contract: c }: { contract: ContractDetail }) {
   const ordered = [...c.versions].reverse();
-  if (ordered.length === 0) return <p className="text-body text-fg-tertiary">No files</p>;
-  return <ul>{ordered.map((v, i) => <FileRow key={v.docId} version={v} latest={i === 0} />)}</ul>;
-}
-
-export function ContractSidebar({ contract: c }: { contract: ContractDetail }) {
-  const related = (c.parentContractId ? 1 : 0) + (c.amendmentIds?.length ?? 0) + c.versions.length;
   return (
-    <RecordSidebar
-      label="Contract details"
-      storageKey="contract-record-sidebar"
-      tabs={[
-        { id: "details", label: "Details", content: <DetailsSection contract={c} compact /> },
-        { id: "related", label: "Related", count: related || undefined, content: <Related contract={c} /> },
-        { id: "files", label: "Files", count: c.versions.length || undefined, content: <Files contract={c} /> },
-      ]}
-    />
+    <ListPanel title="Documents" as="h2" meta={ordered.length > 1 ? ordered.length : undefined}>
+      {ordered.length === 0 ? (
+        <PanelEmpty>
+          <Link href={`/projects/${encodeURIComponent(c.currentDocId)}`} className="font-medium text-[var(--brand-primary-700)] hover:underline">Open the current version</Link>
+        </PanelEmpty>
+      ) : (
+        <ul>{ordered.map((v, i) => <DocumentRow key={v.docId} version={v} latest={i === 0} />)}</ul>
+      )}
+    </ListPanel>
   );
 }
 
-/** The Details form while its code loads: label-over-value rows. */
-function DetailsFieldsSkeleton() {
+export function ContractSidebar({ contract: c, onAllActivity }: { contract: ContractDetail; onAllActivity: () => void }) {
+  const hasFamily = !!c.parentContractId || (c.amendmentIds?.length ?? 0) > 0;
   return (
-    <SkeletonRegion label="details" className="flex flex-col gap-3">
-      {Array.from({ length: 7 }, (_, i) => (
-        <div key={i} className="flex flex-col gap-0.5">
-          <SkeletonLine text="text-caption" width="w-20" />
-          <SkeletonLine text="text-body" width={i % 2 ? "w-36" : "w-44"} />
+    <aside aria-label="Sign-offs and activity" className="flex min-w-0 flex-col gap-4 lg:col-span-4">
+      <SignOffs contract={c} />
+      <LatestActivity contract={c} onAll={onAllActivity} />
+      {hasFamily && (
+        <div className="rounded-lg border border-[var(--ink-200)] bg-card p-4">
+          <ContractFamily contract={c} />
         </div>
-      ))}
-    </SkeletonRegion>
+      )}
+      <Documents contract={c} />
+    </aside>
   );
 }

@@ -18,7 +18,7 @@ import { findOpportunities } from "@/lib/govern/opportunities";
 import {
   obligationsByMonth, riskExposure, speed, topCounterparties, valueByType, workload, type ValueRow,
 } from "@/lib/govern/leadership";
-import { KpiStrip, OpportunitiesPanel, Panel, type Kpi } from "../../home/_components/HomeSections";
+import { KpiStrip, OpportunitiesPanel, Panel, type Kpi } from "../../dashboard/_components/HomeSections";
 
 function mainCurrency(...totals: { currency: string; amount: number }[][]): string | null {
   const by = new Map<string, number>();

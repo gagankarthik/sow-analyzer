@@ -17,6 +17,7 @@ import { useContractAction, useGovernFeature } from "@/lib/govern/queries";
 import type { ActivityAction, ActivityEntry } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
 
+import { SonarName } from "@/components/ui/SonarText";
 type Tone = "neutral" | "good" | "warn" | "bad" | "brand";
 
 const META: Partial<Record<ActivityAction, { icon: typeof Clock; tone: Tone }>> = {
@@ -142,7 +143,7 @@ function ActivityRow({ entry: e }: { entry: ActivityEntry }) {
           </p>
         )}
         <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[var(--ink-600)]">
-          {e.actor ? <><PersonDot name={e.actor.name} email={e.actor.email} className="size-5" />{personName(e.actor)}</> : <><Sonar size={12} />Sonar</>}
+          {e.actor ? <><PersonDot name={e.actor.name} email={e.actor.email} className="size-5" />{personName(e.actor)}</> : <><Sonar size={12} /><SonarName /></>}
         </p>
       </div>
     </li>
@@ -169,7 +170,7 @@ export function CommentBox({ contractId, className }: { contractId: string; clas
 
   return (
     <form
-      className={cn("flex flex-col gap-2 rounded-xl border border-border bg-card p-3 focus-within:border-[var(--brand-primary-600)] focus-within:ring-2 focus-within:ring-[var(--brand-primary-200)]", className)}
+      className={cn("flex flex-col gap-2 rounded-xl border border-border bg-card p-3 focus-within:border-[var(--ink-900)] focus-within:shadow-[inset_0_0_0_1px_var(--ink-900)]", className)}
       onSubmit={(e) => { e.preventDefault(); void post(); }}
     >
       <label htmlFor={`comment-${contractId}`} className="sr-only">Add a comment</label>

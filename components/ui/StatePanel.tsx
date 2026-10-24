@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+import { withSonar } from "@/components/ui/SonarText";
 /* ──────────────────────────────────────────────────────────────
    StatePanel — the one layout for "there is nothing to show here":
    404s, error boundaries and full-page empty states. A drawing, a
@@ -31,7 +32,7 @@ export function StatePanel({
       <StateArt art={art} />
       <h1 className="text-2xl font-semibold mt-8 tracking-[-0.02em] text-foreground">{title}</h1>
       {description && (
-        <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--ink-600)]">{description}</p>
+        <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--ink-600)]">{typeof description === "string" ? withSonar(description) : description}</p>
       )}
       {detail && (
         <p className="mt-4 max-w-md break-words rounded-lg border border-border bg-muted px-3 py-2 font-mono text-xs text-[var(--ink-600)]">

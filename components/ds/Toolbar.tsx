@@ -1,7 +1,7 @@
 "use client";
 
 // The list toolbar every index page shares (docs/UI_SPEC.md §9). One row,
-// every control 32px on one center line, never wrapping on desktop:
+// every control 36px on one center line, never wrapping on desktop:
 //
 //   [Search 240px] [quick filters ≤4] [More filters] [n · Clear]  ⟷  [Group] [⚙] [⤓] [Table|Board]
 //
@@ -74,7 +74,7 @@ function ToolbarSearch({ label, value, onChange, placeholder }: { label: string;
         }}
         placeholder={placeholder ?? label}
         autoComplete="off"
-        className="h-11 w-full rounded-[6px] border border-border-strong bg-surface-raised ps-8 pe-8 text-[14px] text-[var(--ink-900)] outline-none transition-colors placeholder:text-[var(--ink-500)] hover:border-[var(--ink-500)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)] md:h-8 md:text-[12px] [&::-webkit-search-cancel-button]:hidden"
+        className="h-11 w-full rounded-[6px] border border-border-strong bg-surface-raised ps-8 pe-8 text-[14px] text-[var(--ink-900)] outline-none transition-colors placeholder:text-[var(--ink-500)] hover:border-[var(--ink-500)] focus-visible:border-[var(--brand-primary-600)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-200)] md:h-9 md:text-[13px] [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button
@@ -108,7 +108,7 @@ function ToolbarClear({ count, onClear, noun = "filter" }: { count: number; onCl
   return (
     <div className="hidden shrink-0 items-center gap-2 text-[12px] md:flex">
       <span className="tabular-nums text-[var(--ink-600)]" aria-live="polite">{count} {count === 1 ? noun : `${noun}s`}</span>
-      <button type="button" onClick={onClear} className="h-8 rounded-md px-1 font-medium text-[var(--brand-primary-700)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-focus">
+      <button type="button" onClick={onClear} className="h-9 rounded-md px-1 font-medium text-[var(--brand-primary-700)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-focus">
         Clear
       </button>
     </div>
@@ -131,7 +131,7 @@ const ToolbarIconButton = React.forwardRef<HTMLButtonElement, React.ComponentPro
             type="button"
             aria-label={label}
             className={cn(
-              "inline-flex size-11 shrink-0 items-center justify-center rounded-[6px] border border-border-strong bg-surface-raised text-[var(--ink-700)] transition-colors duration-150 hover:bg-surface-hover hover:text-[var(--ink-900)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50 data-[state=open]:bg-surface-hover md:size-8",
+              "inline-flex size-11 shrink-0 items-center justify-center rounded-[6px] border border-border-strong bg-surface-raised text-[var(--ink-700)] transition-colors duration-150 hover:bg-surface-hover hover:text-[var(--ink-900)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50 data-[state=open]:bg-surface-hover md:size-9",
               className,
             )}
             {...props}

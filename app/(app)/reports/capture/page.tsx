@@ -151,7 +151,7 @@ export default function CapturePage() {
                         <span className="shrink-0 rounded-md bg-[var(--ink-100)] px-2 py-0.5 text-xs font-medium text-[var(--ink-700)]">
                           {d.status === "FAILED" ? "Failed" : d.status === "READY" ? "Read, not linked" : d.status.toLowerCase()}
                         </span>
-                        <ChevronRight size={16} aria-hidden className="mt-1 shrink-0 text-[var(--ink-400)]" />
+                        <ChevronRight size={16} aria-hidden className="mt-1 shrink-0 text-[var(--ink-500)]" />
                       </Link>
                     </li>
                   ))}

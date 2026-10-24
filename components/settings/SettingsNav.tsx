@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { GapIcon, useSettingsGaps } from "./settings-gaps";
 import { InfoTip } from "@/components/ui/info-tip";
 import { ListPanel, Panel } from "@/components/ds/Panel";
 import { FeatureComingSoonBadge } from "@/components/govern/ComingSoon";
@@ -46,6 +47,8 @@ export const SETTINGS_ITEMS: { label: string; href: string; icon: typeof Setting
 export function SettingsNav() {
   const pathname = usePathname() ?? "";
   const edition = useEdition();
+  const gaps = useSettingsGaps();
+  const gapCount = Object.keys(gaps).length;
 
   return (
     <nav aria-label="Settings" className="min-w-0 lg:hidden">
@@ -71,6 +74,9 @@ export function SettingsNav() {
                 )}
               >
                 {item.label}
+                {item.href === "/settings"
+                  ? gapCount > 0 && <GapIcon reason={`${gapCount} settings need attention`} />
+                  : gaps[item.href] && <GapIcon reason={gaps[item.href]} />}
                 {item.feature && <FeatureComingSoonBadge feature={item.feature} />}
               </Link>
             </li>
@@ -210,7 +216,7 @@ export function FilterSummary({
 export function NoResults({ noun, onClear }: { noun: string; onClear: () => void }) {
   return (
     <div className="flex flex-col items-center px-4 py-10 text-center">
-      <Search size={24} aria-hidden className="mb-3 text-[var(--ink-400)]" />
+      <Search size={24} aria-hidden className="mb-3 text-[var(--ink-500)]" />
       <p className="text-sm font-semibold text-foreground">No {noun} match your filters</p>
       <p className="mt-1 text-sm text-[var(--ink-600)]">Try a different search term or clear the filters.</p>
       <button

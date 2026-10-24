@@ -16,7 +16,7 @@ import {
   byUrgency, formatCompact, isCurrent, isUnsigned, needsAttention, stageQueues, sumMoney, valueSummary, waitingQueues,
 } from "@/lib/govern/metrics";
 import { useContracts, useGovernFeature, useTrends } from "@/lib/govern/queries";
-import { buildHomeReport } from "../home/_components/home-export";
+import { buildHomeReport } from "../dashboard/_components/home-export";
 import { ExportButtons } from "./_components/ExportButtons";
 import { MoneySplitBar, Sparkline } from "./_components/ReportCharts";
 import { ReportError } from "./_components/ReportKit";
@@ -128,7 +128,7 @@ function ReportCard({
       <span className="flex min-w-0 items-center gap-2">
         <Icon size={16} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
         <span className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">{title}</span>
-        <ArrowRight size={16} aria-hidden className="shrink-0 text-[var(--ink-400)] transition-colors duration-150 group-hover:text-[var(--brand-primary-600)]" />
+        <ArrowRight size={16} aria-hidden className="shrink-0 text-[var(--ink-500)] transition-colors duration-150 group-hover:text-[var(--brand-primary-600)]" />
       </span>
       <span className="mt-3 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className={tone === "danger" ? "text-3xl font-semibold tabular-nums tracking-tight text-[var(--danger-fg)]" : tone === "warning" ? "text-3xl font-semibold tabular-nums tracking-tight text-[var(--warning-fg)]" : "text-3xl font-semibold tabular-nums tracking-tight text-foreground"}>{figure}</span>
