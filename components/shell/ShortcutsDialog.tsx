@@ -5,7 +5,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { SHORTCUTS, useModKeyLabel, type ShortcutGroup } from "@/lib/hotkeys";
 import { useUIStore } from "@/lib/stores/ui";
 
-const GROUPS: ShortcutGroup[] = ["Navigation", "Search", "Lists"];
+const GROUPS: ShortcutGroup[] = ["Search", "Lists"];
 
 /** Every keyboard shortcut, opened with "?" or from the command palette. */
 export function ShortcutsDialog() {

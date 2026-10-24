@@ -135,6 +135,9 @@ import {
   Search as LSearch,
   Send as LSend,
   Share2 as LShare2,
+  Signature as LSignature,
+  SquareCheck as LSquareCheck,
+  TextCursorInput as LTextCursorInput,
   ShieldX as LShieldX,
   SlidersHorizontal as LSlidersHorizontal,
   Star as LStar,
@@ -264,6 +267,9 @@ export const X = /*#__PURE__*/ withBrandStroke(LX, "X");
 export const Pencil = /*#__PURE__*/ withBrandStroke(LPencil, "Pencil");
 export const Edit3 = /*#__PURE__*/ withBrandStroke(LEdit3, "Edit3");
 export const PenLine = /*#__PURE__*/ withBrandStroke(LPenLine, "PenLine");
+export const Signature = /*#__PURE__*/ withBrandStroke(LSignature, "Signature");
+export const SquareCheck = /*#__PURE__*/ withBrandStroke(LSquareCheck, "SquareCheck");
+export const TextCursorInput = /*#__PURE__*/ withBrandStroke(LTextCursorInput, "TextCursorInput");
 export const Copy = /*#__PURE__*/ withBrandStroke(LCopy, "Copy");
 export const Trash2 = /*#__PURE__*/ withBrandStroke(LTrash2, "Trash2");
 export const Download = /*#__PURE__*/ withBrandStroke(LDownload, "Download");

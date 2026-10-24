@@ -14,8 +14,6 @@ import {
 import { SETTINGS_ITEMS } from "@/components/settings/SettingsNav";
 import { EDITION_LABEL, EDITION_TERMS, editionHas, type Edition, type EditionFeature } from "@/lib/edition";
 import { useEdition, useGovernMe } from "@/lib/govern/queries";
-import { shortcutForHref } from "@/lib/hotkeys";
-import { Kbd } from "@/components/ui/kbd";
 
 type NavItem = {
   label: string;
@@ -353,32 +351,18 @@ function NavRow({
       : "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent [&_svg]:text-[var(--ink-600)] hover:[&_svg]:text-[var(--ink-800)]",
   );
 
-  const shortcut = item.href ? shortcutForHref(item.href) : undefined;
   const node = item.href ? (
-    <Link href={item.href} aria-current={active ? "page" : undefined} aria-keyshortcuts={shortcut} onClick={item.drill ? onDrill : undefined} className={cls}>{inner}</Link>
+    <Link href={item.href} aria-current={active ? "page" : undefined} onClick={item.drill ? onDrill : undefined} className={cls}>{inner}</Link>
   ) : (
     <button type="button" onClick={() => onAction(item.action)} className={cls}>{inner}</button>
   );
-  const keyCap = shortcut ? <Kbd className="border-white/20 bg-white/10 text-background">{shortcut}</Kbd> : null;
-
-  // Collapsed, the tooltip names the place (and its key at once); expanded,
-  // the label is already visible, so only the key shows, after a pause.
+  // Collapsed, the tooltip names the place.
   if (collapsed) {
     return (
       <li>
         <Tooltip>
           <TooltipTrigger asChild>{node}</TooltipTrigger>
-          <TooltipContent side="right">{item.label}{keyCap}</TooltipContent>
-        </Tooltip>
-      </li>
-    );
-  }
-  if (shortcut) {
-    return (
-      <li>
-        <Tooltip delayDuration={700}>
-          <TooltipTrigger asChild>{node}</TooltipTrigger>
-          <TooltipContent side="right">Press {keyCap}</TooltipContent>
+          <TooltipContent side="right">{item.label}</TooltipContent>
         </Tooltip>
       </li>
     );

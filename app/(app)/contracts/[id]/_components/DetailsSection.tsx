@@ -501,11 +501,11 @@ function RoutingAndSignature({ contract: c }: { contract: ContractDetail }) {
             </div>
           ) : c.signature ? (
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <Fact label="How">{c.signature.provider === "docusign" ? "DocuSign" : "By hand"}</Fact>
+              <Fact label="How">{c.signature.provider === "docusign" ? "DocuSign" : c.signature.provider === "govern" ? "Govern e-signature" : "By hand"}</Fact>
               <Fact label="Signatory">{c.signature.signatory ? personName(c.signature.signatory) : null}</Fact>
               <Fact label="Sent">{c.signature.sentAt ? formatDate(c.signature.sentAt) : null}</Fact>
               <Fact label="Signed">{c.signature.signedAt ? formatDate(c.signature.signedAt) : c.signedAt ? formatDate(c.signedAt) : null}</Fact>
-              {c.signature.envelopeId && <Fact label="DocuSign envelope" className="col-span-2"><span className="font-mono text-xs">{c.signature.envelopeId}</span></Fact>}
+              {c.signature.envelopeId && c.signature.provider === "docusign" && <Fact label="DocuSign envelope" className="col-span-2"><span className="font-mono text-xs">{c.signature.envelopeId}</span></Fact>}
             </dl>
           ) : (
             <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-600)]"><PenLine size={16} />Not sent for signature yet.</p>

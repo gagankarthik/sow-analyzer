@@ -47,7 +47,7 @@ const csp = [
   // Inline style attributes come from React, the charts and the motion library.
   "style-src 'self' 'unsafe-inline'",
   // data: covers images embedded in a converted .docx preview.
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob: ${storageOrigins}`,
   "font-src 'self' data:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",

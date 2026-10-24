@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dialogScope, isEditableTarget, resolveHotkey, shortcutForHref, type HotkeyContext, type HotkeyEvent } from "./hotkeys";
+import { dialogScope, isEditableTarget, resolveHotkey, type HotkeyContext, type HotkeyEvent } from "./hotkeys";
 
 const key = (k: string, mods: Partial<HotkeyEvent> = {}): HotkeyEvent => ({
   key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, repeat: false, ...mods,
@@ -8,17 +8,11 @@ const page: HotkeyContext = { inEditable: false, inDialog: false };
 const field: HotkeyContext = { inEditable: true, inDialog: false };
 
 describe("resolveHotkey", () => {
-  it("maps single keys to destinations", () => {
-    expect(resolveHotkey(key("h"), page)).toEqual({ type: "navigate", href: "/home" });
-    expect(resolveHotkey(key("w"), page)).toEqual({ type: "navigate", href: "/workflow" });
-    expect(resolveHotkey(key("c"), page)).toEqual({ type: "navigate", href: "/contracts" });
-    expect(resolveHotkey(key("o"), page)).toEqual({ type: "navigate", href: "/obligations" });
-    expect(resolveHotkey(key("r"), page)).toEqual({ type: "navigate", href: "/renewals" });
-    expect(resolveHotkey(key("u"), page)).toEqual({ type: "navigate", href: "/projects/upload" });
+  it("leaves single letters alone", () => {
+    for (const k of ["h", "w", "c", "o", "r", "u", "s"]) expect(resolveHotkey(key(k), page)).toBeNull();
   });
 
-  it("maps S, / and ?", () => {
-    expect(resolveHotkey(key("s"), page)).toEqual({ type: "sonar" });
+  it("maps / and ?", () => {
     expect(resolveHotkey(key("/"), page)).toEqual({ type: "palette" });
     expect(resolveHotkey(key("?", { shiftKey: true }), page)).toEqual({ type: "shortcuts" });
   });
@@ -53,14 +47,12 @@ describe("resolveHotkey", () => {
     expect(resolveHotkey(key("Enter"), page)).toBeNull();
   });
 
-  it("stays out of dialogs, except S inside the Sonar panel", () => {
+  it("stays out of dialogs, the Sonar panel included", () => {
     const dialog: HotkeyContext = { inEditable: false, inDialog: "other" };
     const sonar: HotkeyContext = { inEditable: false, inDialog: "sonar" };
-    expect(resolveHotkey(key("h"), dialog)).toBeNull();
-    expect(resolveHotkey(key("s"), dialog)).toBeNull();
     expect(resolveHotkey(key("?", { shiftKey: true }), dialog)).toBeNull();
-    expect(resolveHotkey(key("s"), sonar)).toEqual({ type: "sonar" });
-    expect(resolveHotkey(key("h"), sonar)).toBeNull();
+    expect(resolveHotkey(key("/"), sonar)).toBeNull();
+    expect(resolveHotkey(key("s"), sonar)).toBeNull();
   });
 });
 
@@ -93,9 +85,3 @@ describe("dialogScope", () => {
   });
 });
 
-describe("shortcutForHref", () => {
-  it("returns the sidebar hint for a destination", () => {
-    expect(shortcutForHref("/home")).toBe("H");
-    expect(shortcutForHref("/library")).toBeUndefined();
-  });
-});

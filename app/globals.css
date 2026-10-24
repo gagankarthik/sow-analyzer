@@ -473,6 +473,21 @@
   --viz-other: var(--border-control); /* the folded tail, de-emphasised marks (3.67:1) */
   --viz-highlight: var(--brand-primary-600); /* the ONE highlighted series (teal accent) */
   --viz-primary:   var(--navy-800);          /* single-series charts */
+
+  /* ── Govern e-signature: one colour per signer (max 10) ──
+     The fields a signer fills are drawn in their colour on the editor's
+     pages. The categorical hues first, then two more so ten signers never
+     share one. Always shown with the signer's name, never colour alone. */
+  --signer-1: var(--viz-cat-1);
+  --signer-2: var(--viz-cat-2);
+  --signer-3: var(--viz-cat-3);
+  --signer-4: var(--viz-cat-7);
+  --signer-5: var(--viz-cat-5);
+  --signer-6: var(--viz-cat-4);
+  --signer-7: var(--viz-cat-6);
+  --signer-8: #0B7285;  /* cyan  */
+  --signer-9: #5B6474;  /* slate */
+  --signer-10: var(--viz-cat-8);
   --viz-compare:   var(--navy-300);          /* comparison / previous period */
 
   /* Sequential (magnitude, one hue light → dark; heatmaps). Step 1 means
@@ -730,6 +745,16 @@
   --color-viz-cat-6: var(--viz-cat-6);
   --color-viz-cat-7: var(--viz-cat-7);
   --color-viz-cat-8: var(--viz-cat-8);
+  --color-signer-1: var(--signer-1);
+  --color-signer-2: var(--signer-2);
+  --color-signer-3: var(--signer-3);
+  --color-signer-4: var(--signer-4);
+  --color-signer-5: var(--signer-5);
+  --color-signer-6: var(--signer-6);
+  --color-signer-7: var(--signer-7);
+  --color-signer-8: var(--signer-8);
+  --color-signer-9: var(--signer-9);
+  --color-signer-10: var(--signer-10);
   --color-viz-other: var(--viz-other);
   --color-viz-seq-1: var(--viz-seq-1);
   --color-viz-seq-2: var(--viz-seq-2);

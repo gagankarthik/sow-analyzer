@@ -221,13 +221,13 @@ const PAGE_HITS: SearchHit[] = [
 ];
 
 const ACTION_HITS: SearchHit[] = [
-  { id: "a-upload", label: "Upload a contract", sub: "Add an agreement for Sonar to review", href: "/projects/upload", group: "Actions", icon: "upload", shortcut: "U", keywords: "new add document file" },
-  { id: "a-sonar", label: "Ask Sonar", sub: "Open the assistant", command: "sonar", group: "Actions", icon: "sonar", shortcut: "S", keywords: "assistant ai copilot chat question" },
-  { id: "a-home", label: "Go to Home", sub: "What needs you today", href: "/home", group: "Actions", icon: "home", shortcut: "H", keywords: "navigate" },
-  { id: "a-workflow", label: "Go to Workflow", sub: "The board, by stage", href: "/workflow", group: "Actions", icon: "workflow", shortcut: "W", keywords: "navigate board" },
-  { id: "a-contracts", label: "Go to Contracts", sub: "Every agreement", href: "/contracts", group: "Actions", icon: "contract", shortcut: "C", keywords: "navigate agreements" },
-  { id: "a-obligations", label: "Go to Obligations", sub: "Deliverables and reports due", href: "/obligations", group: "Actions", icon: "obligations", shortcut: "O", keywords: "navigate" },
-  { id: "a-renewals", label: "Go to Renewals", sub: "Agreements ending soon", href: "/renewals", group: "Actions", icon: "renewals", shortcut: "R", keywords: "navigate expiring" },
+  { id: "a-upload", label: "Upload a contract", sub: "Add an agreement for Sonar to review", href: "/projects/upload", group: "Actions", icon: "upload", keywords: "new add document file" },
+  { id: "a-sonar", label: "Ask Sonar", sub: "Open the assistant", command: "sonar", group: "Actions", icon: "sonar", keywords: "assistant ai copilot chat question" },
+  { id: "a-home", label: "Go to Home", sub: "What needs you today", href: "/home", group: "Actions", icon: "home", keywords: "navigate" },
+  { id: "a-workflow", label: "Go to Workflow", sub: "The board, by stage", href: "/workflow", group: "Actions", icon: "workflow", keywords: "navigate board" },
+  { id: "a-contracts", label: "Go to Contracts", sub: "Every agreement", href: "/contracts", group: "Actions", icon: "contract", keywords: "navigate agreements" },
+  { id: "a-obligations", label: "Go to Obligations", sub: "Deliverables and reports due", href: "/obligations", group: "Actions", icon: "obligations", keywords: "navigate" },
+  { id: "a-renewals", label: "Go to Renewals", sub: "Agreements ending soon", href: "/renewals", group: "Actions", icon: "renewals", keywords: "navigate expiring" },
   { id: "a-reports", label: "Go to Reports", sub: "Cycle time, bottlenecks and value", href: "/reports", group: "Actions", icon: "reports", keywords: "navigate" },
   { id: "a-settings", label: "Go to Settings", sub: "Matrix, routing, team and integrations", href: "/settings", group: "Actions", icon: "settings", keywords: "navigate", adminOnly: true },
   { id: "a-shortcuts", label: "Show keyboard shortcuts", sub: "Every key the workspace answers to", command: "shortcuts", group: "Actions", icon: "keyboard", shortcut: "?", keywords: "hotkeys keys help" },

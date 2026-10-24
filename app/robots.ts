@@ -27,6 +27,8 @@ const PRIVATE = [
   "/design-system",
   // Counterparty portal links (also noindex on the page itself).
   "/portal/",
+  // Signing links (also noindex on the page itself).
+  "/sign/",
 ];
 
 export default function robots(): MetadataRoute.Robots {
