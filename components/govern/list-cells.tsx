@@ -1,12 +1,14 @@
-// Cells for the Contracts list: a compact tag, the stage as a segmented
-// meter, the owner as avatar + name, and days in step as a plain number that
-// takes colour only when the step runs late. Colour carries status meaning
-// only (risk, SLA); everything else stays in ink.
+// Cells for the Contracts list: a compact tag, the stage as a tinted badge,
+// the owner as avatar + name, risk as a dot and a word, and the time in the
+// stage, which takes the danger colour only once it runs past target.
+// Colour carries status meaning only; everything else stays in ink.
 
 import * as React from "react";
 import { Avatar } from "@/components/ds/Avatar";
 import { TONE_DOT, TONE_SOFT, TONE_TEXT, type Tone } from "@/components/ds/tone";
 import { STAGE_LABEL } from "@/lib/govern/labels";
+import { STAGE_BG } from "@/lib/govern/stage-style";
+import { daysPastTarget } from "@/lib/govern/stage-time";
 import type { Contract, SlaStatus } from "@/lib/govern/types";
 import type { RiskLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,7 @@ export function ListTag({ tone = "unknown", dashed, className, children }: { ton
   );
 }
 
+
 const PHASES = ["draft", "review", "negotiation", "approval", "signed"] as const;
 
 function phaseIndex(stage: Contract["stage"]): number {
@@ -35,8 +38,9 @@ function phaseIndex(stage: Contract["stage"]): number {
   return i === -1 ? PHASES.length - 1 : i; // active, renewal, expired: past signature
 }
 
-/** Where the contract is on its way to signature: one segment per step,
- *  done steps filled, the current one half-filled, the rest track. */
+/** Where the contract is on its way to signature: one segment per step, each
+ *  done step in its own stage colour, the current one in its colour at half
+ *  strength, the rest track; then the stage's name. */
 export function StageMeter({ contract: c }: { contract: Pick<Contract, "stage" | "state"> }) {
   const at = phaseIndex(c.stage);
   const signed = at === PHASES.length - 1;
@@ -51,7 +55,7 @@ export function StageMeter({ contract: c }: { contract: Pick<Contract, "stage" |
         aria-valuemax={PHASES.length}
         aria-valuenow={signed ? PHASES.length : at}
         aria-valuetext={label}
-        className="flex h-[14px] w-[58px] shrink-0 items-center gap-[2px] rounded-[2px] bg-[var(--ink-100)] px-[2px]"
+        className="flex h-[14px] w-[64px] shrink-0 items-center gap-[2px] rounded-[3px] bg-[var(--ink-100)] px-[2px]"
       >
         {PHASES.map((p, i) => {
           const done = i < at || signed;
@@ -62,15 +66,15 @@ export function StageMeter({ contract: c }: { contract: Pick<Contract, "stage" |
               className={cn(
                 "h-[10px] min-w-px flex-1 rounded-[1px]",
                 rejected && i <= at ? "bg-[var(--danger)]"
-                  : done ? "bg-[var(--brand-primary-600)]"
-                  : here ? "bg-[var(--brand-primary-300)]"
+                  : done ? STAGE_BG[p]
+                  : here ? cn(STAGE_BG[p], "opacity-50")
                   : "bg-[var(--ink-200)]",
               )}
             />
           );
         })}
       </span>
-      <span className={cn("truncate text-[14px]", rejected ? "text-[var(--danger)]" : "text-[var(--ink-900)]")}>{label}</span>
+      <span className={cn("truncate text-[14px] font-medium", rejected ? "text-[var(--danger)]" : "text-[var(--ink-900)]")}>{label}</span>
     </span>
   );
 }
@@ -95,6 +99,41 @@ export function OwnerCell({ owner }: { owner: Contract["owner"] }) {
       <Avatar size="xs" name={owner.name} email={owner.email} decorative />
       <span className="truncate">{name}</span>
     </a>
+  );
+}
+
+const RISK_WORD: Record<RiskLevel, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
+
+export const RISK_TEXT = RISK_WORD;
+
+const RISK_DOT: Record<RiskLevel, string> = {
+  critical: "bg-[var(--danger)]", high: "bg-[var(--danger)]", medium: "bg-[var(--warning)]", low: "bg-[var(--success)]",
+};
+const RISK_FG: Record<RiskLevel, string> = {
+  critical: "text-[var(--danger)]", high: "text-[var(--danger)]", medium: "text-[var(--warning-fg)]", low: "text-[var(--success-fg)]",
+};
+
+/** Risk as a dot and a word: red for high and critical only, amber for
+ *  medium, green for low. */
+export function RiskCell({ risk }: { risk: RiskLevel | null }) {
+  if (!risk) return <span className="text-[var(--ink-600)]">Not assessed</span>;
+  return (
+    <span className={cn("inline-flex items-center gap-2 font-medium whitespace-nowrap", RISK_FG[risk])}>
+      <span aria-hidden className={cn("size-2 shrink-0 rounded-full", RISK_DOT[risk])} />
+      {RISK_WORD[risk]}
+    </span>
+  );
+}
+
+/** "8 days · 3 past target": ink while on time, the danger colour once the
+ *  stage runs past its target. */
+export function TimeInStageCell({ days, target }: { days: number; target?: number | null }) {
+  const past = daysPastTarget(days, target);
+  return (
+    <span className={cn("tabular-nums whitespace-nowrap", past !== null ? "font-semibold text-[var(--danger)]" : "text-[var(--ink-700)]")}>
+      {days} {days === 1 ? "day" : "days"}
+      {past !== null && <> · {past} past target</>}
+    </span>
   );
 }
 
@@ -138,13 +177,3 @@ export function SlaTag({ sla }: { sla: SlaStatus }) {
 }
 
 export const SLA_TEXT = SLA_WORD;
-
-const RISK_TONE: Record<RiskLevel, Tone> = { critical: "blocked", high: "caution", medium: "unknown", low: "unknown" };
-const RISK_WORD: Record<RiskLevel, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
-
-export function RiskTag({ risk }: { risk: RiskLevel | null }) {
-  if (!risk) return <span className="text-[12px] text-[var(--ink-600)]">Not assessed</span>;
-  return <ListTag tone={RISK_TONE[risk]} dashed={risk === "low"}>{RISK_WORD[risk]}</ListTag>;
-}
-
-export const RISK_TEXT = RISK_WORD;

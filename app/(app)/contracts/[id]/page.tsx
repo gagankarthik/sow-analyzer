@@ -1,9 +1,9 @@
 "use client";
 
-// The contract record page (UI_SPEC section 8, the Salesforce / HubSpot
-// record layout): a header band with the highlights and the one primary
-// action, the path with guidance for the current step, then the center tabs
-// (Overview, Activity, the modules) and the collapsible right sidebar.
+// The contract page, built around its main job: getting the contract to
+// signature by resolving its clause issues. A header band (title, the one next
+// action, five key facts, the stage bar, the section tabs), then the open tab
+// beside a right rail of sign-offs, the latest activity and the documents.
 
 import { useRef } from "react";
 import dynamic from "next/dynamic";
@@ -11,25 +11,25 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { RecordLayout } from "@/components/ds/Record";
+import { EnvelopesPanel } from "@/components/govern/esign/EnvelopesPanel";
 import { BLOCKING_TIERS } from "@/lib/govern/labels";
+import { contractIssues } from "@/lib/govern/contract-issues";
 import { activityTotal } from "@/lib/govern/activity";
 import { useContract, useGovernFeature } from "@/lib/govern/queries";
 import { isForbidden, isNotFound } from "@/lib/api";
 import type { ContractDetail } from "@/lib/govern/types";
 import { ContractHeader } from "./_components/ContractHeader";
 import { ContractRecordSkeleton, SectionSkeleton } from "./_components/ContractRecordSkeleton";
-import { ContractPath } from "./_components/ContractPath";
 import { ContractSidebar } from "./_components/ContractSidebar";
 import { ContractTabList, defaultTabFor, useHashTab, type ContractTab } from "./_components/ContractTabs";
 import { OverviewTab } from "./_components/OverviewTab";
+import { BlockersSection } from "./_components/BlockersSection";
 
-// The module tabs are 200-540 lines each and only one shows at a time: each
-// loads when its tab opens.
+// Issues and Overview load with the page; the other tabs are 200-540 lines
+// each and only one shows at a time: each loads when its tab opens.
 const sectionLoading = () => <SectionSkeleton />;
 const ActivityTab = dynamic(() => import("./_components/ActivityTab").then((m) => m.ActivityTab), { loading: sectionLoading });
 const MatrixSection = dynamic(() => import("./_components/MatrixSection").then((m) => m.MatrixSection), { loading: sectionLoading });
-const BlockersSection = dynamic(() => import("./_components/BlockersSection").then((m) => m.BlockersSection), { loading: sectionLoading });
 const RoundsSection = dynamic(() => import("./_components/RoundsSection").then((m) => m.RoundsSection), { loading: sectionLoading });
 const MoneySection = dynamic(() => import("./_components/MoneySection").then((m) => m.MoneySection), { loading: sectionLoading });
 const DetailsSection = dynamic(() => import("./_components/DetailsSection").then((m) => m.DetailsSection), { loading: sectionLoading });
@@ -72,7 +72,8 @@ export default function ContractPage() {
 function ContractView({ contract: c, isError, onRefresh }: {
   contract: ContractDetail; isError: boolean; onRefresh: () => void;
 }) {
-  const [tab, setTab] = useHashTab(defaultTabFor(c));
+  const issues = contractIssues(c).length;
+  const [tab, setTab] = useHashTab(defaultTabFor(c, issues));
   const isObligationsOn = useGovernFeature("obligations");
   const tabsRef = useRef<HTMLDivElement>(null);
   const uploadRef = useRef<HTMLButtonElement>(null);
@@ -94,54 +95,52 @@ function ContractView({ contract: c, isError, onRefresh }: {
     window.requestAnimationFrame(settle);
   }
 
-  const openBlockers = c.blockers.filter((b) => b.status === "open").length;
   const toLook = c.review?.clauses.filter((cl) => BLOCKING_TIERS.has(cl.tier) || cl.tier === "review").length ?? 0;
   const gaps = c.captureGaps?.length ?? 0;
   const activity = activityTotal(c);
 
   return (
     <>
-      <ContractHeader contract={c} onUploadRevision={() => goTo("rounds", () => uploadRef.current)} />
+      <ContractHeader contract={c} openIssues={issues} onUploadRevision={() => goTo("rounds", () => uploadRef.current)}>
+        <div ref={tabsRef} className="scroll-mt-4">
+          <ContractTabList
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              { id: "blockers", label: "Issues", badge: issues, tone: "warn" },
+              { id: "overview", label: "Overview" },
+              { id: "matrix", label: "Matrix", badge: toLook },
+              { id: "activity", label: "Activity", badge: activity.count ? activity.label : null },
+              { id: "rounds", label: "Rounds", badge: c.versions.length },
+              { id: "money", label: "Money", badge: isObligationsOn ? c.obligationsDue || null : null, tone: "warn" },
+              { id: "details", label: "Details", badge: gaps, tone: "warn" },
+            ]}
+          />
+        </div>
+      </ContractHeader>
 
-      <div className="app-container flex flex-col gap-6 py-6">
-        {isError && (
-          <p role="alert" className="rounded-container border border-[color-mix(in_srgb,var(--danger)_30%,transparent)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
-            Couldn&rsquo;t refresh. This page may be out of date.{" "}
-            <button type="button" onClick={onRefresh} className="font-semibold underline underline-offset-2">Try again</button>
-          </p>
-        )}
-
-        <ContractPath contract={c} />
-
-        <RecordLayout
-          main={
-            <div ref={tabsRef} className="flex min-w-0 scroll-mt-4 flex-col gap-6">
-              <ContractTabList
-                value={tab}
-                onChange={setTab}
-                tabs={[
-                  { id: "overview", label: "Overview" },
-                  { id: "activity", label: "Activity", badge: activity.count ? activity.label : null },
-                  { id: "matrix", label: "Matrix", badge: toLook, tone: "warn" },
-                  { id: "blockers", label: "Blockers", badge: openBlockers, tone: "warn" },
-                  { id: "rounds", label: "Rounds", badge: c.versions.length },
-                  { id: "money", label: "Money", badge: isObligationsOn ? c.obligationsDue || null : null, tone: "warn" },
-                  { id: "details", label: "Details", badge: gaps, tone: "warn" },
-                ]}
-              />
-              <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} tabIndex={-1} className="min-w-0 focus-visible:outline-none">
-                {tab === "overview" && <OverviewTab contract={c} onOpen={(t) => goTo(t)} />}
-                {tab === "activity" && <ActivityTab contract={c} />}
-                {tab === "matrix" && <MatrixSection contract={c} />}
-                {tab === "blockers" && <BlockersSection contract={c} />}
-                {tab === "rounds" && <RoundsSection contract={c} uploadRef={uploadRef} />}
-                {tab === "money" && <MoneySection contract={c} />}
-                {tab === "details" && <DetailsSection contract={c} />}
-              </div>
+      <div className="flex-1 bg-[var(--ink-50)]">
+        <div className="app-container grid grid-cols-1 items-start gap-6 py-6 lg:grid-cols-12">
+          <div className="flex min-w-0 flex-col gap-6 lg:col-span-8">
+            {isError && (
+              <p role="alert" className="rounded-lg border border-[color-mix(in_srgb,var(--danger)_30%,transparent)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--danger)]">
+                Couldn&rsquo;t refresh. This page may be out of date.{" "}
+                <button type="button" onClick={onRefresh} className="font-semibold underline underline-offset-2">Try again</button>
+              </p>
+            )}
+            <EnvelopesPanel contract={c} />
+            <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} tabIndex={-1} className="min-w-0 focus-visible:outline-none">
+              {tab === "blockers" && <BlockersSection contract={c} />}
+              {tab === "overview" && <OverviewTab contract={c} onOpen={(t) => goTo(t)} />}
+              {tab === "matrix" && <MatrixSection contract={c} />}
+              {tab === "activity" && <ActivityTab contract={c} />}
+              {tab === "rounds" && <RoundsSection contract={c} uploadRef={uploadRef} />}
+              {tab === "money" && <MoneySection contract={c} />}
+              {tab === "details" && <DetailsSection contract={c} />}
             </div>
-          }
-          sidebar={<ContractSidebar contract={c} />}
-        />
+          </div>
+          <ContractSidebar contract={c} onAllActivity={() => goTo("activity")} />
+        </div>
       </div>
     </>
   );

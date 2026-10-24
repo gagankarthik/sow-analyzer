@@ -1,49 +1,41 @@
 "use client";
 
-// The home (Requirement 5): one screen with what needs you, the value and
-// what is waiting. Layout (UI_SPEC section 3): title row, four summary
-// tiles, then panels in two columns (8 + 4).
-// Technical detail sits in the Risk and documents view and in Reports.
+// The home (Requirement 5): one screen with what needs you, where the
+// pipeline stands and what Sonar found. Layout, top to bottom on a 12-column
+// grid: title and date, four key figures in one strip, "Needs your action"
+// (5) beside "Pipeline" (7), then "Sonar found" across the full width.
+// Technical detail sits in the Risk and documents view and in Reports
+// (value, waiting queues, time in step and the export live there).
 // Every contract row opens the contract page, where its blockers are listed.
 //
 // States: loading mirrors the layout (no jump when data lands); a failed
 // first load shows a retry; a failed refresh keeps the last figures and
-// says so; an empty workspace says what to do; a manual refresh confirms.
+// says so; an empty workspace says what to do.
 
 import dynamic from "next/dynamic";
 import { LeaderHome } from "./_components/LeaderHome";
-import { ViewsCard } from "./_components/ViewsCard";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ViewTabs } from "@/components/ui/view-tabs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowRight, RefreshCw } from "@/components/ui/icons";
 import { plural } from "@/lib/govern/labels";
-import { PageHeader } from "@/components/PageHeader";
-import { ListPanel } from "@/components/ds/Panel";
-import { Toolbar } from "@/components/ds/Toolbar";
 import {
-  byUrgency, formatCompact, isCurrent, isUnsigned, matchesSearch, needsAttention, stageQueues, sumMoney, valueSummary, waitingQueues,
+  byUrgency, formatCompact, isUnsigned, needsAttention, stageQueues, valueSummary,
 } from "@/lib/govern/metrics";
 import { useContracts, useGovernMe, useObligations, useWorkflowSettings } from "@/lib/govern/queries";
 import Link from "next/link";
 import { findOpportunities } from "@/lib/govern/opportunities";
 import { cn } from "@/lib/utils";
-import { ExportButtons } from "../reports/_components/ExportButtons";
 import { NoContracts, ReportError, TEXT_LINK } from "../reports/_components/ReportKit";
-import { amountIn, hasCaptureGaps, mainCurrency, useStageTargets } from "../reports/_components/report-data";
-import { ContractRow } from "./_components/ContractRow";
+import { amountIn, mainCurrency } from "../reports/_components/report-data";
 import {
-  AllClear, AttentionPanel, HomeActionsSkeleton, HomePageSkeleton, HomeSkeleton, OpportunitiesPanel, KpiStrip, LongestPanel, MoneyPanel, StepsPanel, WaitingPanel, type Kpi,
+  HomeHeader, HomePageSkeleton, HomeSkeleton, KpiStrip, NeedsActionPanel, PipelinePanel, SonarPanel, type Kpi,
 } from "./_components/HomeSections";
 // Loaded when the Risk view opens: it carries the charts.
 const RiskView = dynamic(() => import("./_components/RiskView").then((m) => m.RiskView), { loading: () => <RiskViewSkeleton label="risk and documents" /> });
-import { buildHomeReport } from "./_components/home-export";
 import { RiskViewSkeleton } from "./_components/RiskViewSkeleton";
-
-const SEARCH_LIMIT = 8;
-const LONGEST = 5;
 
 type View = "overview" | "risk";
 const VIEWS: { id: View; label: string }[] = [
@@ -73,41 +65,29 @@ function Home() {
   const me = useGovernMe();
   const { data, isLoading, isError, error, isFetching, refetch } = useContracts();
   const contracts = useMemo(() => data?.contracts ?? [], [data?.contracts]);
-  const [q, setQ] = useState("");
-  const [showAllResults, setShowAllResults] = useState(false);
 
   const view = useMemo(() => {
     const attention = contracts.filter(needsAttention).sort(byUrgency);
     const unsigned = contracts.filter(isUnsigned);
-    const longest = [...unsigned].sort((a, b) => b.daysInStage - a.daysInStage).slice(0, LONGEST);
     const summary = valueSummary(contracts);
-    // "No value yet" counts the contracts whose value matters: open or in force.
-    const unvalued = sumMoney(contracts.filter((c) => isUnsigned(c) || isCurrent(c))).unvalued;
     return {
       attention,
-      longest,
-      unsignedCount: unsigned.length,
-      waiting: waitingQueues(contracts),
+      unsigned,
       stages: stageQueues(contracts),
       summary,
-      unvalued,
       primary: mainCurrency(summary.current, summary.potential),
-      captureGaps: contracts.filter(hasCaptureGaps).length,
     };
   }, [contracts]);
-  const { targets, redAfter } = useStageTargets(contracts);
-  // Obligations feed the money opportunities; if they fail to load, the
-  // time opportunities still show.
+  // Obligations feed the money findings; if they fail to load, the time
+  // findings still show.
   const obligationsQuery = useObligations();
   // Admins see a reminder until organization setup is finished.
   const workflowSettings = useWorkflowSettings();
-  const setupPending = (me.data?.isAdmin ?? me.data?.role === "admin") &&!!workflowSettings.data && !workflowSettings.data.organization?.setupCompletedAt;
+  const setupPending = (me.data?.isAdmin ?? me.data?.role === "admin") && !!workflowSettings.data && !workflowSettings.data.organization?.setupCompletedAt;
   const opportunities = useMemo(
     () => findOpportunities(contracts, obligationsQuery.data?.obligations ?? []),
     [contracts, obligationsQuery.data],
   );
-
-  const results = useMemo(() => (q.trim() ? contracts.filter((c) => matchesSearch(c, q)) : []), [contracts, q]);
 
   const refresh = async () => {
     const r = await refetch();
@@ -118,42 +98,30 @@ function Home() {
   const hasData = contracts.length > 0;
   const staleError = isError && !!data;
 
-  const actions = tab === "overview" && hasData ? (
-    <>
-      <Toolbar.Search
-        label="Search contracts"
-        placeholder="Search contracts"
-        value={q}
-        onChange={(v) => { setQ(v); setShowAllResults(false); }}
-      />
-      <ExportButtons compact build={() => buildHomeReport({ ...view, targets })} />
-    </>
-  ) : tab === "overview" && isLoading ? <HomeActionsSkeleton /> : undefined;
-
   let body: React.ReactNode;
   if (isLoading) body = <HomeSkeleton />;
   else if (isError && !data) body = <ReportError error={error} onRetry={() => void refetch()} what="your contracts" />;
   else if (!hasData) body = <NoContracts />;
   else {
-    const shownResults = showAllResults ? results : results.slice(0, SEARCH_LIMIT);
     const current = amountIn(view.summary.current, view.primary);
     const potential = amountIn(view.summary.potential, view.primary);
     const heldUp = amountIn(view.summary.heldUp, view.primary);
-    const overdue = view.attention.filter((c) => c.slaStatus === "red").length;
-    const longestDays = view.longest[0]?.daysInStage ?? 0;
+    const pastTarget = view.unsigned.filter((c) => c.slaStatus === "red").length;
+    const late = view.unsigned.filter((c) => c.slaStatus === "amber").length;
+    const longestDays = view.unsigned.reduce((m, c) => Math.max(m, c.daysInStage), 0);
     const kpis: Kpi[] = [
       {
-        label: "Needs you",
-        value: String(view.attention.length),
-        sub: overdue > 0 ? `${overdue} overdue` : view.attention.length === 0 ? "All caught up" : "None overdue",
-        tone: overdue > 0 ? "danger" : "neutral",
-        href: "#attention",
+        label: "Open contracts",
+        value: String(view.unsigned.length),
+        sub: view.unsigned.length > 0 ? `Longest wait ${plural(longestDays, "day")}` : "Nothing in progress",
+        href: "/contracts?view=in-progress",
       },
       {
-        label: "Open contracts",
-        value: String(view.unsignedCount),
-        sub: view.unsignedCount > 0 ? `Longest wait ${plural(longestDays, "day")}` : "Nothing in progress",
-        href: "/contracts?view=in-progress",
+        label: "Past their target",
+        value: String(pastTarget),
+        sub: late > 0 ? `${late} more running late` : pastTarget > 0 ? "See which ones" : "All on track",
+        tone: pastTarget > 0 ? "danger" : "neutral",
+        href: "/contracts?view=overdue",
       },
       {
         label: "Signed and active",
@@ -165,7 +133,6 @@ function Home() {
         label: "Held up",
         value: formatCompact(heldUp, view.primary),
         sub: heldUp > 0 ? `of ${formatCompact(potential, view.primary)} in the pipeline` : "Nothing past its target",
-        tone: heldUp > 0 ? "warning" : "neutral",
         href: "/reports/value",
       },
     ];
@@ -185,38 +152,6 @@ function Home() {
           </div>
         )}
 
-        {q.trim() && (
-          <ListPanel
-            id="results"
-            as="h2"
-            title={results.length === 0 ? "No matches" : "Search results"}
-            meta={results.length || undefined}
-            aria-live="polite"
-            actions={<button type="button" onClick={() => setQ("")} className={TEXT_LINK}>Clear search</button>}
-            footer={results.length > SEARCH_LIMIT ? (
-              <button type="button" className={TEXT_LINK} onClick={() => setShowAllResults((v) => !v)} aria-expanded={showAllResults}>
-                {showAllResults ? "Show fewer" : `Show all ${results.length}`}
-              </button>
-            ) : undefined}
-          >
-            {results.length === 0 ? (
-              <p className="px-4 py-5 text-sm text-[var(--ink-600)]">
-                Nothing matches &ldquo;{q.trim()}&rdquo;. Try part of a name, such as a surname or a department.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {shownResults.map((c) => <ContractRow key={c.contractId} c={c} showValue />)}
-              </ul>
-            )}
-          </ListPanel>
-        )}
-
-        {isLeader ? (
-          <LeaderHome contracts={contracts} attention={view.attention} summary={view.summary} currency={view.primary} />
-        ) : (
-          <>
-        <KpiStrip items={kpis} />
-
         {setupPending && (
           <div role="status" className="flex flex-col gap-2 rounded-md border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="flex min-w-0 items-center gap-2 text-sm text-foreground">
@@ -232,26 +167,17 @@ function Home() {
             </Link>
           </div>
         )}
-        {/* The overview reads in bands, top to bottom: your work, then where
-            things stand, then where the queue waits, then the steps. Every
-            section in a band shares its row height, so columns never end
-            ragged. */}
-        {view.attention.length > 0 ? <AttentionPanel contracts={view.attention} /> : <AllClear />}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2 xl:grid-cols-3">
-          <ViewsCard />
-          <MoneyPanel
-            summary={view.summary}
-            unvalued={view.unvalued}
-            primary={view.primary}
-            captureGaps={view.captureGaps}
-          />
-          <OpportunitiesPanel items={opportunities} className="md:col-span-2 xl:col-span-1" />
-        </div>
-        <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">
-          <WaitingPanel waiting={view.waiting} contracts={contracts} />
-          <LongestPanel longest={view.longest} />
-        </div>
-        <StepsPanel stages={view.stages} targets={targets} redAfter={redAfter} />
+
+        {isLeader ? (
+          <LeaderHome contracts={contracts} attention={view.attention} summary={view.summary} currency={view.primary} />
+        ) : (
+          <>
+            <KpiStrip items={kpis} />
+            <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+              <NeedsActionPanel contracts={view.attention} href="/workflow" className="lg:col-span-5" />
+              <PipelinePanel stages={view.stages} className="lg:col-span-7" />
+            </div>
+            <SonarPanel items={opportunities} />
           </>
         )}
       </>
@@ -260,7 +186,7 @@ function Home() {
 
   return (
     <>
-      <PageHeader title="Home" actions={actions} />
+      <HomeHeader title="Home" />
       <div className="app-container app-page">
       {/* Leaders see the plain overview; clause risk, the risk index and
           processing detail sit behind a Details link (Requirement 5.1). */}

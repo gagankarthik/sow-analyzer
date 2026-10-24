@@ -85,8 +85,20 @@
      never text. Steps 500–900 are TEXT, each >= 4.5:1 on white and canvas.
      (On the panel tint #F1F5F9 use 600 or darker for small text: 500 is 4.34.) */
   --paper:       #FFFFFF;    /* canvas: the work area is white; the sidebar rail carries the tint */
-  --rail:        #EEF2F7;    /* sidebar rail: app chrome, set apart from the white work area */
-  --rail-hover:  #E2E8F0;    /* row hover on the rail */
+  --rail:        #FFFFFF;    /* sidebar: white, set off from the slate canvas by its border */
+  --rail-hover:  #F1F5F9;    /* row hover on the rail */
+  --rail-active: #EEF2FA;    /* the current page: a navy tint */
+
+  /* Stage colours: one hue per stage, the same on every surface (pills,
+     board columns, charts, the stage bar). Soft = tint behind text. */
+  --stage-draft:       #64748B;  --stage-draft-soft:       #F1F5F9;
+  --stage-review:      #2563EB;  --stage-review-soft:      #EFF4FF;
+  --stage-negotiation: #7C3AED;  --stage-negotiation-soft: #F3EEFE;
+  --stage-approval:    #0D9488;  --stage-approval-soft:    #E8F6F4;
+  --stage-signed:      #16A34A;  --stage-signed-soft:      #EAF6EE;
+  --stage-active:      #15803D;  --stage-active-soft:      #E8F5EC;
+  --stage-renewal:     #D97706;  --stage-renewal-soft:     #FDF3E2;
+  --stage-expired:     #94A3B8;  --stage-expired-soft:     #F1F5F9;
   --paper-elev:  #FFFFFF;    /* surface: panels, popovers, inputs */
   --panel:       #F1F5F9;    /* panel tint: table header, selected row, inset */
   --ink-0:   #FFFFFF;        /* surface */
@@ -198,7 +210,7 @@
   --card-foreground:      var(--ink-900);
   --popover:              var(--paper-elev);
   --popover-foreground:   var(--ink-900);
-  --primary:              var(--brand-primary-600);
+  --primary:              var(--brand-primary-800);  /* navy: primary actions */
   --primary-foreground:   #FFFFFF;
   --secondary:            var(--ink-100);
   --secondary-foreground: var(--ink-800);
@@ -225,11 +237,11 @@
      with accent-700 text (6.6:1 on #F1F5F9): subtle, not a big highlight. */
   --sidebar: var(--rail);
   --sidebar-foreground: var(--ink-700);
-  --sidebar-primary: var(--paper-elev);  /* the active item: a raised white chip on the rail */
-  --sidebar-primary-foreground: var(--brand-primary-700);
+  --sidebar-primary: var(--rail-active);  /* the active item: a navy tint */
+  --sidebar-primary-foreground: var(--brand-primary-800);
   --sidebar-accent: var(--rail-hover);
   --sidebar-accent-foreground: var(--ink-900);
-  --sidebar-border: var(--ink-300);
+  --sidebar-border: var(--ink-200);
   --sidebar-ring: var(--brand-primary-600);
 }
 
@@ -272,7 +284,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --font-sans: var(--font-display);
-  --font-heading: var(--font-display);
+  --font-heading: var(--font-lexend), var(--font-display);
   --font-mono: var(--font-mono);
 
   --radius-xs: 0.25rem;
@@ -985,14 +997,14 @@ html { scroll-behavior: smooth; }
   .sonar-wave, .sonar-spark { animation: none; opacity: 1; }
 }
 
-/* Ask Sonar (top bar): the one place with a turning rainbow edge, so the AI
-   entry point is recognisable at a glance. Kept to this single button; the
-   Sonar panel and other marks use the plain bordered surface below. */
+/* Ask Sonar (top bar): a turning rainbow edge, so the AI entry point is
+   recognisable at a glance. */
 @property --sonar-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
 @keyframes sonar-ring { to { --sonar-angle: 360deg; } }
 .sonar-button {
   position: relative; border-radius: 8px;
   border: 1.5px solid transparent;
+  color: var(--ink-900);
   background:
     linear-gradient(var(--sonar-fill, var(--card)), var(--sonar-fill, var(--card))) padding-box,
     conic-gradient(from var(--sonar-angle), #3B82F6, #8B5CF6, #EC4899, #F59E0B, #10B981, #06B6D4, #3B82F6) border-box;
@@ -1005,7 +1017,24 @@ html { scroll-behavior: smooth; }
 }
 /* Reduced motion: the edge stays, it just doesn't turn. */
 @media (prefers-reduced-motion: reduce) { .sonar-button { animation: none; } }
+
+/* The word "Sonar" anywhere in the app (components/ui/SonarText.tsx): the
+   same rainbow, in deeper stops that each keep 4.5:1 on white. */
+.sonar-text {
+  background: linear-gradient(90deg, #1D4ED8, #6D28D9 30%, #BE185D 55%, #B45309 78%, #047857);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+}
+@media (forced-colors: active) { .sonar-text { color: CanvasText; background: none; } }
 .sonar-rainbow {
   border: 1px solid var(--border);
   background: var(--sonar-fill, var(--card));
+}
+
+/* App headings in Lexend; body, tables and controls stay in Plex Sans. */
+#main-content :is(h1, h2, h3) {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
 }

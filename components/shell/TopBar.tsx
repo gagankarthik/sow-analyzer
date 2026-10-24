@@ -39,6 +39,7 @@ import { useNow } from "@/lib/use-now";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
 
+import { SonarName } from "@/components/ui/SonarText";
 type Props = {
   /** kept for API compatibility but no longer rendered as a button */
   onCopilotToggle?: () => void;
@@ -236,11 +237,12 @@ function NotificationBell() {
 /*  Profile menu                                    */
 /* ──────────────────────────────────────────────── */
 
-// Notifications and Help have their own buttons in the bar; the account menu
-// holds only what is about the account.
+// Notifications have their own button in the bar; the account menu holds the
+// account, settings and help.
 const ACCOUNT_LINKS = [
   { label: "Profile", href: "/profile", icon: User },
   { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Help", href: "/help", icon: Help },
 ];
 
 /** 40px menu row. Icons inherit the muted ink until the row is focused. */
@@ -338,7 +340,7 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
   return (
     <header
       className={cn(
-        "h-[52px] sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3",
+        "h-14 sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3",
         "px-2 sm:px-4",
         "bg-card border-b border-border",
       )}
@@ -372,7 +374,7 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
 
       <div className="flex-1" />
 
-      {/* Right cluster: search (opens the command palette), Sonar, help,
+      {/* Right cluster: search (opens the command palette), Sonar,
           notifications, account. */}
       <div className="flex min-w-0 items-center justify-end gap-0.5 sm:gap-1.5">
         <SearchTrigger />
@@ -382,20 +384,12 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
             type="button"
             onClick={onCopilotToggle}
             aria-label="Ask Sonar"
-            className="sonar-button mx-1 inline-flex h-8 max-md:h-11 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
+            className="sonar-button mx-1 inline-flex h-9 max-md:h-11 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
           >
             <SonarIcon size={16} aria-hidden className="shrink-0 text-[var(--brand-primary-600)]" />
-            <span className="hidden sm:inline">Ask Sonar</span>
+            <span className="hidden sm:inline">Ask <SonarName /></span>
           </button>
         )}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Link href="/help" aria-label="Help" className={ICON_BUTTON}>
-              <Help size={16} aria-hidden />
-            </Link>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Help</TooltipContent>
-        </Tooltip>
         <NotificationBell />
 
         <Separator orientation="vertical" className="!h-6 mx-1 hidden sm:block" />

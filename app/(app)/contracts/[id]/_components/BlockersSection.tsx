@@ -1,7 +1,9 @@
 "use client";
 
-// Requirement 3: the items blocking signature. Sonar writes them from the
-// matrix review; reviewers add, edit, close and reopen them.
+// Requirement 3: what stands between the contract and signature. Each open
+// blocker (Sonar writes them from the matrix review; reviewers add, edit,
+// close and reopen them) and each clause the matrix says must change is one
+// card: their wording beside your standard, and the ways to resolve it.
 
 import { byEdition } from "@/lib/edition-runtime";
 import { useCanEditContracts } from "@/lib/govern/queries";
@@ -10,78 +12,51 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Building2, CheckCircle2, ChevronDown, Loader2, Pencil, Plus, RefreshCw, ShieldAlert, Sonar, UserRound } from "@/components/ui/icons";
+import { Building2, Check, CheckCircle2, ChevronDown, Copy, Loader2, Pencil, Plus, RefreshCw, ShieldAlert, Sonar, UserRound } from "@/components/ui/icons";
 import { useGovernErrorToast } from "@/components/govern/actions";
 import { OFFICE_LABEL, officesForEdition, personName, plural } from "@/lib/govern/labels";
 import { useAddBlocker, useUpdateBlocker } from "@/lib/govern/queries";
+import { contractIssues, type ContractIssue } from "@/lib/govern/contract-issues";
 import type { Blocker, ContractDetail, Office } from "@/lib/govern/types";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Section, SuggestedLanguage, clauseLabel } from "./SectionParts";
+import { NextStepRedline } from "./NextStepPanel";
+import { SuggestedLanguage, clauseLabel } from "./SectionParts";
 
-const PREVIEW_COUNT = 4;
+import { SonarName } from "@/components/ui/SonarText";
 const NONE = "none";
 
-/** Above the fold: the open items, short. */
-export function BlockersPreview({ contract: c, onSeeAll }: { contract: ContractDetail; onSeeAll: () => void }) {
-  const open = c.blockers.filter((b) => b.status === "open");
-  const signedOrDone = c.state === "signed" || c.state === "active" || c.state === "closed";
-  return (
-    <section aria-labelledby="blocks-heading" className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 id="blocks-heading" className="text-lg font-semibold text-foreground">What blocks signature</h2>
-        <span className={cn("text-sm font-semibold tabular-nums", open.length ? "text-[var(--warning)]" : "text-[var(--success)]")}>
-          {open.length ? plural(open.length, "open item") : "Nothing"}
-        </span>
-      </div>
-      {open.length === 0 ? (
-        <p className="flex items-start gap-2 text-sm leading-relaxed text-[var(--ink-700)]">
-          <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[var(--success)]" />
-          {signedOrDone ? "Nothing — it is signed." : "No open items. Every clause Sonar checked is within what you accept, or has been resolved."}
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {open.slice(0, PREVIEW_COUNT).map((b) => (
-            <li key={b.id} className="flex items-start gap-2.5 text-sm leading-relaxed">
-              <ShieldAlert size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" />
-              <span className="min-w-0 text-foreground">
-                {b.text}
-                {b.office && <span className="text-[var(--ink-600)]"> · {OFFICE_LABEL[b.office]}</span>}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <button type="button" onClick={onSeeAll} className="inline-flex w-fit items-center gap-1 rounded text-sm font-semibold text-[var(--brand-primary-600)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
-        {open.length > PREVIEW_COUNT ? `See all ${open.length} items` : open.length ? "See details and suggested language" : "Add an item"}
-        <ArrowRight size={12} />
-      </button>
-    </section>
-  );
-}
-
-/** The full list, with add / edit / close / reopen. */
+/** The Issues tab: the open issues as cards, with add, and the closed items folded away. */
 export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
   const canEdit = useCanEditContracts();
   const [adding, setAdding] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
-  const open = c.blockers.filter((b) => b.status === "open");
+  const issues = contractIssues(c);
   const closed = c.blockers.filter((b) => b.status === "closed");
+  const analyzing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
 
   return (
-    <Section
-      title="What blocks signature"
-      actions={canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={16} />Add an item</Button>}
-    >
+    <section aria-labelledby="issues-heading" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="issues-heading" className="text-base font-semibold text-fg-primary">
+          {issues.length ? `${plural(issues.length, "issue")} to resolve before signature` : "Nothing is holding up signature"}
+        </h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <NextStepRedline contract={c} />
+          {canEdit && !adding && <Button type="button" variant="outline" onClick={() => setAdding(true)}><Plus size={16} />Add an item</Button>}
+        </div>
+      </div>
+
       {adding && <BlockerForm contract={c} onDone={() => setAdding(false)} />}
 
-      {open.length === 0 ? (
-        <p className="flex items-center gap-2 rounded-xl border border-dashed border-[var(--ink-300)] px-4 py-6 text-sm text-[var(--ink-700)]">
-          <CheckCircle2 size={16} className="shrink-0 text-[var(--success)]" />
-          No open items. Nothing in the matrix review is holding up signature.
+      {issues.length === 0 ? (
+        <p className="flex items-center gap-2 rounded-lg border border-[var(--ink-200)] bg-card px-5 py-6 text-body text-[var(--ink-700)]">
+          {analyzing
+            ? <><Loader2 size={16} aria-hidden className="shrink-0 animate-spin motion-reduce:animate-none" /><SonarName /> is still reading this agreement. Issues appear here when it is done.</>
+            : <><CheckCircle2 size={16} aria-hidden className="shrink-0 text-[var(--success)]" />Every clause is within your standard or has been resolved.</>}
         </p>
       ) : (
-        <ul className="divide-y divide-border rounded-lg border border-border bg-card">{open.map((b) => <BlockerRow key={b.id} blocker={b} contract={c} />)}</ul>
+        <ul className="flex flex-col gap-4">{issues.map((i) => <IssueCard key={i.key} issue={i} contract={c} />)}</ul>
       )}
 
       {closed.length > 0 && (
@@ -90,15 +65,135 @@ export function BlockersSection({ contract: c }: { contract: ContractDetail }) {
             type="button"
             aria-expanded={showClosed}
             onClick={() => setShowClosed((v) => !v)}
-            className="inline-flex w-fit items-center gap-1.5 rounded text-sm font-semibold text-[var(--ink-700)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]"
+            className="inline-flex min-h-8 w-fit items-center gap-1.5 rounded text-body font-semibold text-[var(--ink-700)] hover:text-fg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] max-md:min-h-11"
           >
-            <ChevronDown size={16} className={cn("transition-transform motion-reduce:transition-none", showClosed && "rotate-180")} />
+            <ChevronDown size={16} aria-hidden className={cn("transition-transform motion-reduce:transition-none", showClosed && "rotate-180")} />
             {plural(closed.length, "closed item")}
           </button>
-          {showClosed && <ul className="divide-y divide-border rounded-lg border border-dashed border-[var(--ink-300)] bg-[var(--panel)]">{closed.map((b) => <BlockerRow key={b.id} blocker={b} contract={c} />)}</ul>}
+          {showClosed && <ul className="divide-y divide-border rounded-lg border border-[var(--ink-200)] bg-card">{closed.map((b) => <BlockerRow key={b.id} blocker={b} contract={c} />)}</ul>}
         </div>
       )}
-    </Section>
+    </section>
+  );
+}
+
+const SEVERITY = {
+  high: { word: "High risk", dot: "bg-[var(--danger)]", fg: "text-[var(--danger)]" },
+  medium: { word: "Medium risk", dot: "bg-[var(--warning)]", fg: "text-[var(--warning-fg)]" },
+} as const;
+
+function Version({ label, text, empty, tinted = false }: { label: string; text: string | null; empty: string; tinted?: boolean }) {
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-1.5 px-5 py-4", tinted && "border-[var(--ink-100)] bg-[var(--ink-50)] max-sm:border-t sm:border-l")}>
+      <span className="text-caption font-semibold text-[var(--ink-600)]">{label}</span>
+      <p className={cn("max-w-[62ch] whitespace-pre-line break-words text-base leading-relaxed", text ? "text-fg-primary" : "text-[var(--ink-600)]")}>{text || empty}</p>
+    </div>
+  );
+}
+
+/** Copies our wording for the redline. */
+function CopyWording({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Copied", { description: "Paste it into the redline." });
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      toast.error("Couldn't copy", { description: "Select the text and copy it by hand." });
+    }
+  }
+  return (
+    <Button type="button" onClick={copy}>
+      {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}{copied ? "Copied" : "Copy our wording"}
+    </Button>
+  );
+}
+
+function IssueCard({ issue, contract: c }: { issue: ContractIssue; contract: ContractDetail }) {
+  const canEdit = useCanEditContracts();
+  const [editing, setEditing] = useState(false);
+  const update = useUpdateBlocker(c.contractId);
+  const onError = useGovernErrorToast();
+  const { blocker: b, clause: cl } = issue;
+  const sev = SEVERITY[issue.severity];
+  const name = cl?.label ?? clauseLabel(b?.clauseType ?? null, c.review) ?? (b ? splitBlockerText(b.text).title : "Item");
+  // Our wording: the language to ask for, else the matrix standard.
+  const ours = b?.suggestedLanguage || cl?.suggestedLanguage || cl?.standard || null;
+  const theirs = cl?.found || cl?.quote || null;
+  // Sonar's own blocker text restates the clause; a reviewer's note does not.
+  const note = b && (!cl || b.source === "reviewer") ? b.text : null;
+  const office = b?.office ?? (cl?.escalationRequired ? cl.escalationOffice : null);
+  const headingId = `issue-${issue.key}`;
+
+  async function close() {
+    if (!b) return;
+    try {
+      await update.mutateAsync({ blockerId: b.id, input: { status: "closed" } });
+      toast.success("Item closed");
+    } catch (e) {
+      onError(e, "close this item", c.contractId);
+    }
+  }
+
+  if (editing && b) return <li><BlockerForm contract={c} blocker={b} onDone={() => setEditing(false)} /></li>;
+
+  return (
+    <li>
+      <article aria-labelledby={headingId} className="overflow-hidden rounded-lg border border-[var(--ink-200)] bg-card">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ink-100)] px-5 py-3.5">
+          <h3 id={headingId} className="min-w-0 text-base font-medium text-fg-primary">
+            {name}
+            {cl?.clauseNumber && <span className="ms-2 font-sans text-body font-normal text-[var(--ink-600)]">§ {cl.clauseNumber}</span>}
+          </h3>
+          <span className={cn("inline-flex items-center gap-2 text-body font-semibold", sev.fg)}>
+            <span aria-hidden className={cn("size-2 rounded-full", sev.dot)} />{sev.word}
+          </span>
+        </header>
+
+        {note && (
+          <div className="border-b border-[var(--ink-100)] px-5 py-3">
+            <p className="text-base leading-relaxed text-fg-primary">{note}</p>
+            {b?.source === "reviewer" && <p className="text-caption text-[var(--ink-600)]">Added by {personName(b.createdBy)}</p>}
+          </div>
+        )}
+
+        {cl ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2">
+            <Version label="Their version" text={theirs} empty={cl.tier === "missing" ? "Not in the agreement" : "Not quoted"} />
+            <Version label="Your standard" text={ours} empty="No standard wording" tinted />
+          </div>
+        ) : ours ? (
+          <SuggestedLanguage text={ours} label="Your wording" className="mx-5 my-4" />
+        ) : null}
+
+        <footer className="flex flex-wrap items-center gap-3 border-t border-[var(--ink-100)] px-5 py-3">
+          {cl && ours && <CopyWording text={ours} />}
+          {b && canEdit && (
+            <Button type="button" variant={cl && ours ? "outline" : "default"} disabled={update.isPending} onClick={close}>
+              {update.isPending ? <Loader2 size={14} aria-hidden className="animate-spin" /> : <CheckCircle2 size={14} aria-hidden />}Close item
+            </Button>
+          )}
+          {b && canEdit && (
+            <Button type="button" variant="ghost" onClick={() => setEditing(true)} aria-label={`Edit: ${b.text}`}>
+              <Pencil size={14} aria-hidden />Edit
+            </Button>
+          )}
+          {cl?.reason && (
+            <span className="inline-flex min-w-0 basis-full items-start gap-1.5 text-body text-[var(--ink-700)] md:flex-1 md:basis-auto">
+              <Sonar size={15} aria-hidden className="mt-0.5 shrink-0 text-[var(--ai-ink)]" />
+              <span className="min-w-0">{cl.reason}</span>
+            </span>
+          )}
+          {office && (
+            <span className="inline-flex items-center gap-1.5 text-caption text-[var(--ink-600)]">
+              <Building2 size={12} aria-hidden />{OFFICE_LABEL[office]}
+            </span>
+          )}
+        </footer>
+      </article>
+    </li>
   );
 }
 
@@ -143,7 +238,7 @@ function BlockerRow({ blocker: b, contract: c }: { blocker: Blocker; contract: C
           <p title={b.text} className={cn("line-clamp-2 break-words text-sm font-medium leading-snug", isOpen ? "text-foreground" : "text-[var(--ink-600)] line-through decoration-[var(--ink-300)]")}>{title}</p>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--ink-600)]">
             {b.source === "sonar"
-              ? <span className="inline-flex items-center gap-1 font-medium text-[var(--ai-ink)]"><Sonar size={12} />Found by Sonar</span>
+              ? <span className="inline-flex items-center gap-1 font-medium text-[var(--ai-ink)]"><Sonar size={12} />Found by <SonarName /></span>
               : <span className="inline-flex items-center gap-1"><UserRound size={12} />Added by {personName(b.createdBy)}</span>}
             {clause && <span>{clause}</span>}
             {b.office && <span className="inline-flex items-center gap-1"><Building2 size={12} />{OFFICE_LABEL[b.office]}</span>}

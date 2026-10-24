@@ -1,20 +1,22 @@
 "use client";
 
-// The contract page's center tabs (UI_SPEC section 8): Overview and Activity,
-// then the module tabs. The open tab lives in the URL hash (#blockers,
-// #matrix …) so a link from the board can land on a section and the
-// browser's back button behaves. One row; it scrolls sideways when it overflows.
+// The contract page's section tabs, at the foot of the header band: Issues
+// (what stands between the contract and signature) first, then Overview,
+// Matrix, Activity and the module tabs. The open tab lives in the URL hash
+// (#blockers, #matrix …; Issues keeps the "blockers" id so older links still
+// land) and the browser's back button behaves. One row; it scrolls sideways
+// when it overflows.
 
 import { useCallback, useRef, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
-export const CONTRACT_TABS = ["overview", "activity", "matrix", "blockers", "rounds", "money", "details"] as const;
+export const CONTRACT_TABS = ["blockers", "overview", "matrix", "activity", "rounds", "money", "details"] as const;
 export type ContractTab = (typeof CONTRACT_TABS)[number];
 
-/** The section a contract opens on when the link names none: what needs work now, else the overview. */
-export function defaultTabFor(c: { openBlockers: number; state: string }): ContractTab {
+/** The section a contract opens on when the link names none: its open issues, else what comes next. */
+export function defaultTabFor(c: { state: string }, openIssues: number): ContractTab {
+  if (openIssues > 0) return "blockers";
   if (c.state === "sent_back") return "rounds";        // the revised version is what comes next
-  if (c.openBlockers > 0) return "blockers";
   return "overview";
 }
 
@@ -46,10 +48,11 @@ export type ContractTabSpec = {
   tone?: "warn" | "neutral";
 };
 
-export function ContractTabList({ tabs, value, onChange }: {
+export function ContractTabList({ tabs, value, onChange, className }: {
   tabs: ContractTabSpec[];
   value: ContractTab;
   onChange: (tab: ContractTab) => void;
+  className?: string;
 }) {
   const refs = useRef<Map<ContractTab, HTMLButtonElement>>(new Map());
 
@@ -69,7 +72,7 @@ export function ContractTabList({ tabs, value, onChange }: {
     <div
       role="tablist"
       aria-label="Contract sections"
-      className="scrollbar-none flex min-w-0 flex-nowrap gap-1 overflow-x-auto border-b border-border-default"
+      className={cn("scrollbar-none flex min-w-0 flex-nowrap gap-6 overflow-x-auto", className)}
     >
       {tabs.map((t, i) => {
         const on = t.id === value;
@@ -86,14 +89,13 @@ export function ContractTabList({ tabs, value, onChange }: {
             onClick={() => onChange(t.id)}
             onKeyDown={(e) => onKeyDown(e, i)}
             className={cn(
-              "-mb-px inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none max-md:h-11",
-              on ? "border-[var(--brand-primary-600)] text-fg-primary" : "border-transparent text-fg-secondary hover:text-fg-primary",
+              "inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 text-body font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
+              on ? "border-[var(--brand-primary-800)] text-[var(--brand-primary-800)]" : "border-transparent text-[var(--ink-600)] hover:text-fg-primary",
             )}
           >
             {t.label}
             {t.badge ? (
-              <span className={cn("inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums",
-                t.tone === "warn" ? "bg-[var(--warning-soft)] text-[var(--warning-fg)]" : "bg-[var(--ink-100)] text-[var(--ink-700)]")}>
+              <span className={cn("tabular-nums", t.tone === "warn" ? "text-[var(--warning-fg)]" : "font-medium text-[var(--ink-600)]")}>
                 {t.badge}
               </span>
             ) : null}

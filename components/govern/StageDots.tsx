@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { STAGE_LABEL } from "@/lib/govern/labels";
+import { STAGE_BG, STAGE_BORDER } from "@/lib/govern/stage-style";
 import type { Contract } from "@/lib/govern/types";
 
 /* Where a contract is on its way to signature, as five dots and the step's
@@ -30,8 +31,8 @@ export function StageDots({ contract: c, className }: { contract: Pick<Contract,
               className={cn(
                 "size-[9px] rounded-full",
                 rejected && i <= at ? "bg-[var(--danger)]"
-                  : done ? "bg-[var(--brand-primary-600)]"
-                  : here ? "border-[2px] border-[var(--brand-primary-600)] bg-card"
+                  : done ? STAGE_BG[p]
+                  : here ? cn("border-[2px] bg-card", STAGE_BORDER[p])
                   : "bg-[var(--ink-200)]",
               )}
             />

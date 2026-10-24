@@ -5,7 +5,7 @@ import { AGREEMENT_TYPE_LABEL, STAGES, STAGE_LABEL, WAITING_ON_SHORT } from "@/l
 import { contractValueText } from "@/lib/govern/metrics";
 import type { Contract } from "@/lib/govern/types";
 import type { RiskLevel } from "@/lib/types";
-import { DaysCell, OwnerCell, RISK_TEXT, RiskTag, SLA_TEXT, SlaTag, StageMeter } from "./list-cells";
+import { DaysCell, OwnerCell, RISK_TEXT, RiskCell, SLA_TEXT, SlaTag, StageMeter } from "./list-cells";
 
 /* The Contracts list's columns. Every one has a plain export value, so the
    CSV holds exactly what the table shows. Name, stage, days in step and
@@ -24,13 +24,13 @@ export const CONTRACT_LIST_COLUMNS: DataTableColumn<Contract>[] = [
     exportValue: (c) => c.title || "Untitled contract",
     cell: (c) => (
       <span className="flex min-w-0 max-w-[min(28rem,var(--name-cap,32cqw))] flex-col">
-        <span className="truncate text-[14px]" title={c.title}>{displayTitle(c.title) || "Untitled contract"}</span>
-        {(c.counterparty || c.sponsor) && <span className="truncate text-[12px] font-normal text-[var(--ink-600)]">{c.counterparty || c.sponsor}</span>}
+        <span className="truncate text-[14px] font-semibold text-[var(--ink-900)]" title={c.title}>{displayTitle(c.title) || "Untitled contract"}</span>
+        {(c.counterparty || c.sponsor) && <span className="truncate text-[13px] font-normal text-[var(--ink-600)]">{c.counterparty || c.sponsor}</span>}
       </span>
     ),
   },
   {
-    id: "stage", header: "Stage", card: "status", className: "w-48",
+    id: "stage", header: "Stage", card: "status", className: "w-56",
     sortValue: (c) => STAGES.indexOf(c.stage),
     exportValue: (c) => (c.state === "rejected" ? "Rejected" : STAGE_LABEL[c.stage]),
     cell: (c) => <StageMeter contract={c} />,
@@ -63,7 +63,7 @@ export const CONTRACT_LIST_COLUMNS: DataTableColumn<Contract>[] = [
     id: "risk", header: "Risk", priority: 3,
     sortValue: (c) => (c.overallRisk ? RISK_ORDER[c.overallRisk] : null),
     exportValue: (c) => (c.overallRisk ? RISK_TEXT[c.overallRisk] : "Not assessed"),
-    cell: (c) => <RiskTag risk={c.overallRisk} />,
+    cell: (c) => <RiskCell risk={c.overallRisk} />,
   },
   {
     id: "sla", header: "SLA", priority: 3,

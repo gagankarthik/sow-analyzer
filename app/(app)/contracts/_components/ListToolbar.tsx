@@ -19,7 +19,6 @@ import { countActiveRules, fieldById, quickValues, setQuickValues, type FilterFi
 import { GROUP_BY_OPTIONS, type ListSettings } from "@/lib/govern/list-views";
 import type { FilterGroup } from "@/lib/govern/types";
 import { AdvancedFilters, FilterRulesEditor, type FilterSuggestions } from "./FilterBuilder";
-import { LayoutSwitch } from "@/components/ds/ViewTabs";
 import { fieldClass } from "./controls";
 
 export type SortOption = { id: string; label: string };
@@ -70,7 +69,7 @@ export function ListToolbar(p: ListToolbarProps) {
       label="Contract filters"
       activeCount={countActiveRules(filters)}
       mobileSheet={<MobileSheet {...p} />}
-      mobileActions={<>{exportMenu}<LayoutSwitch current="table" tableHref="/contracts" boardHref="/workflow" /></>}
+      mobileActions={exportMenu}
     >
       <Toolbar.Search label={p.searchLabel} placeholder="Search contracts" value={p.q} onChange={p.onQ} />
       <Toolbar.Filters>
@@ -88,7 +87,6 @@ export function ListToolbar(p: ListToolbarProps) {
         <GroupMenu value={p.settings.groupBy} onChange={(groupBy) => p.onSettings({ groupBy })} />
         {columnSettings}
         {exportMenu}
-        <LayoutSwitch current="table" tableHref="/contracts" boardHref="/workflow" />
       </Toolbar.Actions>
     </Toolbar>
   );

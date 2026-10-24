@@ -27,6 +27,7 @@ import { displayTitle, formatDate } from "@/lib/format";
 import type { ApiClassification, ApiDocument, FindingSeverity, RiskLevel } from "@/lib/types";
 import { ALL, ListFilters, NoResults, type FilterGroup } from "../_components/ListFilters";
 
+import { SonarName } from "@/components/ui/SonarText";
 type Project = ReturnType<typeof apiDocToProject>;
 
 const SEVERITY_META: Record<FindingSeverity, { bg: string; text: string; icon: React.ReactNode; rank: number }> = {
@@ -153,7 +154,7 @@ export default function ProjectInsightsPage() {
           <div className="flex items-start gap-3.5">
             <SonarMark size="md" tile className="hidden sm:inline-flex" />
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-semibold mb-1.5">Sonar summary</h2>
+              <h2 className="text-lg font-semibold mb-1.5"><SonarName /> summary</h2>
               {summary ? (
                 <p className="max-w-[58ch] text-base leading-relaxed text-foreground">{summary}</p>
               ) : !isReady ? (
@@ -164,7 +165,7 @@ export default function ProjectInsightsPage() {
                 <p className="max-w-[58ch] text-base leading-relaxed text-[var(--ink-600)]">{classError ? "The summary couldn\u2019t be loaded." : "No summary was extracted for this document."}</p>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Button variant="ai" size="lg" className="md:h-9" onClick={toggleCopilot}><Sonar size={16} />Ask Sonar</Button>
+                <Button variant="ai" size="lg" className="md:h-9" onClick={toggleCopilot}><Sonar size={16} />Ask <SonarName /></Button>
                 <Button variant="outline" size="lg" className="md:h-9" asChild><Link href={`/projects/${project.id}/sow`}><FileText size={16} />View clauses</Link></Button>
               </div>
             </div>
@@ -192,7 +193,7 @@ export default function ProjectInsightsPage() {
             <div className="flex flex-col items-center px-4 py-10 text-center md:px-6">
               <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]"><Sonar size={16} /></span>
               <p className="mb-1 text-base font-semibold text-foreground">Insights appear once processing completes.</p>
-              <p className="text-sm text-[var(--ink-600)]">Sonar is still analyzing this document.</p>
+              <p className="text-sm text-[var(--ink-600)]"><SonarName /> is still analyzing this document.</p>
             </div>
           ) : !classification && classLoading ? (
             <PanelRowsSkeleton rows={3} className="py-2" />

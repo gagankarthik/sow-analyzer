@@ -23,6 +23,7 @@ import { RoundChanges } from "./RoundChanges";
 import { Section } from "./SectionParts";
 import { TierBar, TierLegend, blockingCount } from "./TierBar";
 
+import { SonarName } from "@/components/ui/SonarText";
 const ACCEPT = ".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword";
 
 export function RoundsSection({ contract: c, uploadRef }: { contract: ContractDetail; uploadRef?: React.Ref<HTMLButtonElement> }) {
@@ -108,11 +109,11 @@ function VersionRow({ version: v, index, previous, current }: { version: Contrac
               </div>
             </div>
           ) : failed ? (
-            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--danger)]"><XCircle size={16} />Sonar could not read this version. Open it to try again.</p>
+            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--danger)]"><XCircle size={16} /><SonarName /> could not read this version. Open it to try again.</p>
           ) : ready ? (
             <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ink-600)]"><CheckCircle2 size={16} />Read, not checked against the matrix.</p>
           ) : (
-            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ai-ink)]"><Loader2 size={16} className="animate-spin motion-reduce:animate-none" />Sonar is reading and checking this version…</p>
+            <p className="inline-flex items-center gap-1.5 text-sm text-[var(--ai-ink)]"><Loader2 size={16} className="animate-spin motion-reduce:animate-none" /><SonarName /> is reading and checking this version…</p>
           )}
         </div>
       </div>
@@ -153,7 +154,7 @@ function RevisionUpload({ contract: c, buttonRef }: { contract: ContractDetail; 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">Got a revised version back?</p>
-          <p className="text-sm text-[var(--ink-600)]">Upload it here. Sonar re-checks it and the open items update by themselves.</p>
+          <p className="text-sm text-[var(--ink-600)]">Upload it here. <SonarName /> re-checks it and the open items update by themselves.</p>
         </div>
         <input ref={inputRef} type="file" accept={ACCEPT} className="sr-only" tabIndex={-1} aria-hidden
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
@@ -171,7 +172,7 @@ function RevisionUpload({ contract: c, buttonRef }: { contract: ContractDetail; 
       {(state.kind === "done" || analyzing) && (
         <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ai-ink)]" aria-live="polite">
           {analyzing ? <Loader2 size={16} className="animate-spin motion-reduce:animate-none" /> : <CheckCircle2 size={16} />}
-          {analyzing ? "Sonar is reading the new version and re-checking it against the matrix…" : `${state.kind === "done" ? state.name : "The new version"} is checked. See the results below.`}
+          {analyzing ? <><SonarName /> is reading the new version and re-checking it against the matrix…</> : `${state.kind === "done" ? state.name : "The new version"} is checked. See the results below.`}
         </p>
       )}
     </div>

@@ -19,6 +19,7 @@ import type { ContractDetail, ContractVersion, MatrixClauseResult, MatrixCounts,
 import { cn } from "@/lib/utils";
 import { BAR_TIERS } from "./TierBar";
 
+import { SonarName } from "@/components/ui/SonarText";
 const COLLAPSED_COUNT = 6;
 
 interface ClassifiedChange {
@@ -70,7 +71,7 @@ export function RoundChanges({ contract: c, versions }: { contract: ContractDeta
       )}
 
       {!ready ? (
-        <p className="text-sm text-[var(--ink-600)]">The comparison appears when Sonar has finished reading the new version.</p>
+        <p className="text-sm text-[var(--ink-600)]">The comparison appears when <SonarName /> has finished reading the new version.</p>
       ) : diff.isLoading ? (
         <SkeletonRegion label="the changes" className="flex flex-col gap-3">
           <SkeletonLine text="text-sm" width="w-64" />

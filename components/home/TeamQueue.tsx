@@ -8,6 +8,7 @@ import { SOLUTION_SECTIONS, type ProductSectionId, type SolutionSectionId } from
 import { useHashTab } from "@/components/landing/use-hash-tab";
 import { DURATION, EASE_OUT, EXIT, Reveal } from "@/components/home/Reveal";
 
+import { SonarName } from "@/components/ui/SonarText";
 /* One queue, every office: a bar chart of the longest wait per office
    against the target, then the agreements themselves in one table.
    Each bar is the control: picking an office highlights its rows and says
@@ -75,7 +76,7 @@ export function TeamQueue() {
             <h2 id="teams-title" className="home-h2">
               Nothing waits on the wrong desk
             </h2>
-            <p className="home-lede">Sonar routes each exception to the office your matrix names.</p>
+            <p className="home-lede"><SonarName /> routes each exception to the office your matrix names.</p>
           </div>
           <div className="home-waitchart" role="group" aria-label="Longest wait by office; pick one to highlight its agreements">
             <div className="home-waitchart-head">

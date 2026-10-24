@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { getUploadUrl, uploadToS3 } from "@/lib/api";
 import { useCreateContract } from "@/lib/govern/queries";
 
+import { SonarName } from "@/components/ui/SonarText";
 const CLAUSE_ICONS: Record<string, LucideIcon> = {
   "payment-milestone": DollarSign, "auto-renewal": Repeat, "ip-ownership": FileSignature,
   "liability-cap": Scale, "termination-notice": XCircle, confidentiality: Lock,
@@ -310,11 +311,11 @@ function IntakeForm({
             <div className="flex min-w-0 items-center gap-2">
               <Sonar size={16} aria-hidden className="shrink-0 text-[var(--ai-ink)]" />
               <p className="text-sm text-[var(--ink-600)]" aria-live="polite">
-                {canDraft ? "Sonar drafts in a few seconds." : "Add a title and scope to draft."}
+                {canDraft ? <><SonarName /> drafts in a few seconds.</> : "Add a title and scope to draft."}
               </p>
             </div>
             <Button disabled={!canDraft} onClick={onGenerate} className="w-full shrink-0 sm:w-auto">
-              {busy ? <><Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />Drafting…</> : <><DraftSow size={16} aria-hidden />Draft with Sonar</>}
+              {busy ? <><Loader2 size={16} aria-hidden className="animate-spin motion-reduce:animate-none" />Drafting…</> : <><DraftSow size={16} aria-hidden />Draft with <SonarName /></>}
             </Button>
           </div>
         </div>
@@ -426,10 +427,10 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
             <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4">
               <div className="mb-2 flex items-center gap-2">
                 <SonarMark size="sm" />
-                <h2 className="text-base font-semibold text-foreground">Ask Sonar to revise</h2>
+                <h2 className="text-base font-semibold text-foreground">Ask <SonarName /> to revise</h2>
               </div>
               <p className="text-xs leading-relaxed text-[var(--ink-600)]">
-                Describe a change; Sonar rewrites the document and keeps the rest intact.
+                Describe a change; <SonarName /> rewrites the document and keeps the rest intact.
               </p>
 
               <div className="mt-3 flex flex-wrap gap-1.5">
@@ -465,8 +466,8 @@ function EditorView({ draft, setDraft }: { draft: string; setDraft: (s: string) 
               </div>
 
               {error && <p role="alert" className="mt-2 text-sm text-[var(--danger)]">{error}</p>}
-              <p className="mt-3 text-xs leading-relaxed text-[var(--ink-600)]">Review before sending. Sonar can be wrong.</p>
-              {revising && <p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--ai-text)]" role="status"><Loader2 size={12} aria-hidden className="animate-spin motion-reduce:animate-none" />Sonar is revising the document…</p>}
+              <p className="mt-3 text-xs leading-relaxed text-[var(--ink-600)]">Review before sending. <SonarName /> can be wrong.</p>
+              {revising && <p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--ai-text)]" role="status"><Loader2 size={12} aria-hidden className="animate-spin motion-reduce:animate-none" /><SonarName /> is revising the document…</p>}
             </div>
 
           </div>

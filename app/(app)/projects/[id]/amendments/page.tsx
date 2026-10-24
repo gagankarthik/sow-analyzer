@@ -21,6 +21,7 @@ import { useDocument, useDiff } from "@/lib/queries/documents";
 import type { ApiDiffChange } from "@/lib/types";
 import { ALL, ListFilters, NoResults, type FilterGroup } from "../_components/ListFilters";
 
+import { SonarName } from "@/components/ui/SonarText";
 type Project = ReturnType<typeof apiDocToProject>;
 
 type ChangeKind = "added" | "removed" | "modified";
@@ -153,7 +154,7 @@ export default function AmendmentsPage() {
                   {/* Focal block: how much changed, and how badly */}
                   <section aria-labelledby="change-analysis" className="rounded-xl border border-border bg-card p-4">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <h2 id="change-analysis" className="text-base font-semibold text-foreground">Sonar change analysis</h2>
+                      <h2 id="change-analysis" className="text-base font-semibold text-foreground"><SonarName /> change analysis</h2>
                       <span className="text-xs text-[var(--ink-600)]">vs parent, v{doc.latestVersion}</span>
                     </div>
                     <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-start md:gap-8">

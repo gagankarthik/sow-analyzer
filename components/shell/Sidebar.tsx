@@ -203,7 +203,7 @@ export function Sidebar({
           "transition-transform duration-200 ease-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0 lg:shadow-none lg:sticky lg:top-0 lg:z-30 lg:shrink-0",
-          "lg:w-[220px] lg:[[data-sidebar=collapsed]_&]:w-[56px]",
+          "lg:w-[232px] lg:[[data-sidebar=collapsed]_&]:w-[56px]",
         )}
       >
         {/* Workspace identity */}
@@ -211,7 +211,7 @@ export function Sidebar({
           href="/"
           aria-label="Blue-IQ home"
           className={cn(
-            "h-[52px] shrink-0 flex items-center border-b border-sidebar-border transition-colors duration-150 hover:bg-sidebar-accent/60",
+            "h-14 shrink-0 flex items-center border-b border-sidebar-border transition-colors duration-150 hover:bg-sidebar-accent/60",
             "px-4 lg:[[data-sidebar=collapsed]_&]:justify-center lg:[[data-sidebar=collapsed]_&]:px-0",
           )}
         >
@@ -254,7 +254,7 @@ export function Sidebar({
                   <div key={g.label} role="group" aria-labelledby={`nav-group-${g.label}`}>
                     <p
                       id={`nav-group-${g.label}`}
-                      className="px-2 pb-1 pt-1 text-xs font-medium text-[var(--ink-600)] lg:[[data-sidebar=collapsed]_&]:sr-only"
+                      className="px-2.5 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-600)] lg:[[data-sidebar=collapsed]_&]:sr-only"
                     >
                       {g.label}
                     </p>
@@ -336,19 +336,19 @@ function NavRow({
 
   const inner = (
     <>
-      <Icon size={16} aria-hidden className="shrink-0" />
+      <Icon size={18} aria-hidden className="shrink-0" />
       <span className="min-w-0 flex-1 truncate text-left lg:[[data-sidebar=collapsed]_&]:sr-only">{item.label}</span>
       {item.drill && <ChevronRight size={12} aria-hidden className="shrink-0 text-[var(--ink-500)] lg:[[data-sidebar=collapsed]_&]:hidden" />}
     </>
   );
 
   const cls = cn(
-    "group/nav relative flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-sm transition-colors duration-150 max-md:h-11",
+    "group/nav relative flex h-[34px] w-full items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors duration-150 max-md:h-11",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
     "lg:[[data-sidebar=collapsed]_&]:mx-auto lg:[[data-sidebar=collapsed]_&]:w-8 lg:[[data-sidebar=collapsed]_&]:justify-center lg:[[data-sidebar=collapsed]_&]:px-0",
     active
-      ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium shadow-[0_1px_2px_rgba(15,23,42,0.08)] ring-1 ring-[var(--ink-200)]"
-      : "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent [&_svg]:text-[var(--ink-600)] hover:[&_svg]:text-[var(--ink-800)]",
+      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold [&_svg]:text-[var(--brand-primary-800)]"
+      : "font-medium text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent [&_svg]:text-[var(--ink-500)] hover:[&_svg]:text-[var(--ink-800)]",
   );
 
   const node = item.href ? (

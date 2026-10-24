@@ -14,6 +14,7 @@ import { ChevronDown, Sonar, UserRound } from "@/components/ui/icons";
 import { AGREEMENT_TYPE_LABEL, DIRECTION_LABEL } from "@/lib/govern/labels";
 import { cn } from "@/lib/utils";
 import type { AgreementType, Direction } from "@/lib/govern/types";
+import { SonarName } from "@/components/ui/SonarText";
 import {
   CURRENCIES, LET_SONAR_DECIDE, expectedValueError, hasIntakeDetails, type IntakeValues,
 } from "./contract-intake";
@@ -66,7 +67,7 @@ export function ContractIntakePanel({
               <UserRound size={16} aria-hidden className="text-[var(--ink-500)]" />
               Usually not in the document
             </legend>
-            <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">Sonar can&apos;t find these, so the contract shows them as gaps until someone adds them.</p>
+            <p className="-mt-1 text-xs leading-relaxed text-muted-foreground"><SonarName /> can&apos;t find these, so the contract shows them as gaps until someone adds them.</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {terms.researchFields && <TextField id={id("pi")} label="Principal investigator (PI)" value={values.piName} onChange={(v) => set("piName", v)} placeholder="Dr Jane Lee" />}
               <TextField id={id("dept")} label={terms.researchFields ? "Department or college" : "Department or cost center"} value={values.department} onChange={(v) => set("department", v)} placeholder={terms.researchFields ? "Chemistry" : "IT Services"} />
@@ -84,14 +85,14 @@ export function ContractIntakePanel({
               <Sonar size={16} aria-hidden className="text-[var(--ai-ink)]" />
               Sonar reads these from the document
             </legend>
-            <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">Leave them blank to let Sonar fill them. Anything you enter is kept as you wrote it.</p>
+            <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">Leave them blank to let <SonarName /> fill them. Anything you enter is kept as you wrote it.</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <label htmlFor={id("type")} className="text-sm font-medium text-foreground">Agreement type</label>
                 <Select value={values.agreementType} onValueChange={(v) => set("agreementType", v as AgreementType)}>
                   <SelectTrigger id={id("type")} className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={LET_SONAR_DECIDE}>Let Sonar decide</SelectItem>
+                    <SelectItem value={LET_SONAR_DECIDE}>Let <SonarName /> decide</SelectItem>
                     {agreementTypes.map((t) => <SelectItem key={t} value={t}>{AGREEMENT_TYPE_LABEL[t]}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -101,7 +102,7 @@ export function ContractIntakePanel({
                 <Select value={values.direction} onValueChange={(v) => set("direction", v as Direction)}>
                   <SelectTrigger id={id("dir")} className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={LET_SONAR_DECIDE}>Let Sonar decide</SelectItem>
+                    <SelectItem value={LET_SONAR_DECIDE}>Let <SonarName /> decide</SelectItem>
                     {(["incoming", "outgoing"] as const).map((d) => <SelectItem key={d} value={d}>{DIRECTION_LABEL[d]}</SelectItem>)}
                   </SelectContent>
                 </Select>

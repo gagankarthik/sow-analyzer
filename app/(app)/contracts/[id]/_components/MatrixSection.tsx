@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { ProvenanceMark, Section, SuggestedLanguage } from "./SectionParts";
 import { TierBar, TierLegend, blockingCount, totalClauses } from "./TierBar";
 
+import { SonarName, withSonar } from "@/components/ui/SonarText";
 type View = "action" | "all" | "beneficial";
 
 export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
@@ -60,7 +61,7 @@ export function MatrixSection({ contract: c }: { contract: ContractDetail }) {
       <Section title="Matrix review">
         <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-[var(--ink-300)] p-6">
           {analyzing ? (
-            <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-700)]"><Loader2 size={16} className="animate-spin motion-reduce:animate-none" />Sonar is still reading this agreement. The review appears here when it is done.</p>
+            <p className="inline-flex items-center gap-2 text-sm text-[var(--ink-700)]"><Loader2 size={16} className="animate-spin motion-reduce:animate-none" /><SonarName /> is still reading this agreement. The review appears here when it is done.</p>
           ) : (
             <>
               <p className="text-sm text-[var(--ink-700)]">This agreement has not been checked against the matrix yet.</p>
@@ -194,7 +195,7 @@ function ClauseRow({ clause: cl }: { clause: MatrixClauseResult }) {
           {cl.quote && (
             <details className="group border-t border-border">
               <summary className="flex cursor-pointer list-none items-center gap-1.5 py-2.5 text-xs font-semibold text-[var(--ink-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)]">
-                <FileText size={12} />{cl.clauseNumber ? `Show the wording Sonar found in clause ${cl.clauseNumber}` : "Show the wording Sonar found"}
+                <FileText size={12} />{withSonar(cl.clauseNumber ? `Show the wording Sonar found in clause ${cl.clauseNumber}` : "Show the wording Sonar found")}
                 <ChevronDown size={12} className="ml-auto transition-transform group-open:rotate-180 motion-reduce:transition-none" />
               </summary>
               <blockquote className="max-w-[29rem] whitespace-pre-line border-l border-[var(--ink-300)] pb-1 pl-4 text-sm leading-relaxed text-foreground">{cl.quote}</blockquote>

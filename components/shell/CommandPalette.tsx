@@ -181,7 +181,7 @@ function PaletteBody({
   return (
     <>
       {/* Search field */}
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4 focus-within:border-[var(--brand-primary-600)]">
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4 focus-within:border-[var(--ink-900)]">
         <Search size={16} aria-hidden className="shrink-0 text-[var(--ink-500)]" />
         <input
           ref={inputRef}

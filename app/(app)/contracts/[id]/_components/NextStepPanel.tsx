@@ -1,20 +1,18 @@
 "use client";
 
 // Requirement 3: the one recommended next step. The header carries its one
-// primary button (the server's recommended action); the path guidance carries
-// what it involves (for a send-back, the clauses and the language to ask for;
-// for an escalation, the office) and the redline.
+// primary button (the server's recommended action), or, while signature is
+// out of reach, a disabled "Send for signature" with the reason under it.
+// The Overview tab carries what the step involves (its detail, the office).
 
-import { Building2 } from "@/components/ui/icons";
-import { TierBadge } from "@/components/govern/primitives";
-import { NextStepButton, RedlineButton } from "@/components/govern/actions";
+import { Building2, Hourglass, Loader2 } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
+import { NextStepButton, RedlineButton, primaryAction } from "@/components/govern/actions";
 import { AnalysisFailedActions } from "@/components/govern/actions/RemoveContract";
 import { latestSentBackClauses, latestSentBackNote } from "@/lib/govern/redline-docx";
+import { signatureBlockReason } from "@/lib/govern/contract-issues";
 import { OFFICE_LABEL } from "@/lib/govern/labels";
 import type { ContractDetail } from "@/lib/govern/types";
-import { SuggestedLanguage } from "./SectionParts";
-
-const MAX_CLAUSES = 4;
 
 function redlineFor(c: ContractDetail) {
   const step = c.nextStep;
@@ -26,50 +24,56 @@ function redlineFor(c: ContractDetail) {
       : null;
 }
 
-/** What the next step involves; null when there is nothing to add to the headline. */
+/** What the next step involves beyond its headline: the detail and the office. */
 export function NextStepDetail({ contract: c }: { contract: ContractDetail }) {
   const step = c.nextStep;
-  const clauses = step.clauses.slice(0, MAX_CLAUSES);
   const office = step.action === "escalate" ? step.office : null;
-  if (!step.detail && !office && clauses.length === 0) return null;
-
+  if (!step.detail && !office) return null;
   return (
-    <div className="flex flex-col gap-3">
-      {step.detail && <p className="max-w-[62ch] text-sm leading-relaxed text-fg-secondary">{step.detail}</p>}
-
+    <div className="flex flex-col gap-2">
+      {step.detail && <p className="max-w-[62ch] text-body leading-relaxed text-fg-secondary">{step.detail}</p>}
       {office && (
-        <p className="inline-flex w-fit items-center gap-2 text-sm font-medium text-fg-primary">
+        <p className="inline-flex w-fit items-center gap-2 text-body font-medium text-fg-primary">
           <Building2 size={16} aria-hidden className="text-fg-tertiary" />{OFFICE_LABEL[office]}
         </p>
-      )}
-
-      {clauses.length > 0 && (
-        <ol className="flex flex-col gap-3">
-          {clauses.map((cl, i) => (
-            <li key={cl.clauseType} className="flex flex-col gap-2 border-l-2 border-[var(--ink-200)] pl-3.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold tabular-nums text-fg-tertiary">{i + 1}.</span>
-                <span className="text-sm font-semibold text-fg-primary">{cl.label}</span>
-                <TierBadge tier={cl.tier} />
-              </div>
-              {cl.suggestedLanguage && <SuggestedLanguage text={cl.suggestedLanguage} label="Ask for" />}
-            </li>
-          ))}
-          {step.clauses.length > MAX_CLAUSES && (
-            <li className="pl-3.5 text-sm text-fg-tertiary">+{step.clauses.length - MAX_CLAUSES} more</li>
-          )}
-        </ol>
       )}
     </div>
   );
 }
 
-/** The page's one primary action: the server's recommended next step. */
-export function NextStepPrimary({ contract: c, onUploadRevision }: { contract: ContractDetail; onUploadRevision: () => void }) {
+/**
+ * The page's one primary action with, when it cannot be taken, the reason in
+ * one line under it. Every other action stays in the Actions menu.
+ */
+export function NextStepPrimary({ contract: c, openIssues, onUploadRevision }: {
+  contract: ContractDetail; openIssues: number; onUploadRevision: () => void;
+}) {
   if (c.nextStep.action === "analyze_anyway" || c.nextStep.action === "reanalyze") {
     return <AnalysisFailedActions contract={c} size="default" />;
   }
-  return <NextStepButton contract={c} onUploadRevision={onUploadRevision} quietWhenNone className="min-w-0 max-sm:flex-1" />;
+  const primary = primaryAction(c);
+  if (primary.type !== "none") {
+    return <NextStepButton contract={c} onUploadRevision={onUploadRevision} quietWhenNone className="min-w-0 max-sm:flex-1" />;
+  }
+
+  const reason = signatureBlockReason(c, openIssues);
+  if (!reason) {
+    return (
+      <p className="inline-flex min-h-9 items-center gap-1.5 text-body text-fg-secondary">
+        <Hourglass size={14} aria-hidden className="shrink-0" />{primary.label}
+      </p>
+    );
+  }
+  const reading = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
+  return (
+    <div className="flex flex-col items-start gap-1.5 sm:items-end">
+      <Button type="button" disabled aria-describedby="next-step-reason">Send for signature</Button>
+      <span id="next-step-reason" className="inline-flex items-center gap-1.5 text-caption text-fg-secondary">
+        {reading && <Loader2 size={12} aria-hidden className="animate-spin motion-reduce:animate-none" />}
+        {reason}
+      </span>
+    </div>
+  );
 }
 
 /** "Download redline (.docx)" while sending back or while the other side has it. */

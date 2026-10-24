@@ -26,6 +26,7 @@ import { OUTCOME_LABEL, PLAYBOOK_OUTCOMES, SOURCE_LABEL, type PlaybookOutcome } 
 import { extractionReview } from "@/lib/document-review";
 import type { ApiClause, RiskLevel, FindingSeverity } from "@/lib/types";
 
+import { SonarName } from "@/components/ui/SonarText";
 type Project = ReturnType<typeof apiDocToProject>;
 
 const RISK_ORDER: RiskLevel[] = ["critical", "high", "medium", "low"];
@@ -234,7 +235,7 @@ export default function SowPage() {
               <div className="flex items-start gap-3.5">
                 <SonarMark size="md" tile className="hidden sm:inline-flex" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-semibold mb-1.5">Sonar summary</h2>
+                  <h2 className="text-lg font-semibold mb-1.5"><SonarName /> summary</h2>
                   {classLoading ? (
                     <SkeletonText lines={2} label="the summary" />
                   ) : classification?.summary ? (
@@ -368,7 +369,7 @@ export default function SowPage() {
                 ) : allClauses.length === 0 ? (
                   <div className="flex flex-col items-center rounded-xl border border-dashed border-[var(--ink-300)] bg-card px-4 py-10 text-center">
                     <p className="mb-1 text-base font-semibold text-foreground">No clauses were extracted.</p>
-                    <p className="max-w-sm text-sm text-[var(--ink-600)]">Sonar didn&apos;t find clause-level content in this document.</p>
+                    <p className="max-w-sm text-sm text-[var(--ink-600)]"><SonarName /> didn&apos;t find clause-level content in this document.</p>
                   </div>
                 ) : filtered.length === 0 ? (
                   <NoResults noun="clauses" onClear={clearFilters} />
@@ -392,7 +393,7 @@ export default function SowPage() {
               <aside className="min-w-0 lg:col-span-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:sticky lg:top-[76px] lg:grid-cols-1">
                   <div className="rounded-xl border border-[var(--ai-border)] bg-[var(--ai-surface)] p-4 md:p-5">
-                    <div className="mb-2 flex items-center gap-2"><SonarMark size="sm" /><h3 className="text-base font-semibold">Sonar Co-pilot</h3></div>
+                    <div className="mb-2 flex items-center gap-2"><SonarMark size="sm" /><h3 className="text-base font-semibold"><SonarName /> Co-pilot</h3></div>
                     <p className="text-sm leading-relaxed text-foreground">
                       {riskCounts.critical + riskCounts.high > 0
                         ? `${riskCounts.critical + riskCounts.high} clause${riskCounts.critical + riskCounts.high === 1 ? " is" : "s are"} rated high or critical. Ask Sonar about them.`
@@ -494,7 +495,7 @@ function ClauseCard({ clause, isExpanded, onToggle, depth }: { clause: ApiClause
         {unclassified && (
           <p role="note" className="mt-2 flex items-start gap-2 rounded-lg border border-[var(--warning)]/30 bg-[var(--warning-soft)] px-3 py-2 text-sm leading-relaxed text-foreground">
             <AlertTriangle size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" />
-            <span>Sonar could not classify this clause: review it yourself. It has no type and was not checked against the playbook.</span>
+            <span><SonarName /> could not classify this clause: review it yourself. It has no type and was not checked against the playbook.</span>
           </p>
         )}
         {clause.summary && <p className="mt-1.5 text-base leading-relaxed text-[var(--ink-700)]">{clause.summary}</p>}

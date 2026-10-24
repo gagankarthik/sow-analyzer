@@ -1,11 +1,12 @@
 "use client";
 
-// Contracts: every agreement, in progress and signed, as one list. Views are
-// tabs under the title (defaults, your saved views, "+ View", "All views");
-// one toolbar of segmented quick filters, advanced filters, group, sort,
-// search, density, columns and export; a flat table with a totals footer; a
-// preview on row click; a bulk bar when rows are selected. The open view is
-// the URL (?view=), and so is the search (?q=).
+// Contracts: every agreement as one list, top to bottom: the title with the
+// one primary action (Upload); the view tabs with counts and, on the same
+// row, the Table / Board switch (the board is /workflow, the same list by
+// stage); one filter row (search, Type, Owner, Risk, More filters); then the
+// table grouped by stage, with a totals footer. A row opens the preview;
+// selected rows get the bulk bar (edit, assign, Excel, CSV). The open view
+// is the URL (?view=), and so is the search (?q=).
 //
 // Saved views come from /views. If that API is missing or failing, presets
 // and local settings keep working and the views menu says so quietly.
@@ -14,32 +15,33 @@ import { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useState }
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { EditionOnly } from "@/components/govern/EditionOnly";
-import { DataTable } from "@/components/ds/DataTable";
+import { DataTable, type DataTableGroupBy } from "@/components/ds/DataTable";
 import { TableFooterSkeleton } from "@/components/ds/skeletons";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ColumnSettings } from "@/components/ds/ColumnSettings";
 import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import { sortRows, useDensity } from "@/components/ds/data-table-hooks";
+import { LayoutSwitch } from "@/components/ds/ViewTabs";
 import { Button } from "@/components/ui/button";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { FileSignature, Plus } from "@/components/ui/icons";
+import { Plus } from "@/components/ui/icons";
 import { ContractPreview } from "@/components/govern/ContractPreview";
 import { CONTRACT_LIST_COLUMNS, CONTRACT_LIST_COLUMN_IDS, CONTRACT_LIST_DEFAULT_HIDDEN } from "@/components/govern/contract-list-columns";
+import { ColumnSettings } from "@/components/ds/ColumnSettings";
 import { orderColumns } from "@/components/ds/DataTable";
 import { csvFileName, downloadCsv, rowsToCsv } from "@/lib/csv";
 import { contractsTable, downloadExcel } from "@/lib/govern/export";
 import { applyFilters, countActiveRules, matchesFilters, parseFilterGroup } from "@/lib/govern/filter-rules";
 import {
-  DEFAULT_VIEWS, DEFAULT_VIEW_ID, QUICK_VIEWS, baseOf, configFromSettings, defaultSettings, groupingFor, presetById,
+  DEFAULT_VIEWS, DEFAULT_VIEW_ID, LIST_TABS, QUICK_VIEWS, baseOf, configFromSettings, defaultSettings, groupingFor, presetById,
   sameSettings, settingsFromConfig, splitSavedViews, type ColumnDefaults, type ListSettings,
 } from "@/lib/govern/list-views";
 import { listTotals } from "@/lib/govern/list-totals";
-import { plural } from "@/lib/govern/labels";
+import { STAGES, STAGE_LABEL, plural } from "@/lib/govern/labels";
+import { STAGE_BG } from "@/lib/govern/stage-style";
 import {
   useContracts, useDeleteView, useGovernFeature, useGovernMe, useOrgCurrency, useSavedViews, useUpdateView,
 } from "@/lib/govern/queries";
-import type { Contract, SavedView } from "@/lib/govern/types";
+import { cn } from "@/lib/utils";
+import type { Contract, SavedView, Stage } from "@/lib/govern/types";
 import type { ContractView } from "@/lib/govern/views";
 import { BulkActions } from "./_components/BulkActions";
 import { BulkEditSheet } from "./_components/BulkEditSheet";
@@ -59,6 +61,20 @@ const DEFAULTS: ColumnDefaults = {
 };
 const SORT_OPTIONS = CONTRACT_LIST_COLUMNS.filter((c) => c.sortValue).map((c) => ({ id: c.id, label: c.header }));
 const MAX_VIEW_TABS = 5;
+const TAB_IDS = new Set(LIST_TABS.map((t) => t.id));
+
+/** Grouped by stage (one of the Group by choices): workflow order, a 10px
+ *  square in the stage's colour, the stage's name, then the count. */
+const BY_STAGE: DataTableGroupBy<Contract> = {
+  key: (c) => c.stage,
+  order: STAGES,
+  label: (k) => (
+    <span className="inline-flex items-center gap-2 text-[14px] font-semibold text-[var(--ink-900)]">
+      <span aria-hidden className={cn("size-2.5 shrink-0 rounded-[2px]", STAGE_BG[k as Stage] ?? "bg-[var(--ink-400)]")} />
+      {STAGE_LABEL[k as Stage] ?? k}
+    </span>
+  ),
+};
 
 export default function ContractsPage() {
   return (
@@ -111,7 +127,6 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
   const all = useMemo(() => data?.contracts ?? [], [data?.contracts]);
   const me = useGovernMe().data?.email?.toLowerCase() ?? null;
   const currency = useOrgCurrency();
-  const exportsOn = useGovernFeature("exports");
   const [now] = useState(() => Date.now());
   // Received date: a quick filter on top of the view, not saved with it.
   const [received, setReceived] = useState<DateRange | null>(null);
@@ -159,7 +174,6 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
     const col = settings.sort && CONTRACT_LIST_COLUMNS.find((c) => c.id === settings.sort!.key);
     return col?.sortValue ? sortRows(searched, col.sortValue, settings.sort!.dir) : searched;
   }, [searched, settings.sort]);
-  const grouping = useMemo(() => groupingFor(settings.groupBy, rows), [settings.groupBy, rows]);
   const totals = useMemo(() => listTotals(rows, currency), [rows, currency]);
 
   /* ── Views: tabs, menu, counts ── */
@@ -177,7 +191,7 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
   );
   const tabs = useMemo<ViewTab[]>(() => {
     const list: ViewTab[] = [
-      ...DEFAULT_VIEWS.map((v) => ({ id: v.id, label: v.label, count: isLoading ? null : countFor(v), href: hrefFor(v.id) })),
+      ...LIST_TABS.map((t) => ({ id: t.id, label: t.label, alert: t.alert, count: isLoading ? null : countFor(presetById(t.id)!), href: hrefFor(t.id) })),
       ...mine.slice(0, MAX_VIEW_TABS).map((v) => ({ id: v.id, label: v.name, count: isLoading ? null : countFor(v), href: hrefFor(v.id), visibility: v.visibility })),
     ];
     if (!list.some((t) => t.id === activeId)) {
@@ -187,7 +201,9 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
     }
     return list;
   }, [mine, activeId, saved, base, isLoading, countFor, hrefFor]);
-  const activeLabel = saved?.name ?? base.label;
+  const activeLabel = saved?.name ?? LIST_TABS.find((t) => t.id === base.id)?.label ?? base.label;
+  // The board opens on the same view when it has it.
+  const boardHref = !saved && TAB_IDS.has(activeId) && activeId !== "in-progress" ? `/workflow?view=${activeId}` : "/workflow";
 
   /* ── Saved view actions ── */
   const [dialog, setDialog] = useState<SaveViewMode | null>(null);
@@ -216,12 +232,12 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
     }
   };
 
-  /* ── Selection, preview, bulk edit ── */
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [previewId, setPreviewId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Contract[] | null>(null);
-  const preview = previewId ? all.find((c) => c.contractId === previewId) ?? null : null;
-  const closePreview = useCallback(() => setPreviewId(null), []);
+  /* ── Grouping (Group by in the toolbar; stage groups get their colour) ── */
+  const exportsOn = useGovernFeature("exports");
+  const grouping = useMemo(
+    () => (settings.groupBy === "stage" ? BY_STAGE : groupingFor(settings.groupBy, rows)),
+    [settings.groupBy, rows],
+  );
 
   /* ── Export ── */
   const visibleColumns = useMemo(() => {
@@ -249,6 +265,13 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
     }
   };
 
+  /* ── Selection, preview, bulk edit ── */
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Contract[] | null>(null);
+  const preview = previewId ? all.find((c) => c.contractId === previewId) ?? null : null;
+  const closePreview = useCallback(() => setPreviewId(null), []);
+
   /* ── Filter helpers ── */
   const owners = useMemo(() => {
     const m = new Map<string, string>();
@@ -271,20 +294,10 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
   return (
     <div className="app-container flex flex-col gap-3 py-6 md:py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex items-baseline gap-2 text-[18px] leading-tight font-medium text-[var(--ink-900)] md:text-[20px]">
-          Contracts
-          {isLoading ? (
-            <Skeleton className="h-3.5 w-8 self-center" />
-          ) : !failed && <span className="text-[14px] font-normal tabular-nums text-[var(--ink-600)]">{all.length.toLocaleString()}</span>}
-        </h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <EditionOnly feature="sowDrafting">
-            <Button asChild variant="outline" size="sm"><Link href="/draft"><FileSignature size={16} />Draft an SOW</Link></Button>
-          </EditionOnly>
-          <Button asChild variant={showsEmpty ? "outline" : "default"} size="sm">
-            <Link href="/projects/upload"><Plus size={16} />Upload contract</Link>
-          </Button>
-        </div>
+        <h1 className="text-[24px] leading-8 font-semibold tracking-[-0.01em] text-[var(--ink-900)]">Contracts</h1>
+        <Button asChild variant={showsEmpty ? "outline" : "default"}>
+          <Link href="/projects/upload"><Plus size={16} />Upload contract</Link>
+        </Button>
       </header>
 
       <ViewTabs
@@ -292,6 +305,7 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
         activeId={activeId}
         loading={isLoading}
         onNewView={saveAs}
+        layout={<LayoutSwitch current="table" tableHref={hrefFor(activeId)} boardHref={boardHref} />}
         end={dirty && (
           <>
             <span className="text-[12px] text-[var(--ink-600)]">Unsaved changes</span>
@@ -345,9 +359,7 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
         onColumnOrderChange={(order) => update({ columns: { ...settings.columns, order } })}
         hiddenColumns={settings.columns.hidden}
         onHiddenColumnsChange={(hidden) => update({ columns: { ...settings.columns, hidden } })}
-        density={settings.density}
         onDensityChange={(density) => update({ density })}
-        pageSize={50}
         headerEnd={
           <ColumnSettings
             columns={orderColumns(CONTRACT_LIST_COLUMNS, settings.columns.order).map((c) => ({ id: c.id, label: c.header, locked: c.card === "title" }))}
@@ -357,6 +369,9 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
             triggerClassName="size-7 border-transparent bg-transparent"
           />
         }
+        density={settings.density}
+        pageSize={50}
+        exportName="contracts"
         footer={rows.length > 0 ? <ListFooter totals={totals} currency={currency} /> : undefined}
         loadingFooter={<TableFooterSkeleton />}
         toolbar={

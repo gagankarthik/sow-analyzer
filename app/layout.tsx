@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Lexend } from "next/font/google";
 import "./globals.css";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -12,6 +12,15 @@ const plexSans = IBM_Plex_Sans({
   variable: "--font-plex",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Lexend for page and section headings in the app: wide, open letterforms
+// that read at a glance (applied to headings inside #main-content).
+const lexend = Lexend({
+  variable: "--font-lexend",
+  subsets: ["latin"],
+  weight: ["500", "600"],
   display: "swap",
 });
 
@@ -58,7 +67,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       // The (app) layout's pre-paint script sets data-sidebar on <html>.
       suppressHydrationWarning
-      className={`${plexSans.variable} ${plexMono.variable}`}
+      className={`${plexSans.variable} ${plexMono.variable} ${lexend.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
         {/* App providers live in the (app) and (auth) layouts, not here. */}

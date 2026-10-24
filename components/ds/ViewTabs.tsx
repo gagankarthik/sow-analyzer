@@ -20,6 +20,8 @@ export type ListView = {
   href: string;
   /** Small leading icon (12px), e.g. a saved view's visibility. */
   icon?: React.ReactNode;
+  /** The count reads in the danger colour when above zero ("Past target"). */
+  alert?: boolean;
 };
 
 const NUMBER = new Intl.NumberFormat("en-US");
@@ -79,6 +81,7 @@ export function ViewTabs({
                   className={cn(
                     "rounded-pill px-1.5 text-caption tabular-nums",
                     active ? "bg-surface-sunken text-fg-primary" : "text-fg-tertiary",
+                    v.alert && v.count > 0 && "font-semibold text-[var(--danger)]",
                   )}
                 >
                   {NUMBER.format(v.count)}
@@ -96,8 +99,9 @@ export function ViewTabs({
 }
 
 /**
- * Table / Board switch for a list that has both: one 32px segmented control
- * (44px on phones). Each side is a link; the current one is aria-current.
+ * Table / Board switch for a list that has both: one segmented control,
+ * 36px (44px on phones), the current side filled in the primary colour.
+ * Each side is a link; the current one is aria-current.
  */
 export function LayoutSwitch({
   current,
@@ -111,21 +115,21 @@ export function LayoutSwitch({
   className?: string;
 }) {
   const item =
-    "inline-flex items-center gap-1.5 rounded-[4px] px-2 text-caption leading-none transition-colors duration-(--duration-fast) focus-visible:outline-2 focus-visible:outline-focus";
-  const on = "bg-surface-sunken font-medium text-fg-primary";
-  const off = "text-fg-secondary hover:text-fg-primary";
+    "inline-flex items-center gap-1.5 px-3 text-[14px] font-medium leading-none transition-colors duration-(--duration-fast) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus";
+  const on = "bg-primary text-primary-foreground";
+  const off = "text-[var(--ink-700)] hover:bg-surface-hover hover:text-[var(--ink-900)]";
   return (
     <div
       role="group"
       aria-label="Layout"
-      className={cn("inline-flex h-11 shrink-0 rounded-[6px] border border-border-strong bg-surface-raised p-0.5 md:h-8", className)}
+      className={cn("inline-flex h-11 shrink-0 overflow-hidden rounded-md border border-[var(--ink-300)] bg-surface-raised md:h-9", className)}
     >
       <Link href={tableHref} scroll={false} aria-current={current === "table" ? "page" : undefined} className={cn(item, current === "table" ? on : off)}>
-        <LayoutGrid size={12} aria-hidden />
+        <LayoutGrid size={14} aria-hidden />
         Table
       </Link>
-      <Link href={boardHref} scroll={false} aria-current={current === "board" ? "page" : undefined} className={cn(item, current === "board" ? on : off)}>
-        <Kanban size={12} aria-hidden />
+      <Link href={boardHref} scroll={false} aria-current={current === "board" ? "page" : undefined} className={cn(item, "border-s border-[var(--ink-300)]", current === "board" ? on : off)}>
+        <Kanban size={14} aria-hidden />
         Board
       </Link>
     </div>

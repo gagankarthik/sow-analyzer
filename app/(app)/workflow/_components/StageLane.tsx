@@ -1,168 +1,67 @@
 "use client";
 
-import { ChevronRight } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BoardCardSkeleton, LaneHeaderSkeleton, SkeletonLine } from "@/components/ds/skeletons";
+import { SkeletonLine } from "@/components/ds/skeletons";
 import { PRE_SIGNATURE_STAGES, STAGES, STAGE_LABEL } from "@/lib/govern/labels";
+import { STAGE_BG } from "@/lib/govern/stage-style";
 import type { Contract, Stage } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
-import { formatCompact } from "@/lib/govern/metrics";
 import { ContractCard } from "./ContractCard";
-
-/** Per-stage dot: a navy ramp along the road to signature, green once signed
- *  (current value), grey after. Status colours are kept for status only. */
-export const STAGE_DOT: Record<Stage, string> = {
-  draft: "bg-[var(--ink-400)]",
-  review: "bg-[var(--navy-300)]",
-  negotiation: "bg-[var(--navy-500)]",
-  approval: "bg-[var(--navy-800)]",
-  signed: "bg-[var(--success)]",
-  active: "bg-[var(--success)]",
-  renewal: "bg-[var(--ink-500)]",
-  expired: "bg-[var(--ink-300)]",
-};
 
 export interface StageSummary {
   stage: Stage;
   contracts: Contract[];
-  averageDays: number | null;
+  /** Open agreements past their stage's target. */
   overdue: number;
-  late: number;
-  /** Total value of the stage's agreements ("$1.2M"), when they share one currency. */
-  valueText: string | null;
 }
 
-/** Count, average days and overdue/late counts for each stage's open contracts. */
+/** A stage's agreements and how many of the open ones are past target. */
 export function summariseStage(stage: Stage, contracts: Contract[]): StageSummary {
   const open = contracts.filter((c) => c.state !== "rejected" && c.state !== "closed");
-  return {
-    stage,
-    contracts,
-    averageDays: open.length ? Math.round((open.reduce((s, c) => s + c.daysInStage, 0) / open.length) * 10) / 10 : null,
-    overdue: open.filter((c) => c.slaStatus === "red").length,
-    late: open.filter((c) => c.slaStatus === "amber").length,
-    valueText: stageValue(contracts),
-  };
+  return { stage, contracts, overdue: open.filter((c) => c.slaStatus === "red").length };
 }
 
-function stageValue(contracts: Contract[]): string | null {
-  const valued = contracts.filter((c) => c.value !== null && c.value > 0);
-  const currencies = new Set(valued.map((c) => c.currency || "USD"));
-  if (valued.length === 0 || currencies.size !== 1) return null;
-  return formatCompact(valued.reduce((s, c) => s + (c.value ?? 0), 0), [...currencies][0]);
+const POST_SIGNATURE_STAGES = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
+
+/** The four stages of the phase `stage` belongs to. */
+export function phaseOf(stage: Stage): Stage[] {
+  return PRE_SIGNATURE_STAGES.includes(stage) ? PRE_SIGNATURE_STAGES : POST_SIGNATURE_STAGES;
 }
 
-function daysText(avg: number | null): string {
-  if (avg === null) return "No agreements";
-  if (avg < 1) return "avg under a day";
-  return `avg ${avg} ${avg === 1 ? "day" : "days"}`;
-}
-
-/* ── Pipeline strip ──────────────────────────────────────────────────────── */
-
-/**
- * The workflow at a glance: all eight stages in order as connected steps,
- * in two groups either side of signature. Each step shows its count and its
- * health, and selecting one shows that stage's agreements on the board.
- */
-export function PipelineStrip({
-  summaries, selected, onSelect, loading,
-}: {
-  summaries: Map<Stage, StageSummary>;
-  selected: Stage;
-  onSelect: (s: Stage) => void;
-  loading: boolean;
-}) {
-  const group = (title: string, stages: Stage[]) => (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <p className="text-xs font-medium text-[var(--ink-600)]">{title}</p>
-      <ol className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:items-stretch sm:gap-0">
-        {stages.map((s, i) => {
-          const sum = summaries.get(s)!;
-          const on = s === selected;
-          const count = sum.contracts.length;
-          return (
-            <li key={s} className="flex min-w-0 items-center sm:flex-1">
-              <button
-                type="button"
-                onClick={() => onSelect(s)}
-                aria-pressed={on}
-                className={cn(
-                  "flex h-full min-w-0 flex-1 flex-col gap-1 rounded-lg border px-3 py-2 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
-                  on
-                    ? "border-[var(--brand-primary-400)] bg-[var(--brand-primary-50)]"
-                    : "border-border bg-card hover:border-[var(--ink-300)]",
-                )}
-              >
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span className={cn("size-2 shrink-0 rounded-full", STAGE_DOT[s])} aria-hidden />
-                  <span className={cn("truncate text-xs font-medium", on ? "text-[var(--brand-primary-700)]" : "text-[var(--ink-700)]")}>
-                    {STAGE_LABEL[s]}
-                  </span>
-                </span>
-                <span className="text-lg font-semibold leading-none tabular-nums text-foreground">
-                  {loading ? <Skeleton className="h-4 w-6" /> : count}
-                </span>
-                <span className="truncate text-xs tabular-nums">
-                  {loading ? <SkeletonLine text="text-xs" width="w-16" /> : sum.overdue > 0 ? (
-                    <span className="font-semibold text-[var(--danger)]">{sum.overdue} overdue</span>
-                  ) : sum.late > 0 ? (
-                    <span className="font-semibold text-[var(--warning-fg)]">{sum.late} running late</span>
-                  ) : (
-                    <span className="text-[var(--ink-600)]">{count === 0 ? "Empty" : daysText(sum.averageDays)}</span>
-                  )}
-                </span>
-              </button>
-              {i < stages.length - 1 && (
-                <ChevronRight size={16} aria-hidden className="mx-0.5 hidden shrink-0 text-[var(--ink-400)] sm:block" />
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    </div>
-  );
-
-  const post = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
-  return (
-    <nav aria-label="Workflow stages">
-      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2 2xl:gap-6">
-        {group("Before signature", PRE_SIGNATURE_STAGES)}
-        {group("After signature", post)}
-      </div>
-    </nav>
-  );
-}
-
-/** Wide screens: before or after signature. Each lane carries its own count,
- *  days and overdue, so the switch only says how many are in each phase. */
+/** Before or after signature: which four lanes the board shows. Each side
+ *  says how many agreements it holds (and how many are past target). */
 export function PhaseSwitch({ summaries, selected, onSelect, loading }: {
   summaries: Map<Stage, StageSummary>;
   selected: Stage;
   onSelect: (s: Stage) => void;
   loading: boolean;
 }) {
-  const post = STAGES.filter((s) => !PRE_SIGNATURE_STAGES.includes(s));
   const phases = [
     { label: "Before signature", stages: PRE_SIGNATURE_STAGES },
-    { label: "After signature", stages: post },
+    { label: "After signature", stages: POST_SIGNATURE_STAGES },
   ];
   return (
-    <nav aria-label="Workflow phase" className="hidden xl:block">
-      <div className="inline-flex h-8 rounded-lg border border-border-strong bg-card p-0.5">
-        {phases.map(({ label, stages }) => {
+    <nav aria-label="Workflow phase">
+      <div className="inline-flex h-11 overflow-hidden rounded-md border border-[var(--ink-300)] bg-surface-raised md:h-9">
+        {phases.map(({ label, stages }, i) => {
           const on = stages.includes(selected);
           const count = stages.reduce((n, s) => n + (summaries.get(s)?.contracts.length ?? 0), 0);
           const overdue = stages.reduce((n, s) => n + (summaries.get(s)?.overdue ?? 0), 0);
           return (
-            <button key={label} type="button" aria-pressed={on} onClick={() => onSelect(stages[0])}
+            <button
+              key={label}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onSelect(stages[0])}
               className={cn(
-                "inline-flex h-full items-center gap-2 rounded-sm px-3 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] motion-reduce:transition-none",
-                on ? "bg-[var(--ink-100)] text-foreground" : "text-[var(--ink-600)] hover:text-foreground",
-              )}>
+                "inline-flex h-full items-center gap-2 px-3 text-[14px] font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus motion-reduce:transition-none",
+                i > 0 && "border-s border-[var(--ink-300)]",
+                on ? "bg-[var(--ink-100)] text-[var(--ink-900)]" : "text-[var(--ink-600)] hover:text-[var(--ink-900)]",
+              )}
+            >
               {label}
               {loading ? <Skeleton className="h-3 w-5" /> : <span className="tabular-nums text-[var(--ink-600)]">{count.toLocaleString()}</span>}
-              {!loading && overdue > 0 && <span className="text-xs font-semibold text-[var(--danger)]">{overdue} overdue</span>}
+              {!loading && overdue > 0 && <span className="tabular-nums font-semibold text-[var(--danger)]">{overdue} past target</span>}
             </button>
           );
         })}
@@ -171,49 +70,37 @@ export function PhaseSwitch({ summaries, selected, onSelect, loading }: {
   );
 }
 
-/* ── Board lanes ─────────────────────────────────────────────────────────── */
-
-export function StageHeader({ summary, className }: { summary: StageSummary; className?: string }) {
-  const { stage, contracts, averageDays, overdue, valueText } = summary;
-  return (
-    <div className={cn("flex items-start gap-2", className)}>
-      <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", STAGE_DOT[stage])} aria-hidden />
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate text-sm font-semibold text-foreground">{STAGE_LABEL[stage]}</h3>
-        <p className="mt-0.5 text-xs tabular-nums text-[var(--ink-600)]">
-          {valueText && <span className="font-semibold text-foreground">{valueText} · </span>}
-          {contracts.length === 0 ? "Empty" : daysText(averageDays)}
-          {overdue > 0 && <span className="font-semibold text-[var(--danger)]"> · {overdue} overdue</span>}
-        </p>
-      </div>
-      <span className="shrink-0 pt-0.5 text-xs font-medium tabular-nums text-[var(--ink-600)]" aria-label={`${contracts.length} agreements`}>
-        {contracts.length}
-      </span>
-    </div>
-  );
-}
-
-/** One column of the board: a tinted container with its header, then its
- *  cards. Lanes grow with their cards; the page scrolls, never the lane. */
-export function StageLane({ summary, loading, highlighted }: { summary: StageSummary; loading: boolean; highlighted?: boolean }) {
+/** One column of the board: a 4px edge in the stage's colour, the stage's
+ *  name and count, then its cards. Lanes grow with their cards; the page
+ *  scrolls, never the lane. */
+export function StageLane({ summary, loading }: { summary: StageSummary; loading: boolean }) {
+  const name = STAGE_LABEL[summary.stage];
   return (
     <section
       id={`lane-${summary.stage}`}
-      aria-label={STAGE_LABEL[summary.stage]}
-      className={cn(
-        "flex min-w-0 scroll-mt-24 flex-col rounded-xl border bg-[var(--ink-50)] p-2 transition-colors duration-150",
-        highlighted ? "border-[var(--brand-primary-300)]" : "border-border",
-      )}
+      aria-label={name}
+      className="flex min-w-0 scroll-mt-24 flex-col overflow-hidden rounded-lg bg-[var(--ink-100)] pb-2"
     >
-      {loading ? <LaneHeaderSkeleton name={STAGE_LABEL[summary.stage]} /> : <StageHeader summary={summary} className="px-1.5 pb-2 pt-1" />}
-      <div className="flex flex-1 flex-col gap-2" aria-busy={loading || undefined}>
+      <span aria-hidden className={cn("h-1 shrink-0", STAGE_BG[summary.stage])} />
+      <h2 className="flex items-baseline justify-between gap-2 px-3.5 pt-3 pb-2.5 text-[15px] font-medium text-[var(--ink-900)]">
+        <span className="truncate">{name}</span>
+        {loading ? (
+          <Skeleton className="h-3 w-4 shrink-0" />
+        ) : (
+          <span className="shrink-0 font-sans text-[14px] font-semibold tabular-nums text-[var(--ink-600)]">
+            {summary.contracts.length}
+            <span className="sr-only"> agreements</span>
+          </span>
+        )}
+      </h2>
+      <div className="flex flex-1 flex-col gap-2 px-2" aria-busy={loading || undefined}>
         {loading ? (
           <>
-            <BoardCardSkeleton />
-            <BoardCardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
           </>
         ) : summary.contracts.length === 0 ? (
-          <p className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-[var(--ink-300)] px-3 py-6 text-center text-sm text-[var(--ink-500)]">
+          <p className="rounded-md border border-dashed border-[var(--ink-300)] px-3 py-6 text-center text-[14px] text-[var(--ink-600)]">
             No agreements
           </p>
         ) : (
@@ -221,5 +108,35 @@ export function StageLane({ summary, loading, highlighted }: { summary: StageSum
         )}
       </div>
     </section>
+  );
+}
+
+/** A card placeholder in the card's geometry: two text lines, then the
+ *  time and the owner's avatar. */
+function CardSkeleton() {
+  return (
+    <div aria-hidden className="flex flex-col gap-2 rounded-md border border-[var(--ink-200)] bg-surface-raised px-3.5 py-3">
+      <span className="flex flex-col">
+        <SkeletonLine text="text-[15px] leading-5" width="w-[80%]" />
+        <SkeletonLine text="text-[14px] leading-5" width="w-[55%]" />
+      </span>
+      <span className="flex items-center justify-between gap-2">
+        <SkeletonLine text="text-[13px]" width="w-24" />
+        <Skeleton className="size-[26px] rounded-full" />
+      </span>
+    </div>
+  );
+}
+
+/** The board before its data: the phase switch and the four lanes of the
+ *  pre-signature phase, each with two card placeholders. */
+export function BoardLanesSkeleton() {
+  const empty: StageSummary[] = PRE_SIGNATURE_STAGES.map((stage) => ({ stage, contracts: [], overdue: 0 }));
+  return (
+    <div className="overflow-x-auto">
+      <div className="grid min-w-[68rem] grid-cols-4 items-start gap-4">
+        {empty.map((s) => <StageLane key={s.stage} summary={s} loading />)}
+      </div>
+    </div>
   );
 }

@@ -70,7 +70,7 @@ function FilterButtonFrame({ active, onClear, label, className, children }: {
   return (
     <span
       className={cn(
-        "inline-flex h-8 min-w-24 max-w-[220px] shrink-0 items-stretch overflow-hidden rounded-[6px] border bg-surface-raised transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus",
+        "inline-flex h-9 min-w-24 max-w-[220px] shrink-0 items-stretch overflow-hidden rounded-[6px] border bg-surface-raised transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus",
         active ? "border-[var(--brand-primary-600)]" : "border-border-strong",
         className,
       )}
@@ -105,7 +105,7 @@ export const FilterButtonTrigger = React.forwardRef<
       className={cn(
         "group inline-flex h-full min-w-0 flex-1 items-stretch text-[12px] leading-none transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-none data-[state=open]:bg-surface-hover",
         framed && cn(
-          "h-8 min-w-24 max-w-[220px] flex-none shrink-0 overflow-hidden rounded-[6px] border bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+          "h-9 min-w-24 max-w-[220px] flex-none shrink-0 overflow-hidden rounded-[6px] border bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
           active ? "border-[var(--brand-primary-600)]" : "border-border-strong",
         ),
         className,
@@ -138,7 +138,7 @@ export const MoreFiltersButton = React.forwardRef<
       type="button"
       aria-label={count > 0 ? `${label}, ${count} applied` : label}
       className={cn(
-        "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[6px] border bg-surface-raised px-2.5 text-[12px] leading-none text-[var(--ink-900)] transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus data-[state=open]:bg-surface-hover",
+        "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] border bg-surface-raised px-2.5 text-[12px] leading-none text-[var(--ink-900)] transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus data-[state=open]:bg-surface-hover",
         count > 0 ? "border-[var(--brand-primary-600)]" : "border-border-strong",
         className,
       )}

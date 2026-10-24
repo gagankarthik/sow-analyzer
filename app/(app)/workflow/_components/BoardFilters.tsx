@@ -1,13 +1,14 @@
 "use client";
 
-// The Workflow toolbar (UI_SPEC section 9), the same component as the
-// Contracts list: search (240px), four quick filters as [Label │ Value ▾],
-// "More filters" with every dimension, then "n filters · Clear". Below md:
+// The Workflow filter row (UI_SPEC section 9), the same component as the
+// Contracts list: search, three quick filters as [Label │ Value ▾] (Type,
+// party, Risk), "More filters" with every dimension including Status (open
+// or all), then "n filters · Clear". Below md:
 // search, then one "Filters (n)" button that opens a sheet with them all.
 
 import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
 import { Toolbar } from "@/components/ds/Toolbar";
-import { FilterButton, FilterButtonTrigger, MoreFiltersButton } from "@/components/ds/FilterButton";
+import { FilterButton, MoreFiltersButton } from "@/components/ds/FilterButton";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
   DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
@@ -101,20 +102,7 @@ export function BoardFilters({
       }
     >
       <Toolbar.Search label="Search agreements" placeholder="Search contracts" value={filters.q} onChange={(v) => onChange({ ...filters, q: v })} />
-      <Toolbar.Filters>
-        {/* Status always names its value ("Open" by default, never "Any"). */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <FilterButtonTrigger label="Status" value={statusLabel} active={showClosed} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-60">
-            <DropdownMenuLabel>Status</DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={showClosed ? "all" : "open"} onValueChange={(v) => onShowClosedChange(v === "all")}>
-              <DropdownMenuRadioItem value="open">Open</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="all">All, including closed</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <Toolbar.Filters always>
         {quick.map((k) => (
           <FilterButton key={k} label={dims[k].label} value={valueLabel(dims[k])} active={filters[k] !== ALL} onClear={() => set(k, ALL)}>
             <RadioOptions dim={dims[k]} value={filters[k]} onChange={(v) => set(k, v)} />

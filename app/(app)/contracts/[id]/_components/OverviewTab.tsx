@@ -1,19 +1,22 @@
 "use client";
 
-// The Overview tab (UI_SPEC section 8.3): Govern e-signature envelopes while
-// signing is in play, Sonar's summary when there is one, the matrix result,
-// and the top open blockers, each with a way into its tab.
+// The Overview tab: the next step with who holds it and every step behind a
+// toggle, Sonar's summary when there is one, and the matrix result. The open
+// issues have their own tab; the e-signature panel sits above every tab.
 
-import { ArrowRight, Blocker, Sonar } from "@/components/ui/icons";
-import { ListPanel, Panel, PanelEmpty, PanelRow } from "@/components/ds/Panel";
-import { OFFICE_LABEL } from "@/lib/govern/labels";
+import { useId, useState } from "react";
+import { ArrowRight, ChevronDown, Loader2, Sonar } from "@/components/ui/icons";
+import { Panel } from "@/components/ds/Panel";
+import { ContractStepList } from "@/components/govern/StatusBanner";
+import { NEXT_ACTION_LABEL, WAITING_ON_LABEL, personName } from "@/lib/govern/labels";
+import { contractStateLabel, contractSteps, currentContractStep } from "@/lib/govern/steps";
 import { useDocument } from "@/lib/queries/documents";
 import type { ContractDetail } from "@/lib/govern/types";
+import { cn } from "@/lib/utils";
 import type { ContractTab } from "./ContractTabs";
-import { EnvelopesPanel } from "@/components/govern/esign/EnvelopesPanel";
+import { NextStepDetail } from "./NextStepPanel";
 import { TierBar, TierLegend, blockingCount, totalClauses } from "./TierBar";
-
-const TOP_BLOCKERS = 3;
+import { SonarName } from "@/components/ui/SonarText";
 const NUMBER = new Intl.NumberFormat("en-US");
 
 function TabLink({ to, onOpen, children }: { to: ContractTab; onOpen: (tab: ContractTab) => void; children: React.ReactNode }) {
@@ -25,6 +28,50 @@ function TabLink({ to, onOpen, children }: { to: ContractTab; onOpen: (tab: Cont
     >
       {children}<ArrowRight size={12} aria-hidden />
     </button>
+  );
+}
+
+/** Who holds the step: the side it waits on, then the people on it. */
+function holderOf(c: ContractDetail): string {
+  const step = currentContractStep(c);
+  const people = (step?.people ?? [])
+    .filter((p) => p.status === "current" || p.status === "waiting")
+    .map((p) => (p.person ? `${personName(p.person)} (${p.role})` : p.role === "Reviewer" ? "No owner" : p.role));
+  const waiting = c.waitingOn.kind === "nobody" ? null : c.waitingOn.label || WAITING_ON_LABEL[c.waitingOn.kind];
+  return [contractStateLabel(c), waiting, ...new Set(people)].filter(Boolean).join(" · ");
+}
+
+/** The next step in words, who holds it, and every step behind a toggle. */
+function NextStep({ contract: c }: { contract: ContractDetail }) {
+  const [open, setOpen] = useState(false);
+  const stepsId = useId();
+  const analyzing = c.analysisStatus !== "READY" && c.analysisStatus !== "FAILED";
+  return (
+    <Panel title="Next step">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-0.5">
+          <p className="text-base font-semibold text-fg-primary">{c.nextStep.headline || NEXT_ACTION_LABEL[c.nextStep.action]}</p>
+          <p className="inline-flex flex-wrap items-center gap-x-1.5 text-caption text-[var(--ink-600)]">
+            {analyzing && <><Loader2 size={12} aria-hidden className="animate-spin motion-reduce:animate-none" /><SonarName /> is reading ·</>}
+            {holderOf(c)}
+          </p>
+        </div>
+        <NextStepDetail contract={c} />
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={stepsId}
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex min-h-8 w-fit items-center gap-1 rounded-control text-caption font-medium text-fg-link hover:underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary-600)] max-md:min-h-11"
+        >
+          <ChevronDown size={12} aria-hidden className={cn("transition-transform motion-reduce:transition-none", open && "rotate-180")} />
+          {open ? "Hide steps" : "Show every step"}
+        </button>
+        <div id={stepsId} hidden={!open} className={cn(open && "border-t border-border-default pt-3")}>
+          {open && <ContractStepList steps={contractSteps(c)} />}
+        </div>
+      </div>
+    </Panel>
   );
 }
 
@@ -47,7 +94,7 @@ function MatrixResult({ contract: c, onOpen }: { contract: ContractDetail; onOpe
   if (!review) {
     return (
       <Panel title="Matrix result" actions={<TabLink to="matrix" onOpen={onOpen}>Matrix</TabLink>}>
-        <p className="text-body text-fg-tertiary">{analyzing ? "Sonar is reading" : "Not checked yet"}</p>
+        <p className="text-body text-fg-tertiary">{analyzing ? <><SonarName /> is reading</> : "Not checked yet"}</p>
       </Panel>
     );
   }
@@ -82,42 +129,12 @@ function MatrixResult({ contract: c, onOpen }: { contract: ContractDetail; onOpe
   );
 }
 
-function OpenBlockers({ contract: c, onOpen }: { contract: ContractDetail; onOpen: (tab: ContractTab) => void }) {
-  const open = c.blockers.filter((b) => b.status === "open");
-  return (
-    <ListPanel
-      title="Open blockers"
-      meta={open.length > 0 ? NUMBER.format(open.length) : undefined}
-      actions={<TabLink to="blockers" onOpen={onOpen}>{open.length > TOP_BLOCKERS ? `All ${NUMBER.format(open.length)}` : "Blockers"}</TabLink>}
-    >
-      {open.length === 0 ? (
-        <PanelEmpty>None open</PanelEmpty>
-      ) : (
-        <ul>
-          {open.slice(0, TOP_BLOCKERS).map((b) => (
-            <PanelRow key={b.id} className="flex items-start gap-2.5">
-              <Blocker size={16} aria-hidden className="mt-0.5 shrink-0 text-[var(--warning-fg)]" />
-              <span className="min-w-0 text-body text-fg-primary">
-                <span className="line-clamp-2">{b.text}</span>
-                {b.office && <span className="block text-caption text-fg-tertiary">{OFFICE_LABEL[b.office]}</span>}
-              </span>
-            </PanelRow>
-          ))}
-        </ul>
-      )}
-    </ListPanel>
-  );
-}
-
 export function OverviewTab({ contract: c, onOpen }: { contract: ContractDetail; onOpen: (tab: ContractTab) => void }) {
   return (
     <div className="flex flex-col gap-6">
-      <EnvelopesPanel contract={c} />
+      <NextStep contract={c} />
       <SonarSummary contract={c} />
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <MatrixResult contract={c} onOpen={onOpen} />
-        <OpenBlockers contract={c} onOpen={onOpen} />
-      </div>
+      <MatrixResult contract={c} onOpen={onOpen} />
     </div>
   );
 }

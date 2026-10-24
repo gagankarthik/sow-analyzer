@@ -18,6 +18,7 @@ import { AGREEMENT_TYPE_LABEL, OFFICES, OFFICE_LABEL } from "@/lib/govern/labels
 import { thresholdMeta } from "@/lib/playbook";
 import type { AgreementType, MatrixClause, Office } from "@/lib/govern/types";
 
+import { SonarName } from "@/components/ui/SonarText";
 const NO_OFFICE = "__none";
 
 export type ClauseDialogTarget =
@@ -217,7 +218,7 @@ function ClauseForm({
           </Field>
 
           <fieldset className="grid gap-2">
-            <legend className="mb-1.5 text-sm font-medium text-foreground">Numbers Sonar checks</legend>
+            <legend className="mb-1.5 text-sm font-medium text-foreground">Numbers <SonarName /> checks</legend>
             {thresholds.length === 0 && (
               <p className="text-sm text-muted-foreground">None. Add one when the position has a limit, such as a review period in days.</p>
             )}

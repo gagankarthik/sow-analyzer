@@ -22,6 +22,7 @@ import type { ChatCitation } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonLine } from "@/components/ds/skeletons";
 
+import { SonarName } from "@/components/ui/SonarText";
 type Props = { open: boolean; onClose: () => void };
 
 type Msg = {
@@ -138,7 +139,7 @@ export function CopilotPanel({ open, onClose }: Props) {
               <Sonar size={20} className="text-[var(--brand-primary-600)]" />
             </span>
             <div className="min-w-0 flex-1">
-              <SheetTitle className="text-base font-semibold text-foreground">Sonar</SheetTitle>
+              <SheetTitle className="text-base font-semibold text-foreground"><SonarName /></SheetTitle>
               <SheetDescription className="truncate text-xs text-[var(--ink-600)]">{status}</SheetDescription>
             </div>
             <Tooltip>
@@ -239,7 +240,7 @@ export function CopilotPanel({ open, onClose }: Props) {
           className="shrink-0 border-t border-border p-3"
           onSubmit={(e) => { e.preventDefault(); void send(input); }}
         >
-          <div className="flex items-end gap-2 rounded-xl border border-[var(--ink-300)] bg-card p-1.5 transition-colors focus-within:border-[var(--brand-primary-500)] focus-within:ring-2 focus-within:ring-[var(--brand-primary-100)]">
+          <div className="flex items-end gap-2 rounded-xl border border-[var(--ink-300)] bg-card p-1.5 transition-colors focus-within:border-[var(--ink-900)] focus-within:shadow-[inset_0_0_0_1px_var(--ink-900)]">
             <textarea
               ref={inputRef}
               value={input}
@@ -255,7 +256,7 @@ export function CopilotPanel({ open, onClose }: Props) {
               <ArrowUp size={16} />
             </Button>
           </div>
-          <p className="mt-2 px-1 text-xs text-[var(--ink-600)]">Sonar can be wrong. Check the cited clauses before you act.</p>
+          <p className="mt-2 px-1 text-xs text-[var(--ink-600)]"><SonarName /> can be wrong. Check the cited clauses before you act.</p>
         </form>
       </SheetContent>
     </Sheet>

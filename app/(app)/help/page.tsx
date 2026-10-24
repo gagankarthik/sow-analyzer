@@ -13,6 +13,7 @@ import {
   ArrowRight, Mail, BarChart3,
 } from "@/components/ui/icons";
 
+import { SonarName, withSonar } from "@/components/ui/SonarText";
 /* Plain, useful in-app help: how to get started, what each area does, keyboard
    and where to get more help. */
 
@@ -70,7 +71,7 @@ export default function HelpPage() {
                         {s.title}
                         <Icon size={16} aria-hidden className="shrink-0 text-[var(--ink-400)]" />
                       </h3>
-                      <p className="mt-0.5 max-w-[68ch] text-sm leading-relaxed text-[var(--ink-600)]">{s.body}</p>
+                      <p className="mt-0.5 max-w-[68ch] text-sm leading-relaxed text-[var(--ink-600)]">{withSonar(s.body)}</p>
                     </div>
                   </li>
                 );
@@ -99,7 +100,7 @@ export default function HelpPage() {
         <aside className="min-w-0">
           <Panel id="support" as="h2" title="Support">
             <p className="text-sm leading-relaxed text-[var(--ink-700)]">
-              Ask Sonar in any {noun("project")} about a specific clause, or email the support team.
+              Ask <SonarName /> in any {noun("project")} about a specific clause, or email the support team.
             </p>
             <ul className="mt-3 flex flex-col divide-y divide-border border-t border-border">
               <li className="py-2.5">
