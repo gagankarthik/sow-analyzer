@@ -24,10 +24,10 @@ import type { GovernFeature } from "@/lib/govern/features";
 
 /* ──────────────────────────────────────────────────────────────
    The public site's navigation, defined once. Every product, team and
-   industry item links to its section on the landing page (`/#matrix`,
-   `/#legal-affairs`, `/#research-universities`), where the matching tab
-   opens. The header sheets, the footer and those sections all read from
-   here, so a link and the section it points at cannot drift.
+   industry item links to its own page (`/product/matrix`,
+   `/solutions/legal-affairs`, `/solutions/research-universities`; content
+   in area-pages.ts). The header sheets and the footer read from here, so a
+   link and the page it points at cannot drift.
    ────────────────────────────────────────────────────────────── */
 
 /** `feature`: the item is marked "Coming soon" while that feature is off. */
@@ -87,14 +87,18 @@ const RESOURCE_ITEMS: NavItem[] = [
 /** Where a landing-page section lives, from any page. */
 export const landingHref = (id: string) => `/#${id}`;
 
-const toItems = (sections: readonly Section[]): NavItem[] =>
-  sections.map(({ id, label, description, icon, feature }) => ({ label, description, icon, feature, href: landingHref(id) }));
+/** Each product area, team and industry has its own page. */
+export const productHref = (id: string) => `/product/${id}`;
+export const solutionHref = (id: string) => `/solutions/${id}`;
+
+const toItems = (sections: readonly Section[], href: (id: string) => string): NavItem[] =>
+  sections.map(({ id, label, description, icon, feature }) => ({ label, description, icon, feature, href: href(id) }));
 
 export const NAV_MENUS: NavMenu[] = [
   {
     label: "Product",
     groups: [
-      { label: "Platform", items: toItems(PRODUCT_SECTIONS) },
+      { label: "Platform", items: toItems(PRODUCT_SECTIONS, productHref) },
       { label: "Editions", items: EDITION_ITEMS },
     ],
     feature: {
@@ -107,8 +111,8 @@ export const NAV_MENUS: NavMenu[] = [
   {
     label: "Solutions",
     groups: [
-      { label: "By team", items: toItems(SOLUTION_SECTIONS) },
-      { label: "By industry", items: toItems(INDUSTRY_SECTIONS) },
+      { label: "By team", items: toItems(SOLUTION_SECTIONS, solutionHref) },
+      { label: "By industry", items: toItems(INDUSTRY_SECTIONS, solutionHref) },
     ],
     feature: {
       title: "See your own contract, reviewed",

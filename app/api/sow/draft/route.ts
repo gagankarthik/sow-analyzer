@@ -16,7 +16,8 @@ export async function POST(req: Request) {
   const answers = parseAnswers(gated.body);
   if (!answers.ok) return Response.json({ error: answers.error }, { status: 400 });
 
-  if (!answers.value.title.trim() && !answers.value.scope.trim()) {
+  const scope = answers.value.sections.find((s) => s.key === "scope")?.body ?? "";
+  if (!answers.value.title.trim() && !scope.trim()) {
     return Response.json(
       { error: "Add at least an engagement title and a scope before drafting." },
       { status: 400 },

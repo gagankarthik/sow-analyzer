@@ -6,6 +6,7 @@ import type { GovernFeature } from "@/lib/govern/features";
 import type { EditionFeature } from "@/lib/edition";
 import { EditionOnly } from "@/components/govern/EditionOnly";
 import { SettingsLayout, SettingsSection } from "@/components/settings/SettingsNav";
+import { SettingsGapIcon } from "@/components/settings/settings-gaps";
 import {
   BookMarked,
   Building2,
@@ -109,6 +110,7 @@ function SettingsRow({ item }: { item: NavItem }) {
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
           {item.title}
+          <SettingsGapIcon href={item.href} />
           {item.feature && <FeatureComingSoonBadge feature={item.feature} />}
         </span>
         <span className="mt-0.5 block truncate text-xs text-[var(--ink-500)]">
@@ -135,7 +137,7 @@ function SettingsRow({ item }: { item: NavItem }) {
       className="group flex min-h-11 items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand-primary-600)]"
     >
       {body}
-      <ChevronRight size={16} aria-hidden className="shrink-0 text-[var(--ink-400)] transition-colors duration-150 group-hover:text-[var(--ink-700)] rtl:rotate-180" />
+      <ChevronRight size={16} aria-hidden className="shrink-0 text-[var(--ink-500)] transition-colors duration-150 group-hover:text-[var(--ink-700)] rtl:rotate-180" />
     </Link>
   );
 }

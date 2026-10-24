@@ -366,7 +366,7 @@ function DocInsightBlocks({ doc, classification, loading, failed }: {
                       </span>
                       <span className="mt-1 block text-sm leading-relaxed text-[var(--ink-600)]">{c.summary || "No summary was returned for this clause."}</span>
                     </span>
-                    <ArrowRight size={16} className="mt-1 hidden shrink-0 text-[var(--ink-300)] transition-colors group-hover:text-[var(--brand-primary-600)] sm:block" />
+                    <ArrowRight size={16} className="mt-1 hidden shrink-0 text-[var(--ink-500)] transition-colors group-hover:text-[var(--brand-primary-600)] sm:block" />
                   </Link>
                 </li>
               ))}

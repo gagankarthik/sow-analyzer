@@ -160,7 +160,7 @@ export default function NotificationsPage() {
             </div>
           ) : visible.length === 0 ? (
             <div className="flex flex-col items-center border-y border-border px-5 py-12 text-center">
-              <Bell size={24} aria-hidden className="mb-3 text-[var(--ink-400)]" />
+              <Bell size={24} aria-hidden className="mb-3 text-[var(--ink-500)]" />
               <p className="text-sm font-semibold text-foreground">No notifications</p>
               <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--ink-600)]">
                 Risk findings, renewal dates, failed analyses and pending invitations appear here.

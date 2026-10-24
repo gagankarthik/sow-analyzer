@@ -21,7 +21,7 @@ import {
 } from "@/lib/govern/metrics";
 import { useContracts } from "@/lib/govern/queries";
 import type { Direction } from "@/lib/govern/types";
-import { ContractRow } from "../../home/_components/ContractRow";
+import { ContractRow } from "../../dashboard/_components/ContractRow";
 import { ExportButtons } from "../_components/ExportButtons";
 import { LegendDot, MoneySplitBar, VALUE_FILL } from "../_components/ReportCharts";
 import {

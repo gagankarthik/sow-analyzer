@@ -323,3 +323,21 @@ export function formatCompact(amount: number, currency?: string | null): string 
 export function contractValueText(c: Contract): string {
   return c.value === null ? "No value yet" : fmtMoney(c.value, c.currency)
 }
+
+/** Contracts signed in each of the last `months` calendar months (UTC), oldest
+ *  first, with a short month label: { month: "Jun", signed: 3 }. */
+export function signedByMonth(contracts: Contract[], now: Date, months = 6): { month: string; signed: number }[] {
+  const label = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" })
+  const buckets = Array.from({ length: months }, (_, i) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1 - i), 1))
+    return { key: `${d.getUTCFullYear()}-${d.getUTCMonth()}`, month: label.format(d), signed: 0 }
+  })
+  const index = new Map(buckets.map((b, i) => [b.key, i]))
+  for (const c of contracts) {
+    if (!c.signedAt) continue
+    const d = new Date(c.signedAt)
+    const i = index.get(`${d.getUTCFullYear()}-${d.getUTCMonth()}`)
+    if (i !== undefined) buckets[i].signed++
+  }
+  return buckets.map(({ month, signed }) => ({ month, signed }))
+}

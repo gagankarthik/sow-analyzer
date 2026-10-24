@@ -48,7 +48,7 @@ export default function proxy(req: NextRequest) {
   const authed = isTokenValid(token) || req.cookies.get(SESSION_MARKER_COOKIE)?.value === "1";
 
   if (authed && SIGNED_OUT_ONLY.has(pathname)) {
-    return NextResponse.redirect(new URL("/home", req.nextUrl));
+    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   }
 
   // Signed-out visitors to the workspace go to login, keeping where they were

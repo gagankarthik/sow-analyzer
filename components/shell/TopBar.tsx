@@ -4,7 +4,6 @@ import { SonarIcon } from "@/components/ui/brand-icons";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useNotifications, type NotificationType } from "@/lib/notifications";
-import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
@@ -21,20 +20,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Bell,
-  Search,
   ChevronDown,
+  Search,
   ArrowRight,
   User,
   LogOut,
   Settings,
   Menu,
-  PanelLeft,
   Help,
 } from "@/components/ui/icons";
-import { Kbd } from "@/components/ui/kbd";
-import { useModKeyLabel } from "@/lib/hotkeys";
 import { useAuth, initialsOf } from "@/components/auth/AuthProvider";
 import { useUIStore } from "@/lib/stores/ui";
+import { useGovernOrg } from "@/lib/govern/queries";
 import { useNow } from "@/lib/use-now";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonLine, SkeletonRegion } from "@/components/ds/skeletons";
@@ -49,38 +46,12 @@ type Props = {
 
 /** 40px icon button used across the bar. */
 const ICON_BUTTON =
-  "inline-flex h-9 w-9 max-md:h-11 max-md:w-11 shrink-0 items-center justify-center rounded-md text-[var(--ink-600)] transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "inline-flex size-8 max-md:size-11 shrink-0 items-center justify-center rounded-md text-[var(--ink-700)] transition-colors duration-150 hover:bg-[var(--hover)] hover:text-[var(--ink-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]";
 
 /* ──────────────────────────────────────────────── */
 /*  Search — opens the command palette              */
 /* ──────────────────────────────────────────────── */
 
-/** A compact field-shaped button: the palette holds the search itself. */
-function SearchTrigger() {
-  const setPaletteOpen = useUIStore((s) => s.setPaletteOpen);
-  const mod = useModKeyLabel();
-  return (
-    <button
-      type="button"
-      onClick={() => setPaletteOpen(true)}
-      aria-label="Search"
-      aria-keyshortcuts="Control+K Meta+K /"
-      aria-haspopup="dialog"
-      className={cn(
-        "inline-flex h-11 w-11 shrink-0 items-center justify-center gap-2 rounded-md text-[var(--ink-600)] transition-colors duration-150",
-        "hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        "md:h-8 md:w-[240px] md:justify-start md:border md:border-[var(--ink-200)] md:bg-[var(--ink-50)] md:px-2.5 md:hover:border-[var(--ink-300)] md:hover:bg-card",
-      )}
-    >
-      <Search size={16} aria-hidden className="shrink-0" />
-      <span className="hidden flex-1 truncate text-left text-sm text-[var(--ink-500)] md:block">Search or jump to…</span>
-      <span aria-hidden className="hidden items-center gap-0.5 md:inline-flex">
-        <Kbd>{mod}</Kbd>
-        <Kbd>K</Kbd>
-      </span>
-    </button>
-  );
-}
 
 /* ──────────────────────────────────────────────── */
 /*  Notification bell                               */
@@ -126,15 +97,8 @@ function NotificationBell() {
             >
               <Bell size={16} aria-hidden />
               {unread > 0 && (
-                <span
-                  className={cn(
-                    "absolute top-0 right-0 inline-flex h-[18px] min-w-[18px] items-center justify-center",
-                    "rounded-full bg-[var(--danger)] px-1 text-xs leading-none font-semibold text-white tabular-nums",
-                    "ring-2 ring-card",
-                  )}
-                >
-                  {unread > 9 ? "9+" : unread}
-                </span>
+                // A small dot, as in Plane; the count is in the button's label.
+                <span aria-hidden className="absolute top-1.5 right-1.5 size-2 rounded-full bg-[var(--danger)] ring-2 ring-[var(--frame)]" />
               )}
             </button>
           </DropdownMenuTrigger>
@@ -247,9 +211,9 @@ const ACCOUNT_LINKS = [
 
 /** 40px menu row. Icons inherit the muted ink until the row is focused. */
 const MENU_ROW =
-  "min-h-10 cursor-pointer gap-3 rounded-lg px-2.5 py-2 text-base font-medium [&_svg]:text-[var(--ink-600)]";
+  "min-h-7 cursor-pointer gap-2 rounded-md px-2 py-1 text-[13px] [&_svg]:text-[var(--ink-600)]";
 
-function ProfileMenu() {
+export function ProfileMenu({ compact = false }: { compact?: boolean } = {}) {
   const { user, status, signOut } = useAuth();
 
   const initials = initialsOf(user);
@@ -265,32 +229,33 @@ function ProfileMenu() {
           type="button"
           aria-label={`Account menu for ${displayName}`}
           className={cn(
-            "inline-flex h-9 max-md:h-11 shrink-0 items-center gap-2 rounded-md px-1 md:pr-2",
-            "hover:bg-muted aria-expanded:bg-muted",
+            "inline-flex h-8 max-md:h-11 shrink-0 items-center gap-2 rounded-md px-1",
+            !compact && "md:pr-2",
+            "hover:bg-[var(--hover)] aria-expanded:bg-[var(--pressed)]",
             "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           )}
         >
-          <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--navy-700)] text-xs font-semibold uppercase text-white">
+          <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-800)] text-[11px] font-semibold uppercase text-white">
             {initials}
           </span>
-          <span className="hidden max-w-[140px] truncate text-sm font-semibold text-foreground md:block">
+          <span className={cn("hidden max-w-[140px] truncate text-sm font-semibold text-foreground", !compact && "md:block")}>
             {displayName}
           </span>
-          <ChevronDown size={12} aria-hidden className="hidden text-muted-foreground md:block" />
+          <ChevronDown size={12} aria-hidden className={cn("hidden text-muted-foreground", !compact && "md:block")} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[min(18rem,calc(100vw-1.5rem))] p-0">
+      <DropdownMenuContent align="end" sideOffset={6} className="w-[min(16rem,calc(100vw-1.5rem))] p-0">
         {/* Identity */}
-        <DropdownMenuLabel className="flex items-center gap-3 border-b border-border bg-[var(--panel)] px-4 py-3.5">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--navy-700)] text-sm font-semibold uppercase text-white">
+        <DropdownMenuLabel className="flex items-center gap-2.5 border-b border-[var(--ink-200)] px-3 py-2.5">
+          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand-primary-800)] text-[12px] font-semibold uppercase text-white">
             {initials}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-base font-semibold text-foreground">{displayName}</span>
+            <span className="block truncate text-[13px] font-semibold text-[var(--ink-900)]">{displayName}</span>
             {status === "loading" && !user?.email ? (
               <SkeletonLine text="text-sm" width="w-40" barClassName="bg-[var(--ink-200)]" />
             ) : (
-              <span className="block truncate text-sm font-normal text-[var(--ink-600)]" title={email}>{email}</span>
+              <span className="block truncate text-[12px] font-normal text-[var(--ink-600)]" title={email}>{email}</span>
             )}
             {group && (
               <span className="mt-1 inline-flex max-w-full items-center truncate rounded-md border border-border bg-card px-1.5 py-0.5 text-xs font-medium capitalize text-[var(--ink-700)]">
@@ -300,7 +265,7 @@ function ProfileMenu() {
           </span>
         </DropdownMenuLabel>
 
-        <DropdownMenuGroup className="p-1.5">
+        <DropdownMenuGroup className="p-1">
           {ACCOUNT_LINKS.map(({ label, href, icon: Icon }) => (
             <DropdownMenuItem key={href} asChild className={MENU_ROW}>
               <Link href={href}>
@@ -313,12 +278,12 @@ function ProfileMenu() {
 
 
         <DropdownMenuSeparator className="mx-0 my-0" />
-        <DropdownMenuGroup className="p-1.5">
+        <DropdownMenuGroup className="p-1">
           <DropdownMenuItem
             variant="destructive"
             onSelect={() => signOut()}
             disabled={status !== "authenticated"}
-            className="min-h-10 cursor-pointer gap-3 rounded-lg px-2.5 py-2 text-base font-medium"
+            className="min-h-7 cursor-pointer gap-2 rounded-md px-2 py-1 text-[13px]"
           >
             <LogOut size={16} />
             Sign out
@@ -334,19 +299,17 @@ function ProfileMenu() {
 /* ──────────────────────────────────────────────── */
 
 export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
-  const sidebarCollapsed = useUIStore((st) => st.sidebarCollapsed);
-  const toggleSidebar = useUIStore((st) => st.toggleSidebar);
 
   return (
     <header
       className={cn(
-        "h-14 sticky top-0 z-30 flex items-center gap-1.5 sm:gap-3",
-        "px-2 sm:px-4",
-        "bg-card border-b border-border",
+        "h-11 shrink-0 sticky top-0 z-30 flex items-center gap-2",
+        "px-2 sm:px-3.5",
+        "bg-[var(--frame)]",
       )}
     >
-      {/* Left slot — the mobile drawer button below `lg`, the sidebar
-          collapse toggle from `lg` up. Never both. */}
+      {/* The mobile drawer button below `lg`. (The sidebar's collapse button
+          lives in the sidebar and, once collapsed, in each page header.) */}
       <button
         type="button"
         aria-label="Open navigation"
@@ -355,47 +318,69 @@ export function TopBar({ onMenuClick, onCopilotToggle }: Props) {
       >
         <Menu size={20} aria-hidden />
       </button>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-pressed={sidebarCollapsed}
-            className={cn(ICON_BUTTON, "hidden lg:inline-flex")}
-          >
-            <PanelLeft size={16} aria-hidden />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>
-          {sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        </TooltipContent>
-      </Tooltip>
 
-      <div className="flex-1" />
+      <Workspace />
+      <div className="flex flex-1 justify-center px-2">
+        <SearchField />
+      </div>
 
-      {/* Right cluster: search (opens the command palette), Sonar,
-          notifications, account. */}
+      {/* Right cluster: Sonar, notifications, help, your account. */}
       <div className="flex min-w-0 items-center justify-end gap-0.5 sm:gap-1.5">
-        <SearchTrigger />
         {/* Sonar, the assistant: a small pill next to search, with a turning rainbow edge. */}
         {onCopilotToggle && (
-          <button
-            type="button"
-            onClick={onCopilotToggle}
+          <Link
+            href="/sonar"
             aria-label="Ask Sonar"
-            className="sonar-button mx-1 inline-flex h-9 max-md:h-11 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
+            className="sonar-button mr-1 inline-flex h-8 max-md:h-11 shrink-0 items-center gap-1.5 px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] focus-visible:ring-offset-2 active:scale-[0.98]"
           >
             <SonarIcon size={16} aria-hidden className="shrink-0 text-[var(--brand-primary-600)]" />
             <span className="hidden sm:inline">Ask <SonarName /></span>
-          </button>
+          </Link>
         )}
         <NotificationBell />
-
-        <Separator orientation="vertical" className="!h-6 mx-1 hidden sm:block" />
-
-        <ProfileMenu />
+        <Link href="/help" aria-label="Help" className={cn(ICON_BUTTON, "hidden sm:inline-flex")}>
+          <Help size={16} aria-hidden />
+        </Link>
+        <ProfileMenu compact />
       </div>
     </header>
+  );
+}
+
+/* ──────────────────────────────────────────────── */
+/*  Workspace and search                            */
+/* ──────────────────────────────────────────────── */
+
+/** The organization this app serves (one per deployment): tile and name.
+ *  The Blue-IQ logo sits at the top of the sidebar. */
+function Workspace() {
+  const org = useGovernOrg().data?.name ?? null;
+  return (
+    <Link
+      href="/dashboard"
+      className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-[var(--hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)]"
+    >
+      <span aria-hidden className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary-800)] text-[11px] font-bold text-white">
+        {(org ?? "B").trim()[0]?.toUpperCase()}
+      </span>
+      <span className="hidden max-w-[220px] truncate text-[14px] font-medium text-[var(--ink-900)] sm:block">{org ?? "Your organization"}</span>
+    </Link>
+  );
+}
+
+/** Search: looks like a field, opens the command palette (Ctrl/Cmd+K). */
+function SearchField() {
+  const setPaletteOpen = useUIStore((s) => s.setPaletteOpen);
+  return (
+    <button
+      type="button"
+      onClick={() => setPaletteOpen(true)}
+      aria-label="Search"
+      className="inline-flex h-7 w-full max-w-[364px] items-center gap-2 rounded-lg border border-[var(--ink-300)] bg-card px-2.5 text-[13px] text-[var(--ink-600)] transition-colors hover:border-[var(--ink-400)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-600)] max-sm:w-8 max-sm:justify-center max-sm:px-0"
+    >
+      <Search size={14} aria-hidden className="shrink-0" />
+      <span className="truncate max-sm:sr-only">Search</span>
+      <span className="ml-auto text-[11px] text-[var(--ink-500)] max-sm:hidden">Ctrl K</span>
+    </button>
   );
 }

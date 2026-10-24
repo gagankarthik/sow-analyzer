@@ -20,18 +20,19 @@ import {
 } from "./contract-intake";
 
 export function ContractIntakePanel({
-  values, onChange, lastApplied,
+  values, onChange, lastApplied, defaultOpen = false,
 }: {
   values: IntakeValues;
   onChange: (next: IntakeValues) => void;
   /** File the previous details went to, shown once they are cleared. */
   lastApplied: string | null;
+  defaultOpen?: boolean;
 }) {
   const terms = useEditionTerms();
   const agreementTypes = useAgreementTypes();
   const uid = useId();
   const id = (n: string) => `${uid}-${n}`;
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const set = <K extends keyof IntakeValues>(k: K, v: IntakeValues[K]) => onChange({ ...values, [k]: v });
   const valueError = expectedValueError(values);
   const filled = hasIntakeDetails(values);

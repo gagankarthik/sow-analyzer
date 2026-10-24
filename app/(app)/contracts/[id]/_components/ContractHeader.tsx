@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { NextStepPrimary } from "./NextStepPanel";
 import { StageBar } from "./StageBar";
 
+import { Breadcrumbs } from "@/components/shell/Breadcrumbs";
+import { SidebarToggle } from "@/components/shell/SidebarToggle";
 const CLOSED = new Set(["rejected", "closed"]);
 const href = (id: string) => `/contracts/${encodeURIComponent(id)}`;
 
@@ -96,17 +98,16 @@ export function ContractHeader({ contract: c, openIssues, onUploadRevision, chil
 
   return (
     <div className="border-b border-[var(--ink-200)] bg-card">
+      {/* Plane's page header row: where you are, ending in this contract. */}
+      <div className="flex min-h-11 items-center gap-2 border-b border-[var(--ink-200)] px-[1.35rem] py-1.5">
+        <SidebarToggle inHeader />
+        <Breadcrumbs current={title} />
+      </div>
       <div className="app-container flex flex-col gap-5 pt-5">
-        <Link
-          href="/contracts"
-          className="inline-flex min-h-6 w-fit items-center gap-1.5 rounded-sm text-body font-semibold text-[var(--brand-primary-700)] hover:underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary-600)] max-md:min-h-11"
-        >
-          <ChevronLeft size={14} aria-hidden className="rtl:rotate-180" />Contracts
-        </Link>
 
         <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
           <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg-primary [overflow-wrap:anywhere]">{title}</h1>
+            <h1 className="text-xl font-medium tracking-tight text-fg-primary [overflow-wrap:anywhere]">{title}</h1>
             {party && <p className="text-base text-[var(--ink-600)]">{party}</p>}
           </div>
           <div className="flex shrink-0 flex-wrap items-start gap-2">

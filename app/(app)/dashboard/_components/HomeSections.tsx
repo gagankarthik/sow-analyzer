@@ -14,7 +14,8 @@ import {
 } from "@/components/ds/skeletons";
 import { STAGE_LABEL, plural } from "@/lib/govern/labels";
 import type { StageQueue } from "@/lib/govern/metrics";
-import { STAGE_BG, STAGE_COLOR } from "@/lib/govern/stage-style";
+import { STAGE_COLOR } from "@/lib/govern/stage-style";
+import { Donut } from "@/components/ds/charts/Donut";
 import type { Contract } from "@/lib/govern/types";
 import { displayTitle } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ import { TEXT_LINK } from "../../reports/_components/ReportKit";
 import { actionTask, attentionSentence, contractHref, dueText, type DueTone } from "./attention";
 
 import { SonarName } from "@/components/ui/SonarText";
+import { SidebarToggle } from "@/components/shell/SidebarToggle";
 /* ── Shared frame ────────────────────────────────────────────────────────── */
 
 export function Panel({
@@ -63,7 +65,7 @@ export function Panel({
 }
 
 /** A panel's "nothing here" state: quiet grey (nothing wrong is not green). */
-function PanelEmpty({ title, body }: { title: string; body: string }) {
+export function PanelEmpty({ title, body }: { title: string; body: string }) {
   return (
     <div className="px-4 py-5">
       <p className="text-sm font-medium text-foreground">{title}</p>
@@ -112,14 +114,13 @@ const TODAY = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long",
 export function HomeHeader({ title, control }: { title: string; control?: React.ReactNode }) {
   const [today] = useState(() => TODAY.format(new Date()));
   return (
-    <div className="app-container pt-5 md:pt-6">
-      <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-[-0.01em] text-foreground">{title}</h1>
-          <p suppressHydrationWarning className="mt-0.5 text-sm text-[var(--ink-600)]">{today}</p>
-        </div>
-        {control}
+    <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[var(--ink-200)] bg-card px-[1.35rem] py-1.5">
+      <div className="flex min-w-0 items-center gap-2 text-[13px] font-medium">
+        <SidebarToggle inHeader />
+        <h1 className="px-1 text-[var(--ink-900)]">{title}</h1>
+        <span suppressHydrationWarning className="text-[var(--ink-600)]">{today}</span>
       </div>
+      {control}
     </div>
   );
 }
@@ -192,7 +193,6 @@ function ActionRow({ c }: { c: Contract }) {
 /** One row per step before signature: how many sit there, and how many are past target. */
 export function PipelinePanel({ stages, className }: { stages: StageQueue[]; className?: string }) {
   const open = stages.reduce((s, q) => s + q.count, 0);
-  const max = Math.max(0, ...stages.map((q) => q.count));
   return (
     <DsPanel
       id="pipeline"
@@ -206,34 +206,25 @@ export function PipelinePanel({ stages, className }: { stages: StageQueue[]; cla
       {open === 0 ? (
         <PanelEmpty title="No open contracts" body="Contracts appear here from draft until they are signed." />
       ) : (
-        <ul className="divide-y divide-border">
-          {stages.map((q) => (
-            <li key={q.stage}>
-              <Link
-                href={`/reports/bottlenecks#stage-${q.stage}`}
-                className="grid min-h-11 grid-cols-[10rem_minmax(0,1fr)_2.5rem] -mx-2 items-center gap-x-3 gap-y-1 rounded-sm px-2 py-2 text-sm transition-colors duration-150 hover:bg-[var(--ink-50)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary-300)] sm:grid-cols-[11.5rem_minmax(0,1fr)_2.5rem_8rem]"
-              >
-                <span className="flex min-w-0 items-center gap-2 font-semibold text-foreground">
-                  <span aria-hidden className={cn("size-2.5 shrink-0 rounded-sm", STAGE_BG[q.stage])} />
-                  <span className="truncate">{STAGE_LABEL[q.stage]}</span>
-                </span>
-                <svg aria-hidden className="h-2.5 w-full" preserveAspectRatio="none">
-                  <rect x="0" y="0" width="100%" height="10" rx="5" fill="var(--ink-100)" />
-                  {q.count > 0 && <rect x="0" y="0" width={`${(q.count / max) * 100}%`} height="10" rx="5" fill={STAGE_COLOR[q.stage]} />}
-                </svg>
-                <span className="text-right font-semibold tabular-nums text-foreground">{q.count}</span>
-                <span
-                  className={cn(
-                    "col-span-3 font-semibold tabular-nums sm:col-span-1 sm:text-right",
-                    q.overdue > 0 ? "text-[var(--danger-fg)]" : q.count > 0 ? "text-[var(--success-fg)]" : "text-[var(--ink-500)]",
-                  )}
-                >
-                  {q.overdue > 0 ? `${q.overdue} past target` : q.count > 0 ? "On track" : "None"}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-4 py-2">
+          {/* Part-to-whole: where the open contracts sit, in stage colours. */}
+          <Donut
+            slices={stages.map((q) => ({ key: q.stage, label: STAGE_LABEL[q.stage], value: q.count, color: STAGE_COLOR[q.stage] }))}
+            totalLabel="Open"
+            size={148}
+          />
+          {stages.some((q) => q.overdue > 0) && (
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3 text-[13px]">
+              {stages.filter((q) => q.overdue > 0).map((q) => (
+                <li key={q.stage}>
+                  <Link href={`/reports/bottlenecks#stage-${q.stage}`} className="font-medium text-[var(--danger-fg)] hover:underline underline-offset-2">
+                    {q.overdue} past target in {STAGE_LABEL[q.stage].toLowerCase()}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </DsPanel>
   );
@@ -372,19 +363,6 @@ export function HomePageSkeleton() {
         <SkeletonLine text="text-sm" width="w-40" className="mt-0.5" />
       </div>
       <div className="app-container app-page">
-        <div aria-hidden className="scrollbar-none flex gap-6 overflow-hidden border-b border-border">
-          {["Overview", "Risk and documents"].map((t, i) => (
-            <span
-              key={t}
-              className={cn(
-                "-mb-px inline-flex h-10 shrink-0 items-center border-b-2 text-sm font-medium whitespace-nowrap max-md:h-11",
-                i === 0 ? "border-[var(--brand-primary-600)] font-semibold text-foreground" : "border-transparent text-[var(--ink-600)]",
-              )}
-            >
-              {t}
-            </span>
-          ))}
-        </div>
         <div className="-mt-2 flex flex-col gap-6">
           <HomeSkeleton />
         </div>

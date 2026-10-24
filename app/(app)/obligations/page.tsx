@@ -35,7 +35,7 @@ import {
 import { governKeys, useObligations, useCanEditContracts } from "@/lib/govern/queries";
 import type { ObligationInput, PortfolioObligation } from "@/lib/govern/types";
 import { cn } from "@/lib/utils";
-import { KpiStrip, type Kpi } from "../home/_components/HomeSections";
+import { KpiStrip, type Kpi } from "../dashboard/_components/HomeSections";
 import { ObligationPreview } from "./_components/ObligationPreview";
 import { DUE_SOON_DAYS, displayTitle } from "@/lib/format";
 import { StatusPill as DsStatusPill } from "@/components/ds/StatusPill";

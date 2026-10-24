@@ -144,16 +144,18 @@ export const WorkflowIcon = createIcon(
   </>,
 );
 
-/** Renewals: a calendar whose date area holds a turning cycle. */
+/** Renewals: a "repeating event". A plain calendar whose bottom-right
+ *  corner is left open for a three-quarter turn ending in an arrowhead,
+ *  so nothing is crammed inside the date area and it reads at 16px. */
 export const RenewalsIcon = createIcon(
   "RenewalsIcon",
   <>
-    <path d="M8 3v3" />
-    <path d="M16 3v3" />
-    <rect x="3" y="5" width="18" height="16" rx="2" />
-    <path d="M3 9.5h18" />
-    <path d="M12 12.5a2.75 2.75 0 1 0 2.75 2.75" />
-    <path d="M13.25 16.75l1.5-1.5 1.5 1.5" />
+    <path d="M8 3v4" />
+    <path d="M16 3v4" />
+    <path d="M12 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5" />
+    <path d="M3 10h18" />
+    <path d="M18 14.5a3.5 3.5 0 1 1-3.5 3.5" />
+    <path d="M13 19.5l1.5-1.5 1.5 1.5" />
   </>,
 );
 

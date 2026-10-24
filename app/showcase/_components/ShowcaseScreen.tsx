@@ -27,7 +27,7 @@ import {
 } from "@/lib/govern/__fixtures__/showcase";
 import { governKeys } from "@/lib/govern/queries";
 import { documentKeys } from "@/lib/queries/documents";
-import HomePage from "@/app/(app)/home/page";
+import HomePage from "@/app/(app)/dashboard/page";
 import WorkflowPage from "@/app/(app)/workflow/page";
 import ContractPage from "@/app/(app)/contracts/[id]/page";
 import ContractsPage from "@/app/(app)/contracts/page";

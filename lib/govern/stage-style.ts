@@ -51,3 +51,15 @@ export const STAGE_COLOR: Record<Stage, string> = {
   renewal: "var(--stage-renewal)",
   expired: "var(--stage-expired)",
 }
+
+/** The stage's colour as currentColor: stage icons draw with it. */
+export const STAGE_TEXT: Record<Stage, string> = {
+  draft: "text-[var(--stage-draft)]",
+  review: "text-[var(--stage-review)]",
+  negotiation: "text-[var(--stage-negotiation)]",
+  approval: "text-[var(--stage-approval)]",
+  signed: "text-[var(--stage-signed)]",
+  active: "text-[var(--stage-active)]",
+  renewal: "text-[var(--stage-renewal)]",
+  expired: "text-[var(--stage-expired)]",
+}

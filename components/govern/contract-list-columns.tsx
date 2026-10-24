@@ -30,7 +30,7 @@ export const CONTRACT_LIST_COLUMNS: DataTableColumn<Contract>[] = [
     ),
   },
   {
-    id: "stage", header: "Stage", card: "status", className: "w-56",
+    id: "stage", header: "Stage", card: "status", className: "w-52",
     sortValue: (c) => STAGES.indexOf(c.stage),
     exportValue: (c) => (c.state === "rejected" ? "Rejected" : STAGE_LABEL[c.stage]),
     cell: (c) => <StageMeter contract={c} />,

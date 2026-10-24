@@ -254,7 +254,7 @@ function PaletteBody({
                   <div role="presentation" className="flex h-8 items-center justify-between px-4">
                     <span id={headId} className="text-xs font-medium text-[var(--ink-500)]">
                       {g.label}
-                      <span className="ml-1.5 tabular-nums text-[var(--ink-400)]" aria-label={`${g.count} results`}>{g.count}</span>
+                      <span className="ml-1.5 tabular-nums text-[var(--ink-500)]" aria-label={`${g.count} results`}>{g.count}</span>
                     </span>
                     {truncated && (
                       <button

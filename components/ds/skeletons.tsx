@@ -166,7 +166,7 @@ export function TableSkeleton({
   const headCell = cn(
     "border-b border-border-default whitespace-nowrap",
     flush
-      ? "h-[38px] border-t bg-surface-canvas text-[12px] font-normal text-[var(--ink-600)]"
+      ? "h-[38px] border-t bg-surface-sunken text-[12px] font-normal text-[var(--ink-700)]"
       : "h-(--table-header-height) bg-surface-sunken text-caption font-semibold text-fg-secondary",
   );
   const lines = Array.from({ length: rows }, (_, i) => i);

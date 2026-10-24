@@ -109,15 +109,15 @@ export function LeaderHome({ contracts, attention, summary, currency }: {
         ]}
       />
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <NeedsActionPanel contracts={attention} href="/contracts?view=in-progress" className="lg:col-span-5" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <NeedsActionPanel contracts={attention} href="/contracts?view=in-progress" className="h-full" />
 
         <ListPanel
           id="stuck"
           as="h2"
           title="Running late"
           meta={stuck.length || undefined}
-          className="lg:col-span-7"
+          className="h-full"
           actions={<SeeAll href="/reports/bottlenecks" label="Bottlenecks" />}
           footer={stuck.length > STUCK_ROWS ? <SeeAll href="/contracts?view=overdue" label={`View all ${stuck.length}`} /> : undefined}
         >

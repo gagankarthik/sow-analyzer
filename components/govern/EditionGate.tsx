@@ -24,7 +24,7 @@ export function EditionGate({ feature, children }: { feature: EditionFeature; ch
       title="Not part of your edition"
       description="Not in your edition. An admin can change it in Settings → Organization."
     >
-      <Button asChild size="lg"><Link href="/home">Go to home</Link></Button>
+      <Button asChild size="lg"><Link href="/dashboard">Go to Dashboard</Link></Button>
     </StatePanel>
   );
 }

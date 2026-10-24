@@ -42,7 +42,7 @@ import {
   useProject, useProjectsSync, refreshProjects, loadProject, removeDocFromProject, renameProject, deleteProject,
   can, projectMembers, projectOwnerEmail, type LocalProject,
 } from "@/lib/projects-store";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { InviteDialog } from "@/components/team/InviteDialog";
 import { ProjectMemberList } from "@/components/team/ProjectMemberList";
@@ -104,6 +104,7 @@ const DOC_STATUS_LABEL = { ready: "Ready", analyzing: "Analyzing", failed: "Fail
 
 type AggClause = ApiClause & { _docId: string; _docTitle: string };
 type TabId = "overview" | "sow" | "amendments" | "timeline" | "team" | "documents";
+const TAB_IDS: TabId[] = ["overview", "sow", "amendments", "timeline", "team", "documents"];
 
 type View = {
   project: LocalProject;
@@ -253,7 +254,13 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   }
   // Open on the Overview (project summary/rollup); the SOW clause details are
   // one tab away.
-  const [tab, setTab] = useState<TabId>("overview");
+  // The open tab is in the address (?tab=…), so the sidebar and links can
+  // open a project on a given section.
+  const search = useSearchParams();
+  const pathname = usePathname();
+  const tabParam = search.get("tab");
+  const tab: TabId = TAB_IDS.includes(tabParam as TabId) ? (tabParam as TabId) : "overview";
+  const setTab = (t: TabId) => router.replace(t === "overview" ? pathname : `${pathname}?tab=${t}`, { scroll: false });
   const [toDelete, setToDelete] = useState<ApiDocument | null>(null);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [confirmReanalyze, setConfirmReanalyze] = useState(false);

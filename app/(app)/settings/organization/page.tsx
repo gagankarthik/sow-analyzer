@@ -149,7 +149,7 @@ export default function OrganizationSetupPage() {
                       toast.success(`${EDITION_LABEL[e]} edition is on for everyone in ${org.name || "your organization"}`, {
                         description: "The menu, agreement types and wording now follow it.",
                         duration: 10_000,
-                        action: { label: "Go to Home", onClick: () => router.push("/home") },
+                        action: { label: "Go to Dashboard", onClick: () => router.push("/dashboard") },
                       });
                     },
                     (err: unknown) => {

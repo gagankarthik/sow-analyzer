@@ -96,7 +96,7 @@ export function AssignmentRules({
                       <label htmlFor={`${uid}-${i}-dept`} className="text-sm font-medium text-[var(--ink-600)]">Department</label>
                       <Input id={`${uid}-${i}-dept`} value={r.department} onChange={(e) => set(r.id, { department: e.target.value })} placeholder="* for any" autoComplete="off" />
                     </div>
-                    <ArrowRight size={16} aria-hidden className="mb-3 hidden text-[var(--ink-400)] md:block" />
+                    <ArrowRight size={16} aria-hidden className="mb-3 hidden text-[var(--ink-500)] md:block" />
                     <div className="grid gap-1.5">
                       <label htmlFor={`${uid}-${i}-who`} className="text-sm font-medium text-[var(--ink-600)]">Goes to</label>
                       <Select

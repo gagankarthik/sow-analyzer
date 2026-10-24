@@ -91,7 +91,12 @@ function Shell({ children }: { children: React.ReactNode }) {
   }, [mobileNav]);
 
   return (
-    <div className="flex w-full min-h-screen bg-background">
+    <div className="app-frame flex min-h-screen w-full flex-col bg-[var(--frame)] text-[13px] lg:h-dvh lg:min-h-0 lg:overflow-hidden">
+      <TopBar
+        onCopilotToggle={toggleCopilot}
+        onMenuClick={() => setMobileNav(true)}
+      />
+      <div className="flex min-h-0 w-full min-w-0 flex-1 bg-background lg:mx-2 lg:mb-2 lg:w-auto lg:overflow-hidden lg:rounded-lg lg:border lg:border-[var(--ink-200)]">
       {/* Keyboard users can jump straight to content, bypassing the nav (WCAG 2.4.1). */}
       <a
         href="#main-content"
@@ -104,12 +109,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         onMobileClose={() => setMobileNav(false)}
         onOpenCopilot={toggleCopilot}
       />
-      <div className="flex-1 min-w-0 flex flex-col">
-        <TopBar
-          onCopilotToggle={toggleCopilot}
-          onMenuClick={() => setMobileNav(true)}
-        />
-        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 focus:outline-none">{children}</main>
+      <main id="main-content" tabIndex={-1} className="relative min-w-0 flex-1 focus:outline-none lg:overflow-y-auto">{children}</main>
       </div>
       {copilotMounted && <CopilotPanel open={copilotOpen} onClose={() => setCopilotOpen(false)} />}
       <CommandPalette />

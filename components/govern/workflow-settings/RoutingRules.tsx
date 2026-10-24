@@ -80,7 +80,7 @@ export function RoutingRules({
               <li key={r.id} className="flex flex-col gap-3 px-4 py-4 sm:px-5 md:flex-row md:items-start md:gap-5">
                 <span className={cn(
                   "hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border md:inline-flex",
-                  r.enabled ? "border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]" : "border-border bg-[var(--panel)] text-[var(--ink-400)]",
+                  r.enabled ? "border-[var(--brand-primary-200)] bg-[var(--brand-primary-50)] text-[var(--brand-primary-600)]" : "border-border bg-[var(--panel)] text-[var(--ink-500)]",
                 )}>
                   <Route size={16} aria-hidden />
                 </span>

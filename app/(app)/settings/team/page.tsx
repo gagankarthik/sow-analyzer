@@ -231,7 +231,7 @@ export default function TeamSettingsPage() {
             </div>
           ) : teammates === 0 ? (
             <div className="flex flex-col items-start px-4 py-10">
-              <Users size={24} aria-hidden className="mb-3 text-[var(--ink-400)]" />
+              <Users size={24} aria-hidden className="mb-3 text-[var(--ink-500)]" />
               <p className="text-sm font-semibold text-foreground">It&apos;s just you so far</p>
               <p className="mt-1 max-w-md text-sm leading-relaxed text-[var(--ink-600)]">
                 {canInvite

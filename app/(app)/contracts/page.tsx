@@ -1,32 +1,39 @@
 "use client";
 
-// Contracts: every agreement as one list, top to bottom: the title with the
-// one primary action (Upload); the view tabs with counts and, on the same
-// row, the Table / Board switch (the board is /workflow, the same list by
-// stage); one filter row (search, Type, Owner, Risk, More filters); then the
-// table grouped by stage, with a totals footer. A row opens the preview;
-// selected rows get the bulk bar (edit, assign, Excel, CSV). The open view
-// is the URL (?view=), and so is the search (?q=).
+// Contracts: every agreement as one list. One header row: the title and the
+// view picker (the open view and its count; defaults, saved and quick views,
+// "New view"), then the search, the layout switch (List, Board,
+// Spreadsheet), Filters, Display, Export and Upload. List (the default) is a
+// compact row per contract with property chips; Spreadsheet is the table with
+// columns; Board is /workflow, the same list by stage. A row opens the
+// preview; selected rows get the bulk bar (edit, assign, Excel, CSV). The open
+// view is the URL (?view=), and so are the search (?q=) and the layout
+// (?layout=list for the compact list; the table with headings is the default).
 //
 // Saved views come from /views. If that API is missing or failing, presets
 // and local settings keep working and the views menu says so quietly.
 
+import * as React from "react";
 import { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { DataTable, type DataTableGroupBy } from "@/components/ds/DataTable";
+import { DataTable, orderColumns, type DataTableGroupBy } from "@/components/ds/DataTable";
 import { TableFooterSkeleton } from "@/components/ds/skeletons";
 import { ConfirmDialog } from "@/components/ds/ConfirmDialog";
 import { sortRows, useDensity } from "@/components/ds/data-table-hooks";
-import { LayoutSwitch } from "@/components/ds/ViewTabs";
+import { ColumnSettings } from "@/components/ds/ColumnSettings";
+import { LayoutToggle, ListHeader } from "@/components/ds/ListHeader";
+import { SelectionBar } from "@/components/ds/SelectionBar";
+import { inDateRange, type DateRange } from "@/components/ds/DateRangeFilter";
 import { Button } from "@/components/ui/button";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { Plus } from "@/components/ui/icons";
+import { Download, Kanban, LayoutList, Plus, Table2 } from "@/components/ui/icons";
+import { AssignDialog, availableActions } from "@/components/govern/actions";
 import { ContractPreview } from "@/components/govern/ContractPreview";
+import { RiskBars } from "@/components/govern/PropertyChip";
+import { StageIcon } from "@/components/govern/StageIcon";
 import { CONTRACT_LIST_COLUMNS, CONTRACT_LIST_COLUMN_IDS, CONTRACT_LIST_DEFAULT_HIDDEN } from "@/components/govern/contract-list-columns";
-import { ColumnSettings } from "@/components/ds/ColumnSettings";
-import { orderColumns } from "@/components/ds/DataTable";
 import { csvFileName, downloadCsv, rowsToCsv } from "@/lib/csv";
 import { contractsTable, downloadExcel } from "@/lib/govern/export";
 import { applyFilters, countActiveRules, matchesFilters, parseFilterGroup } from "@/lib/govern/filter-rules";
@@ -35,24 +42,26 @@ import {
   sameSettings, settingsFromConfig, splitSavedViews, type ColumnDefaults, type ListSettings,
 } from "@/lib/govern/list-views";
 import { listTotals } from "@/lib/govern/list-totals";
+import { visibleProperties } from "@/lib/govern/list-properties";
 import { STAGES, STAGE_LABEL, plural } from "@/lib/govern/labels";
-import { STAGE_BG } from "@/lib/govern/stage-style";
 import {
   useContracts, useDeleteView, useGovernFeature, useGovernMe, useOrgCurrency, useSavedViews, useUpdateView,
 } from "@/lib/govern/queries";
-import { cn } from "@/lib/utils";
 import type { Contract, SavedView, Stage } from "@/lib/govern/types";
 import type { ContractView } from "@/lib/govern/views";
+import type { RiskLevel } from "@/lib/types";
 import { BulkActions } from "./_components/BulkActions";
 import { BulkEditSheet } from "./_components/BulkEditSheet";
-import { ListFooter } from "./_components/ListFooter";
-import { ListToolbar } from "./_components/ListToolbar";
+import { ContractList, type ListGrouping } from "./_components/ContractList";
 import { ContractsListSkeleton } from "./_components/ContractsListSkeleton";
+import { DisplayPanel } from "./_components/DisplayPanel";
+import { ExportMenu } from "./_components/ExportMenu";
+import { FiltersPanel } from "./_components/FiltersPanel";
+import { SearchField } from "@/components/ds/PanelControls";
+import { ListFooter } from "./_components/ListFooter";
 import { SaveViewDialog, type SaveViewMode } from "./_components/SaveViewDialog";
 import { ViewPicker } from "./_components/ViewPicker";
-import { ViewTabs, type ViewTab } from "./_components/ViewTabs";
 import { useStoredColumns } from "./_components/use-stored-columns";
-import { DateRangeFilter, inDateRange, type DateRange } from "@/components/ds/DateRangeFilter";
 
 const DEFAULTS: ColumnDefaults = {
   ids: CONTRACT_LIST_COLUMN_IDS,
@@ -60,21 +69,31 @@ const DEFAULTS: ColumnDefaults = {
   sort: { key: "days", dir: "desc" },
 };
 const SORT_OPTIONS = CONTRACT_LIST_COLUMNS.filter((c) => c.sortValue).map((c) => ({ id: c.id, label: c.header }));
-const MAX_VIEW_TABS = 5;
 const TAB_IDS = new Set(LIST_TABS.map((t) => t.id));
 
-/** Grouped by stage (one of the Group by choices): workflow order, a 10px
- *  square in the stage's colour, the stage's name, then the count. */
+/** Grouped by stage in the spreadsheet: workflow order, the stage icon, the
+ *  stage's name, then the count. */
 const BY_STAGE: DataTableGroupBy<Contract> = {
   key: (c) => c.stage,
   order: STAGES,
   label: (k) => (
     <span className="inline-flex items-center gap-2 text-[14px] font-semibold text-[var(--ink-900)]">
-      <span aria-hidden className={cn("size-2.5 shrink-0 rounded-[2px]", STAGE_BG[k as Stage] ?? "bg-[var(--ink-400)]")} />
+      <StageIcon stage={k as Stage} />
       {STAGE_LABEL[k as Stage] ?? k}
     </span>
   ),
 };
+
+/** A group bar's icon in the list layout: the stage icon, or risk bars. */
+function stageGroupIcon(key: string) {
+  return <StageIcon stage={key as Stage} />;
+}
+function riskGroupIcon(key: string) {
+  return <RiskBars risk={key === "none" ? null : (key as RiskLevel)} />;
+}
+function groupIcon(groupBy: string | null): ((key: string) => React.ReactNode) | undefined {
+  return groupBy === "stage" ? stageGroupIcon : groupBy === "risk" ? riskGroupIcon : undefined;
+}
 
 export default function ContractsPage() {
   return (
@@ -130,6 +149,7 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
   const [now] = useState(() => Date.now());
   // Received date: a quick filter on top of the view, not saved with it.
   const [received, setReceived] = useState<DateRange | null>(null);
+  const layout: "list" | "spreadsheet" = params.get("layout") === "list" ? "list" : "spreadsheet";
 
   /* ── Settings: a saved view carries its own; presets use this browser's layout ── */
   const [storedDensity, setStoredDensity] = useDensity("contracts-list-density", "comfortable");
@@ -176,9 +196,12 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
   }, [searched, settings.sort]);
   const totals = useMemo(() => listTotals(rows, currency), [rows, currency]);
 
-  /* ── Views: tabs, menu, counts ── */
+  /* ── Views: picker, counts, layout links ── */
   const { mine, shared } = useMemo(() => splitSavedViews(savedViews, me), [savedViews, me]);
-  const hrefFor = useCallback((id: string) => `${pathname}?view=${encodeURIComponent(id)}`, [pathname]);
+  const hrefFor = useCallback(
+    (id: string) => `${pathname}?view=${encodeURIComponent(id)}${layout === "list" ? "&layout=list" : ""}`,
+    [pathname, layout],
+  );
   const countFor = useCallback((v: ContractView | SavedView) => {
     if ("test" in v) return all.filter((c) => v.test(c, ctx)).length;
     const b = baseOf(v);
@@ -189,21 +212,12 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
     () => Object.fromEntries([...DEFAULT_VIEWS, ...QUICK_VIEWS, ...mine, ...shared].map((v) => [v.id, countFor(v)])),
     [countFor, mine, shared],
   );
-  const tabs = useMemo<ViewTab[]>(() => {
-    const list: ViewTab[] = [
-      ...LIST_TABS.map((t) => ({ id: t.id, label: t.label, alert: t.alert, count: isLoading ? null : countFor(presetById(t.id)!), href: hrefFor(t.id) })),
-      ...mine.slice(0, MAX_VIEW_TABS).map((v) => ({ id: v.id, label: v.name, count: isLoading ? null : countFor(v), href: hrefFor(v.id), visibility: v.visibility })),
-    ];
-    if (!list.some((t) => t.id === activeId)) {
-      list.push(saved
-        ? { id: saved.id, label: saved.name, count: isLoading ? null : countFor(saved), href: hrefFor(saved.id), visibility: saved.visibility }
-        : { id: base.id, label: base.label, count: isLoading ? null : countFor(base), href: hrefFor(base.id) });
-    }
-    return list;
-  }, [mine, activeId, saved, base, isLoading, countFor, hrefFor]);
   const activeLabel = saved?.name ?? LIST_TABS.find((t) => t.id === base.id)?.label ?? base.label;
+  const activeCount = isLoading ? null : countFor(saved ?? base);
   // The board opens on the same view when it has it.
   const boardHref = !saved && TAB_IDS.has(activeId) && activeId !== "in-progress" ? `/workflow?view=${activeId}` : "/workflow";
+  const layoutHref = (l: "list" | "spreadsheet") =>
+    `${pathname}?view=${encodeURIComponent(activeId)}${l === "list" ? "&layout=list" : ""}${query ? `&q=${encodeURIComponent(query)}` : ""}`;
 
   /* ── Saved view actions ── */
   const [dialog, setDialog] = useState<SaveViewMode | null>(null);
@@ -232,26 +246,32 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
     }
   };
 
-  /* ── Grouping (Group by in the toolbar; stage groups get their colour) ── */
+  /* ── Grouping and properties (Display) ── */
   const exportsOn = useGovernFeature("exports");
   const grouping = useMemo(
     () => (settings.groupBy === "stage" ? BY_STAGE : groupingFor(settings.groupBy, rows)),
     [settings.groupBy, rows],
   );
+  const listGrouping = useMemo<ListGrouping | null>(() => {
+    const g = groupingFor(settings.groupBy, rows);
+    return g ? { key: g.key, label: g.label, name: g.label, order: g.order, icon: groupIcon(settings.groupBy) } : null;
+  }, [settings.groupBy, rows]);
+  const properties = useMemo(() => visibleProperties(settings.columns.order, settings.columns.hidden), [settings.columns]);
+  const orderedColumns = useMemo(() => orderColumns(CONTRACT_LIST_COLUMNS, settings.columns.order), [settings.columns.order]);
 
   /* ── Export ── */
   const visibleColumns = useMemo(() => {
     const hidden = new Set(settings.columns.hidden);
-    return orderColumns(CONTRACT_LIST_COLUMNS, settings.columns.order).filter((c) => c.card === "title" || !hidden.has(c.id));
-  }, [settings.columns]);
+    return orderedColumns.filter((c) => c.card === "title" || !hidden.has(c.id));
+  }, [settings.columns.hidden, orderedColumns]);
   const [exporting, setExporting] = useState(false);
-  const exportCsv = () => {
+  const exportCsv = (list: Contract[] = rows) => {
     const csv = rowsToCsv(visibleColumns.map((c) => ({
       header: c.header,
       value: (r: Contract) => c.exportValue?.(r) ?? (() => { const v = c.sortValue?.(r); return v instanceof Date ? v.toISOString() : v ?? null; })(),
-    })), rows);
+    })), list);
     downloadCsv(csvFileName("contracts"), csv);
-    toast.success(`${plural(rows.length, "contract")} exported to CSV`);
+    toast.success(`${plural(list.length, "contract")} exported to CSV`);
   };
   const exportExcel = async () => {
     setExporting(true);
@@ -265,12 +285,15 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
     }
   };
 
-  /* ── Selection, preview, bulk edit ── */
+  /* ── Selection, preview, bulk edit, inline assign ── */
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Contract[] | null>(null);
+  const [assigning, setAssigning] = useState<Contract | null>(null);
   const preview = previewId ? all.find((c) => c.contractId === previewId) ?? null : null;
   const closePreview = useCallback(() => setPreviewId(null), []);
+  const selectedRows = useMemo(() => rows.filter((c) => selected.has(c.contractId)), [rows, selected]);
+  const canAssign = useCallback((c: Contract) => availableActions(c).includes("assign"), []);
 
   /* ── Filter helpers ── */
   const owners = useMemo(() => {
@@ -290,39 +313,33 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
   const isFiltered = filtering || (base.id !== "all" && all.length > 0);
   // The empty panel carries its own filled Upload; the header's steps back to outline.
   const showsEmpty = !isLoading && !failed && all.length === 0;
+  const state = isLoading ? "loading" : failed ? "error" : "ready";
+
+  const layoutItems = [
+    { id: "list", label: "List", href: layoutHref("list"), icon: <LayoutList size={16} aria-hidden /> },
+    { id: "board", label: "Board", href: boardHref, icon: <Kanban size={16} aria-hidden /> },
+    { id: "spreadsheet", label: "Spreadsheet", href: layoutHref("spreadsheet"), icon: <Table2 size={16} aria-hidden /> },
+  ];
+  const emptyPanel = (
+    <StatePanel art="empty" title="No contracts yet" description="Upload a contract. Sonar reads it, checks it against your matrix and lists it here.">
+      <Button asChild size="lg"><Link href="/projects/upload"><Plus size={16} />Upload contract</Link></Button>
+    </StatePanel>
+  );
+  const bulk = (chosen: Contract[]) => (
+    <BulkActions contracts={chosen} viewLabel={activeLabel} onDone={() => setSelected(new Set())} onEditFields={() => setEditing(chosen)} />
+  );
+  const footer = rows.length > 0 ? <ListFooter totals={totals} currency={currency} /> : undefined;
+  const searchLabel = `Search ${activeLabel.toLowerCase()}`;
 
   return (
-    <div className="app-container flex flex-col gap-3 py-6 md:py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[24px] leading-8 font-semibold tracking-[-0.01em] text-[var(--ink-900)]">Contracts</h1>
-        <Button asChild variant={showsEmpty ? "outline" : "default"}>
-          <Link href="/projects/upload"><Plus size={16} />Upload contract</Link>
-        </Button>
-      </header>
-
-      <ViewTabs
-        tabs={tabs}
-        activeId={activeId}
-        loading={isLoading}
-        onNewView={saveAs}
-        layout={<LayoutSwitch current="table" tableHref={hrefFor(activeId)} boardHref={boardHref} />}
-        end={dirty && (
-          <>
-            <span className="text-[12px] text-[var(--ink-600)]">Unsaved changes</span>
-            {saved?.canEdit && (
-              <button type="button" onClick={() => void updateWithCurrent(saved)} className="h-8 rounded-md px-1.5 text-[12px] font-medium text-[var(--brand-primary-700)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-focus">
-                Update view
-              </button>
-            )}
-            <button type="button" onClick={saveAs} className="h-8 rounded-md px-1.5 text-[12px] font-medium text-[var(--brand-primary-700)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-focus">
-              Save view as…
-            </button>
-          </>
-        )}
-        allViews={
+    <div className="flex flex-col pb-10">
+      <ListHeader
+        title="Contracts"
+        views={
           <ViewPicker
             activeId={activeId}
             activeLabel={activeLabel}
+            activeCount={activeCount}
             defaults={DEFAULT_VIEWS}
             quick={QUICK_VIEWS}
             mine={mine}
@@ -334,81 +351,124 @@ function ContractsList({ activeId, saved, base, missing, savedViews, savedStatus
             onUpdate={(v) => void updateWithCurrent(v)}
             onDelete={setDeleting}
             onNavigate={() => setSelected(new Set())}
+            onNewView={saveAs}
+            dirty={dirty}
+            onUpdateActive={saved?.canEdit ? () => void updateWithCurrent(saved) : undefined}
           />
         }
-      />
+      >
+        <SearchField label={searchLabel} value={q} onChange={setQ} className="hidden w-52 lg:block xl:w-60" />
+        <LayoutToggle items={layoutItems} current={layout} />
+        <FiltersPanel
+          filters={settings.filters}
+          onFilters={(filters) => update({ filters })}
+          q={q}
+          onQ={setQ}
+          searchLabel={searchLabel}
+          owners={owners}
+          me={me}
+          suggestions={suggestions}
+          received={received}
+          onReceived={setReceived}
+          onClear={clearFilters}
+        />
+        <DisplayPanel
+          settings={settings}
+          onSettings={update}
+          sortOptions={SORT_OPTIONS}
+          properties={orderedColumns.filter((c) => c.card !== "title").map((c) => ({ id: c.id, label: c.header }))}
+          layout={layout}
+        />
+        {exportsOn && <ExportMenu csv={() => exportCsv()} excel={() => void exportExcel()} busy={exporting} />}
+        <Button asChild size="sm" variant={showsEmpty ? "outline" : "default"} className="h-8 max-md:h-10">
+          <Link href="/projects/upload" aria-label="Upload contract">
+            <Plus size={16} aria-hidden />
+            <span aria-hidden className="max-sm:hidden">Upload contract</span>
+          </Link>
+        </Button>
+      </ListHeader>
+
       {missing && (
-        <p role="status" className="text-[12px] text-[var(--ink-600)]">
+        <p role="status" className="app-container pt-3 text-[12px] text-[var(--ink-600)]">
           That saved view isn’t available: it may have been deleted or not shared with you{savedStatus.error ? ", or saved views can’t load right now" : ""}. Showing {base.label.toLowerCase()} instead.
         </p>
       )}
 
-      <DataTable
-        caption={activeLabel}
-        noun="contracts"
-        columns={CONTRACT_LIST_COLUMNS}
-        rows={rows}
-        getRowId={(c) => c.contractId}
-        getRowLabel={(c) => `Preview ${c.title || "Untitled contract"}`}
-        onRowClick={(c) => setPreviewId(c.contractId)}
-        activeRowId={previewId}
-        sort={settings.sort ? { columnId: settings.sort.key, direction: settings.sort.dir } : null}
-        onSortChange={(s) => update({ sort: s ? { key: s.columnId, dir: s.direction } : null })}
-        groupBy={grouping ?? undefined}
-        columnOrder={settings.columns.order}
-        onColumnOrderChange={(order) => update({ columns: { ...settings.columns, order } })}
-        hiddenColumns={settings.columns.hidden}
-        onHiddenColumnsChange={(hidden) => update({ columns: { ...settings.columns, hidden } })}
-        onDensityChange={(density) => update({ density })}
-        headerEnd={
-          <ColumnSettings
-            columns={orderColumns(CONTRACT_LIST_COLUMNS, settings.columns.order).map((c) => ({ id: c.id, label: c.header, locked: c.card === "title" }))}
-            hidden={new Set(settings.columns.hidden)}
-            onHiddenChange={(id, hide) => update({ columns: { ...settings.columns, hidden: hide ? [...settings.columns.hidden, id] : settings.columns.hidden.filter((x) => x !== id) } })}
-            onOrderChange={(order) => update({ columns: { ...settings.columns, order } })}
-            triggerClassName="size-7 border-transparent bg-transparent"
+      {layout === "list" ? (
+        <>
+          <ContractList
+            caption={activeLabel}
+            rows={rows}
+            grouping={listGrouping}
+            properties={properties}
+            density={settings.density}
+            selection={{ selected, onChange: setSelected }}
+            activeId={previewId}
+            onOpen={(c) => setPreviewId(c.contractId)}
+            canAssign={canAssign}
+            onAssign={setAssigning}
+            state={state}
+            onRetry={() => void refetch()}
+            errorDetail={error instanceof Error ? error.message : undefined}
+            isFiltered={isFiltered}
+            onClearFilters={filtering ? clearFilters : () => goTo("all")}
+            empty={emptyPanel}
+            footer={footer}
           />
-        }
-        density={settings.density}
-        pageSize={50}
-        exportName="contracts"
-        footer={rows.length > 0 ? <ListFooter totals={totals} currency={currency} /> : undefined}
-        loadingFooter={<TableFooterSkeleton />}
-        toolbar={
-          <ListToolbar
-            settings={settings}
-            onSettings={update}
-            q={q}
-            onQ={setQ}
-            searchLabel={`Search ${activeLabel.toLowerCase()}`}
-            owners={owners}
-            me={me}
-            suggestions={suggestions}
-            sortOptions={SORT_OPTIONS}
-            columns={orderColumns(CONTRACT_LIST_COLUMNS, settings.columns.order).map((c) => ({ id: c.id, label: c.header, locked: c.card === "title" }))}
-            onClear={clearFilters}
-            extraFilters={<DateRangeFilter label="Received" value={received} onChange={setReceived} />}
-            extraActive={received ? 1 : 0}
-            exports={exportsOn ? { csv: exportCsv, excel: () => void exportExcel(), busy: exporting } : null}
+          <SelectionBar count={selectedRows.length} onClear={() => setSelected(new Set())}>
+            {bulk(selectedRows)}
+            <button type="button" onClick={() => exportCsv(selectedRows)} className="inline-flex items-center gap-1.5 text-sm">
+              <Download size={16} aria-hidden />CSV
+            </button>
+          </SelectionBar>
+        </>
+      ) : (
+        <div className="app-container pt-3">
+          <DataTable
+            caption={activeLabel}
+            noun="contracts"
+            columns={CONTRACT_LIST_COLUMNS}
+            rows={rows}
+            getRowId={(c) => c.contractId}
+            getRowLabel={(c) => `Preview ${c.title || "Untitled contract"}`}
+            onRowClick={(c) => setPreviewId(c.contractId)}
+            activeRowId={previewId}
+            sort={settings.sort ? { columnId: settings.sort.key, direction: settings.sort.dir } : null}
+            onSortChange={(s) => update({ sort: s ? { key: s.columnId, dir: s.direction } : null })}
+            groupBy={grouping ?? undefined}
+            columnOrder={settings.columns.order}
+            onColumnOrderChange={(order) => update({ columns: { ...settings.columns, order } })}
+            hiddenColumns={settings.columns.hidden}
+            onHiddenColumnsChange={(hidden) => update({ columns: { ...settings.columns, hidden } })}
+            onDensityChange={(density) => update({ density })}
+            headerEnd={
+              <ColumnSettings
+                columns={orderedColumns.map((c) => ({ id: c.id, label: c.header, locked: c.card === "title" }))}
+                hidden={new Set(settings.columns.hidden)}
+                onHiddenChange={(id, hide) => update({ columns: { ...settings.columns, hidden: hide ? [...settings.columns.hidden, id] : settings.columns.hidden.filter((x) => x !== id) } })}
+                onOrderChange={(order) => update({ columns: { ...settings.columns, order } })}
+                triggerClassName="size-7 border-transparent bg-transparent"
+              />
+            }
+            density={settings.density}
+            pageSize={50}
+            exportName="contracts"
+            footer={footer}
+            loadingFooter={<TableFooterSkeleton />}
+            state={state}
+            onRetry={() => void refetch()}
+            errorDetail={error instanceof Error ? error.message : undefined}
+            isFiltered={isFiltered}
+            onClearFilters={filtering ? clearFilters : () => goTo("all")}
+            selection={{ selected, onChange: setSelected }}
+            bulkActions={bulk}
+            empty={emptyPanel}
           />
-        }
-        state={isLoading ? "loading" : failed ? "error" : "ready"}
-        onRetry={() => void refetch()}
-        errorDetail={error instanceof Error ? error.message : undefined}
-        isFiltered={isFiltered}
-        onClearFilters={filtering ? clearFilters : () => goTo("all")}
-        selection={{ selected, onChange: setSelected }}
-        bulkActions={(chosen) => (
-          <BulkActions contracts={chosen} viewLabel={activeLabel} onDone={() => setSelected(new Set())} onEditFields={() => setEditing(chosen)} />
-        )}
-        empty={
-          <StatePanel art="empty" title="No contracts yet" description="Upload a contract. Sonar reads it, checks it against your matrix and lists it here.">
-            <Button asChild size="lg"><Link href="/projects/upload"><Plus size={16} />Upload contract</Link></Button>
-          </StatePanel>
-        }
-      />
+        </div>
+      )}
 
       {preview && <ContractPreview contract={preview} me={me} onClose={closePreview} />}
+      {assigning && <AssignDialog contract={assigning} open onOpenChange={(o) => !o && setAssigning(null)} />}
 
       <SaveViewDialog
         mode={dialog}

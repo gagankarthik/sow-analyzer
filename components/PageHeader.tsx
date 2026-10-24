@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { ChevronLeft } from "@/components/ui/icons";
+import { Breadcrumbs } from "@/components/shell/Breadcrumbs";
+import { SidebarToggle } from "@/components/shell/SidebarToggle";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,7 +21,7 @@ type Props = {
   actions?: React.ReactNode;
   /** Row under the title row: view tabs, last-updated, a toolbar. */
   meta?: React.ReactNode;
-  /** Optional back link above the title (12px, muted). */
+  /** @deprecated The breadcrumb leads back now; no longer rendered. */
   back?: { href: string; label: string };
   className?: string;
 };
@@ -40,53 +39,35 @@ export function PageHeader({
   countLoading = false,
   actions,
   meta,
-  back,
   className,
 }: Props) {
   return (
-    // Sits on the page canvas: no band, no rule. The body below (`app-page`)
-    // carries on with the same background.
     <div className={className}>
-      <div className="app-container pt-5 md:pt-6">
-        {back && (
-          <Link
-            href={back.href}
-            // In Settings the docked sidebar carries the way back, so the
-            // link only shows where the sidebar is a drawer.
-            className={cn(
-              "mb-1.5 inline-flex w-fit items-center gap-1 rounded-sm text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground max-md:min-h-11",
-              back.href === "/settings" && "lg:hidden",
-            )}
-          >
-            <ChevronLeft size={12} aria-hidden className="rtl:rotate-180" />
-            {back.label}
-          </Link>
-        )}
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <h1 className="min-w-0 text-xl font-semibold tracking-[-0.01em] text-foreground [overflow-wrap:anywhere]">
-              {title}
-            </h1>
-            {count == null && countLoading && <Skeleton className="h-3.5 w-8 shrink-0" />}
-            {count != null && (
-              <span className="shrink-0 text-sm tabular-nums text-muted-foreground">{COUNT.format(count)}</span>
-            )}
-            {subtitle && (
-              <InfoTip label={`About ${title}`} align="start">
-                {subtitle}
-              </InfoTip>
-            )}
-          </div>
-
-          {actions && (
-            <div className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0">
-              {actions}
-            </div>
+      {/* One header row per page: the breadcrumb (ending in this page's
+          title) and the page's actions. The browser tab and screen readers
+          still get the title as the page's H1. */}
+      <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[var(--ink-200)] bg-card px-[1.35rem] py-1.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <SidebarToggle inHeader />
+          <h1 className="sr-only">{title}</h1>
+          <Breadcrumbs current={title} />
+          {count == null && countLoading && <Skeleton className="h-3.5 w-8 shrink-0" />}
+          {count != null && (
+            <span className="shrink-0 rounded-full bg-[var(--brand-primary-100)] px-2 py-px text-[11px] font-semibold tabular-nums text-[var(--brand-primary-800)]">{COUNT.format(count)}</span>
+          )}
+          {subtitle && (
+            <InfoTip label={`About ${title}`} align="start">
+              {subtitle}
+            </InfoTip>
           )}
         </div>
-
-        {meta && <div className="mt-4">{meta}</div>}
+        {actions && (
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:shrink-0">
+            {actions}
+          </div>
+        )}
       </div>
+      {meta && <div className="app-container mt-4">{meta}</div>}
     </div>
   );
 }

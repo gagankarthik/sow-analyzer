@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/seo";
 import { LEGAL, LEGAL_UPDATED_ISO } from "@/app/legal/documents";
+import { AREA_PAGES, areaPath } from "@/components/landing/area-pages";
 
 // Public pages only. Signed-in and auth routes are noindex and left out.
 // Bump SITE_UPDATED_ISO when the marketing pages change materially.
@@ -22,6 +23,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: SITE_UPDATED_ISO,
       changeFrequency: "monthly" as const,
       priority,
+    })),
+    // One page per product area, team and industry.
+    ...Object.values(AREA_PAGES).map((p) => ({
+      url: absoluteUrl(areaPath(p.kind, p.id)),
+      lastModified: SITE_UPDATED_ISO,
+      changeFrequency: "monthly" as const,
+      priority: p.kind === "product" ? 0.8 : 0.7,
     })),
     ...Object.keys(LEGAL).map((slug) => ({
       url: absoluteUrl(`/legal/${slug}`),

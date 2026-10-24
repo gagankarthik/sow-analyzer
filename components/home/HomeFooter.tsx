@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { ArrowUp } from "@/components/ui/icons";
 import { PrivacyChoicesLink } from "@/components/landing/CookieSettingsLink";
 import { Logo } from "@/components/landing/primitives";
-import { INDUSTRY_SECTIONS, PRODUCT_SECTIONS, SOLUTION_SECTIONS, landingHref } from "@/components/landing/site-nav";
+import { INDUSTRY_SECTIONS, PRODUCT_SECTIONS, SOLUTION_SECTIONS, productHref, solutionHref } from "@/components/landing/site-nav";
 import { COMING_SOON_LABEL, isComingSoon } from "@/components/landing/ComingSoon";
 import { DemoCta } from "@/components/home/DemoCta";
 
@@ -23,18 +24,18 @@ const COLUMNS: { id: string; title: string; links: FooterLink[] }[] = [
         "feature" in section && isComingSoon(section.feature)
           ? `${section.label} (${COMING_SOON_LABEL.toLowerCase()})`
           : section.label,
-      href: landingHref(section.id),
+      href: productHref(section.id),
     })),
   },
   {
     id: "teams",
     title: "Teams",
-    links: SOLUTION_SECTIONS.map(({ id, label }) => ({ label, href: landingHref(id) })),
+    links: SOLUTION_SECTIONS.map(({ id, label }) => ({ label, href: solutionHref(id) })),
   },
   {
     id: "industries",
     title: "Industries",
-    links: INDUSTRY_SECTIONS.map(({ id, label }) => ({ label, href: landingHref(id) })),
+    links: INDUSTRY_SECTIONS.map(({ id, label }) => ({ label, href: solutionHref(id) })),
   },
   {
     id: "resources",
@@ -105,8 +106,8 @@ export function HomeFooter() {
             </p>
             <div className="home-footer-end">
               <p>© 2026 Blue-IQ. All rights reserved.</p>
-              <a href="#main-content" className="home-footer-link">
-                Back to top
+              <a href="#main-content" className="home-footer-top" aria-label="Back to top" title="Back to top">
+                <ArrowUp size={16} aria-hidden="true" />
               </a>
             </div>
           </div>

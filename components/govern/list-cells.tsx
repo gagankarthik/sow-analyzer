@@ -7,11 +7,13 @@ import * as React from "react";
 import { Avatar } from "@/components/ds/Avatar";
 import { TONE_DOT, TONE_SOFT, TONE_TEXT, type Tone } from "@/components/ds/tone";
 import { STAGE_LABEL } from "@/lib/govern/labels";
-import { STAGE_BG } from "@/lib/govern/stage-style";
 import { daysPastTarget } from "@/lib/govern/stage-time";
 import type { Contract, SlaStatus } from "@/lib/govern/types";
 import type { RiskLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
+// Same icons as the Filters menu, so a row reads like its filter.
+import { RiskBars } from "./PropertyChip";
+import { StageIcon } from "./StageIcon";
 
 /** 22px tag, 12px text, a status dot: risk, SLA, counts. */
 export function ListTag({ tone = "unknown", dashed, className, children }: { tone?: Tone; dashed?: boolean; className?: string; children: React.ReactNode }) {
@@ -31,49 +33,13 @@ export function ListTag({ tone = "unknown", dashed, className, children }: { ton
 }
 
 
-const PHASES = ["draft", "review", "negotiation", "approval", "signed"] as const;
-
-function phaseIndex(stage: Contract["stage"]): number {
-  const i = PHASES.indexOf(stage as (typeof PHASES)[number]);
-  return i === -1 ? PHASES.length - 1 : i; // active, renewal, expired: past signature
-}
-
-/** Where the contract is on its way to signature: one segment per step, each
- *  done step in its own stage colour, the current one in its colour at half
- *  strength, the rest track; then the stage's name. */
+/** The stage: the same icon the Filters menu shows, then its name. */
 export function StageMeter({ contract: c }: { contract: Pick<Contract, "stage" | "state"> }) {
-  const at = phaseIndex(c.stage);
-  const signed = at === PHASES.length - 1;
   const rejected = c.state === "rejected";
   const label = rejected ? "Rejected" : STAGE_LABEL[c.stage];
   return (
     <span className="inline-flex items-center gap-2">
-      <span
-        role="meter"
-        aria-label="Progress to signature"
-        aria-valuemin={0}
-        aria-valuemax={PHASES.length}
-        aria-valuenow={signed ? PHASES.length : at}
-        aria-valuetext={label}
-        className="flex h-[14px] w-[64px] shrink-0 items-center gap-[2px] rounded-[3px] bg-[var(--ink-100)] px-[2px]"
-      >
-        {PHASES.map((p, i) => {
-          const done = i < at || signed;
-          const here = i === at && !signed;
-          return (
-            <span
-              key={p}
-              className={cn(
-                "h-[10px] min-w-px flex-1 rounded-[1px]",
-                rejected && i <= at ? "bg-[var(--danger)]"
-                  : done ? STAGE_BG[p]
-                  : here ? cn(STAGE_BG[p], "opacity-50")
-                  : "bg-[var(--ink-200)]",
-              )}
-            />
-          );
-        })}
-      </span>
+      <StageIcon stage={c.stage} state={c.state} size={14} />
       <span className={cn("truncate text-[14px] font-medium", rejected ? "text-[var(--danger)]" : "text-[var(--ink-900)]")}>{label}</span>
     </span>
   );
@@ -106,20 +72,17 @@ const RISK_WORD: Record<RiskLevel, string> = { critical: "Critical", high: "High
 
 export const RISK_TEXT = RISK_WORD;
 
-const RISK_DOT: Record<RiskLevel, string> = {
-  critical: "bg-[var(--danger)]", high: "bg-[var(--danger)]", medium: "bg-[var(--warning)]", low: "bg-[var(--success)]",
-};
 const RISK_FG: Record<RiskLevel, string> = {
   critical: "text-[var(--danger)]", high: "text-[var(--danger)]", medium: "text-[var(--warning-fg)]", low: "text-[var(--success-fg)]",
 };
 
-/** Risk as a dot and a word: red for high and critical only, amber for
+/** Risk as the filter's bars and a word: red for high and critical only, amber for
  *  medium, green for low. */
 export function RiskCell({ risk }: { risk: RiskLevel | null }) {
-  if (!risk) return <span className="text-[var(--ink-600)]">Not assessed</span>;
+  if (!risk) return <span className="inline-flex items-center gap-2 text-[var(--ink-600)]"><RiskBars risk={null} />Not assessed</span>;
   return (
     <span className={cn("inline-flex items-center gap-2 font-medium whitespace-nowrap", RISK_FG[risk])}>
-      <span aria-hidden className={cn("size-2 shrink-0 rounded-full", RISK_DOT[risk])} />
+      <RiskBars risk={risk} />
       {RISK_WORD[risk]}
     </span>
   );

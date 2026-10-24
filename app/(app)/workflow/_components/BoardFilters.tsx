@@ -1,33 +1,31 @@
 "use client";
 
-// The Workflow filter row (UI_SPEC section 9), the same component as the
-// Contracts list: search, three quick filters as [Label │ Value ▾] (Type,
-// party, Risk), "More filters" with every dimension including Status (open
-// or all), then "n filters · Clear". Below md:
-// search, then one "Filters (n)" button that opens a sheet with them all.
+// The board's Filters panel in the header: the search (inside the panel
+// below lg), Status (open or all), then Type, party, Risk, Department,
+// Reviewer and Value, one choice each. Changes apply at once; "Clear all"
+// resets everything but the search, as before.
 
-import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
-import { Toolbar } from "@/components/ds/Toolbar";
-import { FilterButton, MoreFiltersButton } from "@/components/ds/FilterButton";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem,
-  DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { HeaderButton, HeaderPopover } from "@/components/ds/ListHeader";
+import { CheckRow, Collapsible, SearchField } from "@/components/ds/PanelControls";
+import { RiskBars } from "@/components/govern/PropertyChip";
+import { ListFilter } from "@/components/ui/icons";
 import { AGREEMENT_TYPE_LABEL } from "@/lib/govern/labels";
 import { NO_FILTERS, VALUE_BAND_LABEL, type ContractFilters, type ValueBand } from "@/lib/govern/metrics";
+import { useAgreementTypes, useEditionTerms } from "@/lib/govern/queries";
+import type { RiskLevel } from "@/lib/types";
 
-const RISK_LABEL: Record<ContractFilters["risk"], string> = {
-  all: "Any",
+const RISK_LABEL: Record<Exclude<ContractFilters["risk"], "all">, string> = {
   needs_attention: "Needs attention",
   high: "High risk",
   critical: "Highest risk only",
+};
+const RISK_ICON: Record<Exclude<ContractFilters["risk"], "all">, RiskLevel | null> = {
+  needs_attention: "medium", high: "high", critical: "critical",
 };
 
 const ALL = "all";
 type Key = Exclude<keyof ContractFilters, "q">;
 type Option = { value: string; label: string };
-type Dimension = { key: Key; label: string; options: Option[] };
 
 export interface FilterOptions {
   departments: string[];
@@ -52,129 +50,76 @@ export function BoardFilters({
   const terms = useEditionTerms();
   const agreementTypes = useAgreementTypes();
   const set = (key: Key, value: string) => onChange({ ...filters, [key]: value } as ContractFilters);
-
-  const dims: Record<Key, Dimension> = {
-    agreementType: { key: "agreementType", label: "Type", options: agreementTypes.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] })) },
-    sponsor: { key: "sponsor", label: terms.party, options: options.sponsors.map((s) => ({ value: s, label: s })) },
-    risk: {
+  const dims: { key: Key; label: string; options: Option[]; scroll?: boolean; icon?: (v: string) => React.ReactNode }[] = [
+    { key: "agreementType", label: "Type", scroll: true, options: agreementTypes.map((t) => ({ value: t, label: AGREEMENT_TYPE_LABEL[t] })) },
+    { key: "sponsor", label: terms.party, scroll: true, options: options.sponsors.map((s) => ({ value: s, label: s })) },
+    {
       key: "risk", label: "Risk",
-      options: (Object.keys(RISK_LABEL) as ContractFilters["risk"][]).filter((r) => r !== ALL).map((r) => ({ value: r, label: RISK_LABEL[r] })),
+      options: (Object.keys(RISK_LABEL) as (keyof typeof RISK_LABEL)[]).map((r) => ({ value: r, label: RISK_LABEL[r] })),
+      icon: (v) => <RiskBars risk={RISK_ICON[v as keyof typeof RISK_ICON] ?? null} />,
     },
-    department: { key: "department", label: "Department", options: options.departments.map((d) => ({ value: d, label: d })) },
-    reviewer: { key: "reviewer", label: "Reviewer", options: options.reviewers.map((r) => ({ value: r.email, label: r.name })) },
-    valueBand: {
+    { key: "department", label: "Department", scroll: true, options: options.departments.map((d) => ({ value: d, label: d })) },
+    { key: "reviewer", label: "Reviewer", scroll: true, options: options.reviewers.map((r) => ({ value: r.email, label: r.name })) },
+    {
       key: "valueBand", label: "Value",
       options: (Object.keys(VALUE_BAND_LABEL) as ValueBand[]).filter((b) => b !== ALL).map((b) => ({ value: b, label: VALUE_BAND_LABEL[b] })),
     },
-  };
-  const quick: Key[] = ["agreementType", "sponsor", "risk"];
-  const order: Key[] = ["agreementType", "sponsor", "risk", "department", "reviewer", "valueBand"];
+  ];
   const count = activeFilterCount(filters) + (showClosed ? 1 : 0);
+  const total = count + (filters.q.trim() ? 1 : 0);
   const clear = () => {
     onChange({ ...NO_FILTERS, q: filters.q });
     onShowClosedChange(false);
   };
-  const valueLabel = (d: Dimension) => d.options.find((o) => o.value === filters[d.key])?.label;
-  const statusLabel = showClosed ? "All" : "Open";
-
-  return (
-    <Toolbar
-      label="Workflow filters"
-      activeCount={count}
-      mobileSheet={
-        <div className="flex flex-col gap-3">
-          <SheetSelect
-            label="Status"
-            value={showClosed ? "all" : "open"}
-            onChange={(v) => onShowClosedChange(v === "all")}
-            options={[{ value: "open", label: "Open" }, { value: "all", label: "All, including closed" }]}
-          />
-          {order.map((k) => (
-            <SheetSelect
-              key={k}
-              label={dims[k].label}
-              value={filters[k]}
-              onChange={(v) => set(k, v)}
-              options={[{ value: ALL, label: "Any" }, ...dims[k].options]}
-            />
+  const half = Math.ceil((dims.length + 1) / 2);
+  const sections = [
+    <Collapsible key="status" title="Status" count={showClosed ? 1 : 0} defaultOpen>
+      <div role="radiogroup" aria-label="Status" className="flex flex-col px-1 pb-2">
+        <CheckRow type="radio" name="wf-status" checked={!showClosed} onChange={() => onShowClosedChange(false)}>Open</CheckRow>
+        <CheckRow type="radio" name="wf-status" checked={showClosed} onChange={() => onShowClosedChange(true)}>All, including closed</CheckRow>
+      </div>
+    </Collapsible>,
+    ...dims.map((d) => (
+      <Collapsible key={d.key} title={d.label} count={filters[d.key] !== ALL ? 1 : 0} defaultOpen={d.key === "risk" || filters[d.key] !== ALL}>
+        <div role="radiogroup" aria-label={d.label} className={d.scroll ? "flex max-h-48 flex-col overflow-y-auto px-1 pb-2" : "flex flex-col px-1 pb-2"}>
+          <CheckRow type="radio" name={`wf-${d.key}`} checked={filters[d.key] === ALL} onChange={() => set(d.key, ALL)}>Any</CheckRow>
+          {d.options.length === 0 && <p className="px-2 py-1.5 text-[12px] text-[var(--ink-600)]">No options yet</p>}
+          {d.options.map((o) => (
+            <CheckRow key={o.value} type="radio" name={`wf-${d.key}`} checked={filters[d.key] === o.value} onChange={() => set(d.key, o.value)} icon={d.icon?.(o.value)}>
+              {o.label}
+            </CheckRow>
           ))}
         </div>
-      }
+      </Collapsible>
+    )),
+  ];
+
+  return (
+    <HeaderPopover
+      label="Filters"
+      className="w-[min(34rem,calc(100vw-24px))]"
+      trigger={<HeaderButton icon={<ListFilter size={16} aria-hidden />} label="Filters" count={count} />}
     >
-      <Toolbar.Search label="Search agreements" placeholder="Search contracts" value={filters.q} onChange={(v) => onChange({ ...filters, q: v })} />
-      <Toolbar.Filters always>
-        {quick.map((k) => (
-          <FilterButton key={k} label={dims[k].label} value={valueLabel(dims[k])} active={filters[k] !== ALL} onClear={() => set(k, ALL)}>
-            <RadioOptions dim={dims[k]} value={filters[k]} onChange={(v) => set(k, v)} />
-          </FilterButton>
-        ))}
-      </Toolbar.Filters>
-      <Toolbar.More>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <MoreFiltersButton count={count} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuLabel>Filters</DropdownMenuLabel>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <span className="min-w-0 flex-1 truncate">Status</span>
-                <span className="text-xs text-[var(--ink-600)]">{statusLabel}</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-56">
-                <DropdownMenuRadioGroup value={showClosed ? "all" : "open"} onValueChange={(v) => onShowClosedChange(v === "all")}>
-                  <DropdownMenuRadioItem value="open">Open</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="all">All, including closed</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            {order.map((k) => (
-              <DropdownMenuSub key={k}>
-                <DropdownMenuSubTrigger>
-                  <span className="min-w-0 flex-1 truncate">{dims[k].label}</span>
-                  <span className="max-w-24 truncate text-xs text-[var(--ink-600)]">{valueLabel(dims[k]) ?? "Any"}</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="max-h-80 w-60 overflow-y-auto">
-                  <RadioOptions dim={dims[k]} value={filters[k]} onChange={(v) => set(k, v)} />
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </Toolbar.More>
-      <Toolbar.Clear count={count} onClear={clear} />
-    </Toolbar>
-  );
-}
-
-function RadioOptions({ dim, value, onChange }: { dim: Dimension; value: string; onChange: (v: string) => void }) {
-  return (
-    <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-      <DropdownMenuRadioItem value={ALL}>Any</DropdownMenuRadioItem>
-      {dim.options.length === 0 && <p className="px-2 py-1.5 text-xs text-[var(--ink-600)]">No options yet</p>}
-      {dim.options.map((o) => (
-        <DropdownMenuRadioItem key={o.value} value={o.value}>
-          <span className="min-w-0 truncate">{o.label}</span>
-        </DropdownMenuRadioItem>
-      ))}
-    </DropdownMenuRadioGroup>
-  );
-}
-
-/** One filter in the mobile sheet: a labelled 44px select. */
-function SheetSelect({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (v: string) => void; options: Option[];
-}) {
-  const id = `wf-filter-${label.toLowerCase().replace(/\W+/g, "-")}`;
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-medium text-[var(--ink-600)]">{label}</label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={id} className="h-11 w-full min-w-0"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-        </SelectContent>
-      </Select>
-    </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+        <div className="border-b border-border-default p-2 lg:hidden">
+          <SearchField label="Search agreements" value={filters.q} onChange={(v) => onChange({ ...filters, q: v })} />
+        </div>
+        <div className="grid sm:grid-cols-2">
+          <div className="flex min-w-0 flex-col sm:border-e sm:border-border-default">{sections.slice(0, half)}</div>
+          <div className="flex min-w-0 flex-col">{sections.slice(half)}</div>
+        </div>
+      </div>
+      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-t border-border-default px-3 text-[12px] text-[var(--ink-600)]">
+        <span aria-live="polite">{total === 0 ? "No filters" : `${total} ${total === 1 ? "filter" : "filters"} on`}</span>
+        <button
+          type="button"
+          onClick={clear}
+          disabled={count === 0}
+          className="inline-flex h-8 items-center rounded-md px-2 text-[13px] font-medium text-[var(--brand-primary-700)] hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-focus disabled:text-[var(--ink-500)] disabled:hover:bg-transparent"
+        >
+          Clear all
+        </button>
+      </div>
+    </HeaderPopover>
   );
 }

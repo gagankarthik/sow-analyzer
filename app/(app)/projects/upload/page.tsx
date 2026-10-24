@@ -3,7 +3,10 @@
 import { byEdition, noun } from "@/lib/edition-runtime";
 import { useEditionTerms } from "@/lib/govern/queries";
 import { useCallback, useId, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
+import { StepBar, StepFooter, StepTitle } from "@/components/ds/Steps";
+import { SonarName } from "@/components/ui/SonarText";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -15,6 +18,7 @@ import { Panel } from "@/components/ds/Panel";
 import { EMPTY_INTAKE, intakePatch, type IntakeValues } from "@/components/upload/contract-intake";
 
 const NO_PROJECT = "none";
+const STEPS = [{ label: "Project" }, { label: "Details", optional: true }, { label: "Upload" }];
 
 /** `?project=<id>` preselects a project (read once; the picker renders client-side only). */
 function projectFromUrl(): string {
@@ -38,6 +42,8 @@ export default function UploadPage() {
   );
   const readOnlyCount = projects.length - uploadable.length;
 
+  const router = useRouter();
+  const [step, setStep] = useState(0);
   const [picked, setPicked] = useState<string>(projectFromUrl);
   // A project that was deleted, or where the role changed, falls back to "No project".
   const choice = uploadable.some((p) => p.id === picked) ? picked : NO_PROJECT;
@@ -62,8 +68,13 @@ export default function UploadPage() {
         title="Upload a contract"
       />
 
-      <div className="app-container app-page">
-        <div className="flex max-w-3xl flex-col gap-6">
+      {/* Onboarding: one centred column, a heading per step. */}
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-10 sm:py-14">
+        <StepBar steps={STEPS} step={step} />
+
+        {step === 0 && (
+        <div className="mx-auto w-full max-w-lg">
+          <StepTitle title={byEdition("Choose a project", "Choose an engagement")} body={byEdition("Where should the contract live? Everyone on the project will see it.", "Where should the contract live? Everyone on the engagement will see it.")} />
           <Panel as="h2" title={noun("Project")}>
             <label htmlFor={pickerId} className="sr-only">{noun("Project")}</label>
             <Select value={choice} onValueChange={setPicked} disabled={loading}>
@@ -99,11 +110,25 @@ export default function UploadPage() {
               </div>
             )}
           </Panel>
-
-          <ContractIntakePanel values={intake} onChange={setIntake} lastApplied={lastApplied} />
-
-          <UploadDropzone projectId={project?.id} governIntake={governIntake} />
+          <StepFooter onNext={() => setStep(1)} next="Continue" />
         </div>
+        )}
+
+        {step === 1 && (
+          <div className="mx-auto w-full max-w-lg">
+            <StepTitle title="Contract details" body="Add what the document won’t say, like the PI or Huron record. Sonar reads the rest from the file." />
+            <ContractIntakePanel values={intake} onChange={setIntake} lastApplied={lastApplied} defaultOpen />
+            <StepFooter onBack={() => setStep(0)} onSkip={() => { setIntake(EMPTY_INTAKE); setStep(2); }} onNext={() => setStep(2)} next="Continue" />
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="w-full">
+            <StepTitle title="Upload the contract" body={<>PDF, DOCX or TXT, up to 50 MB. <SonarName /> reads it as soon as it lands.</>} />
+            <UploadDropzone projectId={project?.id} governIntake={governIntake} />
+            <StepFooter onBack={() => setStep(1)} onNext={() => router.push("/contracts")} next="Go to contracts" />
+          </div>
+        )}
       </div>
     </>
   );

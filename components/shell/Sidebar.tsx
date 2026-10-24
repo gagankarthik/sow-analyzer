@@ -1,19 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { avatarTone } from "@/components/ds/Avatar";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import * as React from "react";
 import { useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUIStore } from "@/lib/stores/ui";
+import { SidebarToggle } from "./SidebarToggle";
 import {
-  LayoutDashboard, Kanban, BarChart3, Briefcase,
-  Settings, Library, DraftSow, CalendarClock, House, Gauge, ChevronLeft, ChevronRight, ListChecks, FileText,
+  LayoutDashboard, BarChart3, Briefcase,
+  Settings, Library, DraftSow, CalendarClock, House, Gauge, ChevronLeft, ChevronRight, ChevronDown, ListChecks, FileText, Plus,
 } from "@/components/ui/icons";
 import { SETTINGS_ITEMS } from "@/components/settings/SettingsNav";
-import { EDITION_LABEL, EDITION_TERMS, editionHas, type Edition, type EditionFeature } from "@/lib/edition";
+import { GapIcon, useSettingsGaps } from "@/components/settings/settings-gaps";
+import { EDITION_TERMS, editionHas, type EditionFeature } from "@/lib/edition";
 import { useEdition, useGovernMe } from "@/lib/govern/queries";
+import { useProjects, type LocalProject } from "@/lib/projects-store";
 
 type NavItem = {
   label: string;
@@ -27,37 +32,31 @@ type NavItem = {
   edition?: EditionFeature;
 };
 
-// Grouped sections (UI_SPEC shell): Work, Library, Insight, with Settings
-// pinned at the bottom of the rail. Campus and Workforce differ only in the
-// Projects label and the Workforce-only "Draft SOW". Icons stay neutral:
-// colour carries status only.
+// Sections, top to bottom: Home on its own, the Workspace (every place that
+// covers the whole office), then the Projects list (see ProjectsNav), with
+// Settings pinned at the bottom of the rail. Section headers fold. Campus and
+// Workforce differ only in the Projects label and the Workforce-only "Draft
+// SOW". Icons stay neutral: colour carries status only.
 type NavGroup = { label: string; items: NavItem[] };
 
-function navGroups(edition: Edition): NavGroup[] {
+function navGroups(): NavGroup[] {
   return [
     {
-      label: "Work",
+      label: "",
       items: [
-        { label: "Home", href: "/home", icon: House },
-        { label: "Workflow", href: "/workflow", icon: Kanban },
+        { label: "Dashboard", href: "/dashboard", icon: House },
+      ],
+    },
+    {
+      label: "Workspace",
+      items: [
         { label: "Contracts", href: "/contracts", icon: FileText },
         { label: "Draft SOW", href: "/draft", icon: DraftSow, edition: "sowDrafting" },
         { label: "Obligations", href: "/obligations", icon: ListChecks },
         { label: "Renewals", href: "/renewals", icon: CalendarClock },
-      ],
-    },
-    {
-      label: "Library",
-      items: [
-        { label: EDITION_TERMS[edition].projects, href: "/projects", icon: Briefcase },
-        { label: "Library", href: "/library", icon: Library },
-      ],
-    },
-    {
-      label: "Insight",
-      items: [
         { label: "Reports", href: "/reports", icon: Gauge },
         { label: "Insights", href: "/insights", icon: BarChart3 },
+        { label: "Clause library", href: "/settings/clauses", icon: Library },
       ],
     },
   ];
@@ -65,23 +64,29 @@ function navGroups(edition: Edition): NavGroup[] {
 
 const SETTINGS_NAV: NavItem = { label: "Settings", href: "/settings", icon: Settings, drill: true };
 
-// A leader's view is five places: what needs them, the board, the records,
-// and the two reporting views. Everything else stays one link away.
-const LEADER_HREFS = new Set(["/home", "/workflow", "/contracts", "/reports", "/insights"]);
+// A leader's view is four places: what needs them, the contracts (list or
+// board), and the two reporting views. Everything else stays one link away.
+const LEADER_HREFS = new Set(["/dashboard", "/contracts", "/reports", "/insights"]);
 
 // Every routable destination in the rail, so the longest-prefix match below
 // decides the one active item. (Help lives in the top bar.)
 const ALL_HREFS = [
   ...new Set(
-    [...navGroups("campus"), ...navGroups("workforce")]
+    navGroups()
       .flatMap((g) => g.items)
-      .concat(SETTINGS_NAV)
+      .concat(SETTINGS_NAV, { label: "Projects", href: "/projects", icon: Briefcase })
       .filter((i) => i.href)
       .map((i) => i.href as string),
   ),
 ];
 
+// The board (/workflow) is the Contracts list in its Board layout, so it
+// lights up the Contracts item rather than having one of its own.
+const SAME_PLACE: Record<string, string> = { "/workflow": "/contracts" };
+
 function bestMatchHref(pathname: string): string | null {
+  const alias = Object.keys(SAME_PLACE).find((p) => pathname === p || pathname.startsWith(p + "/"));
+  if (alias) return SAME_PLACE[alias];
   let best: string | null = null;
   for (const href of ALL_HREFS) {
     const matches = pathname === href || pathname.startsWith(href + "/");
@@ -127,7 +132,7 @@ export function Sidebar({
   const isLeader = me.data?.role === "leader";
   const visible = (i: NavItem) =>
     (!i.edition || editionHas(edition, i.edition)) && (!isLeader || (i.href ? LEADER_HREFS.has(i.href) : false));
-  const groups = navGroups(edition)
+  const groups = navGroups()
     .map((g) => ({ ...g, items: g.items.filter(visible) }))
     .filter((g) => g.items.length > 0);
   const settingsItems = SETTINGS_ITEMS.filter((i) => !i.edition || editionHas(edition, i.edition));
@@ -168,13 +173,16 @@ export function Sidebar({
   // Anywhere in Settings, the sidebar shows the Settings menu. "Back" shows
   // the main menu again without leaving the page; moving to another page
   // resets that choice.
-  const inSettings = pathname === "/settings" || pathname.startsWith("/settings/");
+  // The clause library is on the main menu, so it keeps the main menu.
+  const inSettings = (pathname === "/settings" || pathname.startsWith("/settings/")) && !pathname.startsWith("/settings/clauses");
   const [override, setOverride] = useState<{ path: string; main: boolean } | null>(null);
   const mainOverride = override?.path === pathname && override.main;
   const setMainOverride = (main: boolean) => setOverride({ path: pathname, main });
   const showSettings = inSettings && !mainOverride;
 
   const activeHref = bestMatchHref(pathname);
+  const gaps = useSettingsGaps();
+  const gapCount = Object.keys(gaps).length;
   const isActive = (href?: string) => !!href && href === activeHref;
 
   const onAction = (a: NavItem["action"]) => {
@@ -202,42 +210,24 @@ export function Sidebar({
           "fixed inset-y-0 left-0 z-50 h-dvh w-[260px] shadow-md",
           "transition-transform duration-200 ease-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
-          "lg:translate-x-0 lg:shadow-none lg:sticky lg:top-0 lg:z-30 lg:shrink-0",
-          "lg:w-[232px] lg:[[data-sidebar=collapsed]_&]:w-[56px]",
+          "lg:translate-x-0 lg:shadow-none lg:static lg:z-auto lg:shrink-0 lg:h-full",
+          "lg:w-[250px] lg:overflow-hidden lg:transition-[width] lg:duration-300 lg:ease-in-out lg:[[data-sidebar=collapsed]_&]:w-0 lg:[[data-sidebar=collapsed]_&]:border-r-0",
         )}
       >
-        {/* Workspace identity */}
-        <Link
-          href="/"
-          aria-label="Blue-IQ home"
-          className={cn(
-            "h-14 shrink-0 flex items-center border-b border-sidebar-border transition-colors duration-150 hover:bg-sidebar-accent/60",
-            "px-4 lg:[[data-sidebar=collapsed]_&]:justify-center lg:[[data-sidebar=collapsed]_&]:px-0",
-          )}
-        >
-          <Image src="/logo-icon.svg" alt="" width={24} height={24} priority className="hidden select-none lg:[[data-sidebar=collapsed]_&]:block" />
-          <Image
-            src="/logo.svg"
-            alt="Blue-IQ"
-            width={84}
-            height={22}
-            priority
-            className="select-none lg:[[data-sidebar=collapsed]_&]:hidden"
-          />
-          {/* The organization's edition, so a switch is visible on every page. */}
-          <span
-            title={`${EDITION_LABEL[edition]} edition`}
-            className="ml-2 truncate text-xs text-[var(--ink-600)] lg:[[data-sidebar=collapsed]_&]:hidden"
-          >
-            {EDITION_LABEL[edition]}
-          </span>
-        </Link>
+        {/* Title row (Plane): the app's name, and the collapse button. */}
+        <div className="flex h-11 shrink-0 items-center justify-between gap-2 px-5 lg:min-w-[250px]">
+          <Link href="/dashboard" aria-label="Blue-IQ Govern: dashboard" className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
+            <Image src="/logo.svg" alt="" width={76} height={20} priority className="select-none" />
+            <span className="rounded border border-[var(--ink-200)] px-1.5 py-px text-[11px] font-semibold text-[var(--ink-600)]">Govern</span>
+          </Link>
+          <SidebarToggle />
+        </div>
 
         {/* Nav: grouped sections. Logo (px-4) and icons (px-2 + px-2) share
             one 16px left edge, so the rail reads as one column. */}
         {/* Two panels side by side; the track slides to show the Settings
             menu while you are in Settings. The hidden panel is inert. */}
-        <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div className="relative min-h-0 flex-1 overflow-hidden lg:min-w-[250px]">
           <div
             className={cn(
               "flex h-full w-[200%] transition-transform duration-200 ease-out motion-reduce:transition-none",
@@ -247,17 +237,12 @@ export function Sidebar({
             <nav
               aria-label="Workspace"
               inert={showSettings ? true : undefined}
-              className="sidebar-scroll flex h-full w-1/2 flex-col overflow-y-auto overflow-x-hidden overscroll-contain px-2 py-2"
+              className="sidebar-scroll flex h-full w-1/2 flex-col overflow-y-auto overflow-x-hidden overscroll-contain px-2 pb-2 pt-1"
             >
-              <div className="flex flex-1 flex-col gap-3">
+              <div className="flex flex-1 flex-col gap-2">
                 {groups.map((g) => (
-                  <div key={g.label} role="group" aria-labelledby={`nav-group-${g.label}`}>
-                    <p
-                      id={`nav-group-${g.label}`}
-                      className="px-2.5 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-600)] lg:[[data-sidebar=collapsed]_&]:sr-only"
-                    >
-                      {g.label}
-                    </p>
+                  <React.Fragment key={g.label || "top"}>
+                  <Section id={g.label || "top"} label={g.label}>
                     <ul className="flex flex-col gap-px">
                       {g.items.map((item) => (
                         <NavRow
@@ -269,7 +254,11 @@ export function Sidebar({
                         />
                       ))}
                     </ul>
-                  </div>
+                  </Section>
+                  {g.label === "Workspace" && !isLeader && (
+                    <ProjectsNav label={EDITION_TERMS[edition].projects} pathname={pathname} collapsed={collapsed} />
+                  )}
+                  </React.Fragment>
                 ))}
               </div>
               {!isLeader && (
@@ -277,6 +266,7 @@ export function Sidebar({
                   <NavRow
                     item={SETTINGS_NAV}
                     active={isActive(SETTINGS_NAV.href)}
+                    warning={gapCount ? `${gapCount} settings need attention` : undefined}
                     collapsed={collapsed}
                     onAction={onAction}
                     onDrill={() => setMainOverride(false)}
@@ -309,6 +299,7 @@ export function Sidebar({
                     active={item.href === "/settings" ? pathname === "/settings" : pathname.startsWith(item.href)}
                     collapsed={collapsed}
                     onAction={onAction}
+                    warning={item.href === "/settings" ? (gapCount ? `${gapCount} settings need attention` : undefined) : gaps[item.href]}
                   />
                 ))}
               </ul>
@@ -323,12 +314,14 @@ export function Sidebar({
 
 
 function NavRow({
-  item, active, collapsed, onAction, onDrill,
+  item, active, collapsed, onAction, onDrill, warning,
 }: {
   item: NavItem;
   active: boolean;
   collapsed: boolean;
   onAction: (a: NavItem["action"]) => void;
+  /** Something here needs setting up: an amber mark with this reason. */
+  warning?: string;
   /** For a drill row: show its sub-menu (also when it is already the page). */
   onDrill?: () => void;
 }) {
@@ -336,18 +329,19 @@ function NavRow({
 
   const inner = (
     <>
-      <Icon size={18} aria-hidden className="shrink-0" />
+      <Icon size={16} aria-hidden className="shrink-0" />
       <span className="min-w-0 flex-1 truncate text-left lg:[[data-sidebar=collapsed]_&]:sr-only">{item.label}</span>
+      {warning && <GapIcon reason={warning} className="lg:[[data-sidebar=collapsed]_&]:hidden" />}
       {item.drill && <ChevronRight size={12} aria-hidden className="shrink-0 text-[var(--ink-500)] lg:[[data-sidebar=collapsed]_&]:hidden" />}
     </>
   );
 
   const cls = cn(
-    "group/nav relative flex h-[34px] w-full items-center gap-2.5 rounded-md px-2.5 text-sm transition-colors duration-150 max-md:h-11",
+    "group/nav relative flex h-[30px] w-full items-center gap-2 rounded-md px-2 text-[13px] transition-colors duration-150 max-md:h-11",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
     "lg:[[data-sidebar=collapsed]_&]:mx-auto lg:[[data-sidebar=collapsed]_&]:w-8 lg:[[data-sidebar=collapsed]_&]:justify-center lg:[[data-sidebar=collapsed]_&]:px-0",
     active
-      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold [&_svg]:text-[var(--brand-primary-800)]"
+      ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold [&_svg]:text-[var(--ink-900)]"
       : "font-medium text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent [&_svg]:text-[var(--ink-500)] hover:[&_svg]:text-[var(--ink-800)]",
   );
 
@@ -368,4 +362,205 @@ function NavRow({
     );
   }
   return <li>{node}</li>;
+}
+
+/* ─── Sections ─────────────────────────────────────────────────────── */
+
+const FOLD_KEY = "sidebar:folded";
+
+function readFolded(): string[] {
+  try { return JSON.parse(window.localStorage.getItem(FOLD_KEY) ?? "[]"); } catch { return []; }
+}
+
+/** A section of the rail. With a label, its header folds it (remembered per
+ *  browser); without one, it is just the list. Collapsed rails show no headers. */
+function Section({ id, label, action, children }: { id: string; label: string; action?: React.ReactNode; children: React.ReactNode }) {
+  const [folded, setFolded] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only read of a remembered preference
+    setFolded(readFolded().includes(id));
+  }, [id]);
+  const toggle = () => {
+    const next = !folded;
+    setFolded(next);
+    try {
+      const all = new Set(readFolded());
+      if (next) all.add(id); else all.delete(id);
+      window.localStorage.setItem(FOLD_KEY, JSON.stringify([...all]));
+    } catch {}
+  };
+  if (!label) return <div role="group" aria-label="Main">{children}</div>;
+  const listId = `nav-section-${id}`;
+  return (
+    <div role="group" aria-labelledby={`${listId}-label`}>
+      <div className="group/section flex items-center pr-1 lg:[[data-sidebar=collapsed]_&]:hidden">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={!folded}
+          aria-controls={listId}
+          className="flex h-7 min-w-0 flex-1 items-center gap-1 rounded-md px-2 text-[12px] font-semibold text-[var(--ink-600)] transition-colors hover:text-[var(--ink-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+        >
+          <span id={`${listId}-label`} className="truncate">{label}</span>
+          <ChevronDown size={12} aria-hidden className={cn("shrink-0 opacity-0 transition-transform group-hover/section:opacity-100", folded && "-rotate-90 opacity-100")} />
+        </button>
+        {action}
+      </div>
+      <div id={listId} hidden={folded} className="lg:[[data-sidebar=collapsed]_&]:block">{children}</div>
+    </div>
+  );
+}
+
+/* ─── Projects ─────────────────────────────────────────────────────── */
+
+/** How many projects the rail lists before "All projects". */
+const PROJECTS_SHOWN = 8;
+
+/** A project's own sections (the project page's tabs, by ?tab=). */
+const PROJECT_PAGES = [
+  { label: "Overview", tab: "" },
+  { label: "Clauses", tab: "sow" },
+  { label: "Amendments", tab: "amendments" },
+  { label: "Timeline", tab: "timeline" },
+  { label: "Team", tab: "team" },
+  { label: "Documents", tab: "documents" },
+] as const;
+
+/** Your projects, most recently updated first; each expands to its pages,
+ *  and the one you are in opens by itself. Single-document entries (no
+ *  server project) are left out. */
+function ProjectsNav({ label, pathname, collapsed }: { label: string; pathname: string; collapsed: boolean }) {
+  const all = useProjects();
+  const projects = React.useMemo(
+    () => all
+      .filter((p) => p.role)
+      .sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt))
+      .slice(0, PROJECTS_SHOWN),
+    [all],
+  );
+  const singular = label.toLowerCase().replace(/s$/, "");
+  return (
+    <Section
+      id="projects"
+      label={label}
+      action={
+        <Link
+          href="/projects/new"
+          aria-label={`New ${singular}`}
+          className="inline-flex size-6 items-center justify-center rounded-md text-[var(--ink-500)] transition-colors hover:bg-sidebar-accent hover:text-[var(--ink-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+        >
+          <Plus size={14} aria-hidden />
+        </Link>
+      }
+    >
+      <ul className="flex flex-col gap-px">
+        {projects.map((p) => (
+          <ProjectRow key={p.id} project={p} pathname={pathname} collapsed={collapsed} />
+        ))}
+        <NavRow
+          item={{ label: projects.length ? `All ${label.toLowerCase()}` : label, href: "/projects", icon: Briefcase }}
+          active={pathname === "/projects"}
+          collapsed={collapsed}
+          onAction={() => {}}
+        />
+      </ul>
+    </Section>
+  );
+}
+
+function ProjectRow({ project: p, pathname, collapsed }: { project: LocalProject; pathname: string; collapsed: boolean }) {
+  const base = `/projects/${p.id}`;
+  const inside = pathname === base || pathname.startsWith(`${base}/`);
+  const [open, setOpen] = useState(inside);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- open the project you navigate into
+    if (inside) setOpen(true);
+  }, [inside]);
+  const initial = (p.name.trim()[0] ?? "?").toUpperCase();
+  const tile = (
+    <span
+      aria-hidden
+      // Each project keeps one tint (the avatar palette), so the list scans by colour.
+      data-tone={avatarTone(p.name, p.id)}
+      className={cn(
+        "ds-avatar inline-flex size-[18px] shrink-0 items-center justify-center rounded-[4px] text-[10px] font-bold",
+        inside && "ring-1 ring-current",
+      )}
+    >
+      {initial}
+    </span>
+  );
+  if (collapsed) {
+    return (
+      <li>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href={base}
+              aria-current={inside ? "page" : undefined}
+              className="mx-auto flex size-8 items-center justify-center rounded-md transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            >
+              {tile}
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right">{p.name}</TooltipContent>
+        </Tooltip>
+      </li>
+    );
+  }
+  const subId = `project-pages-${p.id}`;
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={subId}
+        className={cn(
+          "group/nav flex h-[30px] w-full items-center gap-2 rounded-md px-2 text-left text-[13px] transition-colors duration-150 max-md:h-11",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+          inside ? "font-semibold text-[var(--ink-900)]" : "font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        )}
+      >
+        {tile}
+        <span className="min-w-0 flex-1 truncate">{p.name}</span>
+        <ChevronDown size={12} aria-hidden className={cn("shrink-0 text-[var(--ink-500)] transition-transform", !open && "-rotate-90")} />
+      </button>
+      <ul id={subId} hidden={!open} className="ml-[17px] flex flex-col gap-px border-l border-[var(--ink-200)] py-0.5 pl-2">
+        <React.Suspense fallback={<ProjectPages base={base} active={null} />}>
+          <ProjectPagesWithTab base={base} onProject={pathname === base} />
+        </React.Suspense>
+      </ul>
+    </li>
+  );
+}
+
+function ProjectPagesWithTab({ base, onProject }: { base: string; onProject: boolean }) {
+  const tab = useSearchParams().get("tab") ?? "";
+  return <ProjectPages base={base} active={onProject ? tab : null} />;
+}
+
+function ProjectPages({ base, active }: { base: string; active: string | null }) {
+  return (
+    <>
+      {PROJECT_PAGES.map((pg) => {
+        const on = active === pg.tab;
+        return (
+          <li key={pg.label}>
+            <Link
+              href={pg.tab ? `${base}?tab=${pg.tab}` : base}
+              aria-current={on ? "page" : undefined}
+              className={cn(
+                "flex h-7 items-center rounded-md px-2 text-[13px] transition-colors max-md:h-10",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                on ? "bg-sidebar-primary font-semibold text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              )}
+            >
+              {pg.label}
+            </Link>
+          </li>
+        );
+      })}
+    </>
+  );
 }

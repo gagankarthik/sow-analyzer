@@ -16,17 +16,17 @@ export function AnalysisDisclaimer({ className }: { className?: string }) {
     <aside
       role="note"
       aria-labelledby="analysis-disclaimer-title"
-      className={cn("w-full rounded-xl border border-border bg-card p-4 sm:p-5 md:p-6", className)}
+      className={cn("w-full rounded-lg border border-[var(--ink-200)] bg-[var(--panel)] p-4", className)}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-[var(--ink-600)]">
-          <Scale size={18} strokeWidth={1.75} aria-hidden />
+      <div className="flex items-start gap-3">
+        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-[var(--ink-200)] bg-card text-[var(--ink-700)]">
+          <Scale size={16} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p id="analysis-disclaimer-title" className="text-sm font-semibold text-foreground sm:text-base">
+          <p id="analysis-disclaimer-title" className="text-[13px] font-semibold text-[var(--ink-900)]">
             For guidance only, not legal advice.
           </p>
-          <p className="mt-1.5 max-w-[75ch] text-sm leading-relaxed text-[var(--ink-600)] [overflow-wrap:anywhere]">
+          <p className="mt-1 text-[13px] leading-relaxed text-[var(--ink-700)] [overflow-wrap:anywhere]">
             Blue-IQ uses AI to analyze and draft contract content, and it can be incomplete or
             wrong. Verify every figure, date, clause, and obligation against the source document,
             your own company&apos;s policies, and the laws that govern your contract before relying

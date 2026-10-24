@@ -18,7 +18,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
         title="Settings are managed by your administrators"
         description="A Govern admin manages these settings. You can view them."
       >
-        <Button asChild><Link href="/home">Back to home</Link></Button>
+        <Button asChild><Link href="/dashboard">Back to Dashboard</Link></Button>
       </StatePanel>
     );
   }

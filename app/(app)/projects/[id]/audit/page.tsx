@@ -305,7 +305,7 @@ export default function AuditPage() {
                         </div>
                         <div className="mt-0.5 flex flex-wrap gap-x-2 text-sm text-[var(--ink-600)]">
                           <span>{v.extractionMethod || "Extraction method not recorded"}</span>
-                          <span aria-hidden className="text-[var(--ink-300)]">·</span>
+                          <span aria-hidden className="text-[var(--ink-500)]">·</span>
                           <span>
                             {formatDate(v.createdAt)}, {new Date(v.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                           </span>
